@@ -1,0 +1,307 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="mimikatz.c" />
+    <ClCompile Include="modules\kuhl_m_standard.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_crypto.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa.c">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.c">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_livessp.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_msv1_0.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_privilege.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_process.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_memory.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_minidump.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_process.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_service.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_string.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_file.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_registry.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_patch.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_output.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c">
+      <Filter>local modules\sekurlsa\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c">
+      <Filter>local modules\sekurlsa\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c">
+      <Filter>local modules\sekurlsa\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_ts.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_event.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_misc.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_handle.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_token.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_token.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_net.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_net.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_kernel.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_kernel.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_service.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_asn1.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c">
+      <Filter>local modules\kerberos</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c">
+      <Filter>local modules\kerberos</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ticket.c">
+      <Filter>local modules\kerberos</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_lsadump.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_vault.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mimikatz.h" />
+    <ClInclude Include="modules\kuhl_m.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_standard.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_crypto.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\globals_sekurlsa.h">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa.h">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.h">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_livessp.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_msv1_0.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_privilege.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_process.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_memory.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_minidump.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_process.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_service.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_string.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_file.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_registry.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_registry_structures.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_patch.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_crypto_system.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_output.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h">
+      <Filter>local modules\sekurlsa\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h">
+      <Filter>local modules\sekurlsa\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h">
+      <Filter>local modules\sekurlsa\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_ts.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_event.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_misc.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_handle.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_token.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_token.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_net.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_net.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_kernel.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_kernel.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_service.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_asn1.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h">
+      <Filter>local modules\kerberos</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h">
+      <Filter>local modules\kerberos</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ticket.h">
+      <Filter>local modules\kerberos</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_lsadump.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_vault.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpce.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_samlib.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="local modules">
+      <UniqueIdentifier>{d7662bba-482f-4e4e-b70e-684a0ed816a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\sekurlsa">
+      <UniqueIdentifier>{5f90ce80-c180-46bb-a635-776532f4d219}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\sekurlsa\packages">
+      <UniqueIdentifier>{03b7a995-edef-4226-a138-7599944888f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common modules">
+      <UniqueIdentifier>{ec0aa01a-68b1-4d2d-8b9c-5725a903bd92}</UniqueIdentifier>
+      <Extensions>
+      </Extensions>
+    </Filter>
+    <Filter Include="local modules\sekurlsa\crypto">
+      <UniqueIdentifier>{c15ffa05-3a42-478e-add7-007ef07b0d27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\kerberos">
+      <UniqueIdentifier>{46c85327-a2e7-45c4-b764-c072222267bc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mimikatz.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mimikatz.ico" />
+  </ItemGroup>
+</Project>

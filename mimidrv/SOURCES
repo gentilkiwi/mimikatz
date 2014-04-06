@@ -1,0 +1,13 @@
+TARGETNAME=mimidrv
+TARGETPATH=OBJ
+TARGETTYPE=DRIVER
+SOURCES=mimidrv.c \
+	mimidrv.rc \
+	kkll_m_process.c \
+	kkll_m_modules.c \
+	kkll_m_memory.c \
+	kkll_m_ssdt.c \
+	kkll_m_notify.c \
+	kkll_m_filters.c
+
+TARGETLIBS= $(TARGETLIBS) $(IFSKIT_LIB_PATH)\fltmgr.lib $(BASEDIR)\lib\wlh\*\aux_klib.lib $(DDK_LIB_PATH)\ntstrsafe.lib

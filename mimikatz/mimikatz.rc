@@ -1,0 +1,36 @@
+#include <winres.h>
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+VS_VERSION_INFO VERSIONINFO
+
+FILEVERSION			2,0,0,0
+PRODUCTVERSION		2,0,0,0
+FILEFLAGS			VS_FF_PRERELEASE|VS_FF_SPECIALBUILD|VS_FF_PRIVATEBUILD
+FILEFLAGSMASK		VS_FFI_FILEFLAGSMASK
+FILEOS				VOS_NT
+FILETYPE			VFT_APP
+//FILESUBTYPE 0x0L
+BEGIN
+BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904b0"
+		BEGIN
+			VALUE "ProductName", "mimikatz"
+			VALUE "ProductVersion", "2.0.0.0"
+			VALUE "CompanyName", "gentilkiwi (Benjamin DELPY)"
+			VALUE "FileDescription", "mimikatz for Windows"
+			VALUE "FileVersion", "2.0.0.0"
+			VALUE "InternalName", "mimikatz"
+			VALUE "LegalCopyright", "Copyright (c) 2007 - 2014 gentilkiwi (Benjamin DELPY)"
+			VALUE "OriginalFilename", "mimikatz.exe"
+			VALUE "PrivateBuild", "Build with love for POC only"
+			VALUE "SpecialBuild", "kiwi flavor !"
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0409, 1200
+	END
+END
+
+100	ICON	"mimikatz.ico"

@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FB9B5E61-7C34-4280-A211-E979E1D6977F}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>mimikatz</RootNamespace>
+    <SccProjectName>Svn</SccProjectName>
+    <SccAuxPath>Svn</SccAuxPath>
+    <SccLocalPath>Svn</SccLocalPath>
+    <SccProvider>SubversionScc</SccProvider>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120_xp</PlatformToolset>
+    <UseOfMfc>static</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="Exists('$(VCTargetsPath)\Platforms\$(Platform)\PlatformToolsets\ddk2003') Or Exists('$(VCTargetsPath)\..\Platforms\$(Platform)\PlatformToolsets\ddk2003')">
+    <PlatformToolset>ddk2003</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)$(Platform)\</OutDir>
+    <IntDir>$(Platform)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)inc;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)lib\$(Platform);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>false</ExceptionHandling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <CreateHotpatchableImage>false</CreateHotpatchableImage>
+      <ErrorReporting>None</ErrorReporting>
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;advapi32.hash.lib;ntdll.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AssemblyDebug>false</AssemblyDebug>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup>
+    <ClCompile Include="..\modules\kull_m_asn1.c" />
+    <ClCompile Include="..\modules\kull_m_file.c" />
+    <ClCompile Include="..\modules\kull_m_handle.c" />
+    <ClCompile Include="..\modules\kull_m_kernel.c" />
+    <ClCompile Include="..\modules\kull_m_net.c" />
+    <ClCompile Include="..\modules\kull_m_memory.c" />
+    <ClCompile Include="..\modules\kull_m_minidump.c" />
+    <ClCompile Include="..\modules\kull_m_output.c" />
+    <ClCompile Include="..\modules\kull_m_patch.c" />
+    <ClCompile Include="..\modules\kull_m_process.c" />
+    <ClCompile Include="..\modules\kull_m_registry.c" />
+    <ClCompile Include="..\modules\kull_m_service.c" />
+    <ClCompile Include="..\modules\kull_m_string.c" />
+    <ClCompile Include="..\modules\kull_m_token.c" />
+    <ClCompile Include="mimikatz.c" />
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c" />
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ticket.c" />
+    <ClCompile Include="modules\kuhl_m_crypto.c" />
+    <ClCompile Include="modules\kuhl_m_event.c" />
+    <ClCompile Include="modules\kuhl_m_kernel.c" />
+    <ClCompile Include="modules\kuhl_m_lsadump.c" />
+    <ClCompile Include="modules\kuhl_m_misc.c" />
+    <ClCompile Include="modules\kuhl_m_net.c" />
+    <ClCompile Include="modules\kuhl_m_privilege.c" />
+    <ClCompile Include="modules\kuhl_m_process.c" />
+    <ClCompile Include="modules\kuhl_m_service.c" />
+    <ClCompile Include="modules\kuhl_m_standard.c" />
+    <ClCompile Include="modules\kuhl_m_token.c" />
+    <ClCompile Include="modules\kuhl_m_ts.c" />
+    <ClCompile Include="modules\kuhl_m_vault.c" />
+    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
+    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
+    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c" />
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa.c" />
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_livessp.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_msv1_0.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\modules\kull_m_asn1.h" />
+    <ClInclude Include="..\modules\kull_m_crypto_system.h" />
+    <ClInclude Include="..\modules\kull_m_file.h" />
+    <ClInclude Include="..\modules\kull_m_handle.h" />
+    <ClInclude Include="..\modules\kull_m_kernel.h" />
+    <ClInclude Include="..\modules\kull_m_net.h" />
+    <ClInclude Include="..\modules\kull_m_memory.h" />
+    <ClInclude Include="..\modules\kull_m_minidump.h" />
+    <ClInclude Include="..\modules\kull_m_output.h" />
+    <ClInclude Include="..\modules\kull_m_patch.h" />
+    <ClInclude Include="..\modules\kull_m_process.h" />
+    <ClInclude Include="..\modules\kull_m_registry.h" />
+    <ClInclude Include="..\modules\kull_m_registry_structures.h" />
+    <ClInclude Include="..\modules\kull_m_rpce.h" />
+    <ClInclude Include="..\modules\kull_m_samlib.h" />
+    <ClInclude Include="..\modules\kull_m_service.h" />
+    <ClInclude Include="..\modules\kull_m_string.h" />
+    <ClInclude Include="..\modules\kull_m_token.h" />
+    <ClInclude Include="mimikatz.h" />
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h" />
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ticket.h" />
+    <ClInclude Include="modules\kuhl_m.h" />
+    <ClInclude Include="modules\kuhl_m_crypto.h" />
+    <ClInclude Include="modules\kuhl_m_event.h" />
+    <ClInclude Include="modules\kuhl_m_kernel.h" />
+    <ClInclude Include="modules\kuhl_m_lsadump.h" />
+    <ClInclude Include="modules\kuhl_m_misc.h" />
+    <ClInclude Include="modules\kuhl_m_net.h" />
+    <ClInclude Include="modules\kuhl_m_privilege.h" />
+    <ClInclude Include="modules\kuhl_m_process.h" />
+    <ClInclude Include="modules\kuhl_m_service.h" />
+    <ClInclude Include="modules\kuhl_m_standard.h" />
+    <ClInclude Include="modules\kuhl_m_token.h" />
+    <ClInclude Include="modules\kuhl_m_ts.h" />
+    <ClInclude Include="modules\kuhl_m_vault.h" />
+    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
+    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
+    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h" />
+    <ClInclude Include="modules\sekurlsa\globals_sekurlsa.h" />
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa.h" />
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_livessp.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_msv1_0.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mimikatz.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mimikatz.ico" />
+  </ItemGroup>
+</Project>

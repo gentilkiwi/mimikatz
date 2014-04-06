@@ -1,0 +1,11 @@
+LIBRARY
+EXPORTS
+	startW					=	kappfree_startW
+	SpLsaModeInitialize		=	kssp_SpLsaModeInitialize
+	InitializeChangeNotify	=	kfilt_InitializeChangeNotify
+	PasswordChangeNotify	=	kfilt_PasswordChangeNotify
+
+	WinDbgExtensionDllInit	=	WinDbgExtensionDllInit
+	ExtensionApiVersion		=	ExtensionApiVersion
+	
+	mimikatz				=	mimikatz
