@@ -1,9 +1,18 @@
 # mimikatz
+
 `mimikatz` is a tool I've made to learn `C` and make somes experiments with Windows security.
 
-It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory.
-It also can perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
+It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. It also can perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
+
 ```
+  .#####.   mimikatz 2.0 alpha (x86) release "Kiwi en C" (Apr  6 2014 22:02:03)
+ .## ^ ##.
+ ## / \ ##  /* * *
+ ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)
+  '#####'                                    with  13 modules * * */
+
+
 mimikatz # privilege::debug
 Privilege '20' OK
  
@@ -68,3 +77,11 @@ For this optional platform, Windows Driver Kit **7.1** (WinDDK) - http://www.mic
 Follow instructions:
 * http://blog.gentilkiwi.com/programmation/executables-runtime-defaut-systeme
 * _http://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader_
+
+## Licence
+CC BY 3.0 FR licence - http://creativecommons.org/licenses/by/3.0/fr/
+
+## Author
+Benjamin DELPY `gentilkiwi`, you can contact me on Twitter ( @gentilkiwi ) or by mail ( benjamin [at] gentilkiwi.com )
+
+This is a **personal** developpement, please respect its philosophy and don't use it for bad things!
