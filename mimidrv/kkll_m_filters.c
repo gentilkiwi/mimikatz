@@ -98,7 +98,7 @@ NTSTATUS kkll_m_minifilters_list(PKIWI_BUFFER outBuffer)
 	if((status == STATUS_BUFFER_TOO_SMALL) && NumberFiltersReturned)
 	{
 		sizeOfBuffer = sizeof(PFLT_FILTER) * NumberFiltersReturned;
-		if(FilterList = ExAllocatePoolWithTag(NonPagedPool, sizeOfBuffer, POOL_TAG))
+		if(FilterList = (PFLT_FILTER *) ExAllocatePoolWithTag(NonPagedPool, sizeOfBuffer, POOL_TAG))
 		{
 			status = FltEnumerateFilters(FilterList, sizeOfBuffer, &NumberFiltersReturned); 
 			for(i = 0; NT_SUCCESS(status) && (i < NumberFiltersReturned); i++)
@@ -106,7 +106,7 @@ NTSTATUS kkll_m_minifilters_list(PKIWI_BUFFER outBuffer)
 				status = FltGetFilterInformation(FilterList[i], FilterFullInformation, NULL, 0, &sizeOfBuffer);
 				if((status == STATUS_BUFFER_TOO_SMALL) && sizeOfBuffer)
 				{
-					if(myFilterFullInformation = ExAllocatePoolWithTag(NonPagedPool, sizeOfBuffer, POOL_TAG))
+					if(myFilterFullInformation = (PFILTER_FULL_INFORMATION) ExAllocatePoolWithTag(NonPagedPool, sizeOfBuffer, POOL_TAG))
 					{
 						status = FltGetFilterInformation(FilterList[i], FilterFullInformation, myFilterFullInformation, sizeOfBuffer, &sizeOfBuffer);
 						if(NT_SUCCESS(status))
@@ -117,7 +117,7 @@ NTSTATUS kkll_m_minifilters_list(PKIWI_BUFFER outBuffer)
 								status = FltEnumerateInstances(NULL, FilterList[i], NULL, 0, &NumberInstancesReturned);
 								if((status == STATUS_BUFFER_TOO_SMALL) && NumberInstancesReturned)
 								{
-									if(InstanceList = ExAllocatePoolWithTag(NonPagedPool, sizeof(PFLT_INSTANCE) * NumberInstancesReturned, POOL_TAG))
+									if(InstanceList = (PFLT_INSTANCE *) ExAllocatePoolWithTag(NonPagedPool, sizeof(PFLT_INSTANCE) * NumberInstancesReturned, POOL_TAG))
 									{
 										status = FltEnumerateInstances(NULL, FilterList[i], InstanceList, NumberInstancesReturned, &NumberInstancesReturned);
 										for(j = 0; NT_SUCCESS(status) && (j < NumberInstancesReturned); j++)

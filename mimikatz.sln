@@ -38,28 +38,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x64", "x64", "{E9D1619F-D4A
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilib", "mimilib\mimilib.vcxproj", "{E049487C-C5BD-471E-99AE-C756E70B6520}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mimidrv", "mimidrv", "{3C603B1F-4427-402F-9704-65B3652B5F01}"
-	ProjectSection(SolutionItems) = preProject
-		mimidrv\globals.h = mimidrv\globals.h
-		mimidrv\ioctl.h = mimidrv\ioctl.h
-		mimidrv\kkll_m_filters.c = mimidrv\kkll_m_filters.c
-		mimidrv\kkll_m_filters.h = mimidrv\kkll_m_filters.h
-		mimidrv\kkll_m_memory.c = mimidrv\kkll_m_memory.c
-		mimidrv\kkll_m_memory.h = mimidrv\kkll_m_memory.h
-		mimidrv\kkll_m_modules.c = mimidrv\kkll_m_modules.c
-		mimidrv\kkll_m_modules.h = mimidrv\kkll_m_modules.h
-		mimidrv\kkll_m_notify.c = mimidrv\kkll_m_notify.c
-		mimidrv\kkll_m_notify.h = mimidrv\kkll_m_notify.h
-		mimidrv\kkll_m_process.c = mimidrv\kkll_m_process.c
-		mimidrv\kkll_m_process.h = mimidrv\kkll_m_process.h
-		mimidrv\kkll_m_ssdt.c = mimidrv\kkll_m_ssdt.c
-		mimidrv\kkll_m_ssdt.h = mimidrv\kkll_m_ssdt.h
-		mimidrv\MAKEFILE = mimidrv\MAKEFILE
-		mimidrv\mimidrv.c = mimidrv\mimidrv.c
-		mimidrv\mimidrv.h = mimidrv\mimidrv.h
-		mimidrv\mimidrv.rc = mimidrv\mimidrv.rc
-		mimidrv\SOURCES = mimidrv\SOURCES
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimidrv", "mimidrv\mimidrv.vcxproj", "{86FF6D04-208C-442F-B27C-E4255DD39402}"
 EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
@@ -79,6 +58,10 @@ Global
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.Build.0 = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.ActiveCfg = Release|x64
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.Build.0 = Release|x64
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.ActiveCfg = Release|Win32
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.Build.0 = Release|Win32
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.ActiveCfg = Release|x64
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

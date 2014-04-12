@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{86FF6D04-208C-442F-B27C-E4255DD39402}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v100</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)$(Platform)\</OutDir>
+    <IntDir>$(Platform)\</IntDir>
+    <NMakeBuildCommandLine>_build_.cmd $(Platform) $(SolutionDir)$(Platform)\</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>_clean_.cmd $(Platform) $(SolutionDir)$(Platform)\</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>_rebuild_.cmd $(Platform) $(SolutionDir)$(Platform)\</NMakeReBuildCommandLine>
+    <NMakeIncludeSearchPath>C:\WinDDK\7600.16385.1\inc;C:\WinDDK\7600.16385.1\inc\api;C:\WinDDK\7600.16385.1\inc\ddk</NMakeIncludeSearchPath>
+    <NMakePreprocessorDefinitions>WIN32;NDEBUG;_X86_</NMakePreprocessorDefinitions>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemGroup>
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="ioctl.h" />
+    <ClInclude Include="kkll_m_filters.h" />
+    <ClInclude Include="kkll_m_memory.h" />
+    <ClInclude Include="kkll_m_modules.h" />
+    <ClInclude Include="kkll_m_notify.h" />
+    <ClInclude Include="kkll_m_process.h" />
+    <ClInclude Include="kkll_m_ssdt.h" />
+    <ClInclude Include="mimidrv.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="kkll_m_filters.c" />
+    <ClCompile Include="kkll_m_memory.c" />
+    <ClCompile Include="kkll_m_modules.c" />
+    <ClCompile Include="kkll_m_notify.c" />
+    <ClCompile Include="kkll_m_process.c" />
+    <ClCompile Include="kkll_m_ssdt.c" />
+    <ClCompile Include="mimidrv.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MAKEFILE" />
+    <None Include="SOURCES" />
+    <None Include="_build_.cmd" />
+    <None Include="_clean_.cmd" />
+    <None Include="_rebuild_.cmd" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mimidrv.rc" />
+  </ItemGroup>
+</Project>

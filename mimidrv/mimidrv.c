@@ -48,9 +48,9 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 {
 	NTSTATUS status = STATUS_NOT_SUPPORTED;
 	PIO_STACK_LOCATION pIoStackIrp = NULL;
-	SIZE_T szBufferIn, szBufferOut, szReallyOut = 0;
+	size_t szBufferIn, szBufferOut, szReallyOut = 0;
 	PVOID bufferIn, bufferOut;
-	KIWI_BUFFER kOutputBuffer = {&szBufferOut, &bufferOut};
+	KIWI_BUFFER kOutputBuffer = {&szBufferOut, (PWSTR *) &bufferOut};
 	ULONG i;
 	pIoStackIrp = IoGetCurrentIrpStackLocation(Irp);    
 	if(pIoStackIrp)

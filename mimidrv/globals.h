@@ -9,20 +9,21 @@
 #include <ntddk.h>
 #include <aux_klib.h>
 #include <ntstrsafe.h>
+#include <string.h>
 #include "ioctl.h"
 
 #define POOL_TAG	'kiwi'
 #define MIMIDRV		L"mimidrv"
 
-#define kprintf(KiwiBuffer, Format, ...) (RtlStringCbPrintfExW(*((KiwiBuffer)->Buffer), *((KiwiBuffer)->szBuffer), (PWSTR *) ((KiwiBuffer)->Buffer), ((KiwiBuffer)->szBuffer), STRSAFE_NO_TRUNCATION, Format, __VA_ARGS__))
+#define kprintf(KiwiBuffer, Format, ...) (RtlStringCbPrintfExW(*(KiwiBuffer)->Buffer, *(KiwiBuffer)->szBuffer, (KiwiBuffer)->Buffer, (KiwiBuffer)->szBuffer, STRSAFE_NO_TRUNCATION, Format, __VA_ARGS__))
 
 extern char * PsGetProcessImageFileName(PEPROCESS monProcess);
 extern NTSYSAPI NTSTATUS NTAPI ZwSetInformationProcess (__in HANDLE ProcessHandle, __in PROCESSINFOCLASS ProcessInformationClass, __in_bcount(ProcessInformationLength) PVOID ProcessInformation, __in ULONG ProcessInformationLength);
 extern NTSYSAPI NTSTATUS NTAPI ZwUnloadKey(IN POBJECT_ATTRIBUTES DestinationKeyName); 
 
 typedef struct _KIWI_BUFFER {
-	SIZE_T * szBuffer;
-	PVOID * Buffer;
+	size_t * szBuffer;
+	PWSTR * Buffer;
 } KIWI_BUFFER, *PKIWI_BUFFER;
 
 typedef enum _KIWI_OS_INDEX {

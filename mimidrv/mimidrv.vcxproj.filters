@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="globals.h" />
+    <ClInclude Include="ioctl.h" />
+    <ClInclude Include="kkll_m_filters.h" />
+    <ClInclude Include="kkll_m_memory.h" />
+    <ClInclude Include="kkll_m_modules.h" />
+    <ClInclude Include="kkll_m_notify.h" />
+    <ClInclude Include="kkll_m_process.h" />
+    <ClInclude Include="kkll_m_ssdt.h" />
+    <ClInclude Include="mimidrv.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="kkll_m_filters.c" />
+    <ClCompile Include="kkll_m_memory.c" />
+    <ClCompile Include="kkll_m_modules.c" />
+    <ClCompile Include="kkll_m_notify.c" />
+    <ClCompile Include="kkll_m_process.c" />
+    <ClCompile Include="kkll_m_ssdt.c" />
+    <ClCompile Include="mimidrv.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MAKEFILE">
+      <Filter>winddk</Filter>
+    </None>
+    <None Include="SOURCES">
+      <Filter>winddk</Filter>
+    </None>
+    <None Include="_build_.cmd">
+      <Filter>winddk</Filter>
+    </None>
+    <None Include="_clean_.cmd">
+      <Filter>winddk</Filter>
+    </None>
+    <None Include="_rebuild_.cmd">
+      <Filter>winddk</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mimidrv.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="winddk">
+      <UniqueIdentifier>{72bed6ab-78d7-441d-9009-8445ec0e72e6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
