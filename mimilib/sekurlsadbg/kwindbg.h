@@ -19,6 +19,7 @@ USHORT NtBuildNumber;
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY	0x02000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK	0x07000000
 
+#define KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS		0x00400000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE			0x00800000
 
 #define KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT		0x10000000
@@ -26,7 +27,7 @@ USHORT NtBuildNumber;
 #define KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN			0x40000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_SSP				0x80000000
 
-typedef void (CALLBACK * PKUHL_M_SEKURLSA_PACKAGE_CALLBACK) (IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PLUID logId, IN PVOID pCredentials);
+typedef void (CALLBACK * PKUHL_M_SEKURLSA_PACKAGE_CALLBACK) (IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
 
 typedef struct _KUHL_M_SEKURLSA_PACKAGE {
 	const char * name;
@@ -37,24 +38,15 @@ typedef struct _KUHL_M_SEKURLSA_PACKAGE {
 
 typedef struct _KUHL_M_SEKURLSA_ENUM_HELPER {
 	ULONG tailleStruct;
-	LONG offsetToLuid;
-	LONG offsetToLogonType;
-	LONG offsetToSession;
-	LONG offsetToUsername;
-	LONG offsetToDomain;
-	LONG offsetToCredentials;
-	LONG offsetToPSid;
+	ULONG offsetToLuid;
+	ULONG offsetToLogonType;
+	ULONG offsetToSession;
+	ULONG offsetToUsername;
+	ULONG offsetToDomain;
+	ULONG offsetToCredentials;
+	ULONG offsetToPSid;
+	ULONG offsetToCredentialManager;
 } KUHL_M_SEKURLSA_ENUM_HELPER, *PKUHL_M_SEKURLSA_ENUM_HELPER;
-
-typedef struct _KIWI_BASIC_SECURITY_LOGON_SESSION_DATA {
-	PLUID						LogonId;
-	PLSA_UNICODE_STRING			UserName;
-	PLSA_UNICODE_STRING			LogonDomain;
-	ULONG						LogonType;
-	ULONG						Session;
-	PVOID						pCredentials;
-	PSID						pSid;
-} KIWI_BASIC_SECURITY_LOGON_SESSION_DATA, *PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA;
 
 LPEXT_API_VERSION WDBGAPI ExtensionApiVersion (void);
 VOID CheckVersion(void);
@@ -63,3 +55,17 @@ DECLARE_API(mimikatz);
 
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
+
+#define KULL_M_WIN_BUILD_XP		2600
+#define KULL_M_WIN_BUILD_2K3	3790
+#define KULL_M_WIN_BUILD_VISTA	6000
+#define KULL_M_WIN_BUILD_7		7600
+#define KULL_M_WIN_BUILD_8		9200
+#define KULL_M_WIN_BUILD_BLUE	9600
+
+#define KULL_M_WIN_MIN_BUILD_XP		2500
+#define KULL_M_WIN_MIN_BUILD_2K3	3000
+#define KULL_M_WIN_MIN_BUILD_VISTA	6000
+#define KULL_M_WIN_MIN_BUILD_7		7000
+#define KULL_M_WIN_MIN_BUILD_8		8000
+#define KULL_M_WIN_MIN_BUILD_BLUE	9400

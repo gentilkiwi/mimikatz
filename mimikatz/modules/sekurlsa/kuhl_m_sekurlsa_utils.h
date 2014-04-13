@@ -35,9 +35,9 @@ typedef struct _KIWI_MSV1_0_CREDENTIALS {
 	PKIWI_MSV1_0_PRIMARY_CREDENTIALS PrimaryCredentials;
 } KIWI_MSV1_0_CREDENTIALS, *PKIWI_MSV1_0_CREDENTIALS;
 
-typedef struct _KIWI_MSV1_0_LIST_5 {
-	struct _KIWI_MSV1_0_LIST_5 *Flink;
-	struct _KIWI_MSV1_0_LIST_5 *Blink;
+typedef struct _KIWI_MSV1_0_LIST_51 {
+	struct _KIWI_MSV1_0_LIST_51 *Flink;
+	struct _KIWI_MSV1_0_LIST_51 *Blink;
 	LUID LocallyUniqueIdentifier;
 	LSA_UNICODE_STRING UserName;
 	LSA_UNICODE_STRING Domaine;
@@ -49,9 +49,36 @@ typedef struct _KIWI_MSV1_0_LIST_5 {
     LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
-} KIWI_MSV1_0_LIST_5, *PKIWI_MSV1_0_LIST_5;
+	ULONG unk19;
+	PVOID unk20;
+	PVOID unk21;
+	PVOID unk22;
+	ULONG unk23;
+	PVOID CredentialManager;
+} KIWI_MSV1_0_LIST_51, *PKIWI_MSV1_0_LIST_51;
 
-typedef struct _KIWI_MSV1_0_LIST_6 {
+typedef struct _KIWI_MSV1_0_LIST_52 {
+	struct _KIWI_MSV1_0_LIST_52 *Flink;
+	struct _KIWI_MSV1_0_LIST_52 *Blink;
+	LUID LocallyUniqueIdentifier;
+	LSA_UNICODE_STRING UserName;
+	LSA_UNICODE_STRING Domaine;
+	PVOID unk0;
+	PVOID unk1;
+	PSID  pSid;
+	ULONG LogonType;
+    ULONG Session;
+    LARGE_INTEGER LogonTime; // autoalign x86
+	LSA_UNICODE_STRING LogonServer;
+	PKIWI_MSV1_0_CREDENTIALS Credentials;
+	ULONG unk19;
+	PVOID unk20;
+	PVOID unk21;
+	ULONG unk22;
+	PVOID CredentialManager;
+} KIWI_MSV1_0_LIST_52, *PKIWI_MSV1_0_LIST_52;
+
+typedef struct _KIWI_MSV1_0_LIST_60 {
 	struct _KIWI_MSV1_0_LIST_6 *Flink;
 	struct _KIWI_MSV1_0_LIST_6 *Blink;
 	PVOID unk0;
@@ -80,7 +107,49 @@ typedef struct _KIWI_MSV1_0_LIST_6 {
     LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
-} KIWI_MSV1_0_LIST_6, *PKIWI_MSV1_0_LIST_6;
+	ULONG unk19;
+	PVOID unk20;
+	PVOID unk21;
+	PVOID unk22;
+	ULONG unk23;
+	PVOID CredentialManager;
+} KIWI_MSV1_0_LIST_60, *PKIWI_MSV1_0_LIST_60;
+
+typedef struct _KIWI_MSV1_0_LIST_61 {
+	struct _KIWI_MSV1_0_LIST_6 *Flink;
+	struct _KIWI_MSV1_0_LIST_6 *Blink;
+	PVOID unk0;
+	ULONG unk1;
+	PVOID unk2;
+	ULONG unk3;
+	ULONG unk4;
+	ULONG unk5;
+	HANDLE hSemaphore6;
+	PVOID unk7;
+	HANDLE hSemaphore8;
+	PVOID unk9;
+	PVOID unk10;
+	ULONG unk11;
+	ULONG unk12;
+	PVOID unk13;
+	LUID LocallyUniqueIdentifier;
+	LUID SecondaryLocallyUniqueIdentifier;
+	LSA_UNICODE_STRING UserName;
+	LSA_UNICODE_STRING Domaine;
+	PVOID unk14;
+	PVOID unk15;
+	PSID  pSid;
+	ULONG LogonType;
+    ULONG Session;
+    LARGE_INTEGER LogonTime; // autoalign x86
+	LSA_UNICODE_STRING LogonServer;
+	PKIWI_MSV1_0_CREDENTIALS Credentials;
+	PVOID unk19;
+	PVOID unk20;
+	PVOID unk21;
+	ULONG unk22;
+	PVOID CredentialManager;
+} KIWI_MSV1_0_LIST_61, *PKIWI_MSV1_0_LIST_61;
 
 typedef struct _KIWI_MSV1_0_LIST_62 {
 	struct _KIWI_MSV1_0_LIST_62 *Flink;
@@ -105,8 +174,7 @@ typedef struct _KIWI_MSV1_0_LIST_62 {
 	LSA_UNICODE_STRING Domaine;
 	PVOID unk14;
 	PVOID unk15;
-	/*PVOID unk16;
-	PVOID unk17;*/LSA_UNICODE_STRING Type;
+	LSA_UNICODE_STRING Type;
 	PSID  pSid;
 	ULONG LogonType;
 	PVOID unk18;
@@ -114,6 +182,18 @@ typedef struct _KIWI_MSV1_0_LIST_62 {
     LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
+	PVOID unk19;
+	PVOID unk20;
+	PVOID unk21;
+	ULONG unk22;
+	ULONG unk23;
+	ULONG unk24;
+	ULONG unk25;
+	ULONG unk26;
+	PVOID unk27;
+	PVOID unk28;
+	PVOID unk29;
+	PVOID CredentialManager;
 } KIWI_MSV1_0_LIST_62, *PKIWI_MSV1_0_LIST_62;
 
 typedef struct _KIWI_MSV1_0_LIST_63 {
@@ -140,8 +220,7 @@ typedef struct _KIWI_MSV1_0_LIST_63 {
 	LSA_UNICODE_STRING Domaine;
 	PVOID unk14;
 	PVOID unk15;
-	/*PVOID unk16;
-	PVOID unk17;*/LSA_UNICODE_STRING Type;
+	LSA_UNICODE_STRING Type;
 	PSID  pSid;
 	ULONG LogonType;
 	PVOID unk18;
@@ -149,4 +228,16 @@ typedef struct _KIWI_MSV1_0_LIST_63 {
 	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
+	PVOID unk19;
+	PVOID unk20;
+	PVOID unk21;
+	ULONG unk22;
+	ULONG unk23;
+	ULONG unk24;
+	ULONG unk25;
+	ULONG unk26;
+	PVOID unk27;
+	PVOID unk28;
+	PVOID unk29;
+	PVOID CredentialManager;
 } KIWI_MSV1_0_LIST_63, *PKIWI_MSV1_0_LIST_63;

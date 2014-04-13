@@ -21,6 +21,7 @@
 #include "packages/kuhl_m_sekurlsa_tspkg.h"
 #include "packages/kuhl_m_sekurlsa_wdigest.h"
 #include "packages/kuhl_m_sekurlsa_dpapi.h"
+#include "packages/kuhl_m_sekurlsa_credman.h"
 
 #include "../kerberos/kuhl_m_kerberos_ticket.h"
 
@@ -33,6 +34,7 @@
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY	0x02000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK	0x07000000
 
+#define KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS		0x00400000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE			0x00800000
 
 #define KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT		0x10000000
@@ -67,13 +69,14 @@ NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[]);
 
 typedef struct _KUHL_M_SEKURLSA_ENUM_HELPER {
 	SIZE_T tailleStruct;
-	LONG offsetToLuid;
-	LONG offsetToLogonType;
-	LONG offsetToSession;
-	LONG offsetToUsername;
-	LONG offsetToDomain;
-	LONG offsetToCredentials;
-	LONG offsetToPSid;
+	ULONG offsetToLuid;
+	ULONG offsetToLogonType;
+	ULONG offsetToSession;
+	ULONG offsetToUsername;
+	ULONG offsetToDomain;
+	ULONG offsetToCredentials;
+	ULONG offsetToPSid;
+	ULONG offsetToCredentialManager;
 } KUHL_M_SEKURLSA_ENUM_HELPER, *PKUHL_M_SEKURLSA_ENUM_HELPER;
 
 typedef struct _KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA {

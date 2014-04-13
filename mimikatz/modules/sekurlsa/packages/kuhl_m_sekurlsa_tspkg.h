@@ -9,7 +9,7 @@
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_tspkg_package;
 
 NTSTATUS kuhl_m_sekurlsa_tspkg(int argc, wchar_t * argv[]);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PLUID logId, IN PVOID pCredentials, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
 
 typedef struct _KIWI_TS_PRIMARY_CREDENTIAL {
 	PVOID unk0;	// lock ?

@@ -113,6 +113,7 @@
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_livessp.c" />
@@ -164,6 +165,7 @@
     <ClInclude Include="modules\sekurlsa\globals_sekurlsa.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_livessp.h" />

@@ -9,7 +9,7 @@
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_livessp_package;
 
 NTSTATUS kuhl_m_sekurlsa_livessp(int argc, wchar_t * argv[]);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PLUID logId, IN PVOID pCredentials, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
 
 typedef struct _KIWI_LIVESSP_PRIMARY_CREDENTIAL
 {

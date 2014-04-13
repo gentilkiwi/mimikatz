@@ -9,7 +9,7 @@
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_wdigest_package;
 
 NTSTATUS kuhl_m_sekurlsa_wdigest(int argc, wchar_t * argv[]);
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PLUID logId, IN PVOID pCredentials, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
 
 typedef struct _KIWI_WDIGEST_LIST_ENTRY {
 	struct _KIWI_WDIGEST_LIST_ENTRY *Flink;

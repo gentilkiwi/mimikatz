@@ -128,6 +128,9 @@
     <ClCompile Include="modules\kuhl_m_vault.c">
       <Filter>local modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -274,6 +277,9 @@
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_samlib.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
