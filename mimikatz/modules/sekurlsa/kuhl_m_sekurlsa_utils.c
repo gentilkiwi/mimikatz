@@ -34,23 +34,6 @@ KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 PLIST_ENTRY LogonSessionList = NULL;
 PULONG LogonSessionListCount = NULL;
 
-const wchar_t * KUHL_M_SEKURLSA_LOGON_TYPE[] = {
-	L"UndefinedLogonType",
-	L"Unknown !",
-	L"Interactive",
-	L"Network",
-	L"Batch",
-	L"Service",
-	L"Proxy",
-	L"Unlock",
-	L"NetworkCleartext",
-	L"NewCredentials",
-	L"RemoteInteractive",
-	L"CachedInteractive",
-	L"CachedRemoteInteractive",
-	L"CachedUnlock",
-};
-
 BOOL kuhl_m_sekurlsa_utils_search(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib)
 {
 	PVOID *pLogonSessionListCount = (cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_2K3) ? NULL : ((PVOID *) &LogonSessionListCount);

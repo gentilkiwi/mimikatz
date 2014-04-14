@@ -5,16 +5,8 @@
 */
 #include "kuhl_m_kerberos_ticket.h"
 
-const PCWCHAR TicketFlagsToStrings[] = {
-	L"name_canonicalize", L"?", L"ok_as_delegate", L"?",
-	L"hw_authent", L"pre_authent", L"initial", L"renewable",
-	L"invalid", L"postdated", L"may_postdate", L"proxy",
-	L"proxiable", L"forwarded", L"forwardable", L"reserved",
-};
-
 void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTicketToo)
 {
-	DWORD i;
 	kprintf(L"\n\t   Start/End/MaxRenew: ");
 	kull_m_string_displayLocalFileTime(&ticket->StartTime); kprintf(L" ; ");
 	kull_m_string_displayLocalFileTime(&ticket->EndTime); kprintf(L" ; ");
@@ -26,9 +18,7 @@ void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTi
 	if(ticket->Description.Buffer)
 		kprintf(L" ( %wZ )", &ticket->Description);
 	kprintf(L"\n\t   Flags %08x    : ", ticket->TicketFlags);
-	for(i = 0; i < 16; i++)
-		if((ticket->TicketFlags >> (i + 16)) & 1)
-			kprintf(L"%s ; ", TicketFlagsToStrings[i]);
+	kuhl_m_kerberos_ticket_displayFlags(ticket->TicketFlags);
 	kprintf(L"\n\t   Session Key  (%02x) : ", ticket->KeyType);
 	if(ticket->Key.Value)
 		kull_m_string_wprintf_hex(ticket->Key.Value, ticket->Key.Length, 1);
@@ -41,6 +31,20 @@ void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTi
 		else PRINT_ERROR_AUTO(L"NULL Ticket Value !");
 	}
 	else kprintf(L"[...]");
+}
+
+const PCWCHAR TicketFlagsToStrings[] = {
+	L"name_canonicalize", L"?", L"ok_as_delegate", L"?",
+	L"hw_authent", L"pre_authent", L"initial", L"renewable",
+	L"invalid", L"postdated", L"may_postdate", L"proxy",
+	L"proxiable", L"forwarded", L"forwardable", L"reserved",
+};
+void kuhl_m_kerberos_ticket_displayFlags(ULONG flags)
+{
+	DWORD i;
+	for(i = 0; i < 16; i++)
+		if((flags >> (i + 16)) & 1)
+			kprintf(L"%s ; ", TicketFlagsToStrings[i]);
 }
 
 void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTERNAL_NAME pExternalName, IN PUNICODE_STRING pDomain)

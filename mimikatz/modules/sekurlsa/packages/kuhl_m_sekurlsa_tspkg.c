@@ -25,10 +25,10 @@ const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_tspkg_single_package[] = {&kuhl_m
 
 NTSTATUS kuhl_m_sekurlsa_tspkg(int argc, wchar_t * argv[])
 {
-	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_tspkg_single_package, 1, NULL, NULL);
+	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_tspkg_single_package, 1);
 }
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
 	KIWI_TS_CREDENTIAL credentials;
 	KIWI_TS_PRIMARY_CREDENTIAL primaryCredential;
@@ -48,7 +48,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_
 				{
 					aLocalMemory.address = &primaryCredential;
 					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_TS_PRIMARY_CREDENTIAL)))
-						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN, externalCallback, externalCallbackData);
+						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
 				}
 			}
 		}

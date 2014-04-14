@@ -49,8 +49,6 @@ typedef struct _MSV1_0_PTH_DATA_CRED {
 
 typedef struct _MSV1_0_STD_DATA {
 	PLUID						LogonId;
-	PKUHL_M_SEKURLSA_EXTERNAL	externalCallback;
-	LPVOID						externalCallbackData;
 } MSV1_0_STD_DATA, *PMSV1_0_STD_DATA;
 
 typedef BOOL (CALLBACK * PKUHL_M_SEKURLSA_MSV_CRED_CALLBACK) (IN struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS * pCredentials, IN DWORD AuthenticationPackageId, IN PKULL_M_MEMORY_ADDRESS origBufferAddress, IN OPTIONAL LPVOID pOptionalData);
@@ -59,7 +57,7 @@ KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_msv_package;
 NTSTATUS kuhl_m_sekurlsa_msv(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_msv_pth(int argc, wchar_t * argv[]);
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData);
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
 BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_msv_pth(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
 
 VOID kuhl_m_sekurlsa_msv_enum_cred(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PVOID pCredentials, IN PKUHL_M_SEKURLSA_MSV_CRED_CALLBACK credCallback, IN PVOID optionalData);

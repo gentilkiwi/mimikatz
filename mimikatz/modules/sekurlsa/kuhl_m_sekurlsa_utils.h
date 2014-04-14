@@ -21,8 +21,6 @@ BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL
 void kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(PVOID BaseAddress, PLSA_UNICODE_STRING String, BOOL relative);
 BOOL kuhl_m_sekurlsa_utils_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source);
 
-const wchar_t * KUHL_M_SEKURLSA_LOGON_TYPE[];
-
 typedef struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS {
 	struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS *next;
 	ANSI_STRING Primary;

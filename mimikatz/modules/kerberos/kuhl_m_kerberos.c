@@ -158,7 +158,7 @@ NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[])
 	PKERB_QUERY_TKT_CACHE_EX_RESPONSE pKerbCacheResponse;
 	PKERB_RETRIEVE_TKT_REQUEST pKerbRetrieveRequest;
 	PKERB_RETRIEVE_TKT_RESPONSE pKerbRetrieveResponse;
-	DWORD szData, i, j;
+	DWORD szData, i;
 	wchar_t * filename;
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
 
@@ -177,9 +177,7 @@ NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[])
 				kprintf(L"\n   Server Name       : %wZ @ %wZ", &pKerbCacheResponse->Tickets[i].ServerName, &pKerbCacheResponse->Tickets[i].ServerRealm);
 				kprintf(L"\n   Client Name       : %wZ @ %wZ", &pKerbCacheResponse->Tickets[i].ClientName, &pKerbCacheResponse->Tickets[i].ClientRealm);
 				kprintf(L"\n   Flags %08x    : ", pKerbCacheResponse->Tickets[i].TicketFlags);
-				for(j = 0; j < 16; j++)
-					if((pKerbCacheResponse->Tickets[i].TicketFlags >> (j + 16)) & 1)
-						kprintf(L"%s ; ", TicketFlagsToStrings[j]);
+				kuhl_m_kerberos_ticket_displayFlags(pKerbCacheResponse->Tickets[i].TicketFlags);
 			
 				if(export)
 				{
