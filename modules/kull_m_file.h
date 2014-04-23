@@ -4,8 +4,10 @@
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
 */
 #pragma once
-#include <windows.h>
+#include "globals.h"
 #include <shlwapi.h>
+
+BOOL isBase64Intercept;
 
 BOOL kull_m_file_getCurrentDirectory(wchar_t ** ppDirName);
 BOOL kull_m_file_getAbsolutePathOf(wchar_t *thisData, wchar_t ** reponse);

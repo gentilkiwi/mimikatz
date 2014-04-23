@@ -5,6 +5,8 @@
 */
 #include "kull_m_file.h"
 
+BOOL isBase64Intercept = FALSE;
+
 BOOL kull_m_file_getCurrentDirectory(wchar_t ** ppDirName)
 {
 	BOOL reussite = FALSE;
@@ -56,10 +58,28 @@ BOOL kull_m_file_isFileExist(wchar_t *fileName)
 BOOL kull_m_file_writeData(PCWCHAR fileName, PBYTE data, DWORD lenght)
 {
 	BOOL reussite = FALSE;
-	DWORD dwBytesWritten;
-	HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	DWORD dwBytesWritten = 0, i;
+	HANDLE hFile = NULL;
+	LPWSTR base64;
 	
-	if(hFile && hFile != INVALID_HANDLE_VALUE)
+	if(isBase64Intercept)
+	{
+		if(CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwBytesWritten))
+		{
+			if(base64 = (LPWSTR) LocalAlloc(LPTR, dwBytesWritten * sizeof(wchar_t)))
+			{
+				if(reussite = CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, base64, &dwBytesWritten))
+				{
+					kprintf(L"\n===================\nBase64 interception\n===================\n");
+					for(i = 0; i < dwBytesWritten; i++)
+						kprintf(L"%c", base64[i]);
+					kprintf(L"\n===================\n");
+				}
+				LocalFree(base64);
+			}
+		}
+	}
+	else if((hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
 	{
 		if(WriteFile(hFile, data, lenght, &dwBytesWritten, NULL) && (lenght == dwBytesWritten))
 			reussite = FlushFileBuffers(hFile);

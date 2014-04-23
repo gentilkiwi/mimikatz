@@ -47,40 +47,7 @@ void kull_m_string_freeUnicodeStringBuffer(PUNICODE_STRING pString)
 	if(pString->Buffer)
 		LocalFree(pString->Buffer);
 }
-/*
-VOID kull_m_string_outputHighUnicodeString(PLSA_UNICODE_STRING pString)
-{
-	DWORD dwSize;
-	wchar_t * ptr = NULL;
-	if(pString)
-	{
-		ptr = pString->Buffer;
-		dwSize =  pString->Length / sizeof(wchar_t);
-	}
-	kull_m_string_outputHighWideStringWithLen(ptr, dwSize);
-}
 
-VOID kull_m_string_outputHighWideString(wchar_t * pString)
-{
-	DWORD dwSize;
-	if(pString)
-		dwSize =  (DWORD) wcslen(pString);
-	kull_m_string_outputHighWideStringWithLen(pString, dwSize);
-}
-
-VOID kull_m_string_outputHighWideStringWithLen(wchar_t * pString, DWORD dwSize)
-{
-	//DWORD dwhConWritten;
-	//HANDLE hConOut = GetStdHandle(STD_OUTPUT_HANDLE);
-	if(!pString)
-	{
-		pString = L"(null)";
-		dwSize = 6;
-	}
-	kprintf(L"%.*s", dwSize, pString);
-	//WriteConsole(hConOut, pString, dwSize, &dwhConWritten, NULL); 
-}
-*/
 wchar_t * kull_m_string_qad_ansi_to_unicode(const char * ansi)
 {
 	wchar_t * buffer = NULL;

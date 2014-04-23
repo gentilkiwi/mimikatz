@@ -30,8 +30,7 @@
 #define MIMIKATZ_VERSION		L"2.0 alpha"
 #define MIMIKATZ_CODENAME		L"Kiwi en C"
 #define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") release \"" MIMIKATZ_CODENAME L"\" (" TEXT(__DATE__) L" " TEXT(__TIME__) L")"
-#define MIMIKATZ_PIPE_PATH		L"\\\\.\\pipe\\" MIMIKATZ
-#define MIMIKATZ_DEFAULT_LOG	L"mimikatz.log"
+#define MIMIKATZ_DEFAULT_LOG	MIMIKATZ L".log"
 #define MIMIKATZ_DRIVER			L"mimidrv"
 #define MIMIKATZ_KERBEROS_EXT	L"kirbi"
 

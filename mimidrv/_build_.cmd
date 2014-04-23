@@ -1,5 +1,5 @@
 @echo off
-set winddk=c:\WinDDK\7600.16385.1
+set winddk=%SystemDrive%\WinDDK\7600.16385.1
 
 set mimidrv=%~dp0
 set path=%systemroot%;%systemroot%\system32

@@ -12,6 +12,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_answer,	L"answer",	L"Answer to the Ultimate Question of Life, the Universe, and Everything"},
 	{kuhl_m_standard_sleep,		L"sleep",	L"Sleep an amount of milliseconds"},
 	{kuhl_m_standard_log,		L"log",		L"Log mimikatz input/output to file"},
+	{kuhl_m_standard_base64,	L"base64",	L"Switch file output/base64 output"},
 	{kuhl_m_standard_version,	L"version",	L"Display some version informations"},
 };
 const KUHL_M kuhl_m_standard = {
@@ -21,60 +22,6 @@ const KUHL_M kuhl_m_standard = {
 /*
 NTSTATUS kuhl_m_standard_test(int argc, wchar_t * argv[])
 {
-	SC_HANDLE hSC, hS;
-	DWORD i, szRoot, szNeeded, cbServices;
-	LPWSTR systemRoot;
-	LPENUM_SERVICE_STATUS_PROCESSW pEnumServiceBuffer;
-	LPQUERY_SERVICE_CONFIG pServiceConfigBuffer;
-
-	if(szRoot = GetEnvironmentVariable(L"SystemRoot", NULL, 0))
-	{
-		if(systemRoot = (LPWSTR) LocalAlloc(LPTR, szRoot * sizeof(wchar_t)))
-		{
-			if(GetEnvironmentVariable(L"SystemRoot", systemRoot, szRoot))
-			{
-				if(hSC = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE))
-				{
-					if(!EnumServicesStatusEx(hSC, SC_ENUM_PROCESS_INFO, SERVICE_TYPE_ALL, SERVICE_STATE_ALL, NULL, 0, &szNeeded, &cbServices, NULL, NULL) && (GetLastError() == ERROR_MORE_DATA))
-					{
-						if(pEnumServiceBuffer = (LPENUM_SERVICE_STATUS_PROCESSW) LocalAlloc(LPTR, szNeeded))
-						{
-							if(EnumServicesStatusEx(hSC, SC_ENUM_PROCESS_INFO, SERVICE_TYPE_ALL, SERVICE_STATE_ALL, (PBYTE) pEnumServiceBuffer, szNeeded, &szNeeded, &cbServices, NULL, NULL))
-							{
-								for(i = 0; i < cbServices; i ++)
-								{
-									if(hS = OpenService(hSC, pEnumServiceBuffer[i].lpServiceName, SERVICE_QUERY_CONFIG))
-									{
-										if(!QueryServiceConfig(hS, NULL, 0, &szNeeded) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
-										{
-											if(pServiceConfigBuffer = (LPQUERY_SERVICE_CONFIG) LocalAlloc(LPTR, szNeeded))
-											{
-												if(QueryServiceConfig(hS, pServiceConfigBuffer, szNeeded, &szNeeded) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
-												{
-													if(
-														(_wcsnicmp(pServiceConfigBuffer->lpBinaryPathName, systemRoot, szRoot - 1) != 0) &&
-														(_wcsnicmp(pServiceConfigBuffer->lpBinaryPathName, L"system32\\", 9) != 0) &&
-														(_wcsnicmp(pServiceConfigBuffer->lpBinaryPathName, L"\\SystemRoot\\system32\\", 21) != 0) &&
-														(_wcsnicmp(pServiceConfigBuffer->lpBinaryPathName, L"\\??\\", 4) != 0)
-														)
-														kprintf(L"%s\t%s\n", pEnumServiceBuffer[i].lpServiceName, pServiceConfigBuffer->lpBinaryPathName);
-												}
-												LocalFree(pServiceConfigBuffer);
-											}
-										} else PRINT_ERROR_AUTO(L"QueryServiceConfig");
-										CloseServiceHandle(hS);
-									} else PRINT_ERROR_AUTO(L"OpenService");
-								}
-							} else PRINT_ERROR_AUTO(L"EnumServicesStatusEx");
-							LocalFree(pEnumServiceBuffer);
-						}
-					} else PRINT_ERROR_AUTO(L"EnumServicesStatusEx");
-					CloseServiceHandle(hSC);
-				}
-			}
-			LocalFree(systemRoot);
-		}
-	}
 	return STATUS_SUCCESS;
 }
 */
@@ -116,6 +63,14 @@ NTSTATUS kuhl_m_standard_log(int argc, wchar_t * argv[])
 {
 	PCWCHAR filename = (kull_m_string_args_byName(argc, argv, L"stop", NULL, NULL) ? NULL : (argc ? argv[0] : MIMIKATZ_DEFAULT_LOG));
 	kprintf(L"Using \'%s\' for logfile : %s\n", filename, kull_m_output_file(filename) ? L"OK" : L"KO");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[])
+{
+	kprintf(L"isBase64Intercept was    : %s\n", isBase64Intercept ? L"true" : L"false");
+	isBase64Intercept = !isBase64Intercept;
+	kprintf(L"isBase64Intercept is now : %s\n", isBase64Intercept ? L"true" : L"false");
 	return STATUS_SUCCESS;
 }
 
