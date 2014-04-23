@@ -64,16 +64,16 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, PBYTE data, DWORD lenght)
 	
 	if(isBase64Intercept)
 	{
-		if(CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwBytesWritten))
+		if(CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64, NULL, &dwBytesWritten))
 		{
 			if(base64 = (LPWSTR) LocalAlloc(LPTR, dwBytesWritten * sizeof(wchar_t)))
 			{
-				if(reussite = CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, base64, &dwBytesWritten))
+				if(reussite = CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64, base64, &dwBytesWritten))
 				{
 					kprintf(L"\n===================\nBase64 interception\n===================\n");
 					for(i = 0; i < dwBytesWritten; i++)
 						kprintf(L"%c", base64[i]);
-					kprintf(L"\n===================\n");
+					kprintf(L"===================\n");
 				}
 				LocalFree(base64);
 			}
