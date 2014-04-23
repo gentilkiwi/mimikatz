@@ -70,10 +70,10 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, PBYTE data, DWORD lenght)
 			{
 				if(reussite = CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64, base64, &dwBytesWritten))
 				{
-					kprintf(L"\n===================\nBase64 interception\n===================\n");
+					kprintf(L"\n====================\nBase64 of file : %s\n====================\n", fileName);
 					for(i = 0; i < dwBytesWritten; i++)
 						kprintf(L"%c", base64[i]);
-					kprintf(L"===================\n");
+					kprintf(L"====================\n");
 				}
 				LocalFree(base64);
 			}
