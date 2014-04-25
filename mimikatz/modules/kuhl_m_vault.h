@@ -7,6 +7,7 @@
 #include "kuhl_m.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_token.h"
+#include "../modules/kull_m_patch.h"
 
 const KUHL_M kuhl_m_vault;
 
