@@ -19,8 +19,8 @@ BOOL kull_m_string_suspectUnicodeStringStructure(IN PUNICODE_STRING pUnicodeStri
 
 BOOL kull_m_string_suspectUnicodeString(IN PUNICODE_STRING pUnicodeString)
 {
-	int unicodeTestFlags = IS_TEXT_UNICODE_ODD_LENGTH | IS_TEXT_UNICODE_STATISTICS;
-	return IsTextUnicode(pUnicodeString->Buffer, pUnicodeString->Length, &unicodeTestFlags);
+	int unicodeTestFlags = IS_TEXT_UNICODE_STATISTICS;
+	return ((pUnicodeString->Length == sizeof(wchar_t)) && IsCharAlphaNumeric(pUnicodeString->Buffer[0])) || IsTextUnicode(pUnicodeString->Buffer, pUnicodeString->Length, &unicodeTestFlags);
 }
 
 BOOL kull_m_string_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY_HANDLE source)

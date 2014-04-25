@@ -22,7 +22,7 @@ NTSTATUS kuhl_m_privilege_simple(ULONG privId)
 	if(NT_SUCCESS(status))
 		kprintf(L"Privilege \'%u\' OK\n", privId);
 	else
-		PRINT_ERROR(L"RtlAdjustPrivilege %08x\n", status);
+		PRINT_ERROR(L"RtlAdjustPrivilege (%u) %08x\n", privId, status);
 	return status;
 }
 

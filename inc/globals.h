@@ -19,7 +19,7 @@
 //#define NTSECAPI_HEADER_FIXED	// http://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader
 //#define KERBEROS_TOOLS
 //#define LSASS_DECRYPT
-//#define NET_MODULE
+#define NET_MODULE
 #ifdef _M_X64
 	#define MIMIKATZ_ARCH L"x64"
 #else ifdef _M_IX86

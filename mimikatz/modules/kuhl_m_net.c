@@ -18,7 +18,7 @@ const KUHL_M kuhl_m_net = {
 NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 {
 	NTSTATUS status, enumDomainStatus, enumUserStatus;
-	UNICODE_STRING /*serverName,*/ *groupName;
+	UNICODE_STRING serverName, *groupName;
 	SAMPR_HANDLE hServerHandle, hBuiltinHandle = NULL, hDomainHandle, hUserHandle;
 	DWORD domainEnumerationContext, domainCountRetourned, userEnumerationContext, userCountRetourned, groupsCountRetourned, i, j, k, *usage, aliasCountRetourned, *alias;
 	PSAMPR_RID_ENUMERATION pEnumDomainBuffer, pEnumUsersBuffer;
@@ -26,8 +26,8 @@ NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 	PGROUP_MEMBERSHIP pGroupMemberShip;
 	SID builtin = {1, 1, {0, 0, 0, 0, 0, 5}, {32}};
 
-	//RtlInitUnicodeString(&serverName, L"");
-	status = SamConnect(NULL/*&serverName*/, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
+	RtlInitUnicodeString(&serverName, argc ? argv[0] : L"");
+	status = SamConnect(&serverName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
 	if(NT_SUCCESS(status))
 	{
 		status = SamOpenDomain(hServerHandle, DOMAIN_LIST_ACCOUNTS | DOMAIN_LOOKUP, &builtin, &hBuiltinHandle);

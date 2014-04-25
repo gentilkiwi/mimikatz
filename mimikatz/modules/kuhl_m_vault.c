@@ -109,7 +109,6 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 								}
 								
 								pItem7 = NULL;
-								system("pause");
 								status = VaultGetItem7(hVault, &items7[j].SchemaId, items7[j].Ressource, items7[j].Identity, NULL, 0, &pItem7);
 
 								kprintf(L"\t\t*Authenticator* : ");
