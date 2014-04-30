@@ -6,17 +6,33 @@
 #pragma once
 #include "../kuhl_m_sekurlsa.h"
 #include "../../kerberos/kuhl_m_kerberos_ticket.h"
+#include "../modules/kull_m_crypto_system.h"
 #include "../modules/kull_m_file.h"
 
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kerberos_package;
 
 NTSTATUS kuhl_m_sekurlsa_kerberos(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_kerberos_tickets(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_sekurlsa_kerberos_keys(int argc, wchar_t * argv[]);
+
+typedef void (CALLBACK * PKUHL_M_SEKURLSA_KERBEROS_CRED_CALLBACK) (IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN KULL_M_MEMORY_ADDRESS LocalKerbSession, IN KULL_M_MEMORY_ADDRESS RemoteLocalKerbSession, IN OPTIONAL LPVOID pOptionalData);
+
+typedef struct _KIWI_KERBEROS_ENUM_DATA {
+	PKUHL_M_SEKURLSA_KERBEROS_CRED_CALLBACK callback;
+	PVOID optionalData;
+} KIWI_KERBEROS_ENUM_DATA, *PKIWI_KERBEROS_ENUM_DATA;
 
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
-BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_kerberos_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
-void kuhl_m_sekurlsa_enum_generic_callback_kerberos(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
+BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_kerberos_generic(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
+void kuhl_m_sekurlsa_enum_generic_callback_kerberos(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL PKIWI_KERBEROS_ENUM_DATA pEnumData);
 void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN DWORD grp, IN PVOID tickets, IN BOOL isFile);
+
+void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_passwords(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN KULL_M_MEMORY_ADDRESS LocalKerbSession, IN KULL_M_MEMORY_ADDRESS RemoteLocalKerbSession, IN OPTIONAL LPVOID pOptionalData);
+void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN KULL_M_MEMORY_ADDRESS LocalKerbSession, IN KULL_M_MEMORY_ADDRESS RemoteLocalKerbSession, IN OPTIONAL LPVOID pOptionalData);
+void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_keys(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN KULL_M_MEMORY_ADDRESS LocalKerbSession, IN KULL_M_MEMORY_ADDRESS RemoteLocalKerbSession, IN OPTIONAL LPVOID pOptionalData);
+
+BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_kerberos_pth(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
+void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN KULL_M_MEMORY_ADDRESS Localkerbsession, IN KULL_M_MEMORY_ADDRESS RemoteLocalKerbSession, IN OPTIONAL LPVOID pOptionalData);
 
 wchar_t * kuhl_m_sekurlsa_kerberos_generateFileName(PLUID LogonId, const DWORD grp, const DWORD index, PKIWI_KERBEROS_TICKET ticket, LPCWSTR ext);
 
@@ -51,6 +67,10 @@ typedef struct _KERB_INFOS {
 	LONG	offsetTicket;
 	LONG	offsetTicketKvno;
 	SIZE_T	structTicketSize;
+	LONG	offsetKeyList;
+	SIZE_T	structKeyListSize;
+	LONG	offsetHashGeneric;
+	SIZE_T	structKeyPasswordHashSize;
 } KERB_INFOS, *PKERB_INFOS;
 
 typedef struct _KIWI_KERBEROS_LOGON_SESSION_51 {
@@ -83,7 +103,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_51 {
 	PVOID		unk20;
 	PVOID		unk21;
 	PVOID		unk22;
-	PVOID		unk23;
+	PVOID		pKeyList;
 	PVOID		unk24;
 	LIST_ENTRY	Tickets_1;
 	LIST_ENTRY	Tickets_2;
@@ -120,7 +140,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION {
 	PVOID		unk19;
 	PVOID		unk20;
 	PVOID		unk21;
-	PVOID		unk22;
+	PVOID		pKeyList;
 	PVOID		unk23;
 	LIST_ENTRY	Tickets_1;
 	FILETIME	unk24;
@@ -232,3 +252,26 @@ typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_6 {
 	ULONG		TicketKvno;
 	KIWI_KERBEROS_BUFFER	Ticket;
 } KIWI_KERBEROS_INTERNAL_TICKET_6, *PKIWI_KERBEROS_INTERNAL_TICKET_6;
+
+typedef struct _KIWI_KERBEROS_KEYS_LIST_5 {
+	DWORD unk0;		// dword_1233EC8 dd 4
+	DWORD cbItem;	// debug048:01233ECC dd 5
+	PVOID unk1;
+	PVOID unk2;
+	//KERB_HASHPASSWORD_5 KeysEntries[ANYSIZE_ARRAY];
+} KIWI_KERBEROS_KEYS_LIST_5, *PKIWI_KERBEROS_KEYS_LIST_5;
+
+typedef struct _KIWI_KERBEROS_KEYS_LIST_6 {
+	DWORD unk0;		// dword_1233EC8 dd 4
+	DWORD cbItem;	// debug048:01233ECC dd 5
+	PVOID unk1;
+	PVOID unk2;
+	PVOID unk3;
+	PVOID unk4;
+	//KERB_HASHPASSWORD_6 KeysEntries[ANYSIZE_ARRAY];
+} KIWI_KERBEROS_KEYS_LIST_6, *PKIWI_KERBEROS_KEYS_LIST_6;
+
+typedef struct _KIWI_KERBEROS_ENUM_DATA_TICKET {
+	BOOL isTicketExport;
+	BOOL isFullTicket;
+} KIWI_KERBEROS_ENUM_DATA_TICKET, *PKIWI_KERBEROS_ENUM_DATA_TICKET;

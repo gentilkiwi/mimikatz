@@ -2,7 +2,7 @@
 
 **`mimikatz`** is a tool I've made to learn `C` and make somes experiments with Windows security.
 
-It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. **`mimikatz`** also can perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
+It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. **`mimikatz`** can also perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
 
 ```
   .#####.   mimikatz 2.0 alpha (x86) release "Kiwi en C" (Apr  6 2014 22:02:03)
@@ -36,9 +36,9 @@ SID               : S-1-5-21-1982681256-1210654043-1600862990-1000
          * Password : waza1234/
 ...
 ```
-But that's not all! `Crypto`, `Terminal Server`, `Events`, ... lots of informations (in French, _yes_) on http://blog.gentilkiwi.com.
+But that's not all! `Crypto`, `Terminal Server`, `Events`, ... lots of informations in the GitHub Wiki https://github.com/gentilkiwi/mimikatz/wiki or on http://blog.gentilkiwi.com (in French, _yes_).
 
-If you don't want to build it, binaries are availables on http://blog.gentilkiwi.com/mimikatz
+If you don't want to build it, binaries are availables on https://github.com/gentilkiwi/mimikatz/releases
 
 
 ## Quick usage
@@ -75,7 +75,7 @@ crypto::keys /export
 crypto::keys /machine /export
 ```
 
-### vault && lsadump
+### vault & lsadump
 ```
 vault::cred
 vault::list

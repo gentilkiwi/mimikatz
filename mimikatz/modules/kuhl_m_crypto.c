@@ -213,7 +213,7 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 	kull_m_string_args_byName(argc, argv, L"store", &szStore, L"My");
 
 	kprintf(L" * System Store  : \'%s\' (0x%08x)\n"
-			L" * Store         : \'%s\'\n",
+			L" * Store         : \'%s\'\n\n",
 			szSystemStore, dwSystemStore,
 			szStore);
 
@@ -230,7 +230,7 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 					{
 						if(CertGetNameString(pCertContext, nameSrc[j], 0, NULL, certName, dwSizeNeeded) == dwSizeNeeded)
 						{
-							kprintf(L"\n%2u. %s\n", i, certName);
+							kprintf(L"%2u. %s\n", i, certName);
 
 							dwSizeNeeded = 0;
 							if(CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, NULL, &dwSizeNeeded))
@@ -273,6 +273,8 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 									} else PRINT_ERROR_AUTO(L"CertGetCertificateContextProperty");
 								}
 								LocalFree(pBuffer);
+								if(!export)
+									kprintf(L"\n");
 							}
 
 							if(export)
@@ -554,6 +556,7 @@ void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, 
 		else
 			PRINT_ERROR_AUTO(L"kuhl_m_crypto_generateFileName");
 	}
+	kprintf(L"\n");
 }
 
 wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * term1, const DWORD index, const wchar_t * name, const wchar_t * ext)

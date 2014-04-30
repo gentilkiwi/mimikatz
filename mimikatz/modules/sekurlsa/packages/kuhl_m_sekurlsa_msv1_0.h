@@ -63,5 +63,3 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_msv_pth(IN PKIWI_BASIC_SECURITY_LOGO
 VOID kuhl_m_sekurlsa_msv_enum_cred(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PVOID pCredentials, IN PKUHL_M_SEKURLSA_MSV_CRED_CALLBACK credCallback, IN PVOID optionalData);
 BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_std(IN struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS * pCredentials, IN DWORD AuthenticationPackageId, IN PKULL_M_MEMORY_ADDRESS origBufferAddress, IN OPTIONAL LPVOID pOptionalData);
 BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS * pCredentials, IN DWORD AuthenticationPackageId, IN PKULL_M_MEMORY_ADDRESS origBufferAddress, IN OPTIONAL LPVOID pOptionalData);
-
-PWCHAR kuhl_m_sekurlsa_msv_pth_makefakestring(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs);
