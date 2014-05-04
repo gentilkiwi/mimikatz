@@ -65,6 +65,7 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyB
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_strings(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_process(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[]);
 

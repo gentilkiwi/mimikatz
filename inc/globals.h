@@ -34,6 +34,14 @@
 #define MIMIKATZ_DRIVER			L"mimidrv"
 #define MIMIKATZ_KERBEROS_EXT	L"kirbi"
 
+#ifdef _WINDLL
+	#define MIMIKATZ_AUTO_COMMAND_START		0
+	#define MIMIKATZ_AUTO_COMMAND_STRING	L"powershell"
+#else
+	#define MIMIKATZ_AUTO_COMMAND_START		1
+	#define MIMIKATZ_AUTO_COMMAND_STRING	L"commandline"
+#endif
+
 #ifndef NT_SUCCESS
 #define NT_SUCCESS(Status) ((NTSTATUS)(Status) >= 0)
 #endif

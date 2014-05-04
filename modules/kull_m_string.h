@@ -45,6 +45,7 @@ BOOL kull_m_string_suspectUnicodeString(IN PUNICODE_STRING pUnicodeString);
 
 wchar_t * kull_m_string_qad_ansi_to_unicode(const char * ansi);
 wchar_t * kull_m_string_qad_ansi_c_to_unicode(const char * ansi, SIZE_T szStr);
+BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size);
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags);
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime);

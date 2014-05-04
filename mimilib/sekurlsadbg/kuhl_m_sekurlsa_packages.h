@@ -21,7 +21,9 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL {
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];
-	DWORD unknow_01000100;
+	BOOLEAN isNtOwfPassword;
+	BOOLEAN isLmOwfPassword;
+	BOOLEAN isShaOwPassword;
 	/* buffer */
 } MSV1_0_PRIMARY_CREDENTIAL, *PMSV1_0_PRIMARY_CREDENTIAL; 
 

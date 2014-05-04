@@ -19,18 +19,22 @@ void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTi
 		kprintf(L" ( %wZ )", &ticket->Description);
 	kprintf(L"\n\t   Flags %08x    : ", ticket->TicketFlags);
 	kuhl_m_kerberos_ticket_displayFlags(ticket->TicketFlags);
-	kprintf(L"\n\t   Session Key  (%02x) : ", ticket->KeyType);
+	kprintf(L"\n\t   Session Key       : 0x%08x - %s", ticket->KeyType, kuhl_m_kerberos_ticket_etype(ticket->KeyType));
 	if(ticket->Key.Value)
-		kull_m_string_wprintf_hex(ticket->Key.Value, ticket->Key.Length, 1);
-	kprintf(L"\n\t   Ticket  (%02x - %02x) : ", ticket->TicketKvno, ticket->TicketEncType);
+	{
+		kprintf(L"\n\t     ");
+		kull_m_string_wprintf_hex(ticket->Key.Value, ticket->Key.Length, 0);
+	}
+	kprintf(L"\n\t   Ticket            : 0x%08x - %s ; kvno = %u", ticket->TicketEncType, kuhl_m_kerberos_ticket_etype(ticket->TicketEncType), ticket->TicketKvno);
 	
 	if(encodedTicketToo)
 	{
+		kprintf(L"\n\t     ");
 		if(ticket->Ticket.Value)
 			kull_m_string_wprintf_hex(ticket->Ticket.Value, ticket->Ticket.Length, 1);
 		else PRINT_ERROR_AUTO(L"NULL Ticket Value !");
 	}
-	else kprintf(L"[...]");
+	else kprintf(L"\t[...]");
 }
 
 const PCWCHAR TicketFlagsToStrings[] = {
@@ -61,6 +65,42 @@ void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTE
 	else kprintf(L"(--) : ");
 	if(pDomain)
 		kprintf(L"@ %wZ", pDomain);
+}
+
+PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType)
+{
+	PCWCHAR type;
+	switch(eType)
+	{
+	case KERB_ETYPE_NULL:							type = L"null             "; break;
+
+	case KERB_ETYPE_DES_PLAIN:						type = L"des_plain        "; break;
+	case KERB_ETYPE_DES_CBC_CRC:					type = L"des_cbc_crc      "; break;
+	case KERB_ETYPE_DES_CBC_MD4:					type = L"des_cbc_md4      "; break;
+	case KERB_ETYPE_DES_CBC_MD5:					type = L"des_cbc_md5      "; break;
+	case KERB_ETYPE_DES_CBC_MD5_NT:					type = L"des_cbc_md5_nt   "; break;
+
+	case KERB_ETYPE_RC4_PLAIN:						type = L"rc4_plain        "; break;
+	case KERB_ETYPE_RC4_PLAIN2:						type = L"rc4_plain2       "; break;
+	case KERB_ETYPE_RC4_PLAIN_EXP:					type = L"rc4_plain_exp    "; break;
+	case KERB_ETYPE_RC4_LM:							type = L"rc4_lm           "; break;
+	case KERB_ETYPE_RC4_MD4:						type = L"rc4_md4          "; break;
+	case KERB_ETYPE_RC4_SHA:						type = L"rc4_sha          "; break;
+	case KERB_ETYPE_RC4_HMAC_NT:					type = L"rc4_hmac_nt      "; break;
+	case KERB_ETYPE_RC4_HMAC_NT_EXP:				type = L"rc4_hmac_nt_exp  "; break;
+	case KERB_ETYPE_RC4_PLAIN_OLD:					type = L"rc4_plain_old    "; break;
+	case KERB_ETYPE_RC4_PLAIN_OLD_EXP:				type = L"rc4_plain_old_exp"; break;
+	case KERB_ETYPE_RC4_HMAC_OLD:					type = L"rc4_hmac_old     "; break;
+	case KERB_ETYPE_RC4_HMAC_OLD_EXP:				type = L"rc4_hmac_old_exp "; break;
+
+	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96_PLAIN:	type = L"aes128_hmac_plain"; break;
+	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96_PLAIN:	type = L"aes256_hmac_plain"; break;
+	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96:		type = L"aes128_hmac      "; break;
+	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96:		type = L"aes256_hmac      "; break;
+
+	default:										type = L"unknow           "; break;
+	}
+	return type;
 }
 
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_TICKET ticket)

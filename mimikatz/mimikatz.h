@@ -38,3 +38,7 @@ NTSTATUS mimikatz_initOrClean();
 NTSTATUS mimikatz_doLocal(wchar_t * input);
 /*NTSTATUS mimikatz_doRemote(wchar_t * input);*/
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input);
+
+#ifdef _WINDLL
+__declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input);
+#endif

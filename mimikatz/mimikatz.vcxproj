@@ -9,6 +9,14 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Second_Release_PowerShell|Win32">
+      <Configuration>Second_Release_PowerShell</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Second_Release_PowerShell|x64">
+      <Configuration>Second_Release_PowerShell</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FB9B5E61-7C34-4280-A211-E979E1D6977F}</ProjectGuid>
@@ -21,7 +29,8 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType Condition="'$(Configuration)' != 'Second_Release_PowerShell'">Application</ConfigurationType>
+    <ConfigurationType Condition="'$(Configuration)' == 'Second_Release_PowerShell'">DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -41,6 +50,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)inc;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)lib\$(Platform);$(LibraryPath)</LibraryPath>
+    <TargetName Condition="'$(Configuration)' == 'Second_Release_PowerShell'">powerkatz</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -174,10 +184,10 @@
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Second_Release_PowerShell'">
     <ResourceCompile Include="mimikatz.rc" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Second_Release_PowerShell'">
     <None Include="mimikatz.ico" />
   </ItemGroup>
 </Project>

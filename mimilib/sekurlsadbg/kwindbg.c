@@ -213,13 +213,23 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					pPrimaryCreds = (PMSV1_0_PRIMARY_CREDENTIAL) credentials->Buffer;
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
-					dprintf("\n\t * Username : %wZ"
-							"\n\t * Domain   : %wZ"
-							, &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
 
-					dprintf("\n\t * LM       : "); kull_m_string_dprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					dprintf("\n\t * NTLM     : "); kull_m_string_dprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					dprintf("\n\t * SHA1     : "); kull_m_string_dprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+					dprintf("\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
+					if(pPrimaryCreds->isLmOwfPassword)
+					{
+						dprintf("\n\t * LM       : ");
+						kull_m_string_dprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+					}
+					if(pPrimaryCreds->isNtOwfPassword)
+					{
+						dprintf("\n\t * NTLM     : ");
+						kull_m_string_dprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+					}
+					if(pPrimaryCreds->isShaOwPassword)
+					{
+						dprintf("\n\t * SHA1     : ");
+						kull_m_string_dprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+					}
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
 					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;

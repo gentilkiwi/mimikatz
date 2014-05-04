@@ -68,6 +68,21 @@ wchar_t * kull_m_string_qad_ansi_c_to_unicode(const char * ansi, SIZE_T szStr)
 	return buffer;
 }
 
+BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size)
+{
+	DWORD i, j;
+	BOOL result = (wcslen(string) == (size * 2));
+	if(result)
+	{
+		for(i = 0; i < size; i++)
+		{
+			swscanf_s(&string[i*2], L"%02x", &j);
+			hex[i] = (BYTE) j;
+		}
+	}
+	return result;
+}
+
 PCWCHAR WPRINTF_TYPES[] =
 {
 	L"%02x",		// WPRINTF_HEX_SHORT

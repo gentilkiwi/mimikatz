@@ -48,20 +48,32 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
+		Second_Release_PowerShell|Win32 = Second_Release_PowerShell|Win32
+		Second_Release_PowerShell|x64 = Second_Release_PowerShell|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|Win32.ActiveCfg = Release|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|Win32.Build.0 = Release|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|x64.ActiveCfg = Release|x64
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|x64.Build.0 = Release|x64
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|Win32.ActiveCfg = Second_Release_PowerShell|Win32
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|Win32.Build.0 = Second_Release_PowerShell|Win32
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|x64.ActiveCfg = Second_Release_PowerShell|x64
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|x64.Build.0 = Second_Release_PowerShell|x64
+
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.Build.0 = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.ActiveCfg = Release|x64
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.Build.0 = Release|x64
+		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
+		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
+
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.Build.0 = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.ActiveCfg = Release|x64
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.Build.0 = Release|x64
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

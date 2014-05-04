@@ -90,3 +90,11 @@ typedef struct _KUHL_M_SEKURLSA_PACKAGE {
 	const wchar_t * ModuleName;
 	KUHL_M_SEKURLSA_LIB Module;
 } KUHL_M_SEKURLSA_PACKAGE, *PKUHL_M_SEKURLSA_PACKAGE;
+
+typedef struct _SEKURLSA_PTH_DATA { 
+	PLUID		LogonId;
+	PCWCHAR		UserName;
+	PCWCHAR		LogonDomain;
+	LPBYTE		NtlmHash;
+	BOOL		isReplaceOk;
+} SEKURLSA_PTH_DATA, *PSEKURLSA_PTH_DATA;

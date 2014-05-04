@@ -102,6 +102,7 @@ typedef struct _KIWI_KERBEROS_TICKET {
 void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTicketToo);
 void kuhl_m_kerberos_ticket_displayFlags(ULONG flags);
 void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTERNAL_NAME pExternalName, IN PUNICODE_STRING pDomain);
+PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType);
 
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket);
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_TICKET ticket);
