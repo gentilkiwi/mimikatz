@@ -13,6 +13,8 @@
 
 #define	DES_KEY_LENGTH		7
 #define DES_BLOCK_LENGTH	8
+#define AES_128_KEY_LENGTH	16
+#define AES_256_KEY_LENGTH	32
 
 typedef struct _MD4_CTX {
 	DWORD state[4];
@@ -161,7 +163,7 @@ typedef struct _KERB_HASHPASSWORD_5 {
 
 typedef struct _KERB_HASHPASSWORD_6 {
 	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962
-	PVOID stringToKey;
+	PVOID stringToKey; // AES Iterations (dword ?)
 	KERB_HASHPASSWORD_GENERIC generic;
 } KERB_HASHPASSWORD_6, *PKERB_HASHPASSWORD_6;
 

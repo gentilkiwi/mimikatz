@@ -96,5 +96,7 @@ typedef struct _SEKURLSA_PTH_DATA {
 	PCWCHAR		UserName;
 	PCWCHAR		LogonDomain;
 	LPBYTE		NtlmHash;
+	LPBYTE		Aes256Key;
+	LPBYTE		Aes128Key;
 	BOOL		isReplaceOk;
 } SEKURLSA_PTH_DATA, *PSEKURLSA_PTH_DATA;
