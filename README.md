@@ -120,4 +120,4 @@ CC BY 3.0 FR licence - http://creativecommons.org/licenses/by/3.0/fr/
 ## Author
 Benjamin DELPY `gentilkiwi`, you can contact me on Twitter ( @gentilkiwi ) or by mail ( benjamin [at] gentilkiwi.com )
 
-This is a **personal** developpement, please respect its philosophy and don't use it for bad things!
+This is a **personal** development, please respect its philosophy and don't use it for bad things!

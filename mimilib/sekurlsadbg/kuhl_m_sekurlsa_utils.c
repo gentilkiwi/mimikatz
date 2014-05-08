@@ -181,3 +181,39 @@ BOOL kuhl_m_sekurlsa_utils_getSid(IN PSID * pSid)
 	}
 	return status;
 }
+
+PCSTR kuhl_m_kerberos_ticket_etype(LONG eType)
+{
+	PCSTR type;
+	switch(eType)
+	{
+	case KERB_ETYPE_NULL:							type = "null             "; break;
+
+	case KERB_ETYPE_DES_PLAIN:						type = "des_plain        "; break;
+	case KERB_ETYPE_DES_CBC_CRC:					type = "des_cbc_crc      "; break;
+	case KERB_ETYPE_DES_CBC_MD4:					type = "des_cbc_md4      "; break;
+	case KERB_ETYPE_DES_CBC_MD5:					type = "des_cbc_md5      "; break;
+	case KERB_ETYPE_DES_CBC_MD5_NT:					type = "des_cbc_md5_nt   "; break;
+
+	case KERB_ETYPE_RC4_PLAIN:						type = "rc4_plain        "; break;
+	case KERB_ETYPE_RC4_PLAIN2:						type = "rc4_plain2       "; break;
+	case KERB_ETYPE_RC4_PLAIN_EXP:					type = "rc4_plain_exp    "; break;
+	case KERB_ETYPE_RC4_LM:							type = "rc4_lm           "; break;
+	case KERB_ETYPE_RC4_MD4:						type = "rc4_md4          "; break;
+	case KERB_ETYPE_RC4_SHA:						type = "rc4_sha          "; break;
+	case KERB_ETYPE_RC4_HMAC_NT:					type = "rc4_hmac_nt      "; break;
+	case KERB_ETYPE_RC4_HMAC_NT_EXP:				type = "rc4_hmac_nt_exp  "; break;
+	case KERB_ETYPE_RC4_PLAIN_OLD:					type = "rc4_plain_old    "; break;
+	case KERB_ETYPE_RC4_PLAIN_OLD_EXP:				type = "rc4_plain_old_exp"; break;
+	case KERB_ETYPE_RC4_HMAC_OLD:					type = "rc4_hmac_old     "; break;
+	case KERB_ETYPE_RC4_HMAC_OLD_EXP:				type = "rc4_hmac_old_exp "; break;
+
+	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96_PLAIN:	type = "aes128_hmac_plain"; break;
+	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96_PLAIN:	type = "aes256_hmac_plain"; break;
+	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96:		type = "aes128_hmac      "; break;
+	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96:		type = "aes256_hmac      "; break;
+
+	default:										type = "unknow           "; break;
+	}
+	return type;
+}

