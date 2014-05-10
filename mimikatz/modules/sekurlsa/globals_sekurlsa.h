@@ -93,8 +93,6 @@ typedef struct _KUHL_M_SEKURLSA_PACKAGE {
 
 typedef struct _SEKURLSA_PTH_DATA { 
 	PLUID		LogonId;
-	PCWCHAR		UserName;
-	PCWCHAR		LogonDomain;
 	LPBYTE		NtlmHash;
 	LPBYTE		Aes256Key;
 	LPBYTE		Aes128Key;

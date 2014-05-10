@@ -227,9 +227,9 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN ULONG_PTR reserved,
 				pRef = (ULONG_PTR) setList.list1 + FIELD_OFFSET(KIWI_CREDMAN_LIST_STARTER, start);
 				if(ReadMemory((ULONG_PTR) setList.list1, &listStarter, sizeof(KIWI_CREDMAN_LIST_STARTER), NULL))
 				{
-					if(buffer = (PBYTE) LocalAlloc(LPTR, credhelper[CredOffsetIndex].structSize))
+					if(pCur = (ULONG_PTR) listStarter.start)
 					{
-						if(pCur = (ULONG_PTR) listStarter.start)
+						if(buffer = (PBYTE) LocalAlloc(LPTR, credhelper[CredOffsetIndex].structSize))
 						{
 							while(pCur != pRef)
 							{
@@ -247,8 +247,8 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN ULONG_PTR reserved,
 								else break;
 								nbCred++;
 							}
+							LocalFree(buffer);
 						}
-						LocalFree(buffer);
 					}
 				}
 			}

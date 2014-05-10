@@ -462,38 +462,41 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
-	BYTE ntlm[LM_NTLM_HASH_LENGTH] = {0};
-	DWORD i, j;
-	PCWCHAR szNtlm, szIn, szOut;
+	BYTE ntlm[LM_NTLM_HASH_LENGTH];
+	PCWCHAR szNtlm, szIn, szOut, szOffset, szSize;
 	PBYTE encData, decData;
-	DWORD encSize, decSize;
+	DWORD encSize, decSize, offset = 0, size = 0;
 
 	if(kull_m_string_args_byName(argc, argv, L"key", &szNtlm, NULL))
 	{
 		if(kull_m_string_args_byName(argc, argv, L"in", &szIn, NULL))
 		{
-			kull_m_string_args_byName(argc, argv, L"out", &szOut, L"out.dec");
+			kull_m_string_args_byName(argc, argv, L"out", &szOut, L"out.kirbi");
+			kull_m_string_args_byName(argc, argv, L"offset", &szOffset, NULL);
+			kull_m_string_args_byName(argc, argv, L"size", &szSize, NULL);
 
 			if(kull_m_file_readData(szIn, &encData, &encSize))
 			{
-				if(wcslen(szNtlm) == (LM_NTLM_HASH_LENGTH * 2))
+				if(szOffset && szSize)
 				{
-					for(i = 0; i < LM_NTLM_HASH_LENGTH; i++)
-					{
-						swscanf_s(&szNtlm[i*2], L"%02x", &j);
-						ntlm[i] = (BYTE) j;
-					}
-
-					status = kuhl_m_kerberos_encrypt(KERB_ETYPE_RC4_HMAC_NT, KRB_KEY_USAGE_AS_REP_TGS_REP, ntlm, LM_NTLM_HASH_LENGTH, encData, encSize, (LPVOID *) &decData, &decSize, FALSE);
+					offset = wcstoul(szOffset, NULL, 0);
+					size = wcstoul(szSize, NULL, 0);
+				}
+				
+				if(kull_m_string_stringToHex(szNtlm, ntlm, sizeof(ntlm)))												
+				{
+					status = kuhl_m_kerberos_encrypt(KERB_ETYPE_RC4_HMAC_NT, KRB_KEY_USAGE_AS_REP_TGS_REP, ntlm, LM_NTLM_HASH_LENGTH, encData + offset, offset ? size : encSize, (LPVOID *) &decData, &decSize, FALSE);
 					if(NT_SUCCESS(status))
 					{
 						if(kull_m_file_writeData(szOut, (PBYTE) decData, decSize))
-							kprintf(L"DEC data saved to file (%s)!\n", szOut);
+							kprintf(L"DEC data saved to file! (%s)\n", szOut);
 						else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
+						LocalFree(decData);
 					}
 					else PRINT_ERROR(L"kuhl_m_kerberos_encrypt - DEC (0x%08x)\n", status);
 				}
 				else PRINT_ERROR(L"Krbtgt key size length must be 32 (16 bytes)\n");
+				LocalFree(encData);
 			}
 			else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 		}

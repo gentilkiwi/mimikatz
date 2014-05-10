@@ -68,9 +68,9 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN PKIWI_BASIC_SECURIT
 				pRef = (PBYTE) setList.list1 + FIELD_OFFSET(KIWI_CREDMAN_LIST_STARTER, start);
 				if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_CREDMAN_LIST_STARTER)))
 				{
-					if(aLocalMemory.address = LocalAlloc(LPTR, credhelper[CredOffsetIndex].structSize))
+					if(aLsassMemory.address = listStarter.start)
 					{
-						if(aLsassMemory.address = listStarter.start)
+						if(aLocalMemory.address = LocalAlloc(LPTR, credhelper[CredOffsetIndex].structSize))
 						{
 							while(aLsassMemory.address != pRef)
 							{
@@ -88,8 +88,8 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN PKIWI_BASIC_SECURIT
 								else break;
 								nbCred++;
 							}
+							LocalFree(aLocalMemory.address);
 						}
-						LocalFree(aLocalMemory.address);
 					}
 				}
 			}

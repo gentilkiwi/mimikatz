@@ -136,12 +136,12 @@ BOOL kuhl_m_sekurlsa_nt6_acquireKey(ULONG_PTR phKey, PKIWI_BCRYPT_GEN_KEY pGenKe
 	PVOID ptr, buffer, bufferHardKey;
 	ULONG taille; LONG offset;
 
-	if(NtBuildNumber < 8000)
+	if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_8)
 	{
 		taille = sizeof(KIWI_BCRYPT_KEY);
 		offset = FIELD_OFFSET(KIWI_BCRYPT_KEY, hardkey);
 	}
-	else if(NtBuildNumber < 9400)
+	else if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_BLUE)
 	{
 		taille = sizeof(KIWI_BCRYPT_KEY8);
 		offset = FIELD_OFFSET(KIWI_BCRYPT_KEY8, hardkey);
