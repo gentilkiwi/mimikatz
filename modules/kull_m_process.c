@@ -78,6 +78,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 					moduleInformation.DllBase.address = pLdrEntry->DllBase;
 					moduleInformation.SizeOfImage = pLdrEntry->SizeOfImage;
 					moduleInformation.NameDontUseOutsideCallback = &pLdrEntry->BaseDllName;
+					kull_m_process_adjustTimeDateStamp(&moduleInformation);
 					continueCallback = callBack(&moduleInformation, pvArg);
 				}
 				status = STATUS_SUCCESS;
@@ -98,6 +99,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 				moduleName.Length = pLdrEntry32->BaseDllName.Length;
 				moduleName.MaximumLength = pLdrEntry32->BaseDllName.MaximumLength;
 				moduleName.Buffer = (PWSTR) pLdrEntry32->BaseDllName.Buffer;
+				kull_m_process_adjustTimeDateStamp(&moduleInformation);
 				continueCallback = callBack(&moduleInformation, pvArg);
 			}
 			status = STATUS_SUCCESS;
@@ -129,7 +131,10 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 						{
 							aBuffer.address = moduleName.Buffer; aProcess.address = LdrEntry.BaseDllName.Buffer;
 							if(kull_m_memory_copy(&aBuffer, &aProcess, moduleName.MaximumLength))
+							{
+								kull_m_process_adjustTimeDateStamp(&moduleInformation);
 								continueCallback = callBack(&moduleInformation, pvArg);
+							}
 							LocalFree(moduleName.Buffer);
 						}
 					}
@@ -163,7 +168,10 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 						{
 							aBuffer.address = moduleName.Buffer; aProcess.address = (PVOID) LdrEntry32.BaseDllName.Buffer;
 							if(kull_m_memory_copy(&aBuffer, &aProcess, moduleName.MaximumLength))
+							{
+								kull_m_process_adjustTimeDateStamp(&moduleInformation);
 								continueCallback = callBack(&moduleInformation, pvArg);
+							}
 							LocalFree(moduleName.Buffer);
 						}
 					}
@@ -185,6 +193,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 				if(pMinidumpString = (PMINIDUMP_STRING) kull_m_minidump_RVAtoPTR(memory->pHandleProcessDmp->hMinidump, pMinidumpModuleList->Modules[i].ModuleNameRva))
 				{
 					RtlInitUnicodeString(&moduleName, wcsrchr(pMinidumpString->Buffer, L'\\') + 1);
+					kull_m_process_adjustTimeDateStamp(&moduleInformation);
 					continueCallback = callBack(&moduleInformation, pvArg);
 				}
 			}
@@ -198,6 +207,17 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 	}
 
 	return status;
+}
+
+void kull_m_process_adjustTimeDateStamp(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information)
+{
+	PIMAGE_NT_HEADERS ntHeaders;
+	if(kull_m_process_ntheaders(&information->DllBase, &ntHeaders))
+	{
+		information->TimeDateStamp = ntHeaders->FileHeader.TimeDateStamp;
+		LocalFree(ntHeaders);
+	}
+	else information->TimeDateStamp = 0;
 }
 
 BOOL CALLBACK kull_m_process_callback_moduleForName(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg)

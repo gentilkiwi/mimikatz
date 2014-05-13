@@ -20,7 +20,7 @@ KULL_M_PATCH_GENERIC TsPkgReferences[] = {
 
 PRTL_AVL_TABLE TSGlobalCredTable = NULL;
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_tspkg_package = {L"tspkg", kuhl_m_sekurlsa_enum_logon_callback_tspkg, TRUE, L"tspkg.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_tspkg_package = {L"tspkg", kuhl_m_sekurlsa_enum_logon_callback_tspkg, TRUE, L"tspkg.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_tspkg_single_package[] = {&kuhl_m_sekurlsa_tspkg_package};
 
 NTSTATUS kuhl_m_sekurlsa_tspkg(int argc, wchar_t * argv[])

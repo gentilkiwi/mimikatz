@@ -30,8 +30,8 @@ KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 
 PKIWI_MASTERKEY_CACHE_ENTRY pMasterKeyCacheList = NULL;
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_dpapi_lsa_package = {L"dpapi", NULL, FALSE, L"lsasrv.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_dpapi_svc_package = {L"dpapi", NULL, FALSE, L"dpapisrv.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_dpapi_lsa_package = {L"dpapi", NULL, FALSE, L"lsasrv.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_dpapi_svc_package = {L"dpapi", NULL, FALSE, L"dpapisrv.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 
 NTSTATUS kuhl_m_sekurlsa_dpapi(int argc, wchar_t * argv[])
 {

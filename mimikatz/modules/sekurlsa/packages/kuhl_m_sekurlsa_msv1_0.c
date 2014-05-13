@@ -9,7 +9,7 @@ const ANSI_STRING
 	PRIMARY_STRING = {7, 8, "Primary"},
 	CREDENTIALKEYS_STRING = {14, 15, "CredentialKeys"};
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_msv_package = {L"msv", kuhl_m_sekurlsa_enum_logon_callback_msv, TRUE, L"lsasrv.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_msv_package = {L"msv", kuhl_m_sekurlsa_enum_logon_callback_msv, TRUE, L"lsasrv.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_msv_single_package[] = {&kuhl_m_sekurlsa_msv_package};
 
 NTSTATUS kuhl_m_sekurlsa_msv(int argc, wchar_t * argv[])

@@ -5,7 +5,7 @@
 */
 #include "kuhl_m_sekurlsa_credman.h"
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_credman_package = {L"credman", kuhl_m_sekurlsa_enum_logon_callback_credman, TRUE, L"lsasrv.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_credman_package = {L"credman", kuhl_m_sekurlsa_enum_logon_callback_credman, TRUE, L"lsasrv.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_credman_single_package[] = {&kuhl_m_sekurlsa_credman_package};
 
 NTSTATUS kuhl_m_sekurlsa_credman(int argc, wchar_t * argv[])

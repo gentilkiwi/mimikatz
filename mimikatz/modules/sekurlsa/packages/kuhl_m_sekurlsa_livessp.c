@@ -18,7 +18,7 @@ KULL_M_PATCH_GENERIC LiveReferences[] = {
 
 PKIWI_LIVESSP_LIST_ENTRY LiveGlobalLogonSessionList = NULL;
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_livessp_package = {L"livessp", kuhl_m_sekurlsa_enum_logon_callback_livessp, FALSE, L"livessp.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_livessp_package = {L"livessp", kuhl_m_sekurlsa_enum_logon_callback_livessp, FALSE, L"livessp.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_livessp_single_package[] = {&kuhl_m_sekurlsa_livessp_package};
 
 NTSTATUS kuhl_m_sekurlsa_livessp(int argc, wchar_t * argv[])

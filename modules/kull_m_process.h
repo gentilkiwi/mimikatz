@@ -323,6 +323,7 @@ extern NTSTATUS	WINAPI RtlCreateUserThread(IN HANDLE Process, IN OPTIONAL PSECUR
 typedef struct _KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION{
 	KULL_M_MEMORY_ADDRESS DllBase;
 	ULONG SizeOfImage;
+	ULONG TimeDateStamp;
 	PCUNICODE_STRING NameDontUseOutsideCallback;
 } KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION, *PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION;
 
@@ -345,6 +346,7 @@ BOOL kull_m_process_getProcessIdForName(LPCWSTR name, PDWORD processId);
 
 typedef BOOL (CALLBACK * PKULL_M_MODULE_ENUM_CALLBACK) (PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE memory, PKULL_M_MODULE_ENUM_CALLBACK callBack, PVOID pvArg);
+void kull_m_process_adjustTimeDateStamp(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information);
 BOOL CALLBACK kull_m_process_callback_moduleForName(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 BOOL CALLBACK kull_m_process_callback_moduleFirst(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 BOOL kull_m_process_getVeryBasicModuleInformationsForName(PKULL_M_MEMORY_HANDLE memory, PCWSTR name, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION informations);

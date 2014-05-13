@@ -23,7 +23,7 @@ KULL_M_PATCH_GENERIC SspReferences[] = {
 
 PKIWI_SSP_CREDENTIAL_LIST_ENTRY SspCredentialList = NULL;
 
-KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_ssp_package = {L"ssp", kuhl_m_sekurlsa_enum_logon_callback_ssp, TRUE, L"msv1_0.dll", {{{NULL, NULL}, 0, NULL}, FALSE, FALSE}};
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_ssp_package = {L"ssp", kuhl_m_sekurlsa_enum_logon_callback_ssp, TRUE, L"msv1_0.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_ssp_single_package[] = {&kuhl_m_sekurlsa_ssp_package};
 
 NTSTATUS kuhl_m_sekurlsa_ssp(int argc, wchar_t * argv[])
