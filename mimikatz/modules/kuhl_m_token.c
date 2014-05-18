@@ -125,17 +125,8 @@ NTSTATUS kuhl_m_token_revert(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-const wchar_t * KUHL_M_TOKEN_IMPERSONATION_LEVEL[] = {
-	L"Anonymous",
-    L"Identification",
-    L"Impersonation",
-    L"Delegation",
-};
-const wchar_t * KUHL_M_TOKEN_TYPE[] = {
-	L"Unknown",
-	L"Primary",
-	L"Impersonation",
-};
+const wchar_t * KUHL_M_TOKEN_IMPERSONATION_LEVEL[] = {L"Anonymous", L"Identification", L"Impersonation", L"Delegation",};
+const wchar_t * KUHL_M_TOKEN_TYPE[] = {L"Unknown", L"Primary", L"Impersonation",};
 void kuhl_m_token_displayAccount(HANDLE hToken)
 {
 	ULONG szNeeded;

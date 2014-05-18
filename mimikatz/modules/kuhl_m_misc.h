@@ -28,7 +28,7 @@ BOOL CALLBACK kuhl_m_misc_detours_callback_module_exportedEntry(PKULL_M_PROCESS_
 BOOL CALLBACK kuhl_m_misc_detours_callback_module_name_addr(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 
 typedef struct _KUHL_M_MISC_DETOURS_HOOKS {
-    DWORD minLevel;
+	DWORD minLevel;
 	PBYTE pattern;
 	DWORD szPattern;
 	DWORD offsetToRead;
@@ -41,25 +41,25 @@ PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD 
 BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SIZE_T szDisableString, PWSTR enableString, SIZE_T szEnableString);
 
 typedef enum _WLAN_INTERFACE_STATE { 
-	wlan_interface_state_not_ready              = 0,
-	wlan_interface_state_connected              = 1,
-	wlan_interface_state_ad_hoc_network_formed  = 2,
-	wlan_interface_state_disconnecting          = 3,
-	wlan_interface_state_disconnected           = 4,
-	wlan_interface_state_associating            = 5,
-	wlan_interface_state_discovering            = 6,
-	wlan_interface_state_authenticating         = 7
+	wlan_interface_state_not_ready				= 0,
+	wlan_interface_state_connected				= 1,
+	wlan_interface_state_ad_hoc_network_formed	= 2,
+	wlan_interface_state_disconnecting			= 3,
+	wlan_interface_state_disconnected			= 4,
+	wlan_interface_state_associating			= 5,
+	wlan_interface_state_discovering			= 6,
+	wlan_interface_state_authenticating			= 7
 } WLAN_INTERFACE_STATE, *PWLAN_INTERFACE_STATE;
 
 typedef struct _WLAN_INTERFACE_INFO {
-	GUID                 InterfaceGuid;
-	WCHAR                strInterfaceDescription[256];
+	GUID	InterfaceGuid;
+	WCHAR	strInterfaceDescription[256];
 	WLAN_INTERFACE_STATE isState;
 } WLAN_INTERFACE_INFO, *PWLAN_INTERFACE_INFO;
 
 typedef struct _WLAN_INTERFACE_INFO_LIST {
-	DWORD               dwNumberOfItems;
-	DWORD               dwIndex;
+	DWORD	dwNumberOfItems;
+	DWORD	dwIndex;
 	WLAN_INTERFACE_INFO InterfaceInfo[];
 } WLAN_INTERFACE_INFO_LIST, *PWLAN_INTERFACE_INFO_LIST;
 
@@ -69,8 +69,8 @@ typedef struct _WLAN_PROFILE_INFO {
 } WLAN_PROFILE_INFO, *PWLAN_PROFILE_INFO;
 
 typedef struct _WLAN_PROFILE_INFO_LIST {
-	DWORD             dwNumberOfItems;
-	DWORD             dwIndex;
+	DWORD	dwNumberOfItems;
+	DWORD	dwIndex;
 	WLAN_PROFILE_INFO ProfileInfo[1];
 } WLAN_PROFILE_INFO_LIST, *PWLAN_PROFILE_INFO_LIST;
 

@@ -248,7 +248,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 							(*pData->lsassLocalHelper->pLsaProtectMemory)(ntlmHash, LM_NTLM_HASH_LENGTH);
 					}
 					
-					if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_BLUE)
+					if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_7)
 					{
 						if(isAes128 = (pthData->Aes128Key != NULL))
 						{

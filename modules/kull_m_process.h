@@ -13,8 +13,8 @@
 	#define MmSystemRangeStart	((PBYTE) 0x80000000)
 #endif
 
-#define __MACHINE(X)        X;
-#define __MACHINEX86     __MACHINE
+#define __MACHINE(X)	X;
+#define __MACHINEX86	__MACHINE
 __MACHINEX86(unsigned long __readfsdword(unsigned long))
 
 typedef enum _SYSTEM_INFORMATION_CLASS {
@@ -256,9 +256,9 @@ typedef struct _PEB {
 
 #ifdef _M_X64
 typedef struct _LSA_UNICODE_STRING_F32 {
-    USHORT Length;
-    USHORT MaximumLength;
-    DWORD  Buffer;
+	USHORT Length;
+	USHORT MaximumLength;
+	DWORD  Buffer;
 } LSA_UNICODE_STRING_F32, *PLSA_UNICODE_STRING_F32;
 
 typedef LSA_UNICODE_STRING_F32 UNICODE_STRING_F32, *PUNICODE_STRING_F32;

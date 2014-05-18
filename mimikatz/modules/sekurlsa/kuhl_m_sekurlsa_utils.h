@@ -43,8 +43,8 @@ typedef struct _KIWI_MSV1_0_LIST_51 {
 	PVOID unk1;
 	PSID  pSid;
 	ULONG LogonType;
-    ULONG Session;
-    LARGE_INTEGER LogonTime; // autoalign x86
+	ULONG Session;
+	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
 	ULONG unk19;
@@ -65,8 +65,8 @@ typedef struct _KIWI_MSV1_0_LIST_52 {
 	PVOID unk1;
 	PSID  pSid;
 	ULONG LogonType;
-    ULONG Session;
-    LARGE_INTEGER LogonTime; // autoalign x86
+	ULONG Session;
+	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
 	ULONG unk19;
@@ -101,8 +101,8 @@ typedef struct _KIWI_MSV1_0_LIST_60 {
 	PVOID unk15;
 	PSID  pSid;
 	ULONG LogonType;
-    ULONG Session;
-    LARGE_INTEGER LogonTime; // autoalign x86
+	ULONG Session;
+	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
 	ULONG unk19;
@@ -138,8 +138,8 @@ typedef struct _KIWI_MSV1_0_LIST_61 {
 	PVOID unk15;
 	PSID  pSid;
 	ULONG LogonType;
-    ULONG Session;
-    LARGE_INTEGER LogonTime; // autoalign x86
+	ULONG Session;
+	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
 	PVOID unk19;
@@ -175,8 +175,8 @@ typedef struct _KIWI_MSV1_0_LIST_61_ANTI_MIMIKATZ {
 	PVOID unk15;
 	PSID  pSid;
 	ULONG LogonType;
-    ULONG Session;
-    LARGE_INTEGER LogonTime; // autoalign x86
+	ULONG Session;
+	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
 	PVOID unk19;
@@ -213,8 +213,8 @@ typedef struct _KIWI_MSV1_0_LIST_62 {
 	PSID  pSid;
 	ULONG LogonType;
 	PVOID unk18;
-    ULONG Session;
-    LARGE_INTEGER LogonTime; // autoalign x86
+	ULONG Session;
+	LARGE_INTEGER LogonTime; // autoalign x86
 	LSA_UNICODE_STRING LogonServer;
 	PKIWI_MSV1_0_CREDENTIALS Credentials;
 	PVOID unk19;

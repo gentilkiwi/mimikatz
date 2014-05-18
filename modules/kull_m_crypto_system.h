@@ -41,9 +41,9 @@ typedef struct _SHA_DIGEST {
 } SHA_DIGEST, *PSHA_DIGEST;
 
 typedef struct _CRYPTO_BUFFER {
-    DWORD Length;
-    DWORD MaximumLength;
-    PBYTE Buffer;
+	DWORD Length;
+	DWORD MaximumLength;
+	PBYTE Buffer;
 } CRYPTO_BUFFER, *PCRYPTO_BUFFER;
 typedef CONST CRYPTO_BUFFER *PCCRYPTO_BUFFER;
 
