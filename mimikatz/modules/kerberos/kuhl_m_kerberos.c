@@ -336,12 +336,12 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD keySize, LPCVOID data, DWORD dataSize, LPVOID * output, DWORD * outputSize, BOOL encrypt)
+NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD keySize, LPCVOID data, DWORD dataSize, LPVOID *output, DWORD *outputSize, BOOL encrypt)
 {
 	NTSTATUS status;
 	PKERB_ECRYPT pCSystem;
 	PVOID pContext;
-	DWORD bufferSize;
+	//DWORD bufferSize;
 
 	status = CDLocateCSystem(eType, &pCSystem);
 	if(NT_SUCCESS(status))
@@ -349,8 +349,8 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 		status = pCSystem->Initialize(key, keySize, keyUsage, &pContext);
 		if(NT_SUCCESS(status))
 		{
-			bufferSize = encrypt ? (dataSize + pCSystem->Size) : (dataSize /*- pCSystem->Size*/);
-			if(*output = LocalAlloc(LPTR, bufferSize))
+			*outputSize = encrypt ? (dataSize + pCSystem->Size) : dataSize;
+			if(*output = LocalAlloc(LPTR, *outputSize))
 			{
 				status = encrypt ? pCSystem->Encrypt(pContext, data, dataSize, *output, outputSize) : pCSystem->Decrypt(pContext, data, dataSize, *output, outputSize);
 				if(!NT_SUCCESS(status))

