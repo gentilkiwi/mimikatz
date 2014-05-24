@@ -23,6 +23,9 @@
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_packages.c">
       <Filter>sekurlsadbg</Filter>
     </ClCompile>
+    <ClCompile Include="sekurlsalib\kuhl_sekurlsa_samsrv.c">
+      <Filter>sekurlsalib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h" />
@@ -40,10 +43,16 @@
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_packages.h">
       <Filter>sekurlsadbg</Filter>
     </ClInclude>
+    <ClInclude Include="sekurlsalib\kuhl_sekurlsa_samsrv.h">
+      <Filter>sekurlsalib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sekurlsadbg">
       <UniqueIdentifier>{017caad8-223d-4869-b733-2fadef6ebc49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sekurlsalib">
+      <UniqueIdentifier>{ee757e77-9af3-49ed-872a-9e9d0d2496fb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

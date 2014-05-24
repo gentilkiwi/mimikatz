@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kuhl_m.h"
+#include "kerberos/kuhl_m_kerberos_ticket.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
 #include "../modules/kull_m_memory.h"
@@ -13,6 +14,7 @@
 #include "../modules/kull_m_crypto_system.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
+#include "../modules/kull_m_remotelib.h"
 
 #define	SYSKEY_LENGTH	16
 #define	SAM_KEY_DATA_SALT_LENGTH	16
@@ -27,7 +29,7 @@ typedef struct _SAM_ENTRY {
 const KUHL_M kuhl_m_lsadump;
 
 NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_lsadump_samrpc(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secrets(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_cache(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsOrCache);
@@ -40,7 +42,7 @@ BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBY
 BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, LPCBYTE sysKey, LPBYTE samKey);
 BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm);
 
-void kuhl_m_lsadump_samrpc_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name);
+void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 
 typedef  enum _DOMAIN_SERVER_ROLE
 {
@@ -238,6 +240,79 @@ typedef struct _MSCACHE_DATA {
 	DWORD unk8;
 } MSCACHE_DATA, *PMSCACHE_DATA;
 
+typedef struct _WDIGEST_CREDENTIALS {
+	BYTE	Reserverd1;
+	BYTE	Reserverd2;
+	BYTE	Version;
+	BYTE	NumberOfHashes;
+	BYTE	Reserverd3[12];
+	BYTE	Hash[ANYSIZE_ARRAY][MD5_DIGEST_LENGTH];
+} WDIGEST_CREDENTIALS, *PWDIGEST_CREDENTIALS;
+
+typedef struct _KERB_KEY_DATA {
+	USHORT	Reserverd1;
+	USHORT	Reserverd2;
+	ULONG	Reserverd3;
+	LONG	KeyType;
+	ULONG	KeyLength;
+	ULONG	KeyOffset;
+} KERB_KEY_DATA, *PKERB_KEY_DATA;
+
+typedef struct _KERB_STORED_CREDENTIAL {
+	USHORT	Revision;
+	USHORT	Flags;
+	USHORT	CredentialCount;
+	USHORT	OldCredentialCount;
+	USHORT	DefaultSaltLength;
+	USHORT	DefaultSaltMaximumLength;
+	ULONG	DefaultSaltOffset;
+	//KERB_KEY_DATA	Credentials[ANYSIZE_ARRAY];
+	//KERB_KEY_DATA	OldCredentials[ANYSIZE_ARRAY];
+	//BYTE	DefaultSalt[ANYSIZE_ARRAY];
+	//BYTE	KeyValues[ANYSIZE_ARRAY];
+} KERB_STORED_CREDENTIAL, *PKERB_STORED_CREDENTIAL;
+
+typedef struct _KERB_KEY_DATA_NEW {
+	USHORT	Reserverd1;
+	USHORT	Reserverd2;
+	ULONG	Reserverd3;
+	ULONG	IterationCount;
+	LONG	KeyType;
+	ULONG	KeyLength;
+	ULONG	KeyOffset;
+} KERB_KEY_DATA_NEW, *PKERB_KEY_DATA_NEW;
+
+typedef struct _KERB_STORED_CREDENTIAL_NEW {
+	USHORT	Revision;
+	USHORT	Flags;
+	USHORT	CredentialCount;
+	USHORT	ServiceCredentialCount;
+	USHORT	OldCredentialCount;
+	USHORT	OlderCredentialCount;
+	USHORT	DefaultSaltLength;
+	USHORT	DefaultSaltMaximumLength;
+	ULONG	DefaultSaltOffset;
+	ULONG	DefaultIterationCount;
+	//KERB_KEY_DATA_NEW	Credentials[ANYSIZE_ARRAY];
+	//KERB_KEY_DATA_NEW	ServiceCredentials[ANYSIZE_ARRAY];
+	//KERB_KEY_DATA_NEW	OldCredentials[ANYSIZE_ARRAY];
+	//KERB_KEY_DATA_NEW	OlderCredentials[ANYSIZE_ARRAY];
+	//BYTE	DefaultSalt[ANYSIZE_ARRAY];
+	//BYTE	KeyValues[ANYSIZE_ARRAY];
+} KERB_STORED_CREDENTIAL_NEW, *PKERB_STORED_CREDENTIAL_NEW;
+
+typedef struct _LSA_SUPCREDENTIAL {
+	DWORD	type;
+	DWORD	size;
+	DWORD	offset;
+	DWORD	Reserved;
+} LSA_SUPCREDENTIAL, *PLSA_SUPCREDENTIAL;
+
+typedef struct _LSA_SUPCREDENTIALS {
+	DWORD	count;
+	DWORD	Reserved;
+} LSA_SUPCREDENTIALS, *PLSA_SUPCREDENTIALS;
+
 BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
@@ -247,3 +322,7 @@ BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY 
 void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix);
 BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecretBlobSize, PNT6_SYSTEM_KEYS lsaKeysStream, PBYTE sysKey);
 void kuhl_m_lsadump_hmac_md5(LPCVOID key, DWORD szKey, LPCVOID data, DWORD szData, LPVOID output);
+
+PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
+PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
+void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize);

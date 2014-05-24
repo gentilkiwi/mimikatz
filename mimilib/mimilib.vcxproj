@@ -68,7 +68,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AssemblyDebug>false</AssemblyDebug>
-      <AdditionalDependencies>advapi32.lib;ntdll.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;ntdll.min.lib;samsrv.lib;lsasrv.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -91,6 +91,7 @@
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_packages.c" />
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_utils.c" />
     <ClCompile Include="sekurlsadbg\kwindbg.c" />
+    <ClCompile Include="sekurlsalib\kuhl_sekurlsa_samsrv.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +101,7 @@
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_packages.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_utils.h" />
     <ClInclude Include="sekurlsadbg\kwindbg.h" />
+    <ClInclude Include="sekurlsalib\kuhl_sekurlsa_samsrv.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
 </Project>

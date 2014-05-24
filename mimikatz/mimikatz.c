@@ -108,10 +108,6 @@ NTSTATUS mimikatz_dispatchCommand(wchar_t * input)
 	NTSTATUS status;
 	switch(input[0])
 	{
-	/*case L'@':
-	case L'*':
-		status = mimikatz_doRemote(input + 1);
-		break;*/
 	case L'!':
 		status = kuhl_m_kernel_do(input + 1);
 		break;

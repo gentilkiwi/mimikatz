@@ -98,6 +98,7 @@
     <ClCompile Include="..\modules\kull_m_patch.c" />
     <ClCompile Include="..\modules\kull_m_process.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
+    <ClCompile Include="..\modules\kull_m_remotelib.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
@@ -146,6 +147,7 @@
     <ClInclude Include="..\modules\kull_m_process.h" />
     <ClInclude Include="..\modules\kull_m_registry.h" />
     <ClInclude Include="..\modules\kull_m_registry_structures.h" />
+    <ClInclude Include="..\modules\kull_m_remotelib.h" />
     <ClInclude Include="..\modules\kull_m_rpce.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
     <ClInclude Include="..\modules\kull_m_service.h" />

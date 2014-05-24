@@ -36,7 +36,6 @@ BOOL WINAPI HandlerRoutine(DWORD dwCtrlType);
 NTSTATUS mimikatz_initOrClean();
 
 NTSTATUS mimikatz_doLocal(wchar_t * input);
-/*NTSTATUS mimikatz_doRemote(wchar_t * input);*/
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input);
 
 #ifdef _WINDLL

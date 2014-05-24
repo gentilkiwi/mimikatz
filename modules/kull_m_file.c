@@ -21,7 +21,7 @@ BOOL kull_m_file_getCurrentDirectory(wchar_t ** ppDirName)
 	return reussite;
 }
 
-BOOL kull_m_file_getAbsolutePathOf(wchar_t *thisData, wchar_t ** reponse)
+BOOL kull_m_file_getAbsolutePathOf(PCWCHAR thisData, wchar_t ** reponse)
 {
 	BOOL reussite = FALSE;
 	wchar_t *monRep;

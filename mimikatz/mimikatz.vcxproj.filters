@@ -131,6 +131,9 @@
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.c">
       <Filter>local modules\sekurlsa\packages</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_remotelib.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -280,6 +283,9 @@
     </ClInclude>
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.h">
       <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_remotelib.h">
+      <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

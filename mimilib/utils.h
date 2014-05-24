@@ -31,5 +31,14 @@
 #define NT_SUCCESS(Status) ((NTSTATUS)(Status) >= 0)
 #endif
 
+#define LM_NTLM_HASH_LENGTH	16
+
 void klog(FILE * logfile, PCWCHAR format, ...);
 void klog_password(FILE * logfile, PUNICODE_STRING pPassword);
+
+typedef struct _REMOTE_LIB_FUNC {
+	DWORD	outputSize;
+	PVOID	outputData;
+	DWORD	inputSize;
+	BYTE	inputData[ANYSIZE_ARRAY];
+} REMOTE_LIB_FUNC, *PREMOTE_LIB_FUNC;
