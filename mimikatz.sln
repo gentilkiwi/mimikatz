@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimikatz", "mimikatz\mimikatz.vcxproj", "{FB9B5E61-7C34-4280-A211-E979E1D6977F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global files", "{1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}"
