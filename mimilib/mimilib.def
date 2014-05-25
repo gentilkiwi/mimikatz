@@ -9,5 +9,3 @@ EXPORTS
 	ExtensionApiVersion		=	ExtensionApiVersion
 	
 	mimikatz				=	mimikatz
-
-	samsrv					=	kuhl_sekurlsa_samsrv_thread

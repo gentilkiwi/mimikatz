@@ -134,6 +134,9 @@
     <ClCompile Include="..\modules\kull_m_remotelib.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\kuhl_m_lsadump_remote.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -286,6 +289,9 @@
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_remotelib.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_lsadump_remote.h">
+      <Filter>local modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

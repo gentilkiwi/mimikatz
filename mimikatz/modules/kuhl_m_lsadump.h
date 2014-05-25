@@ -15,6 +15,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
 #include "../modules/kull_m_remotelib.h"
+#include "kuhl_m_lsadump_remote.h"
 
 #define	SYSKEY_LENGTH	16
 #define	SAM_KEY_DATA_SALT_LENGTH	16
@@ -43,6 +44,7 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm);
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
+BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
 
 typedef  enum _DOMAIN_SERVER_ROLE
 {
@@ -312,6 +314,12 @@ typedef struct _LSA_SUPCREDENTIALS {
 	DWORD	count;
 	DWORD	Reserved;
 } LSA_SUPCREDENTIALS, *PLSA_SUPCREDENTIALS;
+
+typedef struct _LSA_SUPCREDENTIALS_BUFFERS {
+	LSA_SUPCREDENTIAL credential;
+	NTSTATUS status;
+	PVOID Buffer;
+} LSA_SUPCREDENTIALS_BUFFERS, *PLSA_SUPCREDENTIALS_BUFFERS;
 
 BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);

@@ -110,6 +110,7 @@
     <ClCompile Include="modules\kuhl_m_event.c" />
     <ClCompile Include="modules\kuhl_m_kernel.c" />
     <ClCompile Include="modules\kuhl_m_lsadump.c" />
+    <ClCompile Include="modules\kuhl_m_lsadump_remote.c" />
     <ClCompile Include="modules\kuhl_m_misc.c" />
     <ClCompile Include="modules\kuhl_m_net.c" />
     <ClCompile Include="modules\kuhl_m_privilege.c" />
@@ -162,6 +163,7 @@
     <ClInclude Include="modules\kuhl_m_event.h" />
     <ClInclude Include="modules\kuhl_m_kernel.h" />
     <ClInclude Include="modules\kuhl_m_lsadump.h" />
+    <ClInclude Include="modules\kuhl_m_lsadump_remote.h" />
     <ClInclude Include="modules\kuhl_m_misc.h" />
     <ClInclude Include="modules\kuhl_m_net.h" />
     <ClInclude Include="modules\kuhl_m_privilege.h" />

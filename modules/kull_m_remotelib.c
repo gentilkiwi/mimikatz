@@ -17,9 +17,6 @@ BYTE RemoteFreeLibrarySC[] = {0x48, 0x89, 0x4c, 0x24, 0x08, 0x48, 0x83, 0xec, 0x
 #define RemoteFreeLibrarySC_Offset 20
 #endif
 
-
-
-
 #pragma optimize("", off)
 typedef HMODULE (WINAPI * PLOADLIB) (LPCWSTR lpLibFileName);
 typedef BOOL (WINAPI * PFREELIB) (HMODULE hModule);
@@ -206,5 +203,96 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, LPVOID inputDat
 	if(!isRaw && pArgs)
 		LocalFree(pArgs);
 
+	return success;
+}
+
+BOOL CALLBACK kull_m_remotelib_exports_callback_module_exportedEntry(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg)
+{
+	PREMOTE_EXT extension = (PREMOTE_EXT) pvArg;
+	if(pExportedEntryInformations->name)
+		if(stricmp(extension->Function, pExportedEntryInformations->name) == 0)
+		{
+			extension->Pointer = pExportedEntryInformations->function.address;
+			return FALSE;
+		}
+	return TRUE;
+}
+
+BOOL CALLBACK kull_m_remotelib_exports_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg)
+{
+	DWORD i;
+	PMULTIPLE_REMOTE_EXT extForCb = (PMULTIPLE_REMOTE_EXT) pvArg;
+	
+	for(i = 0; i < extForCb->count; i++)
+	{
+		if(extForCb->extensions[i].Pointer)
+			continue;
+		
+		if(_wcsicmp(pModuleInformation->NameDontUseOutsideCallback->Buffer, extForCb->extensions[i].Module) == 0)
+			if(kull_m_process_getExportedEntryInformations(&pModuleInformation->DllBase, kull_m_remotelib_exports_callback_module_exportedEntry, extForCb->extensions + i) || !extForCb->extensions[i].Pointer)
+				return FALSE;
+	}
+	return TRUE;
+}
+
+BOOL kull_m_remotelib_GetProcAddressMultipleModules(PKULL_M_MEMORY_HANDLE hProcess, PMULTIPLE_REMOTE_EXT extForCb)
+{
+	DWORD i;
+	BOOL success;
+	kull_m_process_getVeryBasicModuleInformations(hProcess, kull_m_remotelib_exports_callback_module, extForCb);
+	for(i = 0, success = TRUE; (i < extForCb->count) && success; success &= (extForCb->extensions[i++].Pointer != NULL));
+	return success;
+}
+
+BOOL kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(PKULL_M_MEMORY_HANDLE hProcess, LPCVOID Buffer, DWORD BufferSize, PMULTIPLE_REMOTE_EXT RemoteExt, PKULL_M_MEMORY_ADDRESS DestAddress)
+{
+	BOOL success = FALSE;
+	DWORD i, j;
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLocalAddr = {NULL, &hLocalMemory};
+	
+	DestAddress->hMemory = hProcess;
+	DestAddress->address = NULL;
+
+	if(RemoteExt)
+	{
+		if(kull_m_remotelib_GetProcAddressMultipleModules(hProcess, RemoteExt))
+		{
+		if(aLocalAddr.address = LocalAlloc(LPTR, BufferSize))
+		{
+			RtlCopyMemory(aLocalAddr.address, Buffer, BufferSize);
+			for(i = 0; i < BufferSize - sizeof(PVOID); i++)
+			{
+				for(j = 0; j < RemoteExt->count; j++)
+				{
+					if((PVOID) RemoteExt->extensions[j].ToReplace == *(PVOID *) ((PBYTE) aLocalAddr.address + i))
+					{
+						*(PVOID *) ((PBYTE) aLocalAddr.address + i) = RemoteExt->extensions[j].Pointer;
+						//kprintf(L"Found =) - %.*S - %s!%S -> %p\n", sizeof(PVOID), &RemoteExt->extensions[j].ToReplace, RemoteExt->extensions[j].Module, RemoteExt->extensions[j].Function, *(PVOID *) ((PBYTE) aLocalAddr.address + i));
+						i += sizeof(PVOID) - 1;
+					}
+				}
+			}
+		}
+		}
+	}
+	else aLocalAddr.address = (LPVOID) Buffer;
+
+	if(aLocalAddr.address)
+	{
+		if(kull_m_memory_alloc(DestAddress, BufferSize, PAGE_EXECUTE_READWRITE))
+		{
+			if(!(success = kull_m_memory_copy(DestAddress, &aLocalAddr, BufferSize)))
+			{
+				PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+				kull_m_memory_free(DestAddress, 0);
+			}
+		}
+		else PRINT_ERROR_AUTO(L"kull_m_memory_alloc / VirtualAlloc(Ex)");
+
+		if(RemoteExt)
+			LocalFree(aLocalAddr.address);
+	}
+	else PRINT_ERROR(L"No buffer ?\n");
 	return success;
 }
