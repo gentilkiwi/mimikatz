@@ -37,7 +37,7 @@ BOOL CALLBACK kull_m_remotelib_callback_module_exportedEntry(PKULL_M_PROCESS_EXP
 {
 	if(pExportedEntryInformations->name)
 	{
-		if(stricmp(pExportedEntryInformations->name, ((PREMOTE_LIB_GETPROC) pvArg)->lpProcName) == 0)
+		if(_stricmp(pExportedEntryInformations->name, ((PREMOTE_LIB_GETPROC) pvArg)->lpProcName) == 0)
 		{
 			((PREMOTE_LIB_GETPROC) pvArg)->addr = (FARPROC) pExportedEntryInformations->function.address;
 			return FALSE;
@@ -210,7 +210,7 @@ BOOL CALLBACK kull_m_remotelib_exports_callback_module_exportedEntry(PKULL_M_PRO
 {
 	PREMOTE_EXT extension = (PREMOTE_EXT) pvArg;
 	if(pExportedEntryInformations->name)
-		if(stricmp(extension->Function, pExportedEntryInformations->name) == 0)
+		if(_stricmp(extension->Function, pExportedEntryInformations->name) == 0)
 		{
 			extension->Pointer = pExportedEntryInformations->function.address;
 			return FALSE;
