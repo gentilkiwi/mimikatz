@@ -304,7 +304,7 @@ PVOID kuhl_m_kerberos_pac_giveElementById(RPCEID id, LPCVOID base)
 	ULONG64 dataOffset, nextOffset;
 	if(id)
 	{
-		for(i = 0; i < sizeof(kuhl_m_kerberos_pac_headers) / sizeof(RPCE_LAZY_ELEMENT_HEADER); i++)
+		for(i = 0; i < ARRAYSIZE(kuhl_m_kerberos_pac_headers); i++)
 		{
 			if(kuhl_m_kerberos_pac_headers[i].isBuffer)
 			{

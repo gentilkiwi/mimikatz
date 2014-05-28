@@ -113,10 +113,10 @@ void kull_m_string_displayFileTime(IN PFILETIME pFileTime)
 	{
 		if(FileTimeToSystemTime(pFileTime, &st ))
 		{
-			if(GetDateFormat(LOCALE_USER_DEFAULT, 0, &st, NULL, buffer, sizeof(buffer) / sizeof(wchar_t)))
+			if(GetDateFormat(LOCALE_USER_DEFAULT, 0, &st, NULL, buffer, ARRAYSIZE(buffer)))
 			{
 				kprintf(L"%s ", buffer);
-				if(GetTimeFormat(LOCALE_USER_DEFAULT, 0, &st, NULL, buffer, sizeof(buffer) / sizeof(wchar_t)))
+				if(GetTimeFormat(LOCALE_USER_DEFAULT, 0, &st, NULL, buffer, ARRAYSIZE(buffer)))
 					kprintf(L"%s", buffer);
 			}
 		}

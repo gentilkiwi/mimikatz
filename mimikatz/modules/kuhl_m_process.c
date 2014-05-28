@@ -17,7 +17,7 @@ const KUHL_M_C kuhl_m_c_process[] = {
 
 const KUHL_M kuhl_m_process = {
 	L"process", L"Process module", NULL,
-	sizeof(kuhl_m_c_process) / sizeof(KUHL_M_C), kuhl_m_c_process, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_process), kuhl_m_c_process, NULL, NULL
 };
 
 NTSTATUS kuhl_m_process_list(int argc, wchar_t * argv[])

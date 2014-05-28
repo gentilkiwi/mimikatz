@@ -27,7 +27,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 
 const KUHL_M kuhl_m_sekurlsa = {
 	L"sekurlsa",	L"SekurLSA module",	L"Some commands to enumerate credentials...",
-	sizeof(kuhl_m_c_sekurlsa) / sizeof(KUHL_M_C), kuhl_m_c_sekurlsa, kuhl_m_sekurlsa_init, kuhl_m_sekurlsa_clean
+	ARRAYSIZE(kuhl_m_c_sekurlsa), kuhl_m_c_sekurlsa, kuhl_m_sekurlsa_init, kuhl_m_sekurlsa_clean
 };
 
 const PKUHL_M_SEKURLSA_PACKAGE lsassPackages[] = {
@@ -86,7 +86,7 @@ VOID kuhl_m_sekurlsa_reset()
 		cLsass.hLsassMem = kull_m_memory_close(cLsass.hLsassMem);
 		CloseHandle(toClose);
 	}
-	for(i = 0; i < sizeof(lsassPackages) / sizeof(PKUHL_M_SEKURLSA_PACKAGE); i++)
+	for(i = 0; i < ARRAYSIZE(lsassPackages); i++)
 		RtlZeroMemory(&lsassPackages[i]->Module, sizeof(KUHL_M_SEKURLSA_LIB));
 }
 
@@ -158,7 +158,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_range(PMEMORY_BASIC_INFORMATION pMemoryBasicI
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[])
 {
-	return kuhl_m_sekurlsa_getLogonData(lsassPackages, sizeof(lsassPackages) / sizeof(PKUHL_M_SEKURLSA_PACKAGE));
+	return kuhl_m_sekurlsa_getLogonData(lsassPackages, ARRAYSIZE(lsassPackages));
 }
 
 NTSTATUS kuhl_m_sekurlsa_strings(int argc, wchar_t * argv[])
@@ -271,7 +271,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 BOOL CALLBACK kuhl_m_sekurlsa_findlibs(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg)
 {
 	ULONG i;
-	for(i = 0; i < sizeof(lsassPackages) / sizeof(PKUHL_M_SEKURLSA_PACKAGE); i++)
+	for(i = 0; i < ARRAYSIZE(lsassPackages); i++)
 	{
 		if(_wcsicmp(lsassPackages[i]->ModuleName, pModuleInformation->NameDontUseOutsideCallback->Buffer) == 0)
 		{

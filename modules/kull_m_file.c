@@ -116,7 +116,7 @@ void kull_m_file_cleanFilename(wchar_t *fileName)
 {
 	DWORD i, j;
 	for(i = 0; fileName[i]; i++)
-		for(j = 0; j < sizeof(kull_m_file_forbiddenChars) / sizeof(wchar_t); j++)
+		for(j = 0; j < ARRAYSIZE(kull_m_file_forbiddenChars); j++)
 			if(fileName[i] == kull_m_file_forbiddenChars[j])
 				fileName[i] = L'~';
 }

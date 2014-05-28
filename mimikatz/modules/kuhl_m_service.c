@@ -16,7 +16,7 @@ const KUHL_M_C kuhl_m_c_service[] = {
 
 const KUHL_M kuhl_m_service = {
 	L"service", L"Service module", NULL,
-	sizeof(kuhl_m_c_service) / sizeof(KUHL_M_C), kuhl_m_c_service, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_service), kuhl_m_c_service, NULL, NULL
 };
 
 NTSTATUS genericFunction(KUHL_M_SERVICE_FUNC function, wchar_t * text, int argc, wchar_t * argv[])

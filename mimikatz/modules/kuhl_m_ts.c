@@ -10,7 +10,7 @@ const KUHL_M_C kuhl_m_c_ts[] = {
 };
 const KUHL_M kuhl_m_ts = {
 	L"ts",	L"Terminal Server module", NULL,
-	sizeof(kuhl_m_c_ts) / sizeof(KUHL_M_C), kuhl_m_c_ts, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_ts), kuhl_m_c_ts, NULL, NULL
 };
 
 #ifdef _M_X64
@@ -38,6 +38,6 @@ KULL_M_PATCH_GENERIC TermSrvMultiRdpReferences[] = {
 };
 NTSTATUS kuhl_m_ts_multirdp(int argc, wchar_t * argv[])
 {
-	kull_m_patch_genericProcessOrServiceFromBuild(TermSrvMultiRdpReferences, sizeof(TermSrvMultiRdpReferences) / sizeof(KULL_M_PATCH_GENERIC), L"TermService", L"termsrv.dll", TRUE);
+	kull_m_patch_genericProcessOrServiceFromBuild(TermSrvMultiRdpReferences, ARRAYSIZE(TermSrvMultiRdpReferences), L"TermService", L"termsrv.dll", TRUE);
 	return STATUS_SUCCESS;
 }

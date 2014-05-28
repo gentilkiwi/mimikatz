@@ -24,7 +24,7 @@ const KUHL_M_C kuhl_m_c_kerberos[] = {
 
 const KUHL_M kuhl_m_kerberos = {
 	L"kerberos",	L"Kerberos package module",	L"",
-	sizeof(kuhl_m_c_kerberos) / sizeof(KUHL_M_C), kuhl_m_c_kerberos, kuhl_m_kerberos_init, kuhl_m_kerberos_clean
+	ARRAYSIZE(kuhl_m_c_kerberos), kuhl_m_c_kerberos, kuhl_m_kerberos_init, kuhl_m_kerberos_clean
 };
 
 NTSTATUS kuhl_m_kerberos_init()
@@ -291,7 +291,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 						else
 						{
 							groups = defaultGroups;
-							nbGroups = sizeof(defaultGroups) / sizeof(GROUP_MEMBERSHIP);
+							nbGroups = ARRAYSIZE(defaultGroups);
 						}
 						if(kull_m_string_stringToHex(szNTLM, ntlm, sizeof(ntlm)))												
 						{
@@ -419,7 +419,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	validationInfo.UserAccountControl	= USER_DONT_EXPIRE_PASSWORD | USER_NORMAL_ACCOUNT;
 	validationInfo.PrimaryGroupId		= groups[0].RelativeId;
 
-	validationInfo.GroupCount = cbGroups;//sizeof(groups) / sizeof(GROUP_MEMBERSHIP);
+	validationInfo.GroupCount = cbGroups;
 	validationInfo.GroupIds = groups;
 	
 	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, &pacType, &pacTypeSize))

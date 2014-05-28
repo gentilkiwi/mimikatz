@@ -41,7 +41,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKIWI_BASIC_SECURIT
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	SIZE_T taille;
 	
-	if(kuhl_m_sekurlsa_wdigest_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_wdigest_package.Module, WDigestReferences, sizeof(WDigestReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &l_LogSessList, NULL, &offsetWDigestPrimary))
+	if(kuhl_m_sekurlsa_wdigest_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_wdigest_package.Module, WDigestReferences, ARRAYSIZE(WDigestReferences), (PVOID *) &l_LogSessList, NULL, &offsetWDigestPrimary))
 	{
 		aLsassMemory.address = l_LogSessList;
 		taille = offsetWDigestPrimary + sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL);

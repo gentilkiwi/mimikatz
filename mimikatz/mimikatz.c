@@ -41,7 +41,7 @@ int wmain(int argc, wchar_t * argv[])
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'                                    with %3u modules * * */\n\n", sizeof(mimikatz_modules) / sizeof(KUHL_M *));
+		L"  '#####'                                    with %3u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
 	
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)
@@ -87,7 +87,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	else
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pClean);
 
-	for(indexModule = 0; indexModule < sizeof(mimikatz_modules) / sizeof(KUHL_M *); indexModule++)
+	for(indexModule = 0; indexModule < ARRAYSIZE(mimikatz_modules); indexModule++)
 	{
 		if(function = *(PKUHL_M_C_FUNC_INIT *) ((ULONG_PTR) (mimikatz_modules[indexModule]) + offsetToFunc))
 		{
@@ -138,7 +138,7 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 		}
 		else command = argv[0];
 
-		for(indexModule = 0; !moduleFound && (indexModule < sizeof(mimikatz_modules) / sizeof(KUHL_M *)); indexModule++)
+		for(indexModule = 0; !moduleFound && (indexModule < ARRAYSIZE(mimikatz_modules)); indexModule++)
 			if(moduleFound = (!module || (_wcsicmp(module, mimikatz_modules[indexModule]->shortName) == 0)))
 				if(command)
 					for(indexCommand = 0; !commandFound && (indexCommand < mimikatz_modules[indexModule]->nbCommands); indexCommand++)
@@ -148,7 +148,7 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 		if(!moduleFound)
 		{
 			PRINT_ERROR(L"\"%s\" module not found !\n", module);
-			for(indexModule = 0; indexModule < sizeof(mimikatz_modules) / sizeof(KUHL_M *); indexModule++)
+			for(indexModule = 0; indexModule < ARRAYSIZE(mimikatz_modules); indexModule++)
 			{
 				kprintf(L"\n%16s", mimikatz_modules[indexModule]->shortName);
 				if(mimikatz_modules[indexModule]->fullName)

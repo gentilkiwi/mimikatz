@@ -258,22 +258,22 @@ BOOL kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(PKULL_M_MEMORY_HANDLE 
 	{
 		if(kull_m_remotelib_GetProcAddressMultipleModules(hProcess, RemoteExt))
 		{
-		if(aLocalAddr.address = LocalAlloc(LPTR, BufferSize))
-		{
-			RtlCopyMemory(aLocalAddr.address, Buffer, BufferSize);
-			for(i = 0; i < BufferSize - sizeof(PVOID); i++)
+			if(aLocalAddr.address = LocalAlloc(LPTR, BufferSize))
 			{
-				for(j = 0; j < RemoteExt->count; j++)
+				RtlCopyMemory(aLocalAddr.address, Buffer, BufferSize);
+				for(i = 0; i < BufferSize - sizeof(PVOID); i++)
 				{
-					if((PVOID) RemoteExt->extensions[j].ToReplace == *(PVOID *) ((PBYTE) aLocalAddr.address + i))
+					for(j = 0; j < RemoteExt->count; j++)
 					{
-						*(PVOID *) ((PBYTE) aLocalAddr.address + i) = RemoteExt->extensions[j].Pointer;
-						//kprintf(L"Found =) - %.*S - %s!%S -> %p\n", sizeof(PVOID), &RemoteExt->extensions[j].ToReplace, RemoteExt->extensions[j].Module, RemoteExt->extensions[j].Function, *(PVOID *) ((PBYTE) aLocalAddr.address + i));
-						i += sizeof(PVOID) - 1;
+						if((PVOID) RemoteExt->extensions[j].ToReplace == *(PVOID *) ((PBYTE) aLocalAddr.address + i))
+						{
+							*(PVOID *) ((PBYTE) aLocalAddr.address + i) = RemoteExt->extensions[j].Pointer;
+							//kprintf(L"Found =) - %.*S - %s!%S -> %p\n", sizeof(PVOID), &RemoteExt->extensions[j].ToReplace, RemoteExt->extensions[j].Module, RemoteExt->extensions[j].Function, *(PVOID *) ((PBYTE) aLocalAddr.address + i));
+							i += sizeof(PVOID) - 1;
+						}
 					}
 				}
 			}
-		}
 		}
 	}
 	else aLocalAddr.address = (LPVOID) Buffer;

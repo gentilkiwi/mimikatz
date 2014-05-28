@@ -34,7 +34,7 @@ NTSTATUS kuhl_m_kernel_do(wchar_t * input)
 
 	if(argv && (argc > 0))
 	{
-		for(indexCommand = 0; !commandFound && (indexCommand < (sizeof(kuhl_k_c_kernel) / sizeof(KUHL_K_C))); indexCommand++)
+		for(indexCommand = 0; !commandFound && (indexCommand < ARRAYSIZE(kuhl_k_c_kernel)); indexCommand++)
 		{
 			if(commandFound = _wcsicmp(argv[0], kuhl_k_c_kernel[indexCommand].command) == 0)
 			{

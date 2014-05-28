@@ -14,7 +14,7 @@ const KUHL_M_C kuhl_m_c_token[] = {
 };
 const KUHL_M kuhl_m_token = {
 	L"token",	L"Token manipulation module", NULL,
-	sizeof(kuhl_m_c_token) / sizeof(KUHL_M_C), kuhl_m_c_token, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_token), kuhl_m_c_token, NULL, NULL
 };
 
 NTSTATUS kuhl_m_token_whoami(int argc, wchar_t * argv[])

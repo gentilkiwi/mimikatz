@@ -11,7 +11,7 @@ const KUHL_M_C kuhl_m_c_privilege[] = {
 
 const KUHL_M kuhl_m_privilege = {
 	L"privilege", L"Privilege module", NULL,
-	sizeof(kuhl_m_c_privilege) / sizeof(KUHL_M_C), kuhl_m_c_privilege, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_privilege), kuhl_m_c_privilege, NULL, NULL
 };
 
 NTSTATUS kuhl_m_privilege_simple(ULONG privId)

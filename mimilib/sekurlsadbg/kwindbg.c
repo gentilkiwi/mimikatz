@@ -108,7 +108,7 @@ DECLARE_API(mimikatz)
 	pLogonSessionList = GetExpression("lsasrv!LogonSessionList");
 	pLogonSessionListCount = GetExpression("lsasrv!LogonSessionListCount");
 
-	for(j = 0; j < sizeof(packages) / sizeof(KUHL_M_SEKURLSA_PACKAGE); j++)
+	for(j = 0; j < ARRAYSIZE(packages); j++)
 		if(packages[j].symbolName)
 			packages[j].symbolPtr = GetExpression(packages[j].symbolName);
 	
@@ -166,7 +166,7 @@ DECLARE_API(mimikatz)
 													LocalFree(sessionData.LogonDomain->Buffer);
 													LocalFree(sessionData.pSid);
 
-													for(j = 0; j < sizeof(packages) / sizeof(KUHL_M_SEKURLSA_PACKAGE); j++)
+													for(j = 0; j < ARRAYSIZE(packages); j++)
 														if(packages[j].symbolPtr || !packages[j].symbolName)
 														{
 															dprintf("\t%s : ", packages[j].name);

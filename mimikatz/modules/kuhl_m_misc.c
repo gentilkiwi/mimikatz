@@ -15,7 +15,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
-	sizeof(kuhl_m_c_misc) / sizeof(KUHL_M_C), kuhl_m_c_misc, kuhl_m_misc_init, kuhl_m_misc_clean
+	ARRAYSIZE(kuhl_m_c_misc), kuhl_m_c_misc, kuhl_m_misc_init, kuhl_m_misc_clean
 };
 
 HMODULE kuhl_m_misc_hWlanLib = NULL;
@@ -94,7 +94,7 @@ BYTE PATC_WALL_ncRouteMonitor[] = {0x90, 0x90};
 KULL_M_PATCH_GENERIC ncRouteMonitorReferences[] = {{KULL_M_WIN_BUILD_XP, {sizeof(PTRN_WALL_ncRouteMonitor), PTRN_WALL_ncRouteMonitor}, {sizeof(PATC_WALL_ncRouteMonitor), PATC_WALL_ncRouteMonitor}, {2}}};
 NTSTATUS kuhl_m_misc_ncroutemon(int argc, wchar_t * argv[])
 {
-	kull_m_patch_genericProcessOrServiceFromBuild(ncRouteMonitorReferences, sizeof(ncRouteMonitorReferences) / sizeof(KULL_M_PATCH_GENERIC), L"dsNcService", NULL, TRUE);
+	kull_m_patch_genericProcessOrServiceFromBuild(ncRouteMonitorReferences, ARRAYSIZE(ncRouteMonitorReferences), L"dsNcService", NULL, TRUE);
 	return STATUS_SUCCESS;
 }
 
@@ -122,7 +122,7 @@ PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD 
 	KULL_M_MEMORY_ADDRESS pBuffer = *base;
 	DWORD i, sizeToRead;
 
-	for(i = 0; !dst && (i < sizeof(myHooks) / sizeof(KUHL_M_MISC_DETOURS_HOOKS)); i++)
+	for(i = 0; !dst && (i < ARRAYSIZE(myHooks)); i++)
 	{
 		if(level >= myHooks[i].minLevel)
 		{

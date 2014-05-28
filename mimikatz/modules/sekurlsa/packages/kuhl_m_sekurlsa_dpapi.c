@@ -50,7 +50,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 	if(pData->LogonType != Network)
 	{
 		kuhl_m_sekurlsa_printinfos_logonData(pData);
-		if(pPackage->Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &pPackage->Module, MasterKeyCacheReferences, sizeof(MasterKeyCacheReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &pMasterKeyCacheList, NULL, NULL))
+		if(pPackage->Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &pPackage->Module, MasterKeyCacheReferences, ARRAYSIZE(MasterKeyCacheReferences), (PVOID *) &pMasterKeyCacheList, NULL, NULL))
 		{
 			aLsass.address = pMasterKeyCacheList;
 			if(kull_m_memory_copy(&aBuffer, &aLsass, sizeof(LIST_ENTRY)))

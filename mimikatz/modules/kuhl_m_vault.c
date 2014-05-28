@@ -25,7 +25,7 @@ const KUHL_M_C kuhl_m_c_vault[] = {
 };
 const KUHL_M kuhl_m_vault = {
 	L"vault",	L"Windows Vault/Credential module", NULL,
-	sizeof(kuhl_m_c_vault) / sizeof(KUHL_M_C), kuhl_m_c_vault, kuhl_m_vault_init, kuhl_m_vault_clean
+	ARRAYSIZE(kuhl_m_c_vault), kuhl_m_c_vault, kuhl_m_vault_init, kuhl_m_vault_clean
 };
 
 NTSTATUS kuhl_m_vault_init()
@@ -148,7 +148,7 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 									PRINT_ERROR(L"VaultGetItem8 : %08x", status);
 								kprintf(L"\n");
 
-								for(l = 0; l < (sizeof(schemaHelper) / sizeof(VAULT_SCHEMA_HELPER)); l++)
+								for(l = 0; l < ARRAYSIZE(schemaHelper); l++)
 								{
 									if(RtlEqualGuid(&items8[j].SchemaId, &schemaHelper[l].guidString.guid))
 									{
@@ -402,7 +402,7 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 	static BOOL isPatching = FALSE;	
 	if(!isPatching && kull_m_string_args_byName(argc, argv, L"patch", NULL, NULL))
 	{
-		if(CredpCloneCredentialReference = kull_m_patch_getGenericFromBuild(CredpCloneCredentialReferences, sizeof(CredpCloneCredentialReferences) / sizeof(KULL_M_PATCH_GENERIC), MIMIKATZ_NT_BUILD_NUMBER))
+		if(CredpCloneCredentialReference = kull_m_patch_getGenericFromBuild(CredpCloneCredentialReferences, ARRAYSIZE(CredpCloneCredentialReferences), MIMIKATZ_NT_BUILD_NUMBER))
 		{
 			aPatternMemory.address = CredpCloneCredentialReference->Search.Pattern;
 			aPatchMemory.address = CredpCloneCredentialReference->Patch.Pattern;

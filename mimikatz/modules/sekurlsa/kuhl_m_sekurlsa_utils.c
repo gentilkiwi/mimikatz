@@ -40,7 +40,7 @@ BOOL kuhl_m_sekurlsa_utils_search(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKUR
 #ifdef _M_X64
 	LsaSrvReferences[4].Offsets.off1 = (pLib->Informations.TimeDateStamp > 0x53480000) ? -54 : -61; // 6.2 post or pre KB
 #endif
-	return kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, LsaSrvReferences,  sizeof(LsaSrvReferences) / sizeof(KULL_M_PATCH_GENERIC), (PVOID *) &LogonSessionList, pLogonSessionListCount, NULL);
+	return kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, LsaSrvReferences,  ARRAYSIZE(LsaSrvReferences), (PVOID *) &LogonSessionList, pLogonSessionListCount, NULL);
 }
 
 BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, PVOID * genericPtr, PVOID * genericPtr1, PLONG genericOffset1)

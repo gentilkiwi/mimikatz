@@ -17,7 +17,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 };
 const KUHL_M kuhl_m_standard = {
 	L"standard",	L"Standard module",	L"Basic commands (does not require module name)",
-	sizeof(kuhl_m_c_standard) / sizeof(KUHL_M_C), kuhl_m_c_standard, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_standard), kuhl_m_c_standard, NULL, NULL
 };
 /*
 NTSTATUS kuhl_m_standard_test(int argc, wchar_t * argv[])

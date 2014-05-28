@@ -21,7 +21,7 @@ const KUHL_M_C kuhl_m_c_crypto[] = {
 
 const KUHL_M kuhl_m_crypto = {
 	L"crypto", L"Crypto Module", NULL,
-	sizeof(kuhl_m_c_crypto) / sizeof(KUHL_M_C), kuhl_m_c_crypto, kuhl_m_crypto_init, kuhl_m_crypto_clean
+	ARRAYSIZE(kuhl_m_c_crypto), kuhl_m_c_crypto, kuhl_m_crypto_init, kuhl_m_crypto_clean
 };
 
 const KUHL_M_CRYPTO_DWORD_TO_DWORD kuhl_m_crypto_system_stores[] = {
@@ -221,7 +221,7 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 	{
 		for (i = 0, pCertContext = CertEnumCertificatesInStore(hCertificateStore, NULL); pCertContext != NULL; pCertContext = CertEnumCertificatesInStore(hCertificateStore, pCertContext), i++)
 		{
-			for(j = 0; j < (sizeof(nameSrc) / sizeof(DWORD)); j++)
+			for(j = 0; j < ARRAYSIZE(nameSrc); j++)
 			{
 				dwSizeNeeded = CertGetNameString(pCertContext, nameSrc[j], 0, NULL, NULL, 0);
 				if(dwSizeNeeded > 0)
@@ -578,7 +578,7 @@ DWORD kuhl_m_crypto_system_store_to_dword(PCWSTR name)
 {
 	DWORD i;
 	if(name)
-		for(i = 0; i < sizeof(kuhl_m_crypto_system_stores) / sizeof(KUHL_M_CRYPTO_DWORD_TO_DWORD); i++)
+		for(i = 0; i < ARRAYSIZE(kuhl_m_crypto_system_stores); i++)
 			if((_wcsicmp(name, kuhl_m_crypto_system_stores[i].name) == 0) || (_wcsicmp(name, kuhl_m_crypto_system_stores[i].name + 18) == 0))
 				return kuhl_m_crypto_system_stores[i].id;
 	return 0;
@@ -588,7 +588,7 @@ DWORD kuhl_m_crypto_provider_type_to_dword(PCWSTR name)
 {
 	DWORD i;
 	if(name)
-		for(i = 0; i < sizeof(kuhl_m_crypto_provider_types) / sizeof(KUHL_M_CRYPTO_DWORD_TO_DWORD); i++)
+		for(i = 0; i < ARRAYSIZE(kuhl_m_crypto_provider_types); i++)
 			if((_wcsicmp(name, kuhl_m_crypto_provider_types[i].name) == 0) || (_wcsicmp(name, kuhl_m_crypto_provider_types[i].name + 5) == 0))
 				return kuhl_m_crypto_provider_types[i].id;
 	return 0;
@@ -598,7 +598,7 @@ PCWCHAR kuhl_m_crypto_provider_to_realname(PCWSTR name)
 {
 	DWORD i;
 	if(name)
-		for(i = 0; i < sizeof(kuhl_m_crypto_provider_names) / sizeof(KUHL_M_CRYPTO_NAME_TO_REALNAME); i++)
+		for(i = 0; i < ARRAYSIZE(kuhl_m_crypto_provider_names); i++)
 			if((_wcsicmp(name, kuhl_m_crypto_provider_names[i].name) == 0) || (_wcsicmp(name, kuhl_m_crypto_provider_names[i].name + 3) == 0))
 				return kuhl_m_crypto_provider_names[i].realname;
 	return NULL;
@@ -665,8 +665,8 @@ NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[])
 	KULL_M_MEMORY_SEARCH sMemory = {{{K_CPExportKey, &hLocalMemory}, 0}, NULL};
 	PKULL_M_PATCH_GENERIC currentReference4001, currentReference4000;
 	
-	currentReference4001 = kull_m_patch_getGenericFromBuild(Capi4001References, sizeof(Capi4001References) / sizeof(KULL_M_PATCH_GENERIC), MIMIKATZ_NT_BUILD_NUMBER);
-	currentReference4000 = kull_m_patch_getGenericFromBuild(Capi4000References, sizeof(Capi4000References) / sizeof(KULL_M_PATCH_GENERIC), MIMIKATZ_NT_BUILD_NUMBER);
+	currentReference4001 = kull_m_patch_getGenericFromBuild(Capi4001References, ARRAYSIZE(Capi4001References), MIMIKATZ_NT_BUILD_NUMBER);
+	currentReference4000 = kull_m_patch_getGenericFromBuild(Capi4000References, ARRAYSIZE(Capi4000References), MIMIKATZ_NT_BUILD_NUMBER);
 	if(currentReference4001 && currentReference4000)
 	{
 		aPattern4001Memory.address = currentReference4001->Search.Pattern;
@@ -713,7 +713,7 @@ NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[])
 	if(NT_SUCCESS(K_NCryptOpenStorageProvider(&hProvider, NULL, 0)))
 	{
 		K_NCryptFreeObject(hProvider);
-		kull_m_patch_genericProcessOrServiceFromBuild(CngReferences, sizeof(CngReferences) / sizeof(KULL_M_PATCH_GENERIC), L"KeyIso", (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_8) ? L"ncrypt.dll" : L"ncryptprov.dll", TRUE);
+		kull_m_patch_genericProcessOrServiceFromBuild(CngReferences, ARRAYSIZE(CngReferences), L"KeyIso", (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_8) ? L"ncrypt.dll" : L"ncryptprov.dll", TRUE);
 	}
 	return STATUS_SUCCESS;
 }

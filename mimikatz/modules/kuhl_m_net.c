@@ -12,7 +12,7 @@ const KUHL_M_C kuhl_m_c_net[] = {
 };
 const KUHL_M kuhl_m_net = {
 	L"net",	L"", NULL,
-	sizeof(kuhl_m_c_net) / sizeof(KUHL_M_C), kuhl_m_c_net, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_net), kuhl_m_c_net, NULL, NULL
 };
 
 NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
