@@ -85,5 +85,5 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter)
 	}
 	return STATUS_SUCCESS;
 }
-VOID kuhl_sekurlsa_samsrv_thread_end(){}
+DWORD kuhl_sekurlsa_samsrv_thread_end(){return 'lsar';}
 #pragma optimize("", on)

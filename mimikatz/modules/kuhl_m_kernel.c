@@ -8,6 +8,7 @@
 const KUHL_K_C kuhl_k_c_kernel[] = {
 	{kuhl_m_kernel_add_mimidrv,			0,									L"+",				L"Install and/or start mimikatz driver (mimidrv)"},
 	{kuhl_m_kernel_remove_mimidrv,		0,									L"-",				L"Remove mimikatz driver (mimidrv)"},
+	{NULL,								IOCTL_MIMIDRV_DEBUG_BUFFER,					L"ping",			L"Ping the driver"},
 	{NULL,								IOCTL_MIMIDRV_BSOD,					L"bsod",			L"BSOD !"},
 	{NULL,								IOCTL_MIMIDRV_PROCESS_LIST,			L"process",			L"List process"},
 	{kuhl_m_kernel_processProtect,		0,									L"processProtect",	L"Protect process"},

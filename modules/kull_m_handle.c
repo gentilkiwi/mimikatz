@@ -7,17 +7,11 @@
 
 NTSTATUS kull_m_handle_getHandles(PKULL_M_SYSTEM_HANDLE_ENUM_CALLBACK callBack, PVOID pvArg)
 {
-	NTSTATUS status = STATUS_INFO_LENGTH_MISMATCH;
+	NTSTATUS status;
 	ULONG i;
 	PSYSTEM_HANDLE_INFORMATION buffer = NULL;
 
-	for(i = 0x1000; (status == STATUS_INFO_LENGTH_MISMATCH) && (buffer = (PSYSTEM_HANDLE_INFORMATION) LocalAlloc(LPTR, i)) ; i <<= 1)
-	{
-		status = NtQuerySystemInformation(SystemHandleInformation, buffer, i, NULL);
-		if(!NT_SUCCESS(status))
-			LocalFree(buffer);
-	}
-	
+	status = kull_m_process_NtQuerySystemInformation(SystemHandleInformation, &buffer, 0);
 	if(NT_SUCCESS(status))
 	{
 		for(i = 0; (i < buffer->HandleCount) && callBack(&buffer->Handles[i], pvArg); i++);

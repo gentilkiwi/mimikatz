@@ -38,7 +38,7 @@ NTSTATUS kkll_m_filters_list(PKIWI_BUFFER outBuffer)
 	if((status == STATUS_BUFFER_TOO_SMALL) && ActualNumberDriverObjects)
 	{
 		sizeOfDriverObjects = sizeof(PDRIVER_OBJECT) * ActualNumberDriverObjects;
-		if(DriverObjectList = ExAllocatePoolWithTag(NonPagedPool, sizeOfDriverObjects, POOL_TAG))
+		if(DriverObjectList = (PDRIVER_OBJECT *) ExAllocatePoolWithTag(NonPagedPool, sizeOfDriverObjects, POOL_TAG))
 		{
 			status = IoEnumerateRegisteredFiltersList(DriverObjectList, sizeOfDriverObjects, &ActualNumberDriverObjects);
 			for(i = 0; NT_SUCCESS(status) && (i < ActualNumberDriverObjects); i++)

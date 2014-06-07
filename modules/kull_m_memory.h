@@ -6,6 +6,7 @@
 #pragma once
 #include "globals.h"
 #include "kull_m_minidump.h"
+#include "kull_m_kernel.h"
 
 typedef enum _KULL_M_MEMORY_TYPE
 {
@@ -33,12 +34,18 @@ typedef struct _KULL_M_MEMORY_HANDLE_PROCESS_DMP
 	PKULL_M_MINIDUMP_HANDLE hMinidump;
 } KULL_M_MEMORY_HANDLE_PROCESS_DMP, *PKULL_M_MEMORY_HANDLE_PROCESS_DMP;
 
+typedef struct _KULL_M_MEMORY_HANDLE_KERNEL
+{
+	HANDLE hDriver;
+} KULL_M_MEMORY_HANDLE_KERNEL, *PKULL_M_MEMORY_HANDLE_KERNEL;
+
 typedef struct _KULL_M_MEMORY_HANDLE {
 	KULL_M_MEMORY_TYPE type;
 	union {
 		PKULL_M_MEMORY_HANDLE_PROCESS pHandleProcess;
 		PKULL_M_MEMORY_HANDLE_FILE pHandleFile;
 		PKULL_M_MEMORY_HANDLE_PROCESS_DMP pHandleProcessDmp;
+		PKULL_M_MEMORY_HANDLE_KERNEL pHandleDriver;
 	};
 } KULL_M_MEMORY_HANDLE, *PKULL_M_MEMORY_HANDLE;
 

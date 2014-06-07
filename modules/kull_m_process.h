@@ -309,6 +309,26 @@ typedef struct _PROCESS_BASIC_INFORMATION {
 	ULONG_PTR InheritedFromUniqueProcessId;
 } PROCESS_BASIC_INFORMATION,*PPROCESS_BASIC_INFORMATION;
 
+typedef struct _RTL_PROCESS_MODULE_INFORMATION
+{
+	HANDLE Section;
+	PVOID MappedBase;
+	PVOID ImageBase;
+	ULONG ImageSize;
+	ULONG Flags;
+	USHORT LoadOrderIndex;
+	USHORT InitOrderIndex;
+	USHORT LoadCount;
+	USHORT OffsetToFileName;
+	UCHAR FullPathName[256];
+} RTL_PROCESS_MODULE_INFORMATION, *PRTL_PROCESS_MODULE_INFORMATION;
+ 
+typedef struct _RTL_PROCESS_MODULES
+{
+	ULONG NumberOfModules;
+	RTL_PROCESS_MODULE_INFORMATION Modules[ANYSIZE_ARRAY];
+} RTL_PROCESS_MODULES, *PRTL_PROCESS_MODULES;
+
 extern NTSTATUS WINAPI NtQuerySystemInformation(IN SYSTEM_INFORMATION_CLASS SystemInformationClass, OUT PVOID SystemInformation, IN ULONG SystemInformationLength, OUT OPTIONAL PULONG ReturnLength);
 extern NTSTATUS WINAPI NtQueryInformationProcess(IN HANDLE ProcessHandle, IN PROCESSINFOCLASS ProcessInformationClass, OUT PVOID ProcessInformation, OUT ULONG ProcessInformationLength, OUT OPTIONAL PULONG ReturnLength);
 extern NTSTATUS WINAPI NtSuspendProcess(IN HANDLE ProcessHandle);
@@ -339,6 +359,7 @@ typedef struct _KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION_FOR_NAME{
 	BOOL				isFound;
 } KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION_FOR_NAME, *PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION_FOR_NAME;
 
+NTSTATUS kull_m_process_NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS informationClass, PVOID buffer, ULONG informationLength);
 typedef BOOL (CALLBACK * PKULL_M_PROCESS_ENUM_CALLBACK) (PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 NTSTATUS kull_m_process_getProcessInformation(PKULL_M_PROCESS_ENUM_CALLBACK callBack, PVOID pvArg);
 BOOL CALLBACK kull_m_process_callback_pidForName(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);

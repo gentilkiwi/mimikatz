@@ -5,18 +5,33 @@
 */
 #include "kull_m_process.h"
 
-NTSTATUS kull_m_process_getProcessInformation(PKULL_M_PROCESS_ENUM_CALLBACK callBack, PVOID pvArg)
+NTSTATUS kull_m_process_NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS informationClass, PVOID buffer, ULONG informationLength)
 {
 	NTSTATUS status = STATUS_INFO_LENGTH_MISMATCH;
-	ULONG sizeOfBuffer;
+	DWORD sizeOfBuffer;
+
+	if(*(PVOID *) buffer)
+	{
+		status = NtQuerySystemInformation(informationClass, *(PVOID *) buffer, informationLength, NULL);
+	}
+	else
+	{
+		for(sizeOfBuffer = 0x1000; (status == STATUS_INFO_LENGTH_MISMATCH) && (*(PVOID *) buffer = LocalAlloc(LPTR, sizeOfBuffer)) ; sizeOfBuffer <<= 1)
+		{
+			status = NtQuerySystemInformation(informationClass, *(PVOID *) buffer, sizeOfBuffer, NULL);
+			if(!NT_SUCCESS(status))
+				LocalFree(*(PVOID *) buffer);
+		}
+	}
+	return status;
+}
+
+NTSTATUS kull_m_process_getProcessInformation(PKULL_M_PROCESS_ENUM_CALLBACK callBack, PVOID pvArg)
+{
+	NTSTATUS status;
 	PSYSTEM_PROCESS_INFORMATION buffer = NULL, myInfos;
 
-	for(sizeOfBuffer = 0x1000; (status == STATUS_INFO_LENGTH_MISMATCH) && (buffer = (PSYSTEM_PROCESS_INFORMATION) LocalAlloc(LPTR, sizeOfBuffer)) ; sizeOfBuffer <<= 1)
-	{
-		status = NtQuerySystemInformation(SystemProcessInformation, buffer, sizeOfBuffer, NULL);
-		if(!NT_SUCCESS(status))
-			LocalFree(buffer);
-	}
+	status = kull_m_process_NtQuerySystemInformation(SystemProcessInformation, &buffer, 0);
 	
 	if(NT_SUCCESS(status))
 	{
@@ -59,10 +74,12 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
 	KULL_M_MEMORY_ADDRESS aProcess= {NULL, memory};
 	PBYTE aLire, fin;
+	PWCHAR moduleNameW;
 	UNICODE_STRING moduleName;
 	PMINIDUMP_MODULE_LIST pMinidumpModuleList;
 	PMINIDUMP_STRING pMinidumpString;
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION moduleInformation;
+	PRTL_PROCESS_MODULES modules = NULL;
 	BOOL continueCallback = TRUE;
 	moduleInformation.DllBase.hMemory = memory;
 	switch(memory->type)
@@ -201,6 +218,26 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 		}
 		break;
 
+	case KULL_M_MEMORY_TYPE_KERNEL:
+		status = kull_m_process_NtQuerySystemInformation(SystemModuleInformation, &modules, 0);
+		if(NT_SUCCESS(status))
+		{
+			moduleInformation.NameDontUseOutsideCallback = &moduleName;
+			for(i = 0; (i < modules->NumberOfModules) && continueCallback; i++)
+			{
+				moduleInformation.DllBase.address = modules->Modules[i].ImageBase;
+				moduleInformation.SizeOfImage = modules->Modules[i].ImageSize;
+				if(moduleNameW = kull_m_string_qad_ansi_to_unicode((char *) modules->Modules[i].FullPathName + modules->Modules[i].OffsetToFileName))
+				{
+					RtlInitUnicodeString(&moduleName, moduleNameW);
+					moduleInformation.TimeDateStamp = 0;
+					continueCallback = callBack(&moduleInformation, pvArg);
+
+					LocalFree(moduleNameW);
+				}
+			}
+		}
+		break;
 	default:
 		status = STATUS_NOT_IMPLEMENTED;
 		break;
@@ -259,8 +296,8 @@ NTSTATUS kull_m_process_getMemoryInformations(PKULL_M_MEMORY_HANDLE memory, PKUL
 	PMINIDUMP_MEMORY_INFO mesInfos = NULL;
 	ULONG i;
 	BOOL continueCallback = TRUE;
-	
-	if(!NT_SUCCESS(NtQuerySystemInformation(KIWI_SystemMmSystemRangeStart, &maxPage, sizeof(PBYTE), NULL)))
+
+	if(!NT_SUCCESS(kull_m_process_NtQuerySystemInformation(KIWI_SystemMmSystemRangeStart, &maxPage, sizeof(PBYTE))))
 		maxPage = MmSystemRangeStart;
 
 	switch(memory->type)
@@ -425,7 +462,7 @@ BOOL kull_m_process_datadirectory(PKULL_M_MEMORY_ADDRESS pBase, DWORD entry, PDW
 				aProcess.address = (PBYTE) pBase->address + rva;
 				aBuffer.address = *pData;
 				status = kull_m_memory_copy(&aBuffer, &aProcess, size);
-				
+
 				if(!status)
 					LocalFree(*pData);
 			}

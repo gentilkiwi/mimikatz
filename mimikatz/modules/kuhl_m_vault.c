@@ -76,7 +76,8 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 
 	if(isVaultInit)
 	{
-		if(NT_SUCCESS(VaultEnumerateVaults(0, &cbVaults, &vaults)))
+		status = VaultEnumerateVaults(0, &cbVaults, &vaults);
+		if(status == STATUS_SUCCESS)
 		{
 			for(i = 0; i < cbVaults; i++)
 			{
@@ -171,8 +172,9 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 					VaultCloseVault(&hVault);
 				}
 			}
+			VaultFree(vaults);
 		}
-		VaultFree(vaults);
+		else PRINT_ERROR(L"VaultEnumerateVaults : 0x%08x\n", status);
 	}
 	return STATUS_SUCCESS;
 }

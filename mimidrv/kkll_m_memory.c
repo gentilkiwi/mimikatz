@@ -40,3 +40,71 @@ PKKLL_M_MEMORY_GENERIC kkll_m_memory_getGenericFromBuild(PKKLL_M_MEMORY_GENERIC 
 			return generics + i;
 	return NULL;
 }
+
+NTSTATUS kkll_m_memory_vm_read(PVOID Dest, PVOID From, DWORD Size)
+{
+	NTSTATUS status = STATUS_MEMORY_NOT_ALLOCATED;
+	PMDL pMdl;
+	if(pMdl = IoAllocateMdl(From, Size, FALSE, FALSE, NULL))
+	{
+		__try
+		{
+			MmProbeAndLockPages(pMdl, KernelMode, IoReadAccess);
+			RtlCopyMemory(Dest, From, Size);
+			status = STATUS_SUCCESS;
+			MmUnlockPages(pMdl);
+		}
+		__except(EXCEPTION_EXECUTE_HANDLER)
+		{
+			status = GetExceptionCode();
+		}
+		IoFreeMdl(pMdl);
+	}
+	return status;
+}
+
+NTSTATUS kkll_m_memory_vm_write(PVOID Dest, PVOID From, DWORD Size)
+{
+	NTSTATUS status = STATUS_MEMORY_NOT_ALLOCATED;
+	PMDL pMdl;
+	if(pMdl = IoAllocateMdl(Dest, Size, FALSE, FALSE, NULL))
+	{
+		__try
+		{
+			MmProbeAndLockPages(pMdl, KernelMode, IoWriteAccess);
+			RtlCopyMemory(Dest, From, Size);
+			status = STATUS_SUCCESS;
+			MmUnlockPages(pMdl);
+		}
+		__except(EXCEPTION_EXECUTE_HANDLER)
+		{
+			status = GetExceptionCode();
+		}
+		IoFreeMdl(pMdl);
+	}
+	return status;
+}
+
+NTSTATUS kkll_m_memory_vm_alloc(DWORD Size, PVOID *Addr)
+{
+	NTSTATUS status = STATUS_DATA_NOT_ACCEPTED;
+	if(Addr)
+	{
+		if(*Addr = ExAllocatePoolWithTag(NonPagedPool, Size, POOL_TAG))
+			status = STATUS_SUCCESS;
+		else
+			status = STATUS_MEMORY_NOT_ALLOCATED;
+	}
+	return status;
+}
+
+NTSTATUS kkll_m_memory_vm_free(PVOID Addr)
+{
+	NTSTATUS status = STATUS_DATA_NOT_ACCEPTED;
+	if(Addr)
+	{
+		ExFreePoolWithTag(Addr, POOL_TAG);
+		status = STATUS_SUCCESS;
+	}
+	return status;
+}

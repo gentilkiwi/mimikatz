@@ -5,12 +5,13 @@
 */
 #include "kssp.h"
 
-static SECPKG_FUNCTION_TABLE kiwissp_SecPkgFunctionTable = {
+static SECPKG_FUNCTION_TABLE kiwissp_SecPkgFunctionTable[] = {
+	{
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 	kssp_SpInitialize, kssp_SpShutDown, kssp_SpGetInfo, kssp_SpAcceptCredentials,
 	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+	NULL, NULL, NULL, NULL, NULL, NULL, NULL
+	}
 };
 
 NTSTATUS NTAPI kssp_SpInitialize(ULONG_PTR PackageId, PSECPKG_PARAMETERS Parameters, PLSA_SECPKG_FUNCTION_TABLE FunctionTable)
@@ -52,8 +53,8 @@ NTSTATUS NTAPI kssp_SpAcceptCredentials(SECURITY_LOGON_TYPE LogonType, PUNICODE_
 
 NTSTATUS NTAPI kssp_SpLsaModeInitialize(ULONG LsaVersion, PULONG PackageVersion, PSECPKG_FUNCTION_TABLE *ppTables, PULONG pcTables)
 {
-	*PackageVersion = 0x00000042;
-	*ppTables = &kiwissp_SecPkgFunctionTable;
-	*pcTables = 1;
+	*PackageVersion = SECPKG_INTERFACE_VERSION;
+	*ppTables = kiwissp_SecPkgFunctionTable;
+	*pcTables = ARRAYSIZE(kiwissp_SecPkgFunctionTable);
 	return STATUS_SUCCESS;
 }

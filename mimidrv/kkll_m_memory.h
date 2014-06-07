@@ -36,3 +36,7 @@ NTSTATUS kkll_m_memory_search(const PUCHAR adresseBase, const PUCHAR adresseMaxM
 NTSTATUS kkll_m_memory_genericPointerSearch(PUCHAR *addressePointeur, const PUCHAR adresseBase, const PUCHAR adresseMaxMin, const PUCHAR pattern, SIZE_T longueur, LONG offsetTo);
 
 PKKLL_M_MEMORY_GENERIC kkll_m_memory_getGenericFromBuild(PKKLL_M_MEMORY_GENERIC generics, SIZE_T cbGenerics);
+NTSTATUS kkll_m_memory_vm_read(PVOID Dest, PVOID From, DWORD Size);
+NTSTATUS kkll_m_memory_vm_write(PVOID Dest, PVOID From, DWORD Size);
+NTSTATUS kkll_m_memory_vm_alloc(DWORD Size, PVOID *Addr);
+NTSTATUS kkll_m_memory_vm_free(PVOID Addr);

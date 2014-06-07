@@ -52,6 +52,8 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 	PVOID bufferIn, bufferOut;
 	KIWI_BUFFER kOutputBuffer = {&szBufferOut, (PWSTR *) &bufferOut};
 	ULONG i;
+	PMDL pMdl;
+
 	pIoStackIrp = IoGetCurrentIrpStackLocation(Irp);    
 	if(pIoStackIrp)
 	{
@@ -70,6 +72,9 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 				break;
 			case IOCTL_MIMIDRV_BSOD:
 				KeBugCheck(MANUALLY_INITIATED_CRASH);
+				break;
+			case IOCTL_MIMIDRV_DEBUG_BUFFER:
+				status = kprintf(&kOutputBuffer, L"in (0x%p - %u) ; out (0x%p - %u)\n", bufferIn, szBufferIn, bufferOut, szBufferOut);
 				break;
 
 			case IOCTL_MIMIDRV_PROCESS_LIST:
@@ -115,6 +120,22 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 			case IOCTL_MIMIDRV_MINIFILTER_LIST:
 				status = kkll_m_minifilters_list(&kOutputBuffer);
 				break;
+
+			case IOCTL_MIMIDRV_VM_READ:
+				status = kkll_m_memory_vm_read(bufferOut, bufferIn, szBufferOut);
+				break;
+			case IOCTL_MIMIDRV_VM_WRITE:
+				status = kkll_m_memory_vm_write(bufferOut, bufferIn, szBufferIn);
+				break;
+			case IOCTL_MIMIDRV_VM_ALLOC:
+				status = kkll_m_memory_vm_alloc(szBufferIn, (PVOID *) bufferOut);
+				break;
+			case IOCTL_MIMIDRV_VM_FREE:
+				status = kkll_m_memory_vm_free(bufferIn);
+				break;
+			case IOCTL_MIMIDRV_CREATEREMOTETHREAD:
+				status = ((PMIMIDRV_THREAD_INFO) bufferIn)->pRoutine(((PMIMIDRV_THREAD_INFO) bufferIn)->pArg);
+				break;
 		}
 
 		if(NT_SUCCESS(status))
@@ -129,6 +150,9 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 
 KIWI_OS_INDEX getWindowsIndex()
 {
+	if(*NtBuildNumber > 9600) // forever blue =)
+		return KiwiOsIndex_BLUE;
+
 	switch(*NtBuildNumber)
 	{
 		case 2600:

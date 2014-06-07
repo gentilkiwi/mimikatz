@@ -36,6 +36,13 @@ BOOL kull_m_memory_open(IN KULL_M_MEMORY_TYPE Type, IN HANDLE hAny, OUT PKULL_M_
 			if((*hMemory)->pHandleProcessDmp = (PKULL_M_MEMORY_HANDLE_PROCESS_DMP) LocalAlloc(LPTR, sizeof(KULL_M_MEMORY_HANDLE_PROCESS_DMP)))
 				status = kull_m_minidump_open(hAny, &(*hMemory)->pHandleProcessDmp->hMinidump);
 			break;
+		case KULL_M_MEMORY_TYPE_KERNEL:
+			if((*hMemory)->pHandleDriver = (PKULL_M_MEMORY_HANDLE_KERNEL) LocalAlloc(LPTR, sizeof(KULL_M_MEMORY_HANDLE_KERNEL)))
+			{
+				(*hMemory)->pHandleDriver->hDriver = hAny;
+				status = TRUE;
+			}
+			break;
 		default:
 			break;
 		}
@@ -63,6 +70,9 @@ PKULL_M_MEMORY_HANDLE kull_m_memory_close(IN PKULL_M_MEMORY_HANDLE hMemory)
 				kull_m_minidump_close(hMemory->pHandleProcessDmp->hMinidump);
 				LocalFree(hMemory->pHandleProcessDmp);
 			}
+		case KULL_M_MEMORY_TYPE_KERNEL:
+			LocalFree(hMemory->pHandleDriver);
+			break;
 		default:
 			break;
 		}
@@ -98,6 +108,9 @@ BOOL kull_m_memory_copy(OUT PKULL_M_MEMORY_ADDRESS Destination, IN PKULL_M_MEMOR
 			if(SetFilePointer(Source->hMemory->pHandleFile->hFile, (LONG) Source->address, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER)
 				status = ReadFile(Source->hMemory->pHandleFile->hFile, Destination->address, (DWORD) Length, &nbReadWrite, NULL);
 			break;
+		case KULL_M_MEMORY_TYPE_KERNEL:
+			status = kull_m_kernel_ioctl_handle(Source->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_VM_READ, Source->address, 0, &Destination->address, (PDWORD) &Length, FALSE);
+			break;
 		default:
 			break;
 		}
@@ -119,6 +132,17 @@ BOOL kull_m_memory_copy(OUT PKULL_M_MEMORY_ADDRESS Destination, IN PKULL_M_MEMOR
 		case KULL_M_MEMORY_TYPE_OWN:
 			if(!Destination->address || SetFilePointer(Destination->hMemory->pHandleFile->hFile, (LONG) Destination->address, NULL, FILE_BEGIN))
 				status = WriteFile(Destination->hMemory->pHandleFile->hFile, Source->address, (DWORD) Length, &nbReadWrite, NULL);
+			break;
+		default:
+			bufferMeFirst = TRUE;
+			break;
+		}
+		break;
+	case KULL_M_MEMORY_TYPE_KERNEL:
+		switch(Source->hMemory->type)
+		{
+		case KULL_M_MEMORY_TYPE_OWN:
+			status = kull_m_kernel_ioctl_handle(Destination->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_VM_WRITE, Source->address, (DWORD) Length, &Destination->address, NULL, FALSE);
 			break;
 		default:
 			bufferMeFirst = TRUE;
@@ -161,6 +185,7 @@ BOOL kull_m_memory_search(IN PKULL_M_MEMORY_ADDRESS Pattern, IN SIZE_T Length, I
 			break;
 		case KULL_M_MEMORY_TYPE_PROCESS:
 		case KULL_M_MEMORY_TYPE_FILE:
+		case KULL_M_MEMORY_TYPE_KERNEL:
 			if(sBuffer.kull_m_memoryRange.kull_m_memoryAdress.address = LocalAlloc(LPTR, Search->kull_m_memoryRange.size))
 			{
 				if(kull_m_memory_copy(&sBuffer.kull_m_memoryRange.kull_m_memoryAdress, &Search->kull_m_memoryRange.kull_m_memoryAdress, Search->kull_m_memoryRange.size))
@@ -189,6 +214,8 @@ BOOL kull_m_memory_search(IN PKULL_M_MEMORY_ADDRESS Pattern, IN SIZE_T Length, I
 
 BOOL kull_m_memory_alloc(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght, IN DWORD Protection)
 {
+	PVOID ptrAddress = &Address->address;
+	DWORD lenPtr = sizeof(PVOID);
 	Address->address = NULL;
 	switch(Address->hMemory->type)
 	{
@@ -197,6 +224,9 @@ BOOL kull_m_memory_alloc(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght, IN
 			break;
 		case KULL_M_MEMORY_TYPE_PROCESS:
 			Address->address = VirtualAllocEx(Address->hMemory->pHandleProcess->hProcess, NULL, Lenght, MEM_COMMIT, Protection);
+			break;
+		case KULL_M_MEMORY_TYPE_KERNEL:
+			kull_m_kernel_ioctl_handle(Address->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_VM_ALLOC, NULL, (DWORD) Lenght, &ptrAddress, &lenPtr, FALSE);
 			break;
 		default:
 			break;
@@ -215,6 +245,9 @@ BOOL kull_m_memory_free(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght)
 			break;
 		case KULL_M_MEMORY_TYPE_PROCESS:
 			status = VirtualFreeEx(Address->hMemory->pHandleProcess->hProcess, Address->address, Lenght, MEM_RELEASE);
+			break;
+		case KULL_M_MEMORY_TYPE_KERNEL:
+			kull_m_kernel_ioctl_handle(Address->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_VM_FREE, Address->address, 0, NULL, NULL, FALSE);
 			break;
 		default:
 			break;

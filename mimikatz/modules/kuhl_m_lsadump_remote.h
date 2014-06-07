@@ -22,4 +22,4 @@ typedef HLOCAL		(WINAPI * PLOCALFREE) (__deref HLOCAL hMem);
 typedef PVOID		(__cdecl * PMEMCPY) (__out_bcount_full_opt(_MaxCount) void * _Dst, __in_bcount_opt(_MaxCount) const void * _Src, __in size_t _MaxCount);
 
 DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter);
-VOID kuhl_sekurlsa_samsrv_thread_end();
+DWORD kuhl_sekurlsa_samsrv_thread_end();
