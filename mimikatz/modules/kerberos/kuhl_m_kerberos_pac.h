@@ -89,14 +89,14 @@ typedef struct _PACTYPE {
 	PAC_INFO_BUFFER Buffers[ANYSIZE_ARRAY];
 } PACTYPE, *PPACTYPE;
 
+#pragma pack(push, 4) 
 typedef struct _PAC_SIGNATURE_DATA {
 	ULONG  SignatureType;
-	UCHAR  Signature[LM_NTLM_HASH_LENGTH];
-	USHORT RODCIdentifier;
-	USHORT  Reserverd;
+	UCHAR  Signature[ANYSIZE_ARRAY];// LM_NTLM_HASH_LENGTH];
+	//USHORT RODCIdentifier;
+	//USHORT  Reserverd;
 } PAC_SIGNATURE_DATA, *PPAC_SIGNATURE_DATA;
 
-#pragma pack(push, 4) 
 typedef struct _MARSHALLED_UNICODE_STRING {
 	ULONG64 ReservedElements;
 	ULONG32 Elements;
@@ -160,7 +160,7 @@ typedef struct _PAC_CLIENT_INFO {
 	WCHAR Name[ANYSIZE_ARRAY];
 } PAC_CLIENT_INFO, *PPAC_CLIENT_INFO;
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PPACTYPE * pacType, DWORD * pacLength);
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE * pacType, DWORD * pacLength);
 BOOL kuhl_m_pac_validationInfo_to_LOGON_INFO(PKERB_VALIDATION_INFO validationInfo, PRPCE_KERB_VALIDATION_INFO * rpceValidationInfo, DWORD * rpceValidationInfoLength);
 BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PKERB_VALIDATION_INFO validationInfo, PPAC_CLIENT_INFO * pacClientInfo, DWORD * pacClientInfoLength);
 NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DWORD keySize);

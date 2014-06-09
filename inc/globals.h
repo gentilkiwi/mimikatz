@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <wchar.h>
 #include "../modules/kull_m_output.h"
-//#define NTSECAPI_HEADER_FIXED	// http://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader
 //#define KERBEROS_TOOLS
 //#define LSASS_DECRYPT
 #define NET_MODULE

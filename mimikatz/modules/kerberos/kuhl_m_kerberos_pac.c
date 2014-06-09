@@ -5,15 +5,15 @@
 */
 #include "kuhl_m_kerberos_pac.h"
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PPACTYPE * pacType, DWORD * pacLength)
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE * pacType, DWORD * pacLength)
 {
 	BOOL status = FALSE;
 	PRPCE_KERB_VALIDATION_INFO pLogonInfo = NULL;
 	DWORD szLogonInfo = 0, szLogonInfoAligned = 0;
 	PPAC_CLIENT_INFO pClientInfo = NULL;
 	DWORD szClientInfo = 0, szClientInfoAligned = 0;
-	PAC_SIGNATURE_DATA signature = {KERB_CHECKSUM_HMAC_MD5, {0}, 0, 0};
-	DWORD szSignature = sizeof(PAC_SIGNATURE_DATA) - 2 * sizeof(USHORT), szSignatureAligned;
+	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};//, {0}, 0, 0};
+	DWORD szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned;//sizeof(PAC_SIGNATURE_DATA) - 2 * sizeof(USHORT), szSignatureAligned;
 	DWORD modulo, offsetData = sizeof(PACTYPE) + 3 * sizeof(PAC_INFO_BUFFER);
 
 	if(kuhl_m_pac_validationInfo_to_LOGON_INFO(validationInfo, &pLogonInfo, &szLogonInfo))
@@ -28,13 +28,15 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PPAC
 		if(modulo = szClientInfo % 8)
 			szClientInfoAligned += (8 - modulo);
 	}
+	szSignature += (SignatureType == KERB_CHECKSUM_HMAC_MD5) ? 16 : 12;
+	
 	szSignatureAligned = szSignature;
 	if(modulo = szSignature % 8)
 		szSignatureAligned += 8 - modulo;
 
 	if(pLogonInfo && pClientInfo)
 	{
-		*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + 2 * sizeof(PAC_SIGNATURE_DATA);
+		*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + 2 * szSignatureAligned;
 		if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
 		{
 			(*pacType)->cBuffers = 4;
@@ -53,12 +55,12 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PPAC
 			(*pacType)->Buffers[2].cbBufferSize = szSignature;
 			(*pacType)->Buffers[2].ulType = PACINFO_TYPE_CHECKSUM_SRV;
 			(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
-			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, &signature, (*pacType)->Buffers[2].cbBufferSize);
+			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
 
 			(*pacType)->Buffers[3].cbBufferSize = szSignature;
 			(*pacType)->Buffers[3].ulType = PACINFO_TYPE_CHECKSUM_KDC;
 			(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szSignatureAligned;
-			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, (*pacType)->Buffers[3].cbBufferSize);
+			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
 
 			status = TRUE;
 		}
@@ -86,7 +88,7 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DW
 		if((pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV) || (pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_KDC))
 		{
 			pSignatureData = (PPAC_SIGNATURE_DATA) ((PBYTE) pacType + pacType->Buffers[i].Offset);
-			RtlZeroMemory(pSignatureData->Signature, 16); // ok, I deal only with KERB_CHECKSUM_HMAC_MD5, and what ?
+			RtlZeroMemory(pSignatureData->Signature, (pSignatureData->SignatureType == KERB_CHECKSUM_HMAC_MD5) ? 16 : 12);
 			if(pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV)
 				checksumSrv = pSignatureData->Signature;
 			else
@@ -95,7 +97,7 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DW
 	}
 	if(checksumSrv && checksumpKdc)
 	{
-		status = CDLocateCheckSum(KERB_CHECKSUM_HMAC_MD5, &pCheckSum);
+		status = CDLocateCheckSum(pSignatureData->SignatureType, &pCheckSum);
 		if(NT_SUCCESS(status))
 		{
 			status = pCheckSum->InitializeEx(key, keySize, KERB_NON_KERB_CKSUM_SALT, &Context);
