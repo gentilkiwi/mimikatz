@@ -32,7 +32,7 @@ int wmain(int argc, wchar_t * argv[])
 	_setmode(_fileno(stdout), _O_U8TEXT);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 	SetConsoleOutputCP(CP_UTF8);
-	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH);
+	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH L" (oe.eo)");
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 #endif
 	kprintf(L"\n"
@@ -40,8 +40,8 @@ int wmain(int argc, wchar_t * argv[])
 		L" .## ^ ##.  \n"
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
-		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'                                    with %3u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
+		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz\n"
+		L"  '#####'    (oe.eo) BlackHat & Defcon (oe.eo) with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
 	
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)

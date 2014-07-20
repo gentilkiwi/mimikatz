@@ -17,6 +17,7 @@ const KUHL_M_C kuhl_m_c_kerberos[] = {
 	{kuhl_m_kerberos_purge,		L"purge",		L"Purge ticket(s)"},
 	{kuhl_m_kerberos_golden,	L"golden",		L"Willy Wonka factory"},
 #ifdef KERBEROS_TOOLS
+	{kuhl_m_kerberos_test,		L"test",		L"test"},
 	{kuhl_m_kerberos_decode,	L"decrypt",		L"Decrypt encoded ticket"},
 	{kuhl_m_kerberos_pac_info,	L"pacinfo",		L"Some infos on PAC file"},
 #endif
@@ -109,7 +110,7 @@ NTSTATUS kuhl_m_kerberos_purge(int argc, wchar_t * argv[])
 	if(NT_SUCCESS(status))
 	{
 		if(NT_SUCCESS(packageStatus))
-			kprintf(L"Ticket(s) purge for current session is OK\n", argv[0]);
+			kprintf(L"Ticket(s) purge for current session is OK\n");
 		else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbPurgeTicketCacheMessage / Package : %08x\n", packageStatus);
 	}
 	else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbPurgeTicketCacheMessage : %08x\n", status);
@@ -584,6 +585,106 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 		else PRINT_ERROR(L"arg \'in\' missing\n");
 	}
 	else PRINT_ERROR(L"arg \'rc4\' or \'aes128\' or \'aes256\' missing\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_kerberos_test(int argc, wchar_t * argv[])
+{
+	NTSTATUS status, packageStatus;
+	
+	KERB_CHANGEPASSWORD_REQUEST kerbChangePasswordRequest;
+	PBYTE kerbChangePasswordRequestBuffer;
+
+	DWORD size, responseSize = 1024, offset = sizeof(KERB_CHANGEPASSWORD_REQUEST);
+	BYTE dumPtr[1024];
+
+	RtlZeroMemory(&kerbChangePasswordRequest, sizeof(KERB_CHANGEPASSWORD_REQUEST));
+
+	kerbChangePasswordRequest.MessageType = KerbChangePasswordMessage;
+	RtlInitUnicodeString(&kerbChangePasswordRequest.DomainName, L"chocolate.local");
+	RtlInitUnicodeString(&kerbChangePasswordRequest.AccountName, L"testme");
+	RtlInitUnicodeString(&kerbChangePasswordRequest.OldPassword, L"---");
+	RtlInitUnicodeString(&kerbChangePasswordRequest.NewPassword, L"t4waza1234/");
+	kerbChangePasswordRequest.Impersonating = FALSE;
+
+	size = kerbChangePasswordRequest.DomainName.Length + kerbChangePasswordRequest.AccountName.Length + kerbChangePasswordRequest.OldPassword.Length + kerbChangePasswordRequest.NewPassword.Length;
+	if(kerbChangePasswordRequestBuffer = (PBYTE) LocalAlloc(LPTR, offset + size))
+	{
+		RtlCopyMemory(kerbChangePasswordRequestBuffer + offset, kerbChangePasswordRequest.DomainName.Buffer, kerbChangePasswordRequest.DomainName.Length);
+		kerbChangePasswordRequest.DomainName.Buffer = (PWCHAR) offset;
+		offset += kerbChangePasswordRequest.DomainName.Length;
+
+		RtlCopyMemory(kerbChangePasswordRequestBuffer + offset, kerbChangePasswordRequest.AccountName.Buffer, kerbChangePasswordRequest.AccountName.Length);
+		kerbChangePasswordRequest.AccountName.Buffer = (PWCHAR) offset;
+		offset += kerbChangePasswordRequest.AccountName.Length;
+
+		RtlCopyMemory(kerbChangePasswordRequestBuffer + offset, kerbChangePasswordRequest.OldPassword.Buffer, kerbChangePasswordRequest.OldPassword.Length);
+		kerbChangePasswordRequest.OldPassword.Buffer = (PWCHAR) offset;
+		offset += kerbChangePasswordRequest.OldPassword.Length;
+
+		RtlCopyMemory(kerbChangePasswordRequestBuffer + offset, kerbChangePasswordRequest.NewPassword.Buffer, kerbChangePasswordRequest.NewPassword.Length);
+		kerbChangePasswordRequest.NewPassword.Buffer = (PWCHAR) offset;
+		offset += kerbChangePasswordRequest.NewPassword.Length;
+
+
+		RtlCopyMemory(kerbChangePasswordRequestBuffer, &kerbChangePasswordRequest, sizeof(KERB_CHANGEPASSWORD_REQUEST));
+
+		status = LsaCallKerberosPackage(kerbChangePasswordRequestBuffer, sizeof(KERB_CHANGEPASSWORD_REQUEST) + size, (PVOID *)&dumPtr, &responseSize, &packageStatus);
+		if(NT_SUCCESS(status))
+		{
+			if(NT_SUCCESS(packageStatus))
+				kprintf(L"KerbChangePasswordMessage is OK\n");
+			else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbChangePasswordMessage / Package : %08x\n", packageStatus);
+		}
+		else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbChangePasswordMessage : %08x\n", status);
+
+		LocalFree(kerbChangePasswordRequestBuffer);
+	}
+
+/*
+	KERB_SETPASSWORD_REQUEST kerbSetPasswordRequest;
+	PBYTE kerbSetPasswordRequestBuffer;
+
+	DWORD size, responseSize = 1024, offset = sizeof(KERB_SETPASSWORD_REQUEST);
+	BYTE dumPtr[1024];
+
+	RtlZeroMemory(&kerbSetPasswordRequest, sizeof(KERB_SETPASSWORD_REQUEST));
+	kerbSetPasswordRequest.MessageType = KerbSetPasswordMessage;
+	RtlInitUnicodeString(&kerbSetPasswordRequest.DomainName, L"chocolate.local");
+	RtlInitUnicodeString(&kerbSetPasswordRequest.AccountName, L"testme");
+	RtlInitUnicodeString(&kerbSetPasswordRequest.Password, L"t2waza1234/");
+
+
+	size = kerbSetPasswordRequest.DomainName.Length + kerbSetPasswordRequest.AccountName.Length + kerbSetPasswordRequest.Password.Length;
+	if(kerbSetPasswordRequestBuffer = (PBYTE) LocalAlloc(LPTR, offset + size))
+	{
+		RtlCopyMemory(kerbSetPasswordRequestBuffer + offset, kerbSetPasswordRequest.DomainName.Buffer, kerbSetPasswordRequest.DomainName.Length);
+		kerbSetPasswordRequest.DomainName.Buffer = (PWCHAR) offset;
+		offset += kerbSetPasswordRequest.DomainName.Length;
+
+		RtlCopyMemory(kerbSetPasswordRequestBuffer + offset, kerbSetPasswordRequest.AccountName.Buffer, kerbSetPasswordRequest.AccountName.Length);
+		kerbSetPasswordRequest.AccountName.Buffer = (PWCHAR) offset;
+		offset += kerbSetPasswordRequest.AccountName.Length;
+
+		RtlCopyMemory(kerbSetPasswordRequestBuffer + offset, kerbSetPasswordRequest.Password.Buffer, kerbSetPasswordRequest.Password.Length);
+		kerbSetPasswordRequest.Password.Buffer = (PWCHAR) offset;
+		offset += kerbSetPasswordRequest.Password.Length;
+
+		RtlCopyMemory(kerbSetPasswordRequestBuffer, &kerbSetPasswordRequest, sizeof(KERB_SETPASSWORD_REQUEST));
+
+		status = LsaCallKerberosPackage(kerbSetPasswordRequestBuffer, sizeof(KERB_SETPASSWORD_REQUEST) + size, (PVOID *)&dumPtr, &responseSize, &packageStatus);
+		if(NT_SUCCESS(status))
+		{
+			if(NT_SUCCESS(packageStatus))
+				kprintf(L"kerbSetPasswordRequest is OK\n");
+			else PRINT_ERROR(L"LsaCallAuthenticationPackage kerbSetPasswordRequest / Package : %08x\n", packageStatus);
+		}
+		else PRINT_ERROR(L"LsaCallAuthenticationPackage kerbSetPasswordRequest : %08x\n", status);
+
+		LocalFree(kerbSetPasswordRequestBuffer);
+	}
+	*/
+
 	return STATUS_SUCCESS;
 }
 #endif
