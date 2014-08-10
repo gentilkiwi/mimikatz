@@ -19,6 +19,12 @@
 #define DEFAULT_GROUP_ATTRIBUTES	(SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED)
 #define KIWI_NEVERTIME(filetime)	(*(PLONGLONG) filetime = MAXLONGLONG)
 
+typedef struct _KUHL_M_KERBEROS_LIFETIME_DATA {
+	FILETIME TicketStart;
+	FILETIME TicketEnd;
+	FILETIME TicketRenew;
+} KUHL_M_KERBEROS_LIFETIME_DATA, *PKUHL_M_KERBEROS_LIFETIME_DATA;
+
 const KUHL_M kuhl_m_kerberos;
 
 NTSTATUS kuhl_m_kerberos_init();
@@ -36,5 +42,5 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_test(int argc, wchar_t * argv[]);
 
 wchar_t * kuhl_m_kerberos_generateFileName(const DWORD index, PKERB_TICKET_CACHE_INFO_EX ticket, LPCWSTR ext);
-struct _DIRTY_ASN1_SEQUENCE_EASY * kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups);
+struct _DIRTY_ASN1_SEQUENCE_EASY * kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups);
 NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD keySize, LPCVOID data, DWORD dataSize, LPVOID *output, DWORD *outputSize, BOOL encrypt);

@@ -55,7 +55,7 @@ NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 							userEnumerationContext = 0;
 							do
 							{
-								enumUserStatus = SamEnumerateUsersInDomain(hDomainHandle, &userEnumerationContext, UF_NORMAL_ACCOUNT, &pEnumUsersBuffer, 1, &userCountRetourned);
+								enumUserStatus = SamEnumerateUsersInDomain(hDomainHandle, &userEnumerationContext, 0/*UF_NORMAL_ACCOUNT*/, &pEnumUsersBuffer, 1, &userCountRetourned);
 								if(NT_SUCCESS(enumUserStatus) || enumUserStatus == STATUS_MORE_ENTRIES)
 								{
 									for(j = 0; j < userCountRetourned; j++)

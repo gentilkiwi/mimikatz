@@ -469,7 +469,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 				else PRINT_ERROR(L"AES256 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
 			}
 
-			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
+			if(kull_m_string_args_byName(argc, argv, L"rc4", &szNTLM, NULL) || kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
 			{
 				if(kull_m_string_stringToHex(szNTLM, ntlm, LM_NTLM_HASH_LENGTH))
 				{

