@@ -352,7 +352,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							lifeTimeData.TicketRenew = lifeTimeData.TicketEnd = lifeTimeData.TicketStart;
 							kull_m_string_args_byName(argc, argv, L"endin", &szLifetime, L"5256000"); // ~ 10 years
 							*(PULONGLONG) &lifeTimeData.TicketEnd += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
-							kull_m_string_args_byName(argc, argv, L"renewin", &szLifetime, szLifetime);
+							kull_m_string_args_byName(argc, argv, L"renewmax", &szLifetime, szLifetime);
 							*(PULONGLONG) &lifeTimeData.TicketRenew += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
 
 							kprintf(
