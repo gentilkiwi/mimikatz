@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kuhl_m_lsadump.h"
+#include "../modules/kull_m_remotelib.h"
 
 typedef NTSTATUS	(WINAPI * PLSAIQUERYINFORMATIONPOLICYTRUSTED) (IN POLICY_INFORMATION_CLASS InformationClass, OUT PVOID *Buffer);
 typedef VOID		(WINAPI * PLSAIFREE_LSAPR_POLICY_INFORMATION) (IN POLICY_INFORMATION_CLASS InformationClass, IN PVOID Buffer);

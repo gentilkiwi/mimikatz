@@ -199,23 +199,26 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, LPVOID inputDat
 			if(success)
 			{
 				success = kull_m_memory_copy(&aLocalAddr, &aRemoteData, isRaw ? pArgsSize : FIELD_OFFSET(REMOTE_LIB_FUNC, inputSize));
-				if(!isRaw && success && pArgs->outputData)
+				if(!isRaw && success)
 				{
-					success = FALSE;
-					aSuppData.address = pArgs->outputData;
-					if(outputData && outputDataSize)
+					if(outputDataSize)
 					{
-						if(aLocalAddr.address = LocalAlloc(LPTR, pArgs->outputSize))
+						*outputDataSize = pArgs->outputSize;
+						if(aSuppData.address = pArgs->outputData)
 						{
-							if(success = kull_m_memory_copy(&aLocalAddr, &aSuppData, pArgs->outputSize))
+							success = FALSE;
+							if(outputData && pArgs->outputSize)
 							{
-								*outputData = aLocalAddr.address;
-								*outputDataSize = pArgs->outputSize;
+								if(aLocalAddr.address = LocalAlloc(LPTR, pArgs->outputSize))
+								{
+									if(success = kull_m_memory_copy(&aLocalAddr, &aSuppData, pArgs->outputSize))
+										*outputData = aLocalAddr.address;
+									else LocalFree(aLocalAddr.address);
+								}
 							}
-							else LocalFree(aLocalAddr.address);
+							kull_m_memory_free(&aSuppData, 0);
 						}
 					}
-					kull_m_memory_free(&aSuppData, 0);
 				}
 			}
 		}

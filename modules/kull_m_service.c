@@ -89,3 +89,13 @@ BOOL kull_m_service_resume(PCWSTR serviceName)
 {
 	return(kull_m_service_genericControl(serviceName, SERVICE_PAUSE_CONTINUE, SERVICE_CONTROL_CONTINUE, NULL));
 }
+
+BOOL kull_m_service_preshutdown(PCWSTR serviceName)
+{
+	return(kull_m_service_genericControl(serviceName, SERVICE_ALL_ACCESS, SERVICE_CONTROL_PRESHUTDOWN, NULL));
+}
+
+BOOL kull_m_service_shutdown(PCWSTR serviceName)
+{
+	return(kull_m_service_genericControl(serviceName, SERVICE_ALL_ACCESS, SERVICE_CONTROL_SHUTDOWN, NULL));
+}

@@ -116,6 +116,7 @@
     <ClCompile Include="modules\kuhl_m_privilege.c" />
     <ClCompile Include="modules\kuhl_m_process.c" />
     <ClCompile Include="modules\kuhl_m_service.c" />
+    <ClCompile Include="modules\kuhl_m_service_remote.c" />
     <ClCompile Include="modules\kuhl_m_standard.c" />
     <ClCompile Include="modules\kuhl_m_token.c" />
     <ClCompile Include="modules\kuhl_m_ts.c" />
@@ -169,6 +170,7 @@
     <ClInclude Include="modules\kuhl_m_privilege.h" />
     <ClInclude Include="modules\kuhl_m_process.h" />
     <ClInclude Include="modules\kuhl_m_service.h" />
+    <ClInclude Include="modules\kuhl_m_service_remote.h" />
     <ClInclude Include="modules\kuhl_m_standard.h" />
     <ClInclude Include="modules\kuhl_m_token.h" />
     <ClInclude Include="modules\kuhl_m_ts.h" />

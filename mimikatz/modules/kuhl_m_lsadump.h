@@ -14,7 +14,6 @@
 #include "../modules/kull_m_crypto_system.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
-#include "../modules/kull_m_remotelib.h"
 #include "kuhl_m_lsadump_remote.h"
 
 #define	SYSKEY_LENGTH	16
