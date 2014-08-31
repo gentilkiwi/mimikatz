@@ -6,19 +6,26 @@
 #pragma once
 #include "globals.h"
 #include "../modules/kull_m_process.h"
-#include "../modules/kull_m_file.h"
 
-typedef struct _REMOTE_LIB_FUNC {
-	DWORD	outputSize;
-	PVOID	outputData;
-	DWORD	inputSize;
-	BYTE	inputData[ANYSIZE_ARRAY];
-} REMOTE_LIB_FUNC, *PREMOTE_LIB_FUNC;
+typedef struct _REMOTE_LIB_OUTPUT_DATA {
+	PVOID		outputVoid;
+	DWORD		outputDword;
+	NTSTATUS	outputStatus;
+	DWORD		outputSize;
+	PVOID		outputData;
+} REMOTE_LIB_OUTPUT_DATA, *PREMOTE_LIB_OUTPUT_DATA;
 
-typedef struct _REMOTE_LIB_GETPROC {
-	LPCSTR lpProcName;
-	FARPROC addr;
-} REMOTE_LIB_GETPROC, *PREMOTE_LIB_GETPROC;
+typedef struct _REMOTE_LIB_INPUT_DATA {
+	PVOID		inputVoid;
+	DWORD		inputDword;
+	DWORD		inputSize;
+	BYTE		inputData[ANYSIZE_ARRAY];
+} REMOTE_LIB_INPUT_DATA, *PREMOTE_LIB_INPUT_DATA;
+
+typedef struct _REMOTE_LIB_DATA {
+	REMOTE_LIB_OUTPUT_DATA	output;
+	REMOTE_LIB_INPUT_DATA	input;
+} REMOTE_LIB_DATA, *PREMOTE_LIB_DATA;
 
 typedef struct _REMOTE_EXT {
 	PCWCHAR	Module;
@@ -33,11 +40,8 @@ typedef struct _MULTIPLE_REMOTE_EXT {
 } MULTIPLE_REMOTE_EXT, *PMULTIPLE_REMOTE_EXT;
 
 BOOL CALLBACK kull_m_remotelib_callback_module_exportedEntry(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg);
-
-HMODULE kull_m_remotelib_LoadLibrary(PKULL_M_MEMORY_HANDLE hProcess, LPCWSTR lpFileName);
-BOOL kull_m_remotelib_FreeLibrary(PKULL_M_MEMORY_HANDLE hProcess, HMODULE hModule);
-FARPROC kull_m_remotelib_GetProcAddress(PKULL_M_MEMORY_HANDLE hProcess, HMODULE hModule, LPCSTR lpProcName);
-BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, LPVOID inputData, DWORD inputDataSize, LPVOID *outputData, DWORD *outputDataSize, BOOL isRaw);
+PREMOTE_LIB_INPUT_DATA kull_m_remotelib_CreateInput(PVOID inputVoid, DWORD inputDword, DWORD inputSize, PVOID inputData);
+BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INPUT_DATA input, PREMOTE_LIB_OUTPUT_DATA output);
 
 BOOL CALLBACK kull_m_remotelib_exports_callback_module_exportedEntry(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg);
 BOOL CALLBACK kull_m_remotelib_exports_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);

