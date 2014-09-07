@@ -14,6 +14,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_log,		L"log",		L"Log mimikatz input/output to file"},
 	{kuhl_m_standard_base64,	L"base64",	L"Switch file output/base64 output"},
 	{kuhl_m_standard_version,	L"version",	L"Display some version informations"},
+	{kuhl_m_standard_cd,		L"cd",		L"Change or display current directory"},
 };
 const KUHL_M kuhl_m_standard = {
 	L"standard",	L"Standard module",	L"Basic commands (does not require module name)",
@@ -88,6 +89,34 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			L"NT     -  Windows NT %u.%u build %u (arch x%s)\n",
 			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86"
 			);
+	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_standard_cd(int argc, wchar_t * argv[])
+{
+	wchar_t * buffer;
+	if(kull_m_file_getCurrentDirectory(&buffer))
+	{
+		if(argc)
+			kprintf(L"Old: ");
+		kprintf(L"%s\n", buffer);
+		LocalFree(buffer);
+	}
+	else PRINT_ERROR_AUTO(L"kull_m_file_getCurrentDirectory");
+
+	if(argc)
+	{
+		if(SetCurrentDirectory(argv[0]))
+		{
+			if(kull_m_file_getCurrentDirectory(&buffer))
+			{
+				kprintf(L"New: %s\n", buffer);
+				LocalFree(buffer);
+			}
+			else PRINT_ERROR_AUTO(L"kull_m_file_getCurrentDirectory");
+		}
+		else PRINT_ERROR_AUTO(L"SetCurrentDirectory");
 	}
 	return STATUS_SUCCESS;
 }

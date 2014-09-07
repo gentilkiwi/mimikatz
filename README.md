@@ -91,19 +91,21 @@ token::revert
 
 ## Build
 `mimikatz` is in the form of a Visual Studio Solution and a WinDDK driver (optional for main operations), so prerequisites are:
-* for `mimikatz` and `mimilib` : Visual Studio 2010, 2012 or 2013 for Desktop (**2013 Express for Desktop is free and supports x86 & x64** - http://www.microsoft.com/download/details.aspx?id=40787)
+* for `mimikatz` and `mimilib` : Visual Studio 2010, 2012 or 2013 for Desktop (**2013 Express for Desktop is free and supports x86 & x64** - http://www.microsoft.com/download/details.aspx?id=43733)
 * _for `mimikatz driver` (and `ddk2003` platform) : Windows Driver Kit **7.1** (WinDDK) - http://www.microsoft.com/download/details.aspx?id=11800_
 
 `mimikatz` uses `SVN` for source control, but is now available with `GIT` too!
 You can use any tools you want to sync, even incorporated `GIT` in Visual Studio 2013 =)
 
 ### Synchronize!
-* GIT URL is : `https://github.com/gentilkiwi/mimikatz.git`
-* SVN URL is : `https://github.com/gentilkiwi/mimikatz/trunk`
+* GIT URL is  : https://github.com/gentilkiwi/mimikatz.git
+* SVN URL is  : https://github.com/gentilkiwi/mimikatz/trunk
+* ZIP file is : https://github.com/gentilkiwi/mimikatz/archive/master.zip
 
 ### Build the solution
 * After opening the solution, `Build` / `Build Solution` (you can change architecture)
 * `mimikatz` is now built and ready to be used! (`Win32` / `x64`)
+  * you can have error `MSB3073` about `_build_.cmd` and `mimidrv`, it's because the driver cannot be build without Windows Driver Kit **7.1** (WinDDK), but `mimikatz` and `mimilib` are OK.
 
 ### ddk2003
 With this optional MSBuild platform, you can use the WinDDK build tools, and the default `msvcrt` runtime (smaller binaries, no dependencies)

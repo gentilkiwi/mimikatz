@@ -11,12 +11,9 @@ BOOL kull_m_file_getCurrentDirectory(wchar_t ** ppDirName)
 {
 	BOOL reussite = FALSE;
 	DWORD tailleRequise = GetCurrentDirectory(0, NULL);
-	*ppDirName = (wchar_t *) LocalAlloc(LPTR, tailleRequise * sizeof(wchar_t));
-	
-	reussite = (tailleRequise > 0 && (GetCurrentDirectory(tailleRequise, *ppDirName) == tailleRequise - 1));
-	
-	if(!reussite)
-		LocalFree(*ppDirName);
+	if(*ppDirName = (wchar_t *) LocalAlloc(LPTR, tailleRequise * sizeof(wchar_t)))
+		if(!(reussite = (tailleRequise > 0 && (GetCurrentDirectory(tailleRequise, *ppDirName) == tailleRequise - 1))))
+			LocalFree(*ppDirName);
 
 	return reussite;
 }
