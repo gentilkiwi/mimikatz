@@ -318,3 +318,33 @@ BOOL kull_m_memory_protect(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T dwSize, 
 
 	return status;
 }
+
+BOOL kull_m_memory_equal(IN PKULL_M_MEMORY_ADDRESS Address1, IN PKULL_M_MEMORY_ADDRESS Address2, IN SIZE_T Lenght)
+{
+	BOOL status = FALSE;
+	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
+	switch(Address1->hMemory->type)
+	{
+	case KULL_M_MEMORY_TYPE_OWN:
+		switch(Address2->hMemory->type)
+		{
+		case KULL_M_MEMORY_TYPE_OWN:
+			status = RtlEqualMemory(Address1->address, Address2->address, Lenght);
+			break;
+		default:
+			status = kull_m_memory_equal(Address2, Address1, Lenght);
+			break;
+		}
+		break;
+	default:
+		if(aBuffer.address = LocalAlloc(LPTR, Lenght))
+		{
+			if(kull_m_memory_copy(&aBuffer, Address1, Lenght))
+				status = kull_m_memory_equal(&aBuffer, Address2, Lenght);
+			LocalFree(aBuffer.address);
+		}
+		break;
+	}
+	return status;
+}

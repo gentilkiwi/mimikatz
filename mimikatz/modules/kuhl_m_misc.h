@@ -9,6 +9,8 @@
 #include "../modules/kull_m_memory.h"
 #include "../modules/kull_m_patch.h"
 #include "../modules/kull_m_file.h"
+#include "../modules/kull_m_net.h"
+#include "../modules/kull_m_remotelib.h"
 
 const KUHL_M kuhl_m_misc;
 
@@ -18,6 +20,8 @@ NTSTATUS kuhl_m_misc_taskmgr(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_ncroutemon(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_misc_init();
 NTSTATUS kuhl_m_misc_clean();
@@ -82,3 +86,10 @@ typedef DWORD	(WINAPI * PWLANENUMINTERFACES)	(IN HANDLE hClientHandle, IN PVOID 
 typedef DWORD	(WINAPI * PWLANGETPROFILELIST)	(IN HANDLE hClientHandle, IN LPCGUID pInterfaceGuid, IN PVOID pReserved, OUT PWLAN_PROFILE_INFO_LIST *ppProfileList);
 typedef DWORD	(WINAPI * PWLANGETPROFILE)		(IN HANDLE hClientHandle, IN LPCGUID pInterfaceGuid, IN LPCWSTR strProfileName, IN PVOID pReserved, IN LPWSTR *pstrProfileXml, IN OUT OPTIONAL DWORD *pdwFlags, OUT OPTIONAL PDWORD pdwGrantedAccess);
 typedef VOID	(WINAPI * PWLANFREEMEMORY)		(IN PVOID pMemory);
+
+#ifndef NTDSAPI
+#define NTDSAPI DECLSPEC_IMPORT
+#endif
+NTDSAPI DWORD WINAPI DsBindW(IN OPTIONAL LPCWSTR DomainControllerName, IN OPTIONAL LPCWSTR DnsDomainName, OUT HANDLE *phDS);
+NTDSAPI DWORD WINAPI DsAddSidHistoryW(IN HANDLE hDS, IN DWORD Flags, IN LPCWSTR SrcDomain, IN LPCWSTR SrcPrincipal, IN OPTIONAL LPCWSTR SrcDomainController, IN OPTIONAL RPC_AUTH_IDENTITY_HANDLE SrcDomainCreds, IN LPCWSTR DstDomain, IN LPCWSTR DstPrincipal);
+NTDSAPI DWORD WINAPI DsUnBindW(IN HANDLE *phDS);

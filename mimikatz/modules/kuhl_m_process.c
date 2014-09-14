@@ -59,7 +59,7 @@ NTSTATUS kuhl_m_process_genericOperation(int argc, wchar_t * argv[], KUHL_M_PROC
 {
 	HANDLE hProcess;
 	NTSTATUS status = STATUS_NOT_FOUND;
-	DWORD pid, access;
+	DWORD pid = 0, access;
 	PCWCHAR szPid, szText;
 
 	switch(operation)

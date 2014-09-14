@@ -14,6 +14,7 @@ NTSTATUS kuhl_m_standard_cls(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_exit(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_cite(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_answer(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_standard_coffee(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_sleep(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_log(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[]);

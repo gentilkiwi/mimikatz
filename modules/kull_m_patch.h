@@ -35,6 +35,15 @@ typedef struct _KULL_M_PATCH_GENERIC {
 	KULL_M_PATCH_OFFSETS Offsets;
 } KULL_M_PATCH_GENERIC, *PKULL_M_PATCH_GENERIC;
 
+typedef struct _KULL_M_PATCH_MULTIPLE {
+	KULL_M_PATCH_PATTERN Search;
+	KULL_M_PATCH_PATTERN Patch;
+	LONG Offset;
+	KULL_M_MEMORY_ADDRESS AdressOfPatch;
+	DWORD OldProtect;
+	KULL_M_MEMORY_ADDRESS LocalBackup;
+} KULL_M_PATCH_MULTIPLE, *PKULL_M_PATCH_MULTIPLE;
+
 BOOL kull_m_patch(PKULL_M_MEMORY_SEARCH sMemory, PKULL_M_MEMORY_ADDRESS pPattern, SIZE_T szPattern, PKULL_M_MEMORY_ADDRESS pPatch, SIZE_T szPatch, LONG offsetOfPatch, PKULL_M_PATCH_CALLBACK pCallBackBeforeRestore, int argc, wchar_t * args[], NTSTATUS * pRetCallBack);
 PKULL_M_PATCH_GENERIC kull_m_patch_getGenericFromBuild(PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, DWORD BuildNumber);
 BOOL kull_m_patch_genericProcessOrServiceFromBuild(PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, PCWSTR processOrService, PCWSTR moduleName, BOOL isService);

