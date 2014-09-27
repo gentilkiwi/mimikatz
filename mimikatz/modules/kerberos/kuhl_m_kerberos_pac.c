@@ -424,7 +424,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 			case PACINFO_TYPE_CHECKSUM_KDC: // KDC Signature
 				pSignatureData = (PPAC_SIGNATURE_DATA) ((PBYTE) pacType + pacType->Buffers[i].Offset);
 				kprintf(L"*** %s Signature ***\n", (pacType->Buffers[i].ulType == 0x00000006) ? L"Server" : L"KDC");
-				kprintf(L"Type %08x - (%hu) : ", pSignatureData->SignatureType, pSignatureData->RODCIdentifier);
+				kprintf(L"Type %08x - (%hu) : ", pSignatureData->SignatureType, 0);//pSignatureData->RODCIdentifier);
 				kull_m_string_wprintf_hex(pSignatureData->Signature, LM_NTLM_HASH_LENGTH, 0);
 				kprintf(L"\n");
 				break;
