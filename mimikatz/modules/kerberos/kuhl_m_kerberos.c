@@ -16,6 +16,7 @@ const KUHL_M_C kuhl_m_c_kerberos[] = {
 	{kuhl_m_kerberos_tgt,		L"tgt",			L"Retrieve current TGT"},
 	{kuhl_m_kerberos_purge,		L"purge",		L"Purge ticket(s)"},
 	{kuhl_m_kerberos_golden,	L"golden",		L"Willy Wonka factory"},
+	{kuhl_m_kerberos_hash,		L"hash",		L"Hash password to keys"},
 #ifdef KERBEROS_TOOLS
 	{kuhl_m_kerberos_test,		L"test",		L"test"},
 	{kuhl_m_kerberos_decode,	L"decrypt",		L"Decrypt encoded ticket"},
@@ -593,6 +594,71 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 		LocalFree(ticket.ServiceName);
 
 	return App_KrbCred;
+}
+
+NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[])
+{
+	NTSTATUS status;
+	PKERB_ECRYPT pCSystem;
+	PCWCHAR szCount, szPassword = NULL, szUsername = NULL, szDomain = NULL;
+	UNICODE_STRING uPassword, uUsername, uDomain, uSalt = {0, 0, NULL}, uPasswordWithSalt = {0, 0, NULL};
+	PUNICODE_STRING pString;
+	PVOID buffer;
+	DWORD count = 4096, i, kerbType[] = {KERB_ETYPE_RC4_HMAC_NT, KERB_ETYPE_AES128_CTS_HMAC_SHA1_96, KERB_ETYPE_AES256_CTS_HMAC_SHA1_96, KERB_ETYPE_DES_CBC_MD5};
+	
+	kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
+	kull_m_string_args_byName(argc, argv, L"user", &szUsername, NULL);
+	kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL);
+	if(kull_m_string_args_byName(argc, argv, L"count", &szCount, NULL))
+		count = wcstoul(szCount, NULL, 0);
+
+	RtlInitUnicodeString(&uPassword, szPassword);
+	RtlInitUnicodeString(&uUsername, szUsername);
+	RtlInitUnicodeString(&uDomain, szDomain);
+
+	RtlUpcaseUnicodeString(&uDomain, &uDomain, FALSE);
+	RtlDowncaseUnicodeString(&uUsername, &uUsername, FALSE);
+	if(uUsername.Length >= sizeof(wchar_t))
+		if(uUsername.Buffer[0] >= L'a' && uUsername.Buffer[0] <= L'z')
+			uUsername.Buffer[0] -= L'z' - L'Z';
+
+	uSalt.MaximumLength = uUsername.Length + uDomain.Length + sizeof(wchar_t);
+	if(uSalt.Buffer = (PWSTR) LocalAlloc(LPTR, uSalt.MaximumLength))
+	{
+		RtlAppendUnicodeStringToString(&uSalt, &uDomain);
+		RtlAppendUnicodeStringToString(&uSalt, &uUsername);
+
+		uPasswordWithSalt.MaximumLength = uPassword.Length + uSalt.Length + sizeof(wchar_t);
+		if(uPasswordWithSalt.Buffer = (PWSTR) LocalAlloc(LPTR, uPasswordWithSalt.MaximumLength))
+		{
+			RtlAppendUnicodeStringToString(&uPasswordWithSalt, &uPassword);
+			RtlAppendUnicodeStringToString(&uPasswordWithSalt, &uSalt);
+
+			for(i = 0; i < ARRAYSIZE(kerbType); i++)
+			{
+				status = CDLocateCSystem(kerbType[i], &pCSystem);
+				if(NT_SUCCESS(status))
+				{
+					if(buffer = LocalAlloc(LPTR, pCSystem->KeySize))
+					{
+						pString = (i != KERB_ETYPE_DES_CBC_MD5) ? &uPassword : &uPasswordWithSalt;
+						status = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? pCSystem->HashPassword_NT5(pString, buffer) : pCSystem->HashPassword_NT6(pString, &uSalt, count, buffer);
+						if(NT_SUCCESS(status))
+						{
+							kprintf(L"%s ", kuhl_m_kerberos_ticket_etype(kerbType[i]));
+							kull_m_string_wprintf_hex(buffer, pCSystem->KeySize, 0);
+							kprintf(L"\n");
+						}
+						else PRINT_ERROR(L"HashPassword : %08x\n", status);
+						LocalFree(buffer);
+					}
+				}
+			}
+			LocalFree(uPasswordWithSalt.Buffer);
+		}
+		LocalFree(uSalt.Buffer);
+	}
+	return STATUS_SUCCESS;
 }
 
 #ifdef KERBEROS_TOOLS

@@ -39,6 +39,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_purge(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_test(int argc, wchar_t * argv[]);
 

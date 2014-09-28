@@ -28,7 +28,7 @@ int wmain(int argc, wchar_t * argv[])
 {
 	int i, status = STATUS_SUCCESS;
 #ifndef _WINDLL
-	wchar_t input[0xff];
+	wchar_t input[0xffff];
 	_setmode(_fileno(stdout), _O_U8TEXT);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 	SetConsoleOutputCP(CP_UTF8);
