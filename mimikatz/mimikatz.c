@@ -41,7 +41,7 @@ int wmain(int argc, wchar_t * argv[])
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'                                     with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
+		L"  '#####'    Microsoft BlueHat edition!       with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
 	
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)

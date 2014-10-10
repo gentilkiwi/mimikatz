@@ -617,10 +617,9 @@ NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[])
 	RtlInitUnicodeString(&uDomain, szDomain);
 
 	RtlUpcaseUnicodeString(&uDomain, &uDomain, FALSE);
-	RtlDowncaseUnicodeString(&uUsername, &uUsername, FALSE);
-	if(uUsername.Length >= sizeof(wchar_t))
-		if(uUsername.Buffer[0] >= L'a' && uUsername.Buffer[0] <= L'z')
-			uUsername.Buffer[0] -= L'z' - L'Z';
+	//RtlDowncaseUnicodeString(&uUsername, &uUsername, FALSE);
+	//if(uUsername.Length >= sizeof(wchar_t))
+	//	uUsername.Buffer[0] = RtlUpcaseUnicodeChar(uUsername.Buffer[0]);
 
 	uSalt.MaximumLength = uUsername.Length + uDomain.Length + sizeof(wchar_t);
 	if(uSalt.Buffer = (PWSTR) LocalAlloc(LPTR, uSalt.MaximumLength))
@@ -684,6 +683,11 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 	{
 		keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
 		keyLen = AES_256_KEY_LENGTH;
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"des", &szKey, NULL))
+	{
+		keyType = KERB_ETYPE_DES_CBC_MD5;
+		keyLen = 8;
 	}
 	
 	if(szKey)

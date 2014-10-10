@@ -53,7 +53,6 @@ VOID kuhl_m_sekurlsa_reset();
 NTSTATUS kuhl_m_sekurlsa_acquireLSA();
 
 BOOL CALLBACK kuhl_m_sekurlsa_findlibs(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
-BOOL CALLBACK kuhl_m_sekurlsa_enum_range(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg);
 
 BOOL kuhl_m_sekurlsa_validateAdjustUnicodeBuffer(PUNICODE_STRING pString, PVOID pBaseBuffer, PMEMORY_BASIC_INFORMATION pMemoryBasicInformation);
 NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalData);
@@ -64,7 +63,6 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_sekurlsa_strings(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_process(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[]);

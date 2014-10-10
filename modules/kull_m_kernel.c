@@ -25,7 +25,8 @@ BOOL kull_m_kernel_ioctl_handle(HANDLE hDriver, DWORD ioctlCode, PVOID bufferIn,
 			else
 			{
 				lStatus = GetLastError();
-				LocalFree(*pBufferOut);
+				if(lStatus == ERROR_MORE_DATA)
+					LocalFree(*pBufferOut);
 			}
 		}
 	}

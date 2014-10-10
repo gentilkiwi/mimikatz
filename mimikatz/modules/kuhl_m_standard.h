@@ -21,3 +21,4 @@ NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_cd(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_test(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_standard_markruss(int argc, wchar_t * argv[]);

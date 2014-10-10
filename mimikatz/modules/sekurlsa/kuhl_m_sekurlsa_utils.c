@@ -28,6 +28,7 @@ KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_LogonSessionList),	PTRN_WNO8_LogonSessionList},	{0, NULL}, {-11, -42}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_LogonSessionList),	PTRN_WIN8_LogonSessionList},	{0, NULL}, {-20, -51}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-20, -49}},
+	{KULL_M_WIN_MIN_BUILD_10,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-16, -45}},
 };
 #endif
 
