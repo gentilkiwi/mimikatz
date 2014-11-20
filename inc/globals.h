@@ -17,6 +17,7 @@
 #include <wchar.h>
 #include "../modules/kull_m_output.h"
 //#define KERBEROS_TOOLS
+//#define DPAPI_TOOLS
 //#define LSASS_DECRYPT
 #define NET_MODULE
 #ifdef _M_X64
@@ -29,6 +30,7 @@
 #define MIMIKATZ_VERSION		L"2.0 alpha"
 #define MIMIKATZ_CODENAME		L"Kiwi en C"
 #define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") release \"" MIMIKATZ_CODENAME L"\" (" TEXT(__DATE__) L" " TEXT(__TIME__) L")"
+#define MIMIKATZ_SPECIAL		L"                                "
 #define MIMIKATZ_DEFAULT_LOG	MIMIKATZ L".log"
 #define MIMIKATZ_DRIVER			L"mimidrv"
 #define MIMIKATZ_KERBEROS_EXT	L"kirbi"
@@ -74,6 +76,7 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_BUILD_8		9200
 #define KULL_M_WIN_BUILD_BLUE	9600
 #define KULL_M_WIN_BUILD_10		9800
+#define KULL_M_WIN_BUILD_10b	9879
 
 #define KULL_M_WIN_MIN_BUILD_XP		2500
 #define KULL_M_WIN_MIN_BUILD_2K3	3000

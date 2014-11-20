@@ -19,6 +19,7 @@
 #include "modules/kuhl_m_misc.h"
 #include "modules/kuhl_m_token.h"
 #include "modules/kuhl_m_vault.h"
+#include "modules/kuhl_m_minesweeper.h"
 #ifdef NET_MODULE
 #include "modules/kuhl_m_net.h"
 #endif

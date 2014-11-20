@@ -67,6 +67,11 @@ void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTE
 		kprintf(L"@ %wZ", pDomain);
 }
 
+BOOL kuhl_m_kerberos_ticket_isLongFilename(PKIWI_KERBEROS_TICKET ticket)
+{
+	return ticket && (ticket->ClientName) && (ticket->ClientName->NameType == KRB_NT_PRINCIPAL) && (ticket->ClientName->NameCount == 1) && (ticket->ServiceName) && ((ticket->ServiceName->NameType >= KRB_NT_PRINCIPAL) && (ticket->ServiceName->NameType <= KRB_NT_SRV_HST)) && (ticket->ServiceName->NameCount > 1);
+}
+
 PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType)
 {
 	PCWCHAR type;
@@ -101,6 +106,61 @@ PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType)
 	default:										type = L"unknow           "; break;
 	}
 	return type;
+}
+
+void kuhl_m_kerberos_ticket_freeTicket(PKIWI_KERBEROS_TICKET ticket)
+{
+	if(ticket)
+	{
+		kuhl_m_kerberos_ticket_freeExternalName(ticket->ServiceName);
+		kull_m_string_freeUnicodeStringBuffer(&ticket->DomainName);
+		kuhl_m_kerberos_ticket_freeExternalName(ticket->TargetName);
+		kull_m_string_freeUnicodeStringBuffer(&ticket->TargetDomainName);
+		kuhl_m_kerberos_ticket_freeExternalName(ticket->ClientName);
+		kull_m_string_freeUnicodeStringBuffer(&ticket->AltTargetDomainName);
+		kull_m_string_freeUnicodeStringBuffer(&ticket->Description);
+		kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(&ticket->Key);
+		kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(&ticket->Ticket);
+		LocalFree(ticket);
+	}
+}
+
+PKERB_EXTERNAL_NAME kuhl_m_kerberos_ticket_copyExternalName(PKERB_EXTERNAL_NAME pName)
+{
+	PKERB_EXTERNAL_NAME dest = NULL;
+	DWORD i;
+	BOOL status = TRUE;
+	if(pName)
+	{
+		if(dest = (PKERB_EXTERNAL_NAME) LocalAlloc(LPTR, sizeof(KERB_EXTERNAL_NAME) + ((pName->NameCount - 1) * sizeof(UNICODE_STRING))))
+		{
+			dest->NameType = pName->NameType;
+			dest->NameCount = pName->NameCount;
+			for(i = 0; i < pName->NameCount; i++)
+				status &= kull_m_string_copyUnicodeStringBuffer(&pName->Names[i], &dest->Names[i]);
+
+			if(!status)
+				dest = (PKERB_EXTERNAL_NAME) LocalFree(dest);
+		}
+	}
+	return dest;
+}
+
+void kuhl_m_kerberos_ticket_freeExternalName(PKERB_EXTERNAL_NAME pName)
+{
+	DWORD i;
+	if(pName)
+	{
+		for(i = 0; i < pName->NameCount; i++)
+			kull_m_string_freeUnicodeStringBuffer(&pName->Names[i]);
+		pName = (PKERB_EXTERNAL_NAME) LocalFree(pName);
+	}
+}
+
+void kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer)
+{
+	if(pBuffer->Value)
+		pBuffer->Value = (PUCHAR) LocalFree(pBuffer->Value);
 }
 
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_TICKET ticket)
@@ -140,9 +200,9 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_
 	return App_Ticket;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket)
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket, BOOL valueIsTicket)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred, Seq_KrbCred, Ctx_KrbCred, Seq_Root, App_EncKrbCredPart;
+	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred, Seq_KrbCred, Ctx_KrbCred, Seq_Root, App_EncKrbCredPart, App_Ticket;
 	UCHAR integer1;
 	
 	if(App_KrbCred = KULL_M_ASN1_CREATE_APP(ID_APP_KRB_CRED))
@@ -165,7 +225,14 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS
 			{
 				if(Seq_Root = KULL_M_ASN1_CREATE_SEQ())
 				{
-					kull_m_asn1_append(&Seq_Root, kuhl_m_kerberos_ticket_createAppTicket(ticket));
+					if(valueIsTicket)
+					{
+						if(App_Ticket = (PDIRTY_ASN1_SEQUENCE_EASY) LocalAlloc(LPTR, ticket->Ticket.Length))
+							RtlCopyMemory(App_Ticket, ticket->Ticket.Value, ticket->Ticket.Length);
+					}
+					else App_Ticket = kuhl_m_kerberos_ticket_createAppTicket(ticket);
+					
+					kull_m_asn1_append(&Seq_Root, App_Ticket);
 					kull_m_asn1_append(&Ctx_KrbCred, Seq_Root);
 				}
 				kull_m_asn1_append(&Seq_KrbCred, Ctx_KrbCred);

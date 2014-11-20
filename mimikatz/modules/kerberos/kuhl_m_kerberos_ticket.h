@@ -102,9 +102,15 @@ typedef struct _KIWI_KERBEROS_TICKET {
 void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTicketToo);
 void kuhl_m_kerberos_ticket_displayFlags(ULONG flags);
 void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTERNAL_NAME pExternalName, IN PUNICODE_STRING pDomain);
+BOOL kuhl_m_kerberos_ticket_isLongFilename(PKIWI_KERBEROS_TICKET ticket);
 PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType);
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket);
+void kuhl_m_kerberos_ticket_freeTicket(PKIWI_KERBEROS_TICKET ticket);
+PKERB_EXTERNAL_NAME kuhl_m_kerberos_ticket_copyExternalName(PKERB_EXTERNAL_NAME pName);
+void kuhl_m_kerberos_ticket_freeExternalName(PKERB_EXTERNAL_NAME pName);
+void kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer);
+
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket, BOOL valueIsTicket);
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_TICKET ticket);
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncKrbCredPart(PKIWI_KERBEROS_TICKET ticket);
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncTicketPart(PKIWI_KERBEROS_TICKET ticket, LPCVOID PacAuthData, DWORD PacAuthDataSize);

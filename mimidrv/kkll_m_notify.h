@@ -39,11 +39,24 @@ typedef struct _OBJECT_CALLBACK_ENTRY {
 	/* ... */
 } OBJECT_CALLBACK_ENTRY, *POBJECT_CALLBACK_ENTRY;
 
+typedef NTSTATUS	(* PPSSETCREATEPROCESSNOTIFYROUTINEEX)	( __in PCREATE_PROCESS_NOTIFY_ROUTINE_EX NotifyRoutine, __in BOOLEAN Remove);
+//typedef VOID (* POBUNREGISTERCALLBACKS) (__in PVOID RegistrationHandle);
+
+NTSTATUS kkll_m_notify_init();
 NTSTATUS kkll_m_notify_list_thread(PKIWI_BUFFER outBuffer);
 NTSTATUS kkll_m_notify_list_process(PKIWI_BUFFER outBuffer);
 NTSTATUS kkll_m_notify_list_image(PKIWI_BUFFER outBuffer);
 NTSTATUS kkll_m_notify_list_reg(PKIWI_BUFFER outBuffer);
 NTSTATUS kkll_m_notify_list_object(PKIWI_BUFFER outBuffer);
+NTSTATUS kkll_m_notify_desc_object_callback(POBJECT_CALLBACK_ENTRY pCallbackEntry, PKIWI_BUFFER outBuffer);
+NTSTATUS kkll_m_notify_remove_process(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer);
+NTSTATUS kkll_m_notify_remove_object(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer);
 
 NTSTATUS kkll_m_notify_list(PKIWI_BUFFER outBuffer, PKKLL_M_MEMORY_GENERIC generics, SIZE_T cbGenerics, PUCHAR * ptr, PULONG pRoutineMax);
 NTSTATUS kkll_m_notify_search(PKKLL_M_MEMORY_GENERIC generics, SIZE_T cbGenerics, PUCHAR * ptr, PULONG pRoutineMax, PKKLL_M_MEMORY_OFFSETS * pOffsets);
+
+
+OB_PREOP_CALLBACK_STATUS kkll_m_notify_fake_ObjectPreCallback(IN PVOID RegistrationContext, IN POB_PRE_OPERATION_INFORMATION OperationInformation);
+DWORD kkll_m_notify_fake_ObjectPreCallback_end();
+VOID kkll_m_notify_fake_ObjectPostCallback(IN PVOID RegistrationContext, IN POB_POST_OPERATION_INFORMATION OperationInformation);
+DWORD kkll_m_notify_fake_ObjectPostCallback_end();

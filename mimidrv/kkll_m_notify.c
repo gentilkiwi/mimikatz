@@ -13,6 +13,11 @@ PKKLL_M_MEMORY_OFFSETS pCmpCallBackOffsets = NULL;
 POBJECT_DIRECTORY *ObpTypeDirectoryObject = NULL;
 PKKLL_M_MEMORY_OFFSETS pObpTypeDirectoryObjectOffsets = NULL;
 
+PPSSETCREATEPROCESSNOTIFYROUTINEEX pPsSetCreateProcessNotifyRoutineEx = NULL;
+POB_PRE_OPERATION_CALLBACK kkll_m_notify_fakePre = NULL;
+POB_POST_OPERATION_CALLBACK kkll_m_notify_fakePost = NULL;
+
+
 #ifdef _M_X64
 UCHAR PTRN_W23_Thread[] =	{0x66, 0x90, 0x66, 0x90, 0x48, 0x8b, 0xce, 0xe8};
 UCHAR PTRN_WVI_Thread[] =	{0x49, 0x8b, 0x8c, 0x24, 0xf8, 0x01, 0x00, 0x00, 0x41, 0xb0, 0x01, 0x49, 0x8b, 0x94, 0x24, 0x88, 0x03, 0x00, 0x00};
@@ -286,24 +291,7 @@ NTSTATUS kkll_m_notify_list_object(PKIWI_BUFFER outBuffer)
 					if(KiwiOsIndex >= KiwiOsIndex_VISTA)
 					{
 						for(pCallbackEntry = *(POBJECT_CALLBACK_ENTRY *) (pType + pObpTypeDirectoryObjectOffsets->off3) ; NT_SUCCESS(status) && (pCallbackEntry != (POBJECT_CALLBACK_ENTRY) (pType + pObpTypeDirectoryObjectOffsets->off3)) ; pCallbackEntry = (POBJECT_CALLBACK_ENTRY) pCallbackEntry->CallbackList.Flink)
-						{
-							if(pCallbackEntry->PreOperation || pCallbackEntry->PostOperation)
-							{
-								status = kprintf(outBuffer, L"\t* Callback [type %u]\n", pCallbackEntry->Operations);
-								if(NT_SUCCESS(status) && pCallbackEntry->PreOperation)
-								{
-									status = kprintf(outBuffer, L"\t\tPreOperation  : ");
-									if(NT_SUCCESS(status))
-										status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PreOperation);
-								}
-								if(NT_SUCCESS(status) && pCallbackEntry->PostOperation)
-								{
-									status = kprintf(outBuffer, L"\t\tPreOperation  : ");
-									if(NT_SUCCESS(status))
-										status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PostOperation);
-								}
-							}
-						}
+							status = kkll_m_notify_desc_object_callback(pCallbackEntry, outBuffer);
 					}
 					for(j = 0; NT_SUCCESS(status) && (j < 8) ; j++)
 					{
@@ -320,3 +308,123 @@ NTSTATUS kkll_m_notify_list_object(PKIWI_BUFFER outBuffer)
 	}
 	return status;
 }
+
+NTSTATUS kkll_m_notify_desc_object_callback(POBJECT_CALLBACK_ENTRY pCallbackEntry, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	if(pCallbackEntry->PreOperation || pCallbackEntry->PostOperation)
+	{
+		status = kprintf(outBuffer, L"\t* Callback [type %u] - Handle 0x%p (@ 0x%p)\n", pCallbackEntry->Operations, pCallbackEntry->Handle, pCallbackEntry);
+		if(NT_SUCCESS(status) && pCallbackEntry->PreOperation)
+		{
+			status = kprintf(outBuffer, L"\t\tPreOperation  : ");
+			if(NT_SUCCESS(status))
+				status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PreOperation);
+		}
+		if(NT_SUCCESS(status) && pCallbackEntry->PostOperation)
+		{
+			status = kprintf(outBuffer, L"\t\tPreOperation  : ");
+			if(NT_SUCCESS(status))
+				status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PostOperation);
+		}
+	}
+	return status;
+}
+
+
+UNICODE_STRING uPsSetCreateProcessNotifyRoutineEx = {66, 68, L"PsSetCreateProcessNotifyRoutineEx"};
+NTSTATUS kkll_m_notify_init()
+{
+	SIZE_T codeSize;
+	NTSTATUS status = STATUS_NOT_FOUND;
+	if(pPsSetCreateProcessNotifyRoutineEx = (PPSSETCREATEPROCESSNOTIFYROUTINEEX) MmGetSystemRoutineAddress(&uPsSetCreateProcessNotifyRoutineEx))
+
+	codeSize = (ULONG_PTR) kkll_m_notify_fake_ObjectPreCallback_end - (ULONG_PTR) kkll_m_notify_fake_ObjectPreCallback;
+	if(kkll_m_notify_fakePre = (POB_PRE_OPERATION_CALLBACK) ExAllocatePoolWithTag(NonPagedPool, codeSize, POOL_TAG))
+		RtlCopyMemory(kkll_m_notify_fakePre, kkll_m_notify_fake_ObjectPreCallback, codeSize);
+
+	codeSize = (ULONG_PTR) kkll_m_notify_fake_ObjectPostCallback_end - (ULONG_PTR) kkll_m_notify_fake_ObjectPostCallback;
+	if(kkll_m_notify_fakePost = (POB_POST_OPERATION_CALLBACK) ExAllocatePoolWithTag(NonPagedPool, codeSize, POOL_TAG))
+		RtlCopyMemory(kkll_m_notify_fakePost, kkll_m_notify_fake_ObjectPostCallback, codeSize);
+
+
+	if(pPsSetCreateProcessNotifyRoutineEx && kkll_m_notify_fakePre && kkll_m_notify_fakePost)
+		status = STATUS_SUCCESS;
+	else
+	{
+		if(kkll_m_notify_fakePre)
+		{
+			ExFreePoolWithTag(kkll_m_notify_fakePre, POOL_TAG);
+			kkll_m_notify_fakePre = NULL;
+		}
+		if(kkll_m_notify_fakePost)
+		{
+			ExFreePoolWithTag(kkll_m_notify_fakePost, POOL_TAG);
+			kkll_m_notify_fakePost = NULL;
+		}
+	}
+	return status;
+}
+
+NTSTATUS kkll_m_notify_remove_process(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_INVALID_HANDLE;
+	UNICODE_STRING uString;
+
+	if(bufferIn && (szBufferIn == sizeof(PCREATE_PROCESS_NOTIFY_ROUTINE)))
+	{
+		status = PsSetCreateProcessNotifyRoutine(*(PCREATE_PROCESS_NOTIFY_ROUTINE *) bufferIn, TRUE);
+		if(pPsSetCreateProcessNotifyRoutineEx)
+			status = pPsSetCreateProcessNotifyRoutineEx(*(PCREATE_PROCESS_NOTIFY_ROUTINE_EX *) bufferIn, TRUE);
+
+		if(NT_SUCCESS(status))
+		{
+			status = kprintf(outBuffer, L"Removed  : ");
+			if(NT_SUCCESS(status))
+				status = kkll_m_modules_fromAddr(outBuffer, *(PVOID *) bufferIn);
+		}
+
+	}
+	return status;
+}
+
+
+NTSTATUS kkll_m_notify_remove_object(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_INVALID_HANDLE;
+	POBJECT_CALLBACK_ENTRY pCallbackEntry; 
+	
+	if(bufferIn && (szBufferIn == sizeof(POBJECT_CALLBACK_ENTRY)))
+	{
+		if(pCallbackEntry = *(POBJECT_CALLBACK_ENTRY *) bufferIn)
+		{
+			status = kkll_m_notify_desc_object_callback(pCallbackEntry, outBuffer);
+			if(NT_SUCCESS(status))
+			{
+				if(pCallbackEntry->PreOperation && kkll_m_notify_fakePre)
+					pCallbackEntry->PreOperation = kkll_m_notify_fakePre;
+				if(pCallbackEntry->PostOperation && kkll_m_notify_fakePost)
+					pCallbackEntry->PostOperation = kkll_m_notify_fakePost;
+
+				status = kkll_m_notify_desc_object_callback(pCallbackEntry, outBuffer);
+			}
+		}
+	}
+
+
+	return status;
+}
+
+#pragma optimize("", off)
+OB_PREOP_CALLBACK_STATUS kkll_m_notify_fake_ObjectPreCallback(IN PVOID RegistrationContext, IN POB_PRE_OPERATION_INFORMATION OperationInformation)
+{
+	return OB_PREOP_SUCCESS;
+}
+DWORD kkll_m_notify_fake_ObjectPreCallback_end(){return 'kpre';}
+
+
+VOID kkll_m_notify_fake_ObjectPostCallback(IN PVOID RegistrationContext, IN POB_POST_OPERATION_INFORMATION OperationInformation)
+{
+}
+DWORD kkll_m_notify_fake_ObjectPostCallback_end(){return 'kpos';}
+#pragma optimize("", on)

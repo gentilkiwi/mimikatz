@@ -40,10 +40,6 @@ PKIWI_KERBEROS_TICKET kuhl_m_sekurlsa_kerberos_createTicket(PBYTE pTicket, PKULL
 void kuhl_m_sekurlsa_kerberos_createExternalName(PKERB_EXTERNAL_NAME *pExternalName, PKULL_M_MEMORY_HANDLE hLSASS);
 void kuhl_m_sekurlsa_kerberos_createKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer, PKULL_M_MEMORY_HANDLE hLSASS);
 
-void kuhl_m_sekurlsa_kerberos_freeTicket(PKIWI_KERBEROS_TICKET ticket);
-void kuhl_m_sekurlsa_kerberos_freeExternalName(PKERB_EXTERNAL_NAME pName);
-void kuhl_m_sekurlsa_kerberos_freeKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer);
-
 typedef struct _KERB_INFOS {
 	LONG	offsetLuid;
 	LONG	offsetCreds;
@@ -151,6 +147,46 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION {
 	PUNICODE_STRING pinCode;	// not only PIN (CSP Info)
 } KIWI_KERBEROS_LOGON_SESSION, *PKIWI_KERBEROS_LOGON_SESSION;
 
+typedef struct _KIWI_KERBEROS_LOGON_SESSION_10 {
+	ULONG		UsageCount;
+	LIST_ENTRY	unk0;
+	PVOID		unk1;
+	ULONG		unk1b;
+	FILETIME	unk2;
+	PVOID		unk4;
+	PVOID		unk5;
+	PVOID		unk6;
+	LUID		LocallyUniqueIdentifier;
+	FILETIME	unk7;
+	PVOID		unk8;
+	ULONG		unk8b;
+	FILETIME	unk9;
+	PVOID		unk11;
+	PVOID		unk12;
+	PVOID		unk13;
+#ifdef _M_IX86
+	ULONG		unkAlign;
+#endif
+	KIWI_GENERIC_PRIMARY_CREDENTIAL	credentials;
+	ULONG		unk14;
+	ULONG		unk15;
+	ULONG		unk16;
+	ULONG		unk17;
+	PVOID		unk18;
+	PVOID		unk19;
+	PVOID		unk20;
+	PVOID		unk21;
+	PVOID		pKeyList;
+	PVOID		unk23;
+	LIST_ENTRY	Tickets_1;
+	FILETIME	unk24;
+	LIST_ENTRY	Tickets_2;
+	FILETIME	unk25;
+	LIST_ENTRY	Tickets_3;
+	FILETIME	unk26;
+	PUNICODE_STRING pinCode;	// not only PIN (CSP Info)
+} KIWI_KERBEROS_LOGON_SESSION_10, *PKIWI_KERBEROS_LOGON_SESSION_10;
+
 typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_51 {
 	LIST_ENTRY	This;
 	PVOID		unk0;
@@ -218,6 +254,40 @@ typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_52 {
 	ULONG		TicketKvno;
 	KIWI_KERBEROS_BUFFER	Ticket;
 } KIWI_KERBEROS_INTERNAL_TICKET_52, *PKIWI_KERBEROS_INTERNAL_TICKET_52;
+
+typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_60 {
+	LIST_ENTRY	This;
+	PVOID		unk0;
+	PVOID		unk1;
+	PKERB_EXTERNAL_NAME	ServiceName;
+	PKERB_EXTERNAL_NAME	TargetName;
+	LSA_UNICODE_STRING	DomainName;
+	LSA_UNICODE_STRING	TargetDomainName;
+	LSA_UNICODE_STRING	Description;
+	LSA_UNICODE_STRING	AltTargetDomainName;
+	//LSA_UNICODE_STRING	KDCServer;	//?
+	PKERB_EXTERNAL_NAME	ClientName;
+	PVOID		name0;
+	ULONG		TicketFlags;
+	ULONG		unk2;
+	ULONG		KeyType;
+	KIWI_KERBEROS_BUFFER	Key;
+	PVOID		unk3;
+	PVOID		unk4;
+	PVOID		unk5;
+	FILETIME	StartTime;
+	FILETIME	EndTime;
+	FILETIME	RenewUntil;
+	ULONG		unk6;
+	ULONG		unk7;
+	PCWSTR		domain;
+	ULONG		unk8;
+	PVOID		strangeNames;
+	ULONG		unk9;
+	ULONG		TicketEncType;
+	ULONG		TicketKvno;
+	KIWI_KERBEROS_BUFFER	Ticket;
+} KIWI_KERBEROS_INTERNAL_TICKET_60, *PKIWI_KERBEROS_INTERNAL_TICKET_60;
 
 typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_6 {
 	LIST_ENTRY	This;

@@ -162,16 +162,16 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_masterkeys(IN ULONG_PTR pMaste
 			{
 				if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId))
 				{
-					dprintf("\n\t [%08x]\n\t * GUID :\t", monNb++);
+					dprintf("\n\t [%08x]\n\t * GUID      :\t", monNb++);
 					kull_m_string_displayGUID(&mesCredentials.KeyUid);
-					dprintf("\n\t * Time :\t"); kull_m_string_displayFileTime(&mesCredentials.insertTime);
+					dprintf("\n\t * Time      :\t"); kull_m_string_displayFileTime(&mesCredentials.insertTime);
 
 					if(buffer = (PBYTE) LocalAlloc(LPTR, mesCredentials.keySize))
 					{						
 						if(ReadMemory(ptr + FIELD_OFFSET(KIWI_MASTERKEY_CACHE_ENTRY, key), buffer, mesCredentials.keySize, NULL))
 						{
 							kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(buffer, mesCredentials.keySize);
-							dprintf("\n\t * Key :\t"); kull_m_string_dprintf_hex(buffer, mesCredentials.keySize, 0);
+							dprintf("\n\t * MasterKey :\t"); kull_m_string_dprintf_hex(buffer, mesCredentials.keySize, 0);
 						}
 						LocalFree(buffer);
 					}

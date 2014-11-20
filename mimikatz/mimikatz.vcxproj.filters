@@ -140,6 +140,15 @@
     <ClCompile Include="modules\kuhl_m_service_remote.c">
       <Filter>local modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_dpapi.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c">
+      <Filter>local modules\kerberos</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_minesweeper.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -297,6 +306,15 @@
       <Filter>local modules</Filter>
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_service_remote.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_dpapi.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h">
+      <Filter>local modules\kerberos</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_minesweeper.h">
       <Filter>local modules</Filter>
     </ClInclude>
   </ItemGroup>

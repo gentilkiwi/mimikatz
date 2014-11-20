@@ -15,66 +15,71 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};//, {0}, 0, 0};
 	DWORD szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned;//sizeof(PAC_SIGNATURE_DATA) - 2 * sizeof(USHORT), szSignatureAligned;
 	DWORD modulo, offsetData = sizeof(PACTYPE) + 3 * sizeof(PAC_INFO_BUFFER);
+	PKERB_CHECKSUM pCheckSum;
 
-	if(kuhl_m_pac_validationInfo_to_LOGON_INFO(validationInfo, &pLogonInfo, &szLogonInfo))
+	status = CDLocateCheckSum(SignatureType, &pCheckSum);
+	if(NT_SUCCESS(status))
 	{
-		szLogonInfoAligned = szLogonInfo;
-		if(modulo = szLogonInfo % 8)
-			szLogonInfoAligned += 8 - modulo;
-	}
-	if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(validationInfo, &pClientInfo, &szClientInfo))
-	{
-		szClientInfoAligned = szClientInfo;
-		if(modulo = szClientInfo % 8)
-			szClientInfoAligned += (8 - modulo);
-	}
-	szSignature += (SignatureType == KERB_CHECKSUM_HMAC_MD5) ? 16 : 12;
-	
-	szSignatureAligned = szSignature;
-	if(modulo = szSignature % 8)
-		szSignatureAligned += 8 - modulo;
-
-	if(pLogonInfo && pClientInfo)
-	{
-		*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + 2 * szSignatureAligned;
-		if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
+		if(kuhl_m_pac_validationInfo_to_LOGON_INFO(validationInfo, &pLogonInfo, &szLogonInfo))
 		{
-			(*pacType)->cBuffers = 4;
-			(*pacType)->Version = 0;
-
-			(*pacType)->Buffers[0].cbBufferSize = szLogonInfo;
-			(*pacType)->Buffers[0].ulType = PACINFO_TYPE_LOGON_INFO;
-			(*pacType)->Buffers[0].Offset = offsetData;
-			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[0].Offset, pLogonInfo, (*pacType)->Buffers[0].cbBufferSize);
-
-			(*pacType)->Buffers[1].cbBufferSize = szClientInfo;
-			(*pacType)->Buffers[1].ulType = PACINFO_TYPE_CNAME_TINFO;
-			(*pacType)->Buffers[1].Offset = (*pacType)->Buffers[0].Offset + szLogonInfoAligned;
-			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[1].Offset, pClientInfo, (*pacType)->Buffers[1].cbBufferSize);
-
-			(*pacType)->Buffers[2].cbBufferSize = szSignature;
-			(*pacType)->Buffers[2].ulType = PACINFO_TYPE_CHECKSUM_SRV;
-			(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
-			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
-
-			(*pacType)->Buffers[3].cbBufferSize = szSignature;
-			(*pacType)->Buffers[3].ulType = PACINFO_TYPE_CHECKSUM_KDC;
-			(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szSignatureAligned;
-			RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
-
-			status = TRUE;
+			szLogonInfoAligned = szLogonInfo;
+			if(modulo = szLogonInfo % 8)
+				szLogonInfoAligned += 8 - modulo;
 		}
+		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(validationInfo, &pClientInfo, &szClientInfo))
+		{
+			szClientInfoAligned = szClientInfo;
+			if(modulo = szClientInfo % 8)
+				szClientInfoAligned += (8 - modulo);
+		}
+
+		szSignature += pCheckSum->Size;
+
+		szSignatureAligned = szSignature;
+		if(modulo = szSignature % 8)
+			szSignatureAligned += 8 - modulo;
+
+		if(pLogonInfo && pClientInfo)
+		{
+			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + 2 * szSignatureAligned;
+			if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
+			{
+				(*pacType)->cBuffers = 4;
+				(*pacType)->Version = 0;
+
+				(*pacType)->Buffers[0].cbBufferSize = szLogonInfo;
+				(*pacType)->Buffers[0].ulType = PACINFO_TYPE_LOGON_INFO;
+				(*pacType)->Buffers[0].Offset = offsetData;
+				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[0].Offset, pLogonInfo, (*pacType)->Buffers[0].cbBufferSize);
+
+				(*pacType)->Buffers[1].cbBufferSize = szClientInfo;
+				(*pacType)->Buffers[1].ulType = PACINFO_TYPE_CNAME_TINFO;
+				(*pacType)->Buffers[1].Offset = (*pacType)->Buffers[0].Offset + szLogonInfoAligned;
+				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[1].Offset, pClientInfo, (*pacType)->Buffers[1].cbBufferSize);
+
+				(*pacType)->Buffers[2].cbBufferSize = szSignature;
+				(*pacType)->Buffers[2].ulType = PACINFO_TYPE_CHECKSUM_SRV;
+				(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
+				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
+
+				(*pacType)->Buffers[3].cbBufferSize = szSignature;
+				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_CHECKSUM_KDC;
+				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szSignatureAligned;
+				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
+
+				status = TRUE;
+			}
+		}
+
+		if(pLogonInfo)
+			LocalFree(pLogonInfo);
+		if(pClientInfo)
+			LocalFree(pClientInfo);
 	}
-
-	if(pLogonInfo)
-		LocalFree(pLogonInfo);
-	if(pClientInfo)
-		LocalFree(pClientInfo);
-
 	return status;
 }
 
-NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DWORD keySize)
+NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD SignatureType, LPCVOID key, DWORD keySize)
 {
 	NTSTATUS status = STATUS_NOT_FOUND;
 	DWORD i;
@@ -83,22 +88,22 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DW
 	PPAC_SIGNATURE_DATA pSignatureData;
 	PBYTE checksumSrv = NULL, checksumpKdc = NULL;
 
-	for(i = 0; i < pacType->cBuffers; i++)
+	status = CDLocateCheckSum(SignatureType, &pCheckSum);
+	if(NT_SUCCESS(status))
 	{
-		if((pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV) || (pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_KDC))
+		for(i = 0; i < pacType->cBuffers; i++)
 		{
-			pSignatureData = (PPAC_SIGNATURE_DATA) ((PBYTE) pacType + pacType->Buffers[i].Offset);
-			RtlZeroMemory(pSignatureData->Signature, (pSignatureData->SignatureType == KERB_CHECKSUM_HMAC_MD5) ? 16 : 12);
-			if(pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV)
-				checksumSrv = pSignatureData->Signature;
-			else
-				checksumpKdc = pSignatureData->Signature;
+			if((pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV) || (pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_KDC))
+			{
+				pSignatureData = (PPAC_SIGNATURE_DATA) ((PBYTE) pacType + pacType->Buffers[i].Offset);
+				RtlZeroMemory(pSignatureData->Signature, pCheckSum->Size);
+				if(pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV)
+					checksumSrv = pSignatureData->Signature;
+				else
+					checksumpKdc = pSignatureData->Signature;
+			}
 		}
-	}
-	if(checksumSrv && checksumpKdc)
-	{
-		status = CDLocateCheckSum(pSignatureData->SignatureType, &pCheckSum);
-		if(NT_SUCCESS(status))
+		if(checksumSrv && checksumpKdc)
 		{
 			status = pCheckSum->InitializeEx(key, keySize, KERB_NON_KERB_CKSUM_SALT, &Context);
 			if(NT_SUCCESS(status))

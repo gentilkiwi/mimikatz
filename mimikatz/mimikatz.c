@@ -19,6 +19,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_misc,
 	&kuhl_m_token,
 	&kuhl_m_vault,
+	&kuhl_m_minesweeper,
 #ifdef NET_MODULE
 	&kuhl_m_net,
 #endif
@@ -41,7 +42,7 @@ int wmain(int argc, wchar_t * argv[])
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'    Microsoft BlueHat edition!       with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
+		L"  '#####'    " MIMIKATZ_SPECIAL L" with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
 	
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)

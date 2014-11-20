@@ -4,12 +4,12 @@
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
 */
 #pragma once
-//#include "../sekurlsa/kuhl_m_sekurlsa.h"
 #include "../kuhl_m.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_crypto_system.h"
 #include "kuhl_m_kerberos_ticket.h"
 #include "kuhl_m_kerberos_pac.h"
+#include "kuhl_m_kerberos_ccache.h"
 
 #define USER_NORMAL_ACCOUNT				0x00000010
 #define USER_DONT_EXPIRE_PASSWORD		0x00000200

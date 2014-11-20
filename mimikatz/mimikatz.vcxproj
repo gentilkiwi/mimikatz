@@ -88,6 +88,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
     <ClCompile Include="..\modules\kull_m_asn1.c" />
+    <ClCompile Include="..\modules\kull_m_dpapi.c" />
     <ClCompile Include="..\modules\kull_m_file.c" />
     <ClCompile Include="..\modules\kull_m_handle.c" />
     <ClCompile Include="..\modules\kull_m_kernel.c" />
@@ -104,6 +105,7 @@
     <ClCompile Include="..\modules\kull_m_token.c" />
     <ClCompile Include="mimikatz.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ticket.c" />
     <ClCompile Include="modules\kuhl_m_crypto.c" />
@@ -121,6 +123,7 @@
     <ClCompile Include="modules\kuhl_m_token.c" />
     <ClCompile Include="modules\kuhl_m_ts.c" />
     <ClCompile Include="modules\kuhl_m_vault.c" />
+    <ClCompile Include="modules\kuhl_m_minesweeper.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c" />
@@ -138,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="..\modules\kull_m_asn1.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
+    <ClInclude Include="..\modules\kull_m_dpapi.h" />
     <ClInclude Include="..\modules\kull_m_file.h" />
     <ClInclude Include="..\modules\kull_m_handle.h" />
     <ClInclude Include="..\modules\kull_m_kernel.h" />
@@ -157,6 +161,7 @@
     <ClInclude Include="..\modules\kull_m_token.h" />
     <ClInclude Include="mimikatz.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ticket.h" />
     <ClInclude Include="modules\kuhl_m.h" />
@@ -175,6 +180,7 @@
     <ClInclude Include="modules\kuhl_m_token.h" />
     <ClInclude Include="modules\kuhl_m_ts.h" />
     <ClInclude Include="modules\kuhl_m_vault.h" />
+    <ClInclude Include="modules\kuhl_m_minesweeper.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h" />

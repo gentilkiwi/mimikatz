@@ -125,7 +125,7 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INP
 
 		LocalFree(data);
 	}
-	return TRUE;
+	return success;
 }
 
 BOOL CALLBACK kull_m_remotelib_exports_callback_module_exportedEntry(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg)

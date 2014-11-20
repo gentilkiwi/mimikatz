@@ -39,6 +39,9 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRe
 			pDeviceObject->Flags &= ~DO_DEVICE_INITIALIZING;
 			IoCreateSymbolicLink(&uStrDosDeviceName, &uStrDriverName);
 			status = AuxKlibInitialize();
+
+			if(KiwiOsIndex >= KiwiOsIndex_VISTA)
+				status = kkll_m_notify_init();
 		}
 	}
 	return status;
@@ -112,6 +115,12 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 				break;
 			case IOCTL_MIMIDRV_NOTIFY_OBJECT_LIST:
 				status = kkll_m_notify_list_object(&kOutputBuffer);
+				break;
+			case IOCTL_MIMIDRV_NOTIFY_PROCESS_REMOVE:
+				status = kkll_m_notify_remove_process(szBufferIn, bufferIn, &kOutputBuffer);
+				break;
+			case IOCTL_MIMIDRV_NOTIFY_OBJECT_REMOVE:
+				status = kkll_m_notify_remove_object(szBufferIn, bufferIn, &kOutputBuffer);
 				break;
 
 			case IOCTL_MIMIDRV_FILTER_LIST:

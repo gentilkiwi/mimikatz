@@ -42,10 +42,25 @@ BOOL kull_m_string_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY
 	return status;
 }
 
+BOOL kull_m_string_copyUnicodeStringBuffer(PUNICODE_STRING pSource, PUNICODE_STRING pDestination)
+{
+	BOOL status = FALSE;
+	if(pSource && pDestination && pSource->MaximumLength && pSource->Buffer)
+	{
+		*pDestination = *pSource;
+		if(pDestination->Buffer = (PWSTR) LocalAlloc(LPTR, pSource->MaximumLength))
+		{
+			status = TRUE;
+			RtlCopyMemory(pDestination->Buffer, pSource->Buffer, pSource->MaximumLength);
+		}
+	}
+	return status;
+}
+
 void kull_m_string_freeUnicodeStringBuffer(PUNICODE_STRING pString)
 {
-	if(pString->Buffer)
-		LocalFree(pString->Buffer);
+	if(pString && pString->Buffer)
+		pString->Buffer = (PWSTR) LocalFree(pString->Buffer);
 }
 
 wchar_t * kull_m_string_qad_ansi_to_unicode(const char * ansi)

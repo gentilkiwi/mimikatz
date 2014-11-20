@@ -3,6 +3,7 @@
 	benjamin@gentilkiwi.com
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
 */
+#pragma once
 #include "../globals_sekurlsa.h"
 
 NTSTATUS kuhl_m_sekurlsa_nt5_init();

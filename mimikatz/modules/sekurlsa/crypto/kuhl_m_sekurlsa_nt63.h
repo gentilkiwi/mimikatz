@@ -3,8 +3,9 @@
 	benjamin@gentilkiwi.com
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
 */
+#pragma once
+#ifdef LSASS_DECRYPT
 #include "../globals_sekurlsa.h"
-
 typedef struct _KIWI_DECRYPTOR {
 	DWORD cbData;
 	BYTE data[ANYSIZE_ARRAY]; // etc...
@@ -18,3 +19,4 @@ NTSTATUS kuhl_m_sekurlsa_nt63_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL
 NTSTATUS kuhl_m_sekurlsa_nt63_LsaEncryptMemory(IN PVOID Buffer, IN ULONG BufferSize, IN BOOL Encrypt);
 VOID WINAPI kuhl_m_sekurlsa_nt63_LsaProtectMemory (IN PVOID Buffer, IN ULONG BufferSize);
 VOID WINAPI kuhl_m_sekurlsa_nt63_LsaUnprotectMemory (IN PVOID Buffer, IN ULONG BufferSize);
+#endif

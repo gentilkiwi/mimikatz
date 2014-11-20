@@ -163,7 +163,7 @@ typedef struct _PAC_CLIENT_INFO {
 BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE * pacType, DWORD * pacLength);
 BOOL kuhl_m_pac_validationInfo_to_LOGON_INFO(PKERB_VALIDATION_INFO validationInfo, PRPCE_KERB_VALIDATION_INFO * rpceValidationInfo, DWORD * rpceValidationInfoLength);
 BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PKERB_VALIDATION_INFO validationInfo, PPAC_CLIENT_INFO * pacClientInfo, DWORD * pacClientInfoLength);
-NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DWORD keySize);
+NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD SignatureType, LPCVOID key, DWORD keySize);
 
 #ifdef KERBEROS_TOOLS
 typedef struct _RPCE_LAZY_ELEMENT_HEADER {

