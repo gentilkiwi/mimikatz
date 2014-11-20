@@ -195,6 +195,7 @@ __declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
 	if(argv = CommandLineToArgvW(input, &argc))
 	{
 		outputBufferElements = 0xff;
+		outputBufferElementsPosition = 0;
 		if(outputBuffer = (wchar_t *) LocalAlloc(LPTR, outputBufferElements))
 			wmain(argc, argv);
 		LocalFree(argv);
