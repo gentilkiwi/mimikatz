@@ -23,10 +23,10 @@ KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_MasterKeyCacheList[]	= {0x33, 0xc0, 0x40, 0xa3};
-BYTE PTRN_WI60_MasterKeyCacheList[]	= {0x89, 0x03, 0x89, 0x4b, 0x04, 0x39, 0x48, 0x04, 0x0f, 0x85};
+BYTE PTRN_WI60_MasterKeyCacheList[]	= {0x8b, 0xf0, 0x81, 0xfe, 0xcc, 0x06, 0x00, 0x00, 0x0f, 0x84};
 KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_MasterKeyCacheList),	PTRN_WALL_MasterKeyCacheList},	{0, NULL}, {-4}},
-	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI60_MasterKeyCacheList),	PTRN_WI60_MasterKeyCacheList},	{0, NULL}, {-4}},
+	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI60_MasterKeyCacheList),	PTRN_WI60_MasterKeyCacheList},	{0, NULL}, {-16}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WALL_MasterKeyCacheList),	PTRN_WALL_MasterKeyCacheList},	{0, NULL}, {-4}},
 };
 #endif

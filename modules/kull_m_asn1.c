@@ -68,6 +68,16 @@ void kull_m_asn1_append(PDIRTY_ASN1_SEQUENCE_EASY * parent, PDIRTY_ASN1_SEQUENCE
 	}
 }
 
+void kull_m_asn1_append_ctx_and_data_to_seq(PDIRTY_ASN1_SEQUENCE_EASY * Seq, UCHAR CtxId, PDIRTY_ASN1_SEQUENCE_EASY Data)
+{
+	PDIRTY_ASN1_SEQUENCE_EASY Ctx_root;
+	if(Ctx_root = KULL_M_ASN1_CREATE_CTX(CtxId))
+	{
+		kull_m_asn1_append(&Ctx_root, Data);
+		kull_m_asn1_append(Seq, Ctx_root);
+	}
+}
+
 PDIRTY_ASN1_SEQUENCE_EASY kull_m_asn1_create(UCHAR type, LPCVOID data, DWORD size, PDIRTY_ASN1_SEQUENCE_EASY *parent)
 {
 	PDIRTY_ASN1_SEQUENCE_EASY buffer = NULL;
@@ -109,7 +119,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kull_m_asn1_GenTime(PFILETIME localtime)
 	
 	if(FileTimeToSystemTime(localtime, &st))
 	{
-		if(status = (sprintf_s(buffer, sizeof(buffer), "%04hu%02hu%02hu%02hu%02hu%02huZ",  st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond) > 0))
+		if(status = (sprintf_s(buffer, sizeof(buffer), "%04hu%02hu%02hu%02hu%02hu%02huZ", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond) > 0))
 			return kull_m_asn1_create(DIRTY_ASN1_ID_GENERALIZED_TIME, buffer, sizeof(buffer) - 1, NULL);
 	}
 	return NULL;

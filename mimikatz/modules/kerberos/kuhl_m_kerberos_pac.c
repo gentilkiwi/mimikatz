@@ -93,7 +93,7 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD Signature
 	{
 		for(i = 0; i < pacType->cBuffers; i++)
 		{
-			if((pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV) || (pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_KDC))
+			if((pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_SRV) || (pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_KDC))
 			{
 				pSignatureData = (PPAC_SIGNATURE_DATA) ((PBYTE) pacType + pacType->Buffers[i].Offset);
 				RtlZeroMemory(pSignatureData->Signature, pCheckSum->Size);
@@ -110,9 +110,14 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD Signature
 			{
 				pCheckSum->Sum(Context, pacLenght, pacType);
 				pCheckSum->Finalize(Context, checksumSrv);
-				pCheckSum->Sum(Context, pCheckSum->Size, checksumSrv);
-				pCheckSum->Finalize(Context, checksumpKdc);
 				pCheckSum->Finish(&Context);
+				status = pCheckSum->InitializeEx(key, keySize, KERB_NON_KERB_CKSUM_SALT, &Context);
+				if(NT_SUCCESS(status))
+				{
+					pCheckSum->Sum(Context, pCheckSum->Size, checksumSrv);
+					pCheckSum->Finalize(Context, checksumpKdc);
+					pCheckSum->Finish(&Context);
+				}
 			}
 		}
 	}
@@ -359,7 +364,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 	PSID pSid;
 	PVOID base;
 
-	if(kull_m_file_readData(L"C:\\Users\\gentilkiwi\\Desktop\\out.pac", (PBYTE *) &pacType, &pacLenght))
+	if(kull_m_file_readData(L"C:\\security\\sylvain2.pac", (PBYTE *) &pacType, &pacLenght))
 	{
 		kprintf(L"version %u, nbBuffer = %u\n\n", pacType->Version, pacType->cBuffers);
 		

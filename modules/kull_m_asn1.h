@@ -41,6 +41,7 @@ typedef struct _DIRTY_ASN1_SEQUENCE_EASY {
 
 DWORD kull_m_asn1_getSize(PDIRTY_ASN1_SEQUENCE_EASY sequence);
 void kull_m_asn1_append(PDIRTY_ASN1_SEQUENCE_EASY * parent, PDIRTY_ASN1_SEQUENCE_EASY child);
+void kull_m_asn1_append_ctx_and_data_to_seq(PDIRTY_ASN1_SEQUENCE_EASY * Seq, UCHAR CtxId, PDIRTY_ASN1_SEQUENCE_EASY Data);
 PDIRTY_ASN1_SEQUENCE_EASY kull_m_asn1_create(UCHAR type, LPCVOID data, DWORD size, PDIRTY_ASN1_SEQUENCE_EASY *parent);
 PDIRTY_ASN1_SEQUENCE_EASY kull_m_asn1_GenTime(PFILETIME localtime);
 PDIRTY_ASN1_SEQUENCE_EASY kull_m_asn1_GenString(PCUNICODE_STRING String);

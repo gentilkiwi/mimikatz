@@ -12,11 +12,11 @@ KULL_M_PATCH_GENERIC TsPkgReferences[] = {
 #elif defined _M_IX86
 BYTE PTRN_WNO8_TSGlobalCredTable[]	= {0x8b, 0xff, 0x55, 0x8b, 0xec, 0x51, 0x56, 0xbe};
 BYTE PTRN_WIN8_TSGlobalCredTable[]	= {0x8b, 0xff, 0x53, 0xbb};
-BYTE PTRN_WN10b_TSGlobalCredTable[]	= {0x8b, 0xff, 0x57, 0xbf};
+BYTE PTRN_WN81_TSGlobalCredTable[]	= {0x8b, 0xff, 0x57, 0xbf};
 KULL_M_PATCH_GENERIC TsPkgReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WNO8_TSGlobalCredTable),	PTRN_WNO8_TSGlobalCredTable},	{0, NULL}, {8}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_TSGlobalCredTable),	PTRN_WIN8_TSGlobalCredTable},	{0, NULL}, {4}},
-	{KULL_M_WIN_BUILD_10b,		{sizeof(PTRN_WN10b_TSGlobalCredTable),	PTRN_WN10b_TSGlobalCredTable},	{0, NULL}, {4}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WN81_TSGlobalCredTable),	PTRN_WN81_TSGlobalCredTable},	{0, NULL}, {4}},
 };
 #endif
 
