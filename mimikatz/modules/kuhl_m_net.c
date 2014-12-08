@@ -1,4 +1,4 @@
-/*	Benjamin DELPY `gentilkiwi`
+﻿/*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
@@ -108,7 +108,7 @@ NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 													{
 														for(k = 0; k < aliasCountRetourned; k++)
 														{
-															kprintf(L"\n |�%-5u ", alias[k]);
+															kprintf(L"\n |´%-5u ", alias[k]);
 															status = SamLookupIdsInDomain(hBuiltinHandle, 1, &alias[k], &groupName, &usage);
 															if(NT_SUCCESS(status))
 															{
