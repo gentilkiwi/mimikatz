@@ -364,7 +364,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 	PSID pSid;
 	PVOID base;
 
-	if(kull_m_file_readData(L"C:\\security\\sylvain2.pac", (PBYTE *) &pacType, &pacLenght))
+	if(kull_m_file_readData(L"C:\\security\\mimikatz\\mimikatz\\out.pac", (PBYTE *) &pacType, &pacLenght))
 	{
 		kprintf(L"version %u, nbBuffer = %u\n\n", pacType->Version, pacType->cBuffers);
 		

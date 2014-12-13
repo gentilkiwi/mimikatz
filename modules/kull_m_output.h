@@ -18,3 +18,6 @@ void kprintf(PCWCHAR format, ...);
 void kprintf_inputline(PCWCHAR format, ...);
 
 BOOL kull_m_output_file(PCWCHAR file);
+
+void kull_m_output_init();
+void kull_m_output_clean();

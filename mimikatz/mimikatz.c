@@ -30,9 +30,7 @@ int wmain(int argc, wchar_t * argv[])
 	int i, status = STATUS_SUCCESS;
 #ifndef _WINDLL
 	wchar_t input[0xffff];
-	_setmode(_fileno(stdout), _O_U8TEXT);
-	_setmode(_fileno(stderr), _O_U8TEXT);
-	SetConsoleOutputCP(CP_UTF8);
+	kull_m_output_init();
 	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH L" (oe.eo)");
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 #endif
@@ -62,6 +60,9 @@ int wmain(int argc, wchar_t * argv[])
 	}
 #endif
 	mimikatz_initOrClean(FALSE);
+#ifndef _WINDLL
+	kull_m_output_clean();
+#endif
 	return STATUS_SUCCESS;
 }
 
@@ -180,7 +181,8 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 			kprintf(L"\n");
 		}
 
-		LocalFree(module);
+		if(module)
+			LocalFree(module);
 		LocalFree(argv);
 	}
 	return status;

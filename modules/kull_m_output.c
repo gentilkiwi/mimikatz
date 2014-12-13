@@ -69,3 +69,20 @@ BOOL kull_m_output_file(PCWCHAR file)
 	}
 	return (!file || (file && logfile));
 }
+
+int previousStdOut, previousStdErr;
+UINT previousConsoleOutput;
+void kull_m_output_init()
+{
+	previousStdOut = _setmode(_fileno(stdout), _O_U8TEXT);
+	previousStdErr = _setmode(_fileno(stderr), _O_U8TEXT);
+	previousConsoleOutput = GetConsoleOutputCP();
+	SetConsoleOutputCP(CP_UTF8);
+}
+
+void kull_m_output_clean()
+{
+	_setmode(_fileno(stdout), previousStdOut);
+	_setmode(_fileno(stderr), previousStdErr);
+	SetConsoleOutputCP(previousConsoleOutput);
+}
