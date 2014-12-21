@@ -207,12 +207,12 @@ BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M
 	KIWI_BCRYPT_HANDLE_KEY hKey; PKIWI_HARD_KEY pHardKey;
 	PVOID buffer; SIZE_T taille; LONG offset;
 
-	if(pOs->MinorVersion < 2)
+	if(pOs->BuildNumber < KULL_M_WIN_MIN_BUILD_8)
 	{
 		taille = sizeof(KIWI_BCRYPT_KEY);
 		offset = FIELD_OFFSET(KIWI_BCRYPT_KEY, hardkey);
 	}
-	else if(pOs->MinorVersion < 3)
+	else if(pOs->BuildNumber < KULL_M_WIN_MIN_BUILD_BLUE)
 	{
 		taille = sizeof(KIWI_BCRYPT_KEY8);
 		offset = FIELD_OFFSET(KIWI_BCRYPT_KEY8, hardkey);

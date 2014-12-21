@@ -30,8 +30,8 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 {
 	BOOLEAN isShaOwPassword;
 	BOOLEAN isUnk1;
 	BOOLEAN isUnk2;
-	BOOLEAN isUnk3;
-	BOOLEAN isUnk4;
+	BOOLEAN isUnk3; //
+	BOOLEAN isUnk4; //
 
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];

@@ -25,7 +25,27 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL {
 	BOOLEAN isLmOwfPassword;
 	BOOLEAN isShaOwPassword;
 	/* buffer */
-} MSV1_0_PRIMARY_CREDENTIAL, *PMSV1_0_PRIMARY_CREDENTIAL; 
+} MSV1_0_PRIMARY_CREDENTIAL, *PMSV1_0_PRIMARY_CREDENTIAL;
+
+typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 { 
+	LSA_UNICODE_STRING LogonDomainName; 
+	LSA_UNICODE_STRING UserName;
+	
+	BOOLEAN isUnk0;
+	BOOLEAN isNtOwfPassword;
+	BOOLEAN isLmOwfPassword;
+	BOOLEAN isShaOwPassword;
+	BOOLEAN isUnk1;
+	BOOLEAN isUnk2;
+	BOOLEAN isUnk3;
+	BOOLEAN isUnk4;
+
+	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
+	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
+	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];
+	BYTE UnkStruct[128];
+	/* buffer */
+} MSV1_0_PRIMARY_CREDENTIAL_10, *PMSV1_0_PRIMARY_CREDENTIAL_10;
 
 typedef struct _RPCE_COMMON_TYPE_HEADER {
 	UCHAR Version;
@@ -72,11 +92,10 @@ typedef struct _KIWI_KERBEROS_KEYS_LIST_6 {
 	PVOID unk2;
 	PVOID unk3;
 	PVOID unk4;
-	KERB_HASHPASSWORD_6 KeysEntries[ANYSIZE_ARRAY];
+	//KERB_HASHPASSWORD_6 KeysEntries[ANYSIZE_ARRAY];
 } KIWI_KERBEROS_KEYS_LIST_6, *PKIWI_KERBEROS_KEYS_LIST_6;
 
-typedef struct _KIWI_KERBEROS_LOGON_SESSION
-{
+typedef struct _KIWI_KERBEROS_LOGON_SESSION {
 	ULONG		UsageCount;
 	LIST_ENTRY	unk0;
 	PVOID		unk1;
@@ -105,7 +124,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION
 	PVOID		unk19;
 	PVOID		unk20;
 	PVOID		unk21;
-	PKIWI_KERBEROS_KEYS_LIST_6	pKeyList;
+	PVOID		pKeyList;
 	PVOID		unk23;
 	LIST_ENTRY	Tickets_1;
 	FILETIME	unk24;
@@ -115,6 +134,54 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION
 	FILETIME	unk26;
 	PUNICODE_STRING pinCode;	// not only PIN (CSP Info)
 } KIWI_KERBEROS_LOGON_SESSION, *PKIWI_KERBEROS_LOGON_SESSION;
+
+typedef struct _KIWI_KERBEROS_LOGON_SESSION_10 {
+	ULONG		UsageCount;
+	LIST_ENTRY	unk0;
+	PVOID		unk1;
+	ULONG		unk1b;
+	FILETIME	unk2;
+	PVOID		unk4;
+	PVOID		unk5;
+	PVOID		unk6;
+	LUID		LocallyUniqueIdentifier;
+	FILETIME	unk7;
+	PVOID		unk8;
+	ULONG		unk8b;
+	FILETIME	unk9;
+	PVOID		unk11;
+	PVOID		unk12;
+	PVOID		unk13;
+#ifdef _M_IX86
+	ULONG		unkAlign;
+#endif
+	KIWI_GENERIC_PRIMARY_CREDENTIAL	credentials;
+	ULONG		unk14;
+	ULONG		unk15;
+	ULONG		unk16;
+	ULONG		unk17;
+	PVOID		unk18;
+	PVOID		unk19;
+	PVOID		unk20;
+	PVOID		unk21;
+	PVOID		pKeyList;
+	PVOID		unk23;
+	LIST_ENTRY	Tickets_1;
+	FILETIME	unk24;
+	LIST_ENTRY	Tickets_2;
+	FILETIME	unk25;
+	LIST_ENTRY	Tickets_3;
+	FILETIME	unk26;
+	PUNICODE_STRING pinCode;	// not only PIN (CSP Info)
+} KIWI_KERBEROS_LOGON_SESSION_10, *PKIWI_KERBEROS_LOGON_SESSION_10;
+
+typedef struct _KERB_INFOS {
+	LONG	offsetLuid;
+	LONG	offsetCreds;
+	LONG	offsetPin;
+	LONG	offsetKeyList;
+	SIZE_T	structSize;
+} KERB_INFOS, *PKERB_INFOS;
 
 typedef struct _KIWI_LIVESSP_PRIMARY_CREDENTIAL
 {

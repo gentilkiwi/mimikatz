@@ -104,6 +104,7 @@ void kuhl_m_kerberos_ticket_displayFlags(ULONG flags);
 void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTERNAL_NAME pExternalName, IN PUNICODE_STRING pDomain);
 BOOL kuhl_m_kerberos_ticket_isLongFilename(PKIWI_KERBEROS_TICKET ticket);
 PCWCHAR kuhl_m_kerberos_ticket_etype(LONG eType);
+PCWCHAR kuhl_m_kerberos_ticket_ctype(LONG cType);
 
 void kuhl_m_kerberos_ticket_freeTicket(PKIWI_KERBEROS_TICKET ticket);
 PKERB_EXTERNAL_NAME kuhl_m_kerberos_ticket_copyExternalName(PKERB_EXTERNAL_NAME pName);
