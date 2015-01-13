@@ -84,7 +84,7 @@ NTSTATUS kuhl_m_kerberos_ccache_enum(int argc, wchar_t * argv[], BOOL isInject, 
 										{
 											if(saveFilename = kuhl_m_kerberos_ccache_generateFileName(i, ticket, MIMIKATZ_KERBEROS_EXT))
 											{
-												if(kull_m_file_writeData(saveFilename, (PBYTE) App_KrbCred, App_KrbCred_Size))
+												if(kull_m_file_writeData(saveFilename, App_KrbCred, App_KrbCred_Size))
 													kprintf(L"\n\t   * Saved to file %s !", saveFilename);
 												else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
 

