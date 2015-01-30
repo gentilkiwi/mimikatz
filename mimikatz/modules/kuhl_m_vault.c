@@ -62,6 +62,7 @@ const VAULT_SCHEMA_HELPER schemaHelper[] = {
 	{{{0x0b2e033f5, 0x5fde, 0x450d, {0xa1, 0xbd, 0x37, 0x91, 0xf4, 0x65, 0x72, 0x0c}}, L"Pin Logon"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
 	{{{0x0b4b8a12b, 0x183d, 0x4908, {0x95, 0x59, 0xbd, 0x8b, 0xce, 0x72, 0xb5, 0x8a}}, L"Picture Password"},	kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
 	{{{0x0fec87291, 0x14f6, 0x40b6, {0xbd, 0x98, 0x7f, 0xf2, 0x45, 0x98, 0x6b, 0x26}}, L"Biometric"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
+	{{{0x01d4350a3, 0x330d, 0x4af9, {0xb3, 0xff, 0xa9, 0x27, 0xa4, 0x59, 0x98, 0xac}}, L"Next Generation Credential"},	NULL},
 };
 
 NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
@@ -155,10 +156,8 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 									{
 										kprintf(L"\n\t\t*** %s ***\n", schemaHelper[l].guidString.text);
 										if(schemaHelper[l].helper)
-										{
 											schemaHelper[l].helper(&schemaHelper[l].guidString, &items8[j], ((status == STATUS_SUCCESS) && pItem8) ? pItem8 : NULL, TRUE);
-											kprintf(L"\n");
-										}
+										kprintf(L"\n");
 										break;
 									}
 								}
@@ -365,7 +364,7 @@ KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WN60_CredpCloneCredential),	PTRN_WN60_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WN62_CredpCloneCredential),	PTRN_WN62_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
-	{KULL_M_WIN_BUILD_10b,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WN64_CredpCloneCredentialJmpShort),	PATC_WN64_CredpCloneCredentialJmpShort},	{6}},
+	{KULL_M_WIN_BUILD_10,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WN64_CredpCloneCredentialJmpShort),	PATC_WN64_CredpCloneCredentialJmpShort},	{6}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x43, 0x04, 0x83, 0xf8, 0x01, 0x74};

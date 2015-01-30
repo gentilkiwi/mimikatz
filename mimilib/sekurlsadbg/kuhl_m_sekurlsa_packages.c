@@ -28,7 +28,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN 
 						{
 							dprintf("\n\t [%08x] %Z", credentials.AuthenticationPackageId, &primaryCredentials.Primary);
 							if(RtlEqualString(&primaryCredentials.Primary, &PRIMARY_STRING, FALSE))
-								flags = (NtBuildNumber < KULL_M_WIN_BUILD_10b) ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
+								flags = (NtBuildNumber < KULL_M_WIN_BUILD_10) ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
 							else if(RtlEqualString(&primaryCredentials.Primary, &CREDENTIALKEYS_STRING, FALSE))
 								flags = KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY;
 							else
@@ -73,7 +73,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 	PKERB_HASHPASSWORD_6 pHashPassword;
 	DWORD i;
 	ULONG_PTR ptr;
-	ULONG KerbOffsetIndex = (NtBuildNumber < KULL_M_WIN_BUILD_10b) ? 0 : 1;
+	ULONG KerbOffsetIndex = (NtBuildNumber < KULL_M_WIN_BUILD_10) ? 0 : 1;
 
 	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pKerbGlobalLogonSessionTable, kerbHelper[KerbOffsetIndex].offsetLuid, pData->LogonId))
 	{

@@ -65,7 +65,6 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyB
 #define KULL_M_WIN_BUILD_8		9200
 #define KULL_M_WIN_BUILD_BLUE	9600
 #define KULL_M_WIN_BUILD_10		9800
-#define KULL_M_WIN_BUILD_10b	9879
 
 #define KULL_M_WIN_MIN_BUILD_XP		2500
 #define KULL_M_WIN_MIN_BUILD_2K3	3000

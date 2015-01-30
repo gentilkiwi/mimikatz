@@ -125,11 +125,7 @@ NTSTATUS kuhl_m_kerberos_ccache_list(int argc, wchar_t * argv[])
 
 void kuhl_m_kerberos_ccache_UnixTimeToFileTime(time_t t, LPFILETIME pft)
 {
-	LONGLONG ll;
-
-	ll = Int32x32To64(t, 10000000) + 116444736000000000;
-	pft->dwLowDateTime = (DWORD)ll;
-	pft->dwHighDateTime = ll >> 32;
+	*(PLONGLONG) pft = Int32x32To64(t, 10000000) + 116444736000000000;
 }
 
 BOOL kuhl_m_kerberos_ccache_unicode_string(PBYTE *data, PUNICODE_STRING ustring)
