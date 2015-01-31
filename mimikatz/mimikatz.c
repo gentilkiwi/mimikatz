@@ -127,6 +127,21 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 	unsigned short indexModule, indexCommand;
 	BOOL moduleFound = FALSE, commandFound = FALSE;
 	
+	if (_wcsicmp(input, L"help") == 0 || _wcsicmp(input, L"?") == 0){
+		int i;
+		kprintf(L"\nUsage:"
+			L"\nMODULE_NAME::COMMAND_NAME"
+			L"\ntype MODULE_NAME::help to list the available commands"
+			L"\n\nAvailable modules:"
+			);
+
+		for (i = 0; i<ARRAYSIZE(mimikatz_modules); i++){
+			kprintf(L"\n %s - %s", mimikatz_modules[i]->shortName, mimikatz_modules[i]->description);
+		}
+		kprintf(L"\n");
+		return status;
+	}
+
 	if(argv && (argc > 0))
 	{
 		if(match = wcsstr(argv[0], L"::"))
@@ -163,7 +178,9 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 		else if(!commandFound)
 		{
 			indexModule -= 1;
-			PRINT_ERROR(L"\"%s\" command of \"%s\" module not found !\n", command, mimikatz_modules[indexModule]->shortName);
+			if (_wcsicmp(command, L"help") != 0 && _wcsicmp(command, L"?") != 0){
+				PRINT_ERROR(L"\"%s\" command of \"%s\" module not found !\n", command, mimikatz_modules[indexModule]->shortName);
+			}
 
 			kprintf(L"\nModule :\t%s", mimikatz_modules[indexModule]->shortName);
 			if(mimikatz_modules[indexModule]->fullName)
