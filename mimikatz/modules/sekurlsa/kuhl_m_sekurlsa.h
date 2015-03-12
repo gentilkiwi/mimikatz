@@ -78,6 +78,8 @@ typedef struct _KUHL_M_SEKURLSA_ENUM_HELPER {
 	ULONG offsetToCredentials;
 	ULONG offsetToPSid;
 	ULONG offsetToCredentialManager;
+	ULONG offsetToLogonTime;
+	ULONG offsetToLogonServer;
 } KUHL_M_SEKURLSA_ENUM_HELPER, *PKUHL_M_SEKURLSA_ENUM_HELPER;
 
 typedef struct _KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA {

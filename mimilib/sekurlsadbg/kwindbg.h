@@ -48,6 +48,8 @@ typedef struct _KUHL_M_SEKURLSA_ENUM_HELPER {
 	ULONG offsetToCredentials;
 	ULONG offsetToPSid;
 	ULONG offsetToCredentialManager;
+	ULONG offsetToLogonTime;
+	ULONG offsetToLogonServer;
 } KUHL_M_SEKURLSA_ENUM_HELPER, *PKUHL_M_SEKURLSA_ENUM_HELPER;
 
 LPEXT_API_VERSION WDBGAPI ExtensionApiVersion (void);

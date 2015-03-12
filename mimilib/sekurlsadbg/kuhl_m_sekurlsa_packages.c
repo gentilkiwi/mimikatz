@@ -272,5 +272,4 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN ULONG_PTR reserved,
 			}
 		}
 	}
-
 }

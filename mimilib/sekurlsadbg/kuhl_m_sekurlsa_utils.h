@@ -262,6 +262,8 @@ typedef struct _KIWI_BASIC_SECURITY_LOGON_SESSION_DATA {
 	PVOID						pCredentials;
 	PSID						pSid;
 	PVOID						pCredentialManager;
+	FILETIME					LogonTime;
+	PLSA_UNICODE_STRING			LogonServer;
 } KIWI_BASIC_SECURITY_LOGON_SESSION_DATA, *PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA;
 
 #define RtlEqualLuid(L1, L2) (((L1)->LowPart == (L2)->LowPart) && ((L1)->HighPart == (L2)->HighPart))
