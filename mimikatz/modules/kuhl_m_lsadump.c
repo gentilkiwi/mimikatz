@@ -257,9 +257,27 @@ BOOL kuhl_m_lsadump_getUsersAndSamKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN H
 	HKEY hAccount, hUsers, hUser;
 	DWORD i, nbSubKeys, szMaxSubKeyLen, szUser, rid;
 	PUSER_ACCOUNT_V pUAv;
+	PBYTE data;
 
 	if(kull_m_registry_RegOpenKeyEx(hRegistry, hSAMBase, L"SAM\\Domains\\Account", 0, KEY_READ, &hAccount))
 	{
+		szUser = 0;
+		if(kull_m_registry_RegQueryValueEx(hRegistry, hAccount, L"V", NULL, NULL, NULL, &szUser))
+		{
+			if(data = (PBYTE) LocalAlloc(LPTR, szUser))
+			{
+				if(kull_m_registry_RegQueryValueEx(hRegistry, hAccount, L"V", NULL, NULL, data, &szUser))
+				{
+					kprintf(L"Local SID : ");
+					kull_m_string_displaySID(data + szUser - (sizeof(SID) + sizeof(DWORD) * 3));
+					kprintf(L"\n");
+				}
+				else PRINT_ERROR(L"kull_m_registry_RegQueryValueEx V KO\n");
+				LocalFree(data);
+			}
+		}
+		else PRINT_ERROR(L"pre - kull_m_registry_RegQueryValueEx V KO\n");
+		
 		if(kuhl_m_lsadump_getSamKey(hRegistry, hAccount, sysKey, samKey))
 		{
 			if(kull_m_registry_RegOpenKeyEx(hRegistry, hAccount, L"Users", 0, KEY_READ, &hUsers))
@@ -383,6 +401,67 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 	return status;
 }
 
+BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix)
+{
+	BOOL status = FALSE;
+	wchar_t name[] = L"Pol__DmN", sid[] = L"Pol__DmS";
+	HKEY hName, hSid;
+	DWORD szNeeded;
+	PBYTE buffer;
+	LSA_UNICODE_STRING uString = {0, 0, NULL};
+
+	RtlCopyMemory(&name[3], littleKey, 2*sizeof(wchar_t));
+	RtlCopyMemory(&sid[3], littleKey, 2*sizeof(wchar_t));
+	
+	kprintf(L"%s name : ", prefix);
+	if(kull_m_registry_RegOpenKeyEx(hSecurity, hPolicyBase, name, 0, KEY_READ, &hName))
+	{
+		szNeeded = 0;
+		if(kull_m_registry_RegQueryValueEx(hSecurity, hName, NULL, NULL, NULL, NULL, &szNeeded))
+		{
+			if(szNeeded)
+			{
+				if(buffer = (PBYTE) LocalAlloc(LPTR, szNeeded))
+				{
+					if(kull_m_registry_RegQueryValueEx(hSecurity, hName, NULL, NULL, NULL, buffer, &szNeeded))
+					{
+						uString.Length = ((PUSHORT) buffer)[0];
+						uString.MaximumLength = ((PUSHORT) buffer)[1];
+						uString.Buffer = (PWSTR) (buffer + *(PDWORD) (buffer + 2*sizeof(USHORT)));
+						kprintf(L"%wZ", &uString);
+					}
+					LocalFree(buffer);
+				}
+			}
+		}
+		kull_m_registry_RegCloseKey(hSecurity, hName);
+	}
+
+	if(kull_m_registry_RegOpenKeyEx(hSecurity, hPolicyBase, sid, 0, KEY_READ, &hSid))
+	{
+		szNeeded = 0;
+		if(kull_m_registry_RegQueryValueEx(hSecurity, hSid, NULL, NULL, NULL, NULL, &szNeeded))
+		{
+			if(szNeeded)
+			{
+				if(buffer = (PBYTE) LocalAlloc(LPTR, szNeeded))
+				{
+					if(kull_m_registry_RegQueryValueEx(hSecurity, hSid, NULL, NULL, NULL, buffer, &szNeeded))
+					{
+						kprintf(L" (");
+						kull_m_string_displaySID((PSID) buffer);
+						kprintf(L")");
+					}
+					LocalFree(buffer);
+				}
+			}
+		}
+		kull_m_registry_RegCloseKey(hSecurity, hSid);
+	}
+	kprintf(L"\n");
+	return status;
+}
+
 BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache)
 {
 	BOOL status = FALSE;
@@ -398,6 +477,11 @@ BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN
 
 	if(kull_m_registry_RegOpenKeyEx(hSecurity, hSecurityBase, L"Policy", 0, KEY_READ, &hPolicy))
 	{
+		
+		kprintf(L"\n");
+		kuhl_m_lsadump_getSids(hSecurity, hPolicy, L"Ac", L"Local");
+		kuhl_m_lsadump_getSids(hSecurity, hPolicy, L"Pr", L"Domain");
+		
 		if(kull_m_registry_RegOpenKeyEx(hSecurity, hPolicy, L"PolRevision", 0, KEY_READ, &hPolRev))
 		{
 			szNeeded = sizeof(POL_REVISION);
