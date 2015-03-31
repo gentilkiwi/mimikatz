@@ -117,5 +117,5 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncKrbCredPart(PKIWI_K
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncTicketPart(PKIWI_KERBEROS_TICKET ticket, LPCVOID PacAuthData, DWORD PacAuthDataSize);
 
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequenceEncryptionKey(UCHAR eType, LPCVOID data, DWORD size);
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequenceEncryptedData(UCHAR eType, UCHAR kvNo, LPCVOID data, DWORD size);
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequenceEncryptedData(UCHAR eType, ULONG kvNo, LPCVOID data, DWORD size);
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequencePrimaryName(PKERB_EXTERNAL_NAME name);

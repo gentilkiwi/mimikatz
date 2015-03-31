@@ -70,6 +70,7 @@ PKULL_M_MEMORY_HANDLE kull_m_memory_close(IN PKULL_M_MEMORY_HANDLE hMemory)
 				kull_m_minidump_close(hMemory->pHandleProcessDmp->hMinidump);
 				LocalFree(hMemory->pHandleProcessDmp);
 			}
+			break;
 		case KULL_M_MEMORY_TYPE_KERNEL:
 			LocalFree(hMemory->pHandleDriver);
 			break;
