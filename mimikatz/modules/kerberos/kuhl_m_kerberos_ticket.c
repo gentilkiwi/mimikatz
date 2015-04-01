@@ -309,38 +309,41 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncTicketPart(PKIWI_KE
 			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_ENDTIME, kull_m_asn1_GenTime(&ticket->EndTime));
 			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_RENEW_TILL, kull_m_asn1_GenTime(&ticket->RenewUntil));
 			/* ID_CTX_ENCTICKETPART_CADDR not present */
-			if(Ctx_EncTicketPart = KULL_M_ASN1_CREATE_CTX(ID_CTX_ENCTICKETPART_AUTHORIZATION_DATA))
+			if(PacAuthData && PacAuthDataSize)
 			{
-				if(Seq_1 = KULL_M_ASN1_CREATE_SEQ())
+				if(Ctx_EncTicketPart = KULL_M_ASN1_CREATE_CTX(ID_CTX_ENCTICKETPART_AUTHORIZATION_DATA))
 				{
-					if(Seq_2 = KULL_M_ASN1_CREATE_SEQ())
+					if(Seq_1 = KULL_M_ASN1_CREATE_SEQ())
 					{
-						integer1 = ID_AUTHDATA_AD_IF_RELEVANT;
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_2, ID_CTX_AUTHORIZATIONDATA_AD_TYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-						if(Ctx_Root = KULL_M_ASN1_CREATE_CTX(ID_CTX_AUTHORIZATIONDATA_AD_DATA))
+						if(Seq_2 = KULL_M_ASN1_CREATE_SEQ())
 						{
-							if(OctetString = kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, NULL, 0, NULL))
+							integer1 = ID_AUTHDATA_AD_IF_RELEVANT;
+							kull_m_asn1_append_ctx_and_data_to_seq(&Seq_2, ID_CTX_AUTHORIZATIONDATA_AD_TYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
+							if(Ctx_Root = KULL_M_ASN1_CREATE_CTX(ID_CTX_AUTHORIZATIONDATA_AD_DATA))
 							{
-								if(Seq_3 = KULL_M_ASN1_CREATE_SEQ())
+								if(OctetString = kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, NULL, 0, NULL))
 								{
-									if(Seq_4 = KULL_M_ASN1_CREATE_SEQ())
+									if(Seq_3 = KULL_M_ASN1_CREATE_SEQ())
 									{
-										integer2 = _byteswap_ushort(ID_AUTHDATA_AD_WIN2K_PAC);
-										kull_m_asn1_append_ctx_and_data_to_seq(&Seq_4, ID_AUTHDATA_AD_WIN2K_PAC, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer2, sizeof(USHORT), NULL));
-										kull_m_asn1_append_ctx_and_data_to_seq(&Seq_4, ID_CTX_AUTHORIZATIONDATA_AD_DATA, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, PacAuthData, PacAuthDataSize, NULL));
-										kull_m_asn1_append(&Seq_3, Seq_4);
+										if(Seq_4 = KULL_M_ASN1_CREATE_SEQ())
+										{
+											integer2 = _byteswap_ushort(ID_AUTHDATA_AD_WIN2K_PAC);
+											kull_m_asn1_append_ctx_and_data_to_seq(&Seq_4, ID_AUTHDATA_AD_WIN2K_PAC, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer2, sizeof(USHORT), NULL));
+											kull_m_asn1_append_ctx_and_data_to_seq(&Seq_4, ID_CTX_AUTHORIZATIONDATA_AD_DATA, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, PacAuthData, PacAuthDataSize, NULL));
+											kull_m_asn1_append(&Seq_3, Seq_4);
+										}
+										kull_m_asn1_append(&OctetString, Seq_3);
 									}
-									kull_m_asn1_append(&OctetString, Seq_3);
+									kull_m_asn1_append(&Ctx_Root, OctetString);
 								}
-								kull_m_asn1_append(&Ctx_Root, OctetString);
+								kull_m_asn1_append(&Seq_2, Ctx_Root);
 							}
-							kull_m_asn1_append(&Seq_2, Ctx_Root);
+							kull_m_asn1_append(&Seq_1, Seq_2);
 						}
-						kull_m_asn1_append(&Seq_1, Seq_2);
+						kull_m_asn1_append(&Ctx_EncTicketPart, Seq_1);
 					}
-					kull_m_asn1_append(&Ctx_EncTicketPart, Seq_1);
+					kull_m_asn1_append(&Seq_EncTicketPart, Ctx_EncTicketPart);
 				}
-				kull_m_asn1_append(&Seq_EncTicketPart, Ctx_EncTicketPart);
 			}
 			kull_m_asn1_append(&App_EncTicketPart, Seq_EncTicketPart);
 		}

