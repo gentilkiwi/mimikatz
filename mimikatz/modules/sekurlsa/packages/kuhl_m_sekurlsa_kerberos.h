@@ -126,23 +126,44 @@ typedef struct _KIWI_KERBEROS_CSP_INFOS_61 {
 	PVOID unk1;
 	PVOID CertificateInfos;
 	PVOID unk2;
-	PVOID unk3;
-#ifdef _M_X64
-	DWORD		unkAlign0;
-#endif
+	DWORD unk3;
 	DWORD unk4_size;
 	DWORD sizeOfNextStruct;
 	DWORD unk5;
 	DWORD sizeOfCurrentStruct;
 	DWORD unk6;
-	PVOID unkCSP; // ?,
+	PVOID unkCSP;
 #ifdef _M_IX86
-	DWORD		unkAlign1;
+	DWORD		unkAlign0;
 #endif
 	DWORD unk7;
 	DWORD unk8;
 	KIWI_KERBEROS_CSP_NAMES names;
 } KIWI_KERBEROS_CSP_INFOS_61, *PKIWI_KERBEROS_CSP_INFOS_61;
+
+typedef struct _KIWI_KERBEROS_CSP_INFOS_62 {
+	LSA_UNICODE_STRING PinCode;
+	PVOID unk0;
+	PVOID unk1;
+	PVOID CertificateInfos;
+	PVOID unk2;
+	PVOID unk3;
+	DWORD unk4;
+	DWORD unk5_size;
+	DWORD sizeOfNextStruct;
+#ifdef _M_X64
+	DWORD		unkAlign0;
+#endif
+	DWORD sizeOfCurrentStruct;
+	DWORD unk7;
+	PVOID unkCSP;
+#ifdef _M_IX86
+	DWORD		unkAlign1;
+#endif
+	DWORD unk8;
+	DWORD unk9;
+	KIWI_KERBEROS_CSP_NAMES names;
+} KIWI_KERBEROS_CSP_INFOS_62, *PKIWI_KERBEROS_CSP_INFOS_62;
 
 typedef struct _KIWI_KERBEROS_CSP_INFOS_10 {
 	LSA_UNICODE_STRING PinCode;
@@ -158,7 +179,7 @@ typedef struct _KIWI_KERBEROS_CSP_INFOS_10 {
 	DWORD unk5_size;
 	DWORD sizeOfNextStruct;
 	DWORD sizeOfCurrentStruct;
-	DWORD unk5;
+	DWORD unk6;
 	PVOID unkCSP; // ?,
 #ifdef _M_IX86
 	DWORD		unkAlign1;

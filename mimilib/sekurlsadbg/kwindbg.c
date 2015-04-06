@@ -303,15 +303,29 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		}
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE)
 		{
+			dprintf("\n\t * Smartcard"); 
 			if(mesCreds->UserName.Buffer)
 			{
 				if(kull_m_string_getDbgUnicodeString(&mesCreds->UserName))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
 						kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(mesCreds->UserName.Buffer, mesCreds->UserName.MaximumLength);
-					dprintf("\n\t * PIN code : %wZ", &mesCreds->UserName);
+					dprintf("\n\t     PIN code : %wZ", &mesCreds->UserName);
 					LocalFree(mesCreds->UserName.Buffer);
 				}
+			}
+			if(mesCreds->Domaine.Buffer)
+			{
+				dprintf(
+					"\n\t     Model    : %S"
+					"\n\t     Reader   : %S"
+					"\n\t     Key name : %S"
+					"\n\t     Provider : %S",
+					(PBYTE) mesCreds->Domaine.Buffer + sizeof(KIWI_KERBEROS_CSP_NAMES) + sizeof(wchar_t) * ((PKIWI_KERBEROS_CSP_NAMES) mesCreds->Domaine.Buffer)->offsetToCard,
+					(PBYTE) mesCreds->Domaine.Buffer + sizeof(KIWI_KERBEROS_CSP_NAMES) + sizeof(wchar_t) * ((PKIWI_KERBEROS_CSP_NAMES) mesCreds->Domaine.Buffer)->offsetToReader,
+					(PBYTE) mesCreds->Domaine.Buffer + sizeof(KIWI_KERBEROS_CSP_NAMES) + sizeof(wchar_t) * ((PKIWI_KERBEROS_CSP_NAMES) mesCreds->Domaine.Buffer)->offsetToSerial,
+					(PBYTE) mesCreds->Domaine.Buffer + sizeof(KIWI_KERBEROS_CSP_NAMES) + sizeof(wchar_t) * ((PKIWI_KERBEROS_CSP_NAMES) mesCreds->Domaine.Buffer)->offsetToProvider
+					);
 			}
 		}
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
