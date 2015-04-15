@@ -534,6 +534,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	KIWI_NEVERTIME(&validationInfo.PasswordLastSet);
 	KIWI_NEVERTIME(&validationInfo.PasswordCanChange);
 	KIWI_NEVERTIME(&validationInfo.PasswordMustChange);
+	RtlInitUnicodeString(&validationInfo.LogonDomainName, L"eo.oe.kiwi :)");
 
 	validationInfo.EffectiveName		= ticket.ClientName->Names[0];
 	validationInfo.LogonDomainId		= sid;
