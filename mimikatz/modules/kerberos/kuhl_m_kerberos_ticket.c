@@ -384,12 +384,22 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequencePrimaryName(PKERB
 PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequenceEncryptedData(UCHAR eType, ULONG kvNo, LPCVOID data, DWORD size)
 {
 	PDIRTY_ASN1_SEQUENCE_EASY Seq_EncryptedData;
-	kvNo = _byteswap_ulong(kvNo);
+	DWORD sz;
+	
+	if(kvNo < 0xff)
+	{
+		sz = 1;	
+	}
+	else
+	{
+		sz = sizeof(ULONG);
+		kvNo = _byteswap_ulong(kvNo);
+	}
 	if(Seq_EncryptedData = KULL_M_ASN1_CREATE_SEQ())
 	{
 		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_ETYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &eType, sizeof(UCHAR), NULL));
 		if(eType)
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_KVNO, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &kvNo, sizeof(ULONG), NULL));
+			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_KVNO, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &kvNo, sz, NULL));
 		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_CIPHER, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, data, size, NULL));
 	}
 	return Seq_EncryptedData;

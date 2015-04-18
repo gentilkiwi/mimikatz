@@ -5,7 +5,7 @@
 */
 #pragma once
 #include "kuhl_m.h"
-#include "kerberos/kuhl_m_kerberos_ticket.h"
+#include "kerberos/kuhl_m_kerberos.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
 #include "../modules/kull_m_memory.h"
@@ -32,6 +32,7 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secrets(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_cache(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsOrCache);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
@@ -45,6 +46,7 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
+void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
 
 typedef  enum _DOMAIN_SERVER_ROLE
 {

@@ -208,7 +208,7 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[])
 			kiwiTicket.Ticket.Value = pKerbRetrieveResponse->Ticket.EncodedTicket;
 			kuhl_m_kerberos_ticket_display(&kiwiTicket, FALSE);
 			
-			for(i = 0; !isNull && (i < kiwiTicket.Key.Length); i++)
+			for(i = 0; !isNull && (i < kiwiTicket.Key.Length); i++) // a revoir
 				isNull |= !kiwiTicket.Key.Value[i];
 			if(isNull)
 				kprintf(L"\n\n\t** Session key is NULL! It means allowtgtsessionkey is not set to 1 **\n");
@@ -597,15 +597,37 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	return App_KrbCred;
 }
 
+NTSTATUS kuhl_m_kerberos_hash_data(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count)
+{
+	PKERB_ECRYPT pCSystem;
+	NTSTATUS status = CDLocateCSystem(keyType, &pCSystem);
+	PVOID buffer;
+	if(NT_SUCCESS(status))
+	{
+		if(buffer = LocalAlloc(LPTR, pCSystem->KeySize))
+		{
+			status = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? pCSystem->HashPassword_NT5(pString, buffer) : pCSystem->HashPassword_NT6(pString, pSalt, count, buffer);
+			if(NT_SUCCESS(status))
+			{
+				kprintf(L"\t* %s ", kuhl_m_kerberos_ticket_etype(keyType));
+				kull_m_string_wprintf_hex(buffer, pCSystem->KeySize, 0);
+				kprintf(L"\n");
+			}
+			else PRINT_ERROR(L"HashPassword : %08x\n", status);
+			LocalFree(buffer);
+		}
+	}
+	return status;
+}
+
 NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
-	PKERB_ECRYPT pCSystem;
 	PCWCHAR szCount, szPassword = NULL, szUsername = NULL, szDomain = NULL;
 	UNICODE_STRING uPassword, uUsername, uDomain, uSalt = {0, 0, NULL}, uPasswordWithSalt = {0, 0, NULL};
 	PUNICODE_STRING pString;
-	PVOID buffer;
-	DWORD count = 4096, i, kerbType[] = {KERB_ETYPE_RC4_HMAC_NT, KERB_ETYPE_AES128_CTS_HMAC_SHA1_96, KERB_ETYPE_AES256_CTS_HMAC_SHA1_96, KERB_ETYPE_DES_CBC_MD5};
+	DWORD count = 4096, i;
+	LONG kerbType[] = {KERB_ETYPE_RC4_HMAC_NT, KERB_ETYPE_AES128_CTS_HMAC_SHA1_96, KERB_ETYPE_AES256_CTS_HMAC_SHA1_96, KERB_ETYPE_DES_CBC_MD5};
 	
 	kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
 	kull_m_string_args_byName(argc, argv, L"user", &szUsername, NULL);
@@ -636,23 +658,8 @@ NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[])
 
 			for(i = 0; i < ARRAYSIZE(kerbType); i++)
 			{
-				status = CDLocateCSystem(kerbType[i], &pCSystem);
-				if(NT_SUCCESS(status))
-				{
-					if(buffer = LocalAlloc(LPTR, pCSystem->KeySize))
-					{
-						pString = (i != KERB_ETYPE_DES_CBC_MD5) ? &uPassword : &uPasswordWithSalt;
-						status = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? pCSystem->HashPassword_NT5(pString, buffer) : pCSystem->HashPassword_NT6(pString, &uSalt, count, buffer);
-						if(NT_SUCCESS(status))
-						{
-							kprintf(L"%s ", kuhl_m_kerberos_ticket_etype(kerbType[i]));
-							kull_m_string_wprintf_hex(buffer, pCSystem->KeySize, 0);
-							kprintf(L"\n");
-						}
-						else PRINT_ERROR(L"HashPassword : %08x\n", status);
-						LocalFree(buffer);
-					}
-				}
+				pString = (kerbType[i] != KERB_ETYPE_DES_CBC_MD5) ? &uPassword : &uPasswordWithSalt;
+				status = kuhl_m_kerberos_hash_data(kerbType[i], pString, &uSalt, count);
 			}
 			LocalFree(uPasswordWithSalt.Buffer);
 		}
