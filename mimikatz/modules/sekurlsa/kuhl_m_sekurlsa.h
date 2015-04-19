@@ -63,7 +63,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
-void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix);
+void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
@@ -155,15 +155,15 @@ typedef struct _KDC_DOMAIN_INFO {
 	LSA_UNICODE_STRING	NetBiosName;
 	PVOID		current;
 	DWORD		unk1;	// 4		// 0
-	DWORD		unk2;	// 8		// 32	// TrustAttributes
+	DWORD		unk2;	// 8		// 32
 	DWORD		unk3;	// 2		// 0
 	DWORD		unk4;	// 1		// 1
 	PVOID		unk5;	// 8*0
-	DWORD		unk6;	// 3		// 2	// TrustDirection
+	DWORD		unk6;	// 3		// 2
 	// align
 	PSID		DomainSid;
 	KDC_DOMAIN_KEYS_INFO	IncomingAuthenticationKeys;
 	KDC_DOMAIN_KEYS_INFO	OutgoingAuthenticationKeys;
 	KDC_DOMAIN_KEYS_INFO	IncomingPreviousAuthenticationKeys;
 	KDC_DOMAIN_KEYS_INFO	OutgoingPreviousAuthenticationKeys;
-} KDC_DOMAIN_INFO , *PKDC_DOMAIN_INFO ;
+} KDC_DOMAIN_INFO , *PKDC_DOMAIN_INFO;

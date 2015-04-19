@@ -474,3 +474,41 @@ typedef struct _DUAL_KRBTGT {
 	PVOID krbtgt_current;
 	PVOID krbtgt_previous;
 } DUAL_KRBTGT, *PDUAL_KRBTGT;
+
+typedef struct _KDC_DOMAIN_KEY {
+	LONG	type;
+	DWORD	size;
+	DWORD	offset;
+} KDC_DOMAIN_KEY, *PKDC_DOMAIN_KEY;
+
+typedef struct _KDC_DOMAIN_KEYS {
+	DWORD		keysSize; //60
+	DWORD		unk0;
+	DWORD		nbKeys;
+	KDC_DOMAIN_KEY keys[ANYSIZE_ARRAY];
+} KDC_DOMAIN_KEYS, *PKDC_DOMAIN_KEYS;
+
+typedef struct _KDC_DOMAIN_KEYS_INFO {
+	PKDC_DOMAIN_KEYS	keys;
+	DWORD				keysSize; //60
+	LSA_UNICODE_STRING	password;
+} KDC_DOMAIN_KEYS_INFO, *PKDC_DOMAIN_KEYS_INFO;
+
+typedef struct _KDC_DOMAIN_INFO {
+	LIST_ENTRY list;
+	LSA_UNICODE_STRING	FullDomainName;
+	LSA_UNICODE_STRING	NetBiosName;
+	PVOID		current;
+	DWORD		unk1;	// 4		// 0
+	DWORD		unk2;	// 8		// 32
+	DWORD		unk3;	// 2		// 0
+	DWORD		unk4;	// 1		// 1
+	PVOID		unk5;	// 8*0
+	DWORD		unk6;	// 3		// 2
+	// align
+	PSID		DomainSid;
+	KDC_DOMAIN_KEYS_INFO	IncomingAuthenticationKeys;
+	KDC_DOMAIN_KEYS_INFO	OutgoingAuthenticationKeys;
+	KDC_DOMAIN_KEYS_INFO	IncomingPreviousAuthenticationKeys;
+	KDC_DOMAIN_KEYS_INFO	OutgoingPreviousAuthenticationKeys;
+} KDC_DOMAIN_INFO , *PKDC_DOMAIN_INFO;

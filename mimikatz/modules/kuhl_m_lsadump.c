@@ -1413,10 +1413,10 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 						status = LsaQueryTrustedDomainInfoByName(hLSA, &domainInfoEx[i].Name, TrustedDomainAuthInformation, (PVOID *) &authinfos);
 						if(NT_SUCCESS(status))
 						{
-							kuhl_m_lsadump_trust_authinformation(authinfos->IncomingAuthenticationInformation, authinfos->IncomingAuthInfos, L"  In ", &domainInfoEx[i].Name, &pDomainInfo->DnsDomainName);
-							kuhl_m_lsadump_trust_authinformation(authinfos->OutgoingAuthenticationInformation, authinfos->OutgoingAuthInfos, L" Out ", &pDomainInfo->DnsDomainName, &domainInfoEx[i].Name);
-							kuhl_m_lsadump_trust_authinformation(authinfos->IncomingPreviousAuthenticationInformation, authinfos->IncomingAuthInfos, L" In-1", &domainInfoEx[i].Name, &pDomainInfo->DnsDomainName);
-							kuhl_m_lsadump_trust_authinformation(authinfos->OutgoingPreviousAuthenticationInformation, authinfos->OutgoingAuthInfos, L"Out-1", &pDomainInfo->DnsDomainName, &domainInfoEx[i].Name);
+							kuhl_m_lsadump_trust_authinformation(authinfos->IncomingAuthenticationInformation, authinfos->IncomingAuthInfos, L"  In ", &pDomainInfo->DnsDomainName, &domainInfoEx[i].Name);
+							kuhl_m_lsadump_trust_authinformation(authinfos->OutgoingAuthenticationInformation, authinfos->OutgoingAuthInfos, L" Out ", &domainInfoEx[i].Name, &pDomainInfo->DnsDomainName);
+							kuhl_m_lsadump_trust_authinformation(authinfos->IncomingPreviousAuthenticationInformation, authinfos->IncomingAuthInfos, L" In-1", &pDomainInfo->DnsDomainName, &domainInfoEx[i].Name);
+							kuhl_m_lsadump_trust_authinformation(authinfos->OutgoingPreviousAuthenticationInformation, authinfos->OutgoingAuthInfos, L"Out-1", &domainInfoEx[i].Name, &pDomainInfo->DnsDomainName);
 							LsaFreeMemory(authinfos);
 						}
 						else PRINT_ERROR(L"LsaQueryTrustedDomainInfoByName %08x\n", status);
