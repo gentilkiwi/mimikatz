@@ -213,3 +213,8 @@ extern NTSTATUS WINAPI CDLocateCSystem(LONG type, PKERB_ECRYPT * pCSystem);
 extern NTSTATUS WINAPI CDLocateCheckSum(LONG type, PKERB_CHECKSUM * pCheckSum);
 extern NTSTATUS WINAPI CDLocateRng(LONG type, PKERB_RNG * pRng);
 extern NTSTATUS WINAPI CDGenerateRandomBits(LPVOID Buffer, DWORD Size);
+
+typedef NTSTATUS	(WINAPI * PHMACWITHSHA)	(PVOID secret, DWORD szSecret, PVOID data, DWORD szData, PVOID *hash, DWORD szHash);
+typedef NTSTATUS	(WINAPI * PAESCTSDECRYPTMSG) (DWORD szSecret, PVOID secret, DWORD szData, PVOID data, PVOID iv);
+typedef NTSTATUS	(WINAPI * PAESCTSENCRYPTMSG) (DWORD szSecret, PVOID secret, DWORD szData, PVOID data, PVOID iv);
+typedef NTSTATUS	(WINAPI * PPBKDF2) (PVOID data, DWORD szData, PVOID salt, DWORD szSalt, DWORD iteration, DWORD szHash, PVOID hash);

