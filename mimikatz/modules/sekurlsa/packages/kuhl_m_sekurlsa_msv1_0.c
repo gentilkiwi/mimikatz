@@ -77,9 +77,9 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKUHL_M_SEKURLSA_CON
 			}
 			RtlZeroMemory(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH);
 			RtlZeroMemory(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH);
+			pPrimaryCreds10->isIso = FALSE;
 			pPrimaryCreds10->isLmOwfPassword = FALSE;
 			pPrimaryCreds10->isShaOwPassword = FALSE;
-			RtlZeroMemory(pPrimaryCreds10->UnkStruct, 128);
 		}
 		(*pthDataCred->pSecData->lsassLocalHelper->pLsaProtectMemory)(pCredentials->Credentials.Buffer, pCredentials->Credentials.Length);
 

@@ -779,29 +779,30 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->LogonDomainName, FALSE);
 
 					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds10->UserName, &pPrimaryCreds10->LogonDomainName);
-					kprintf(L"\n\t * Flags    : %02x/N%02x/L%02x/S%02x/%02x/%02x", pPrimaryCreds10->isUnk0, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword, pPrimaryCreds10->isUnk1, pPrimaryCreds10->isUnk2);
-					if(pPrimaryCreds10->isLmOwfPassword)
+					kprintf(L"\n\t * Flags    : I%02x/N%02x/L%02x/S%02x", pPrimaryCreds10->isIso, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword);
+					if(!pPrimaryCreds10->isIso)
 					{
-						kprintf(L"\n\t * LM       : ");
-						kull_m_string_wprintf_hex(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+						if(pPrimaryCreds10->isLmOwfPassword)
+						{
+							kprintf(L"\n\t * LM       : ");
+							kull_m_string_wprintf_hex(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+						}
+						if(pPrimaryCreds10->isNtOwfPassword)
+						{
+							kprintf(L"\n\t * NTLM     : ");
+							kull_m_string_wprintf_hex(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+						}
+						if(pPrimaryCreds10->isShaOwPassword)
+						{
+							kprintf(L"\n\t * SHA1     : ");
+							kull_m_string_wprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+						}
 					}
-					if(pPrimaryCreds10->isNtOwfPassword)
-					{
-						kprintf(L"\n\t * NTLM     : ");
-						kull_m_string_wprintf_hex(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					}
-					if(pPrimaryCreds10->isShaOwPassword)
-					{
-						kprintf(L"\n\t * SHA1     : ");
-						kull_m_string_wprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
-					}
-					kprintf(L"\n\t * unknow   : ");
-					for(i = 0; !isNull && (i < 128); i++)
-						isNull |= !pPrimaryCreds10->UnkStruct[i];
-					if(isNull)
-						kprintf(L"[0..0]");
 					else
-						kull_m_string_wprintf_hex(pPrimaryCreds10->UnkStruct, 128, 0);
+					{
+						kprintf(L"\n\t * Isolation data :\n");
+						kull_m_string_wprintf_hex((PBYTE) pPrimaryCreds10 + FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, align0), (DWORD) ((PBYTE) pPrimaryCreds10->LogonDomainName.Buffer - ((PBYTE) pPrimaryCreds10 + FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, align0))), 1 | (16 << 16)); 
+					}
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
 					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;

@@ -23,16 +23,15 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL {
 typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 { 
 	LSA_UNICODE_STRING LogonDomainName; 
 	LSA_UNICODE_STRING UserName;
-	BOOLEAN isUnk0;
+	BOOLEAN isIso;
 	BOOLEAN isNtOwfPassword;
 	BOOLEAN isLmOwfPassword;
 	BOOLEAN isShaOwPassword;
-	BOOLEAN isUnk1;
-	BOOLEAN isUnk2;
+	BYTE align0;
+	BYTE align1;
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];
-	BYTE UnkStruct[128];
 	/* buffer */
 } MSV1_0_PRIMARY_CREDENTIAL_10, *PMSV1_0_PRIMARY_CREDENTIAL_10;
 

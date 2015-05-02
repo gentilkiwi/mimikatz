@@ -1490,7 +1490,7 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 
 				for(
 					hLSAEnum = 0, statusEnum = LsaEnumerateTrustedDomainsEx(hLSA, &hLSAEnum, (PVOID *) &domainInfoEx, 0, &returned);
-					(statusEnum == STATUS_SUCCESS) || (statusEnum == STATUS_MORE_ENTRIES);
+					returned && ((statusEnum == STATUS_SUCCESS) || (statusEnum == STATUS_MORE_ENTRIES));
 				statusEnum = LsaEnumerateTrustedDomainsEx(hLSA, &hLSAEnum, (PVOID *) &domainInfoEx, 0, &returned)
 					)
 				{
@@ -1515,7 +1515,7 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 					}
 					LsaFreeMemory(domainInfoEx);
 				}
-				if(statusEnum != STATUS_NO_MORE_ENTRIES)
+				if((statusEnum != STATUS_NO_MORE_ENTRIES) && (statusEnum != STATUS_SUCCESS))
 					PRINT_ERROR(L"LsaEnumerateTrustedDomainsEx %08x\n", statusEnum);
 
 				LsaFreeMemory(pDomainInfo);
