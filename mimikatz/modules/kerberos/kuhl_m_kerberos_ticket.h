@@ -99,7 +99,7 @@ typedef struct _KIWI_KERBEROS_TICKET {
 	KIWI_KERBEROS_BUFFER	Ticket;
 } KIWI_KERBEROS_TICKET, *PKIWI_KERBEROS_TICKET;
 
-void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTicketToo);
+void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL withKey, BOOL encodedTicketToo);
 void kuhl_m_kerberos_ticket_displayFlags(ULONG flags);
 void kuhl_m_kerberos_ticket_displayExternalName(IN LPCWSTR prefix, IN PKERB_EXTERNAL_NAME pExternalName, IN PUNICODE_STRING pDomain);
 BOOL kuhl_m_kerberos_ticket_isLongFilename(PKIWI_KERBEROS_TICKET ticket);

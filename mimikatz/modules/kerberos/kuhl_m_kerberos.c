@@ -206,7 +206,7 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[])
 			kiwiTicket.RenewUntil = *(PFILETIME) &pKerbRetrieveResponse->Ticket.RenewUntil;
 			kiwiTicket.Ticket.Length = pKerbRetrieveResponse->Ticket.EncodedTicketSize;
 			kiwiTicket.Ticket.Value = pKerbRetrieveResponse->Ticket.EncodedTicket;
-			kuhl_m_kerberos_ticket_display(&kiwiTicket, FALSE);
+			kuhl_m_kerberos_ticket_display(&kiwiTicket, TRUE, FALSE);
 			
 			for(i = 0; !isNull && (i < kiwiTicket.Key.Length); i++) // a revoir
 				isNull |= !kiwiTicket.Key.Value[i];

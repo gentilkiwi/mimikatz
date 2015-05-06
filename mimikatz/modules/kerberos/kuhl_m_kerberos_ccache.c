@@ -68,7 +68,7 @@ NTSTATUS kuhl_m_kerberos_ccache_enum(int argc, wchar_t * argv[], BOOL isInject, 
 
 							if(!RtlEqualUnicodeString(&usXCACHECONF, &ticket->TargetDomainName, TRUE))
 							{
-								kuhl_m_kerberos_ticket_display(ticket, FALSE);
+								kuhl_m_kerberos_ticket_display(ticket, TRUE, FALSE);
 								if(isSave || isInject)
 								{
 									if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(ticket, TRUE))

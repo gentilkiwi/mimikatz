@@ -35,6 +35,7 @@
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY	0x03000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK	0x07000000
 
+#define KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10		0x00100000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST		0x00200000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS		0x00400000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE			0x00800000
@@ -62,6 +63,7 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
+VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
 void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
@@ -167,3 +169,17 @@ typedef struct _KDC_DOMAIN_INFO {
 	KDC_DOMAIN_KEYS_INFO	IncomingPreviousAuthenticationKeys;
 	KDC_DOMAIN_KEYS_INFO	OutgoingPreviousAuthenticationKeys;
 } KDC_DOMAIN_INFO , *PKDC_DOMAIN_INFO;
+
+typedef struct _LSAISO_DATA_BLOB {
+	DWORD structSize;
+	DWORD unk0;
+	DWORD typeSize;
+	DWORD unk1;
+	DWORD unk2;
+	DWORD unk3;
+	DWORD unk4;
+	BYTE unkKeyData[3*16];
+	BYTE unkEmpty[20];
+	DWORD origSize;
+	BYTE data[ANYSIZE_ARRAY];
+} LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;

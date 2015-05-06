@@ -120,7 +120,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 	BOOL isKeyOk = FALSE;
 	BOOL isKiwi = kull_m_string_args_byName(argc, argv, L"kiwi", NULL, NULL);
 
-	if(argc)
+	if(argc && !(isKiwi && (argc == 1)))
 	{
 		hDataSystem = CreateFile(argv[0], GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 		if(hDataSystem != INVALID_HANDLE_VALUE)
@@ -129,7 +129,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 			{
 				if(kuhl_m_lsadump_getComputerAndSyskey(hSystem, NULL, sysKey))
 				{
-					if(argc > 1)
+					if((argc > 1) && !(isKiwi && (argc == 2)))
 					{
 						hDataSecurity = CreateFile(argv[1], GENERIC_READ | (isKiwi ? GENERIC_WRITE : 0), 0, NULL, OPEN_EXISTING, 0, NULL);
 						if(hDataSecurity != INVALID_HANDLE_VALUE)

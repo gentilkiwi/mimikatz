@@ -5,7 +5,7 @@
 */
 #include "kuhl_m_kerberos_ticket.h"
 
-void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTicketToo)
+void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL withKey, BOOL encodedTicketToo)
 {
 	kprintf(L"\n\t   Start/End/MaxRenew: ");
 	kull_m_string_displayLocalFileTime(&ticket->StartTime); kprintf(L" ; ");
@@ -19,11 +19,14 @@ void kuhl_m_kerberos_ticket_display(PKIWI_KERBEROS_TICKET ticket, BOOL encodedTi
 		kprintf(L" ( %wZ )", &ticket->Description);
 	kprintf(L"\n\t   Flags %08x    : ", ticket->TicketFlags);
 	kuhl_m_kerberos_ticket_displayFlags(ticket->TicketFlags);
-	kprintf(L"\n\t   Session Key       : 0x%08x - %s", ticket->KeyType, kuhl_m_kerberos_ticket_etype(ticket->KeyType));
-	if(ticket->Key.Value)
+	if(withKey)
 	{
-		kprintf(L"\n\t     ");
-		kull_m_string_wprintf_hex(ticket->Key.Value, ticket->Key.Length, 0);
+		kprintf(L"\n\t   Session Key       : 0x%08x - %s", ticket->KeyType, kuhl_m_kerberos_ticket_etype(ticket->KeyType));
+		if(ticket->Key.Value)
+		{
+			kprintf(L"\n\t     ");
+			kull_m_string_wprintf_hex(ticket->Key.Value, ticket->Key.Length, 0);
+		}
 	}
 	kprintf(L"\n\t   Ticket            : 0x%08x - %s ; kvno = %u", ticket->TicketEncType, kuhl_m_kerberos_ticket_etype(ticket->TicketEncType), ticket->TicketKvno);
 	
