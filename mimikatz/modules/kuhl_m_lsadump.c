@@ -11,6 +11,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_cache,	L"cache",		L"Get the SysKey to decrypt NL$KM then MSCache(v2) (from registry or hives)"},
 	{kuhl_m_lsadump_lsa,	L"lsa",			L"Ask LSA Server to retrieve SAM/AD entries (normal, patch on the fly or inject)"},
 	{kuhl_m_lsadump_trust,	L"trust",		L"Ask LSA Server to retrieve Trust Auth Information (normal or patch on the fly)"},
+	{kuhl_m_lsadump_hash,	L"hash",		NULL},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -1523,5 +1524,68 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 			LsaClose(hLSA);
 		}
 	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
+{
+	PCWCHAR szCount, szPassword = NULL, szUsername = NULL;
+	UNICODE_STRING uPassword, uUsername, uTmp;
+	ANSI_STRING aTmp;
+	DWORD count = 10240;
+	BYTE hash[LM_NTLM_HASH_LENGTH], dcc[LM_NTLM_HASH_LENGTH];
+	MD5_CTX md5Ctx;
+	SHA_CTX shaCtx;
+	SHA_DIGEST shaD;
+
+	kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
+	kull_m_string_args_byName(argc, argv, L"user", &szUsername, NULL);
+	if(kull_m_string_args_byName(argc, argv, L"count", &szCount, NULL))
+		count = wcstoul(szCount, NULL, 0);
+
+	RtlInitUnicodeString(&uPassword, szPassword);
+	RtlInitUnicodeString(&uUsername, szUsername);
+	if(NT_SUCCESS(RtlDigestNTLM(&uPassword, hash)))
+	{
+		kprintf(L"NTLM: "); kull_m_string_wprintf_hex(hash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+		if(szUsername)
+		{
+			if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, 0)))
+			{
+				kprintf(L"DCC1: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+				if(PBKDF2)
+				{
+					if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, count)))
+					{
+						kprintf(L"DCC2: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+					}
+				}
+			}
+		}
+	}
+
+	if(NT_SUCCESS(RtlUpcaseUnicodeString(&uTmp, &uPassword, TRUE)))
+	{
+		if(NT_SUCCESS(RtlUnicodeStringToAnsiString(&aTmp, &uTmp, TRUE)))
+		{
+			if(NT_SUCCESS(RtlDigestLM(aTmp.Buffer, hash)))
+			{
+				kprintf(L"LM  : "); kull_m_string_wprintf_hex(hash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+			}
+			RtlFreeAnsiString(&aTmp);
+		}
+		RtlFreeUnicodeString(&uTmp);
+	}
+
+	A_SHAInit(&shaCtx);
+	A_SHAUpdate(&shaCtx, uPassword.Buffer, uPassword.Length);
+	A_SHAFinal(&shaCtx, &shaD);
+	kprintf(L"SHA1: "); kull_m_string_wprintf_hex(shaD.digest, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+
+	MD5Init(&md5Ctx);
+	MD5Update(&md5Ctx, uPassword.Buffer, uPassword.Length);
+	MD5Final(&md5Ctx);
+	kprintf(L"MD5 : "); kull_m_string_wprintf_hex(md5Ctx.digest, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
+
 	return STATUS_SUCCESS;
 }

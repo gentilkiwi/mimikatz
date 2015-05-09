@@ -34,6 +34,7 @@ typedef struct _SHA_CTX {
 	BYTE buffer[64];
 	DWORD state[5];
 	DWORD count[2];
+	DWORD unk[6]; // to avoid error on XP
 } SHA_CTX, *PSHA_CTX;
 
 typedef struct _SHA_DIGEST {
