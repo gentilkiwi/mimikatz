@@ -5,6 +5,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimikatz", "mimikatz\mimika
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global files", "{1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}"
 	ProjectSection(SolutionItems) = preProject
+		kiwi_passwords.yar = kiwi_passwords.yar
 		README.md = README.md
 	EndProjectSection
 EndProject
