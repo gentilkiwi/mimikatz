@@ -89,3 +89,16 @@ rule lsadump
 	condition:
 		($str_sam_inc and not $str_sam_exc) or $hex_api_call or $str_msv_lsa or $hex_bkey
 }
+
+rule power_pe_injection
+{
+	meta:
+		description		= "PowerShell with PE Reflective Injection"
+		author			= "Benjamin DELPY (gentilkiwi)"
+
+	strings:
+		$str_loadlib	= "0x53, 0x48, 0x89, 0xe3, 0x48, 0x83, 0xec, 0x20, 0x66, 0x83, 0xe4, 0xc0, 0x48, 0xb9"
+		
+	condition:
+		$str_loadlib or $hex_loadlib
+}
