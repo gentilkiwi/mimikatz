@@ -5,7 +5,7 @@
 */
 #include "kull_m_remotelib.h"
 
-PREMOTE_LIB_INPUT_DATA kull_m_remotelib_CreateInput(PVOID inputVoid, DWORD inputDword, DWORD inputSize, PVOID inputData)
+PREMOTE_LIB_INPUT_DATA kull_m_remotelib_CreateInput(PVOID inputVoid, DWORD inputDword, DWORD inputSize, LPCVOID inputData)
 {
 	PREMOTE_LIB_INPUT_DATA iData;
 	if(iData = (PREMOTE_LIB_INPUT_DATA) LocalAlloc(LPTR, FIELD_OFFSET(REMOTE_LIB_INPUT_DATA, inputData) + inputSize))
@@ -80,7 +80,7 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INP
 						PRINT_ERROR_AUTO(L"kull_m_kernel_ioctl_handle");
 					break;
 				}
-
+				
 				if(success)
 				{
 					aLocalAddr.address = output;
@@ -122,7 +122,7 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INP
 			}
 			kull_m_memory_free(&aRemoteData, 0);
 		}
-
+		
 		LocalFree(data);
 	}
 	return success;

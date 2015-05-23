@@ -15,6 +15,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
 #include "kuhl_m_lsadump_remote.h"
+#include "kuhl_m_crypto.h"
 
 #define	SYSKEY_LENGTH	16
 #define	SAM_KEY_DATA_SALT_LENGTH	16
@@ -25,6 +26,14 @@ typedef struct _SAM_ENTRY {
 	DWORD lenght;
 	DWORD unk;
 } SAM_ENTRY, *PSAM_SENTRY;
+
+
+typedef struct _KIWI_BACKUP_KEY {
+	DWORD version;
+	DWORD keyLen;
+	DWORD certLen;
+	BYTE data[ANYSIZE_ARRAY];
+} KIWI_BACKUP_KEY, *PKIWI_BACKUP_KEY;
 
 const KUHL_M kuhl_m_lsadump;
 
@@ -37,6 +46,7 @@ NTSTATUS kuhl_m_lsadump_cache(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsOrCache);
 NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
 BOOL kuhl_m_lsadump_getComputerAndSyskey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase, OUT LPBYTE sysKey);
@@ -51,6 +61,9 @@ NTSTATUS kuhl_m_lsadump_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username,
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
 void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
+
+NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR secretName, PUNICODE_STRING secret);
+NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport);
 
 typedef  enum _DOMAIN_SERVER_ROLE
 {

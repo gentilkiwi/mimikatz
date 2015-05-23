@@ -38,6 +38,7 @@ extern VOID WINAPI RtlFreeAnsiString(IN PANSI_STRING AnsiString);
 extern VOID WINAPI RtlFreeUnicodeString(IN PUNICODE_STRING UnicodeString);
 
 extern NTSTATUS WINAPI RtlStringFromGUID(IN LPCGUID Guid, PUNICODE_STRING UnicodeString);
+extern NTSTATUS WINAPI RtlGUIDFromString(IN PCUNICODE_STRING GuidString, OUT GUID *Guid);
 extern NTSTATUS NTAPI RtlValidateUnicodeString(IN ULONG Flags, IN PCUNICODE_STRING UnicodeString);
 
 extern NTSTATUS WINAPI RtlAppendUnicodeStringToString(IN OUT PUNICODE_STRING Destination, IN PCUNICODE_STRING Source);
