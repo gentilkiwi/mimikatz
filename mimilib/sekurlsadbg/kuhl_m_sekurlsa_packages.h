@@ -30,20 +30,15 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL {
 typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 { 
 	LSA_UNICODE_STRING LogonDomainName; 
 	LSA_UNICODE_STRING UserName;
-	
-	BOOLEAN isUnk0;
+	BOOLEAN isIso;
 	BOOLEAN isNtOwfPassword;
 	BOOLEAN isLmOwfPassword;
 	BOOLEAN isShaOwPassword;
-	BOOLEAN isUnk1;
-	BOOLEAN isUnk2;
-	BOOLEAN isUnk3;
-	BOOLEAN isUnk4;
-
+	BYTE align0;
+	BYTE align1;
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];
-	BYTE UnkStruct[128];
 	/* buffer */
 } MSV1_0_PRIMARY_CREDENTIAL_10, *PMSV1_0_PRIMARY_CREDENTIAL_10;
 
@@ -248,6 +243,14 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION {
 	PVOID		SmartcardInfos;
 } KIWI_KERBEROS_LOGON_SESSION, *PKIWI_KERBEROS_LOGON_SESSION;
 
+typedef struct _KIWI_KERBEROS_10_PRIMARY_CREDENTIAL
+{
+	LSA_UNICODE_STRING UserName;
+	LSA_UNICODE_STRING Domaine;
+	PVOID		unk0;
+	LSA_UNICODE_STRING Password;
+} KIWI_KERBEROS_10_PRIMARY_CREDENTIAL, *PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL;
+
 typedef struct _KIWI_KERBEROS_LOGON_SESSION_10 {
 	ULONG		UsageCount;
 	LIST_ENTRY	unk0;
@@ -268,12 +271,12 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_10 {
 #ifdef _M_IX86
 	ULONG		unkAlign;
 #endif
-	KIWI_GENERIC_PRIMARY_CREDENTIAL	credentials;
+	KIWI_KERBEROS_10_PRIMARY_CREDENTIAL	credentials;
 	ULONG		unk14;
 	ULONG		unk15;
 	ULONG		unk16;
 	ULONG		unk17;
-	PVOID		unk18;
+	//PVOID		unk18;
 	PVOID		unk19;
 	PVOID		unk20;
 	PVOID		unk21;
@@ -512,3 +515,24 @@ typedef struct _KDC_DOMAIN_INFO {
 	KDC_DOMAIN_KEYS_INFO	IncomingPreviousAuthenticationKeys;
 	KDC_DOMAIN_KEYS_INFO	OutgoingPreviousAuthenticationKeys;
 } KDC_DOMAIN_INFO , *PKDC_DOMAIN_INFO;
+
+typedef struct _LSAISO_DATA_BLOB {
+	DWORD structSize;
+	DWORD unk0;
+	DWORD typeSize;
+	DWORD unk1;
+	DWORD unk2;
+	DWORD unk3;
+	DWORD unk4;
+	BYTE unkKeyData[3*16];
+	BYTE unkEmpty[20];
+	DWORD origSize;
+	BYTE data[ANYSIZE_ARRAY];
+} LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;
+
+typedef struct _KIWI_BACKUP_KEY {
+	DWORD version;
+	DWORD keyLen;
+	DWORD certLen;
+	BYTE data[ANYSIZE_ARRAY];
+} KIWI_BACKUP_KEY, *PKIWI_BACKUP_KEY;

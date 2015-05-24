@@ -108,9 +108,8 @@ PCWCHAR WPRINTF_TYPES[] =
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
 {
-	DWORD i, sep;
+	DWORD i, sep = flags >> 16;
 	PCWCHAR pType = WPRINTF_TYPES[flags & 0x0000000f];
-	sep = flags >> 16;
 
 	for(i = 0; i < cbData; i++)
 	{

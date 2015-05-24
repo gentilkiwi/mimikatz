@@ -63,6 +63,7 @@ BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
 void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
 
 NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR secretName, PUNICODE_STRING secret);
+void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size, BOOL isExport);
 NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport);
 
 typedef  enum _DOMAIN_SERVER_ROLE

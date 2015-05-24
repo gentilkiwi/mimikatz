@@ -14,10 +14,14 @@ const char * PRINTF_TYPES[] =
 };
 void kull_m_string_dprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
 {
-	DWORD i;
+	DWORD i, sep = flags >> 16;
 	const char * pType = PRINTF_TYPES[flags & 0x0000000f];
 	for(i = 0; i < cbData; i++)
+	{
 		dprintf(pType, ((LPCBYTE) lpData)[i]);
+		if(sep && !((i+1) % sep))
+			dprintf("\n");
+	}
 }
 
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime)

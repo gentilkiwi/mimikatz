@@ -39,7 +39,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {&credentials, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	PVOID buffer = NULL;
 
-	if(kuhl_m_sekurlsa_tspkg_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_tspkg_package.Module, TsPkgReferences, ARRAYSIZE(TsPkgReferences), (PVOID *) &TSGlobalCredTable, NULL, NULL))
+	if(kuhl_m_sekurlsa_tspkg_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_tspkg_package.Module, TsPkgReferences, ARRAYSIZE(TsPkgReferences), (PVOID *) &TSGlobalCredTable, NULL, NULL, NULL))
 	{
 		aLsassMemory.address = TSGlobalCredTable;
 		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromAVLByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_TS_CREDENTIAL, LocallyUniqueIdentifier), pData->LogonId))
