@@ -519,12 +519,10 @@ void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, 
 		kprintf(L"\tPublic export  : %s - ", isExported ? L"OK" : L"KO");
 		if(isExported)
 			kprintf(L"\'%s\'\n", fileNameBuffer);
-		else
-			PRINT_ERROR_AUTO(L"CreateFile");
+		else PRINT_ERROR_AUTO(L"CreateFile");
 		LocalFree(fileNameBuffer);
 	}
-	else
-		PRINT_ERROR_AUTO(L"kuhl_m_crypto_generateFileName");
+	else PRINT_ERROR_AUTO(L"kuhl_m_crypto_generateFileName");
 	
 	if(havePrivateKey)
 	{
@@ -533,30 +531,83 @@ void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, 
 			isExported = FALSE;
 			if(CertAddCertificateContextToStore(hTempStore, pCertificate, CERT_STORE_ADD_NEW, &pCertContextCopy))
 			{
-				if(PFXExportCertStoreEx(hTempStore, &bDataBlob, MIMIKATZ, NULL, EXPORT_PRIVATE_KEYS | REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-				{
-					if(bDataBlob.pbData = (BYTE *) LocalAlloc(LPTR, bDataBlob.cbData))
-					{
-						if(PFXExportCertStoreEx(hTempStore, &bDataBlob, MIMIKATZ, NULL, EXPORT_PRIVATE_KEYS | REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
-							isExported = kull_m_file_writeData(fileNameBuffer, bDataBlob.pbData, bDataBlob.cbData);
-						LocalFree(bDataBlob.pbData);
-					}
-				}
+				isExported = kuhl_m_crypto_exportPfx(hTempStore, fileNameBuffer);
 				CertFreeCertificateContext(pCertContextCopy);
 			}
-			CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
-		
 			kprintf(L"\tPrivate export : %s - ", isExported ? L"OK" : L"KO");
 			if(isExported)
 				kprintf(L"\'%s\'\n", fileNameBuffer);
-			else
-				PRINT_ERROR_AUTO(L"Export / CreateFile");
+			else PRINT_ERROR_AUTO(L"Export / CreateFile");
 			LocalFree(fileNameBuffer);
 		}
-		else
-			PRINT_ERROR_AUTO(L"kuhl_m_crypto_generateFileName");
+		else PRINT_ERROR_AUTO(L"kuhl_m_crypto_generateFileName");
 	}
 	kprintf(L"\n");
+	CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
+}
+
+BOOL kuhl_m_crypto_exportPfx(HCERTSTORE hStore, LPCWSTR filename)
+{
+	BOOL isExported = FALSE;
+	CRYPT_DATA_BLOB bDataBlob = {0, NULL};
+	if(PFXExportCertStoreEx(hStore, &bDataBlob, MIMIKATZ, NULL, EXPORT_PRIVATE_KEYS | REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+	{
+		if(bDataBlob.pbData = (BYTE *) LocalAlloc(LPTR, bDataBlob.cbData))
+		{
+			if(PFXExportCertStoreEx(hStore, &bDataBlob, MIMIKATZ, NULL, EXPORT_PRIVATE_KEYS | REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+				isExported = kull_m_file_writeData(filename, bDataBlob.pbData, bDataBlob.cbData);
+			LocalFree(bDataBlob.pbData);
+		}
+	}
+	if(!isExported)
+		PRINT_ERROR_AUTO(L"PFXExportCertStoreEx");
+	return isExported;
+}
+
+BOOL kuhl_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD keyLen, BOOL isPvk, LPCWSTR filename) // no PVK support at this time
+{
+	BOOL isExported = FALSE;
+	CRYPT_KEY_PROV_INFO infos = {NULL, MS_ENHANCED_PROV, PROV_RSA_FULL, 0, 0, NULL, AT_KEYEXCHANGE};
+	HCRYPTPROV hTmpCryptProv, hCryptProv;
+	HCRYPTKEY hCryptKey;
+	PCCERT_CONTEXT pCertContext;
+	HCERTSTORE hTempStore = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, 0, CERT_STORE_CREATE_NEW_FLAG, NULL); 			
+	GUID guid;
+	UNICODE_STRING uString;
+
+	if(CryptAcquireContext(&hTmpCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptGenRandom(hTmpCryptProv, sizeof(GUID), (PBYTE) &guid))
+		{
+			if(NT_SUCCESS(RtlStringFromGUID(&guid, &uString)))
+			{
+				infos.pwszContainerName = uString.Buffer;
+				if(CertAddEncodedCertificateToStore(hTempStore, X509_ASN_ENCODING, (LPCBYTE) der, derLen, CERT_STORE_ADD_NEW, &pCertContext))
+				{
+					if(CryptAcquireContext(&hCryptProv, infos.pwszContainerName, infos.pwszProvName, infos.dwProvType, CRYPT_NEWKEYSET))
+					{
+						if(CryptImportKey(hCryptProv, (LPCBYTE) key,  keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
+						{
+							if(CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, (LPCVOID) &infos))
+								isExported = kuhl_m_crypto_exportPfx(hTempStore, filename);
+							CryptDestroyKey(hCryptKey);
+						}
+						else PRINT_ERROR_AUTO(L"CryptImportKey");
+						CryptReleaseContext(hCryptProv, 0);
+						if(!CryptAcquireContext(&hCryptProv, infos.pwszContainerName, NULL, PROV_RSA_FULL, CRYPT_DELETEKEYSET))
+							PRINT_ERROR(L"Unable to delete temp keyset %wZ\n", &uString);
+					}
+					else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+					CertFreeCertificateContext(pCertContext);
+				}
+				else PRINT_ERROR_AUTO(L"CertAddEncodedCertificateToStore");
+				RtlFreeUnicodeString(&uString);
+			}
+		}
+		CryptReleaseContext(hTmpCryptProv, 0);
+	}
+	CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
+	return isExported;
 }
 
 wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * term1, const DWORD index, const wchar_t * name, const wchar_t * ext)
