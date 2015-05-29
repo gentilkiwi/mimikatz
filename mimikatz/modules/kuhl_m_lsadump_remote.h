@@ -29,6 +29,7 @@ typedef NTSTATUS	(NTAPI * PLSARETRIEVEPRIVATEDATA) (__in LSA_HANDLE PolicyHandle
 
 DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter);
 DWORD kuhl_sekurlsa_samsrv_thread_end();
-
+#ifdef LSARPDATA
 DWORD WINAPI kuhl_lsadump_RetrievePrivateData_thread(PREMOTE_LIB_DATA lpParameter);
 DWORD kuhl_lsadump_RetrievePrivateData_thread_end();
+#endif

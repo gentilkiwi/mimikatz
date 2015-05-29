@@ -86,7 +86,7 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 	return STATUS_SUCCESS;
 }
 DWORD kuhl_sekurlsa_samsrv_thread_end(){return 'lsar';}
-
+#ifdef LSARPDATA
 DWORD WINAPI kuhl_lsadump_RetrievePrivateData_thread(PREMOTE_LIB_DATA lpParameter)
 {
 	LSA_OBJECT_ATTRIBUTES oaLsa = {0};
@@ -109,5 +109,5 @@ DWORD WINAPI kuhl_lsadump_RetrievePrivateData_thread(PREMOTE_LIB_DATA lpParamete
 	return STATUS_SUCCESS;
 }
 DWORD kuhl_lsadump_RetrievePrivateData_thread_end(){return 'lsap';}
-
+#endif
 #pragma optimize("", on)

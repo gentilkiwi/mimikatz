@@ -19,6 +19,7 @@
 //#define KERBEROS_TOOLS
 //#define DPAPI_TOOLS
 //#define LSASS_DECRYPT
+//#define LSARPDATA
 #define NET_MODULE
 #ifdef _M_X64
 	#define MIMIKATZ_ARCH L"x64"

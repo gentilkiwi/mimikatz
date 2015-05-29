@@ -499,7 +499,7 @@ void kuhl_m_sekurlsa_enum_generic_callback_kerberos(IN PKIWI_BASIC_SECURITY_LOGO
 					pEnumData->callback(pData, aLocalMemory, aLsassMemory, pEnumData->optionalData);
 				LocalFree(aLocalMemory.address);
 			}
-		} else kprintf(L"KO");
+		}
 	} else kprintf(L"KO");
 }
 
