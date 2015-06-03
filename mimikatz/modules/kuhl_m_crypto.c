@@ -24,53 +24,6 @@ const KUHL_M kuhl_m_crypto = {
 	ARRAYSIZE(kuhl_m_c_crypto), kuhl_m_c_crypto, kuhl_m_crypto_init, kuhl_m_crypto_clean
 };
 
-const KUHL_M_CRYPTO_DWORD_TO_DWORD kuhl_m_crypto_system_stores[] = {
-	{L"CERT_SYSTEM_STORE_CURRENT_USER",					CERT_SYSTEM_STORE_CURRENT_USER},
-	{L"CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY",	CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY},
-	{L"CERT_SYSTEM_STORE_LOCAL_MACHINE",				CERT_SYSTEM_STORE_LOCAL_MACHINE},
-	{L"CERT_SYSTEM_STORE_LOCAL_MACHINE_GROUP_POLICY",	CERT_SYSTEM_STORE_LOCAL_MACHINE_GROUP_POLICY},
-	{L"CERT_SYSTEM_STORE_LOCAL_MACHINE_ENTERPRISE",		CERT_SYSTEM_STORE_LOCAL_MACHINE_ENTERPRISE},
-	{L"CERT_SYSTEM_STORE_CURRENT_SERVICE",				CERT_SYSTEM_STORE_CURRENT_SERVICE},
-	{L"CERT_SYSTEM_STORE_USERS",						CERT_SYSTEM_STORE_USERS},
-	{L"CERT_SYSTEM_STORE_SERVICES",						CERT_SYSTEM_STORE_SERVICES},
-};
-
-const KUHL_M_CRYPTO_NAME_TO_REALNAME kuhl_m_crypto_provider_names[] = {
-	{L"MS_DEF_PROV",									MS_DEF_PROV},
-	{L"MS_ENHANCED_PROV",								MS_ENHANCED_PROV},
-	{L"MS_STRONG_PROV",									MS_STRONG_PROV},
-	{L"MS_DEF_RSA_SIG_PROV",							MS_DEF_RSA_SIG_PROV},
-	{L"MS_DEF_RSA_SCHANNEL_PROV",						MS_DEF_RSA_SCHANNEL_PROV},
-	{L"MS_DEF_DSS_PROV",								MS_DEF_DSS_PROV},
-	{L"MS_DEF_DSS_DH_PROV",								MS_DEF_DSS_DH_PROV},
-	{L"MS_ENH_DSS_DH_PROV",								MS_ENH_DSS_DH_PROV},
-	{L"MS_DEF_DH_SCHANNEL_PROV",						MS_DEF_DH_SCHANNEL_PROV},
-	{L"MS_SCARD_PROV",									MS_SCARD_PROV},
-	{L"MS_ENH_RSA_AES_PROV_XP",							MS_ENH_RSA_AES_PROV_XP},
-	{L"MS_ENH_RSA_AES_PROV",							MS_ENH_RSA_AES_PROV},
-};
-
-const KUHL_M_CRYPTO_DWORD_TO_DWORD kuhl_m_crypto_provider_types[] = {
-	{L"PROV_RSA_FULL",									PROV_RSA_FULL},
-	{L"PROV_RSA_SIG",									PROV_RSA_SIG},
-	{L"PROV_DSS",										PROV_DSS},
-	{L"PROV_FORTEZZA",									PROV_FORTEZZA},
-	{L"PROV_MS_EXCHANGE",								PROV_MS_EXCHANGE},
-	{L"PROV_SSL",										PROV_SSL},
-	{L"PROV_RSA_SCHANNEL",								PROV_RSA_SCHANNEL},
-	{L"PROV_DSS_DH",									PROV_DSS_DH},
-	{L"PROV_EC_ECDSA_SIG",								PROV_EC_ECDSA_SIG},
-	{L"PROV_EC_ECNRA_SIG",								PROV_EC_ECNRA_SIG},
-	{L"PROV_EC_ECDSA_FULL",								PROV_EC_ECDSA_FULL},
-	{L"PROV_EC_ECNRA_FULL",								PROV_EC_ECNRA_FULL},
-	{L"PROV_DH_SCHANNEL",								PROV_DH_SCHANNEL},
-	{L"PROV_SPYRUS_LYNKS",								PROV_SPYRUS_LYNKS},
-	{L"PROV_RNG",										PROV_RNG},
-	{L"PROV_INTEL_SEC",									PROV_INTEL_SEC},
-	{L"PROV_REPLACE_OWF",								PROV_REPLACE_OWF},
-	{L"PROV_RSA_AES",									PROV_RSA_AES},
-};
-
 PCP_EXPORTKEY K_CPExportKey = NULL;
 PNCRYPT_OPEN_STORAGE_PROVIDER K_NCryptOpenStorageProvider = NULL;
 PNCRYPT_ENUM_KEYS K_NCryptEnumKeys = NULL;
@@ -175,8 +128,8 @@ NTSTATUS kuhl_m_crypto_l_stores(int argc, wchar_t * argv[])
 {
 	DWORD dwSystemStore, nbStore = 0;
 	PCWCHAR szSystemStore;
-	kull_m_string_args_byName(argc, argv, L"systemstore", &szSystemStore, kuhl_m_crypto_system_stores[0].name);
-	dwSystemStore = kuhl_m_crypto_system_store_to_dword(szSystemStore);
+	kull_m_string_args_byName(argc, argv, L"systemstore", &szSystemStore, L"CURRENT_USER"/*kuhl_m_crypto_system_stores[0].name*/);
+	dwSystemStore = kull_m_crypto_system_store_to_dword(szSystemStore);
 	kprintf(L"Asking for System Store \'%s\' (0x%08x)\n", szSystemStore, dwSystemStore);
 
 	if(!CertEnumSystemStore(dwSystemStore, NULL, &nbStore, kuhl_m_crypto_l_stores_enumCallback_print))
@@ -208,8 +161,8 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
 
-	kull_m_string_args_byName(argc, argv, L"systemstore", &szSystemStore, kuhl_m_crypto_system_stores[0].name);
-	dwSystemStore = kuhl_m_crypto_system_store_to_dword(szSystemStore);
+	kull_m_string_args_byName(argc, argv, L"systemstore", &szSystemStore, L"CURRENT_USER"/*kuhl_m_crypto_system_stores[0].name*/);
+	dwSystemStore = kull_m_crypto_system_store_to_dword(szSystemStore);
 	kull_m_string_args_byName(argc, argv, L"store", &szStore, L"My");
 
 	kprintf(L" * System Store  : \'%s\' (0x%08x)\n"
@@ -247,7 +200,7 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 										
 										if(CryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG /* CRYPT_ACQUIRE_SILENT_FLAG NULL */, NULL, &monProv, &keySpec, &keyToFree))
 										{
-											kprintf(L"\tType           : %s (0x%08x)\n", kuhl_m_crypto_keytype_to_str(keySpec), keySpec);
+											kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(keySpec), keySpec);
 
 											if(keySpec != CERT_NCRYPT_KEY_SPEC)
 											{
@@ -315,11 +268,11 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
 	
 	kull_m_string_args_byName(argc, argv, L"provider", &szProvider, L"MS_ENHANCED_PROV");
-	if(!(pProvider = kuhl_m_crypto_provider_to_realname(szProvider)))
+	if(!(pProvider = kull_m_crypto_provider_to_realname(szProvider)))
 		pProvider = szProvider;
 	
 	kull_m_string_args_byName(argc, argv, L"providertype", &szProviderType, L"PROV_RSA_FULL");
-	if(!(dwProviderType = kuhl_m_crypto_provider_type_to_dword(szProviderType)))
+	if(!(dwProviderType = kull_m_crypto_provider_type_to_dword(szProviderType)))
 		dwProviderType = wcstoul(szProviderType, NULL, 0);
 
 	if(kull_m_string_args_byName(argc, argv, L"machine", NULL, NULL))
@@ -356,7 +309,7 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 							for(ks = AT_KEYEXCHANGE, hCapiKey = 0; (ks <= AT_SIGNATURE) && !CryptGetUserKey(hCryptKeyProv, ks, &hCapiKey); ks++);
 							if(hCapiKey)
 							{
-								kprintf(L"\tType           : %s (0x%08x)\n", kuhl_m_crypto_keytype_to_str(ks), ks);
+								kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(ks), ks);
 								kuhl_m_crypto_printKeyInfos(0, hCapiKey);
 								if(export)
 									kuhl_m_crypto_exportKeyToFile(0, hCapiKey, ks, szStore, i, containerName);
@@ -623,51 +576,6 @@ wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * 
 			kull_m_file_cleanFilename(buffer);
 	}
 	return buffer;
-}
-
-DWORD kuhl_m_crypto_system_store_to_dword(PCWSTR name)
-{
-	DWORD i;
-	if(name)
-		for(i = 0; i < ARRAYSIZE(kuhl_m_crypto_system_stores); i++)
-			if((_wcsicmp(name, kuhl_m_crypto_system_stores[i].name) == 0) || (_wcsicmp(name, kuhl_m_crypto_system_stores[i].name + 18) == 0))
-				return kuhl_m_crypto_system_stores[i].id;
-	return 0;
-}
-
-DWORD kuhl_m_crypto_provider_type_to_dword(PCWSTR name)
-{
-	DWORD i;
-	if(name)
-		for(i = 0; i < ARRAYSIZE(kuhl_m_crypto_provider_types); i++)
-			if((_wcsicmp(name, kuhl_m_crypto_provider_types[i].name) == 0) || (_wcsicmp(name, kuhl_m_crypto_provider_types[i].name + 5) == 0))
-				return kuhl_m_crypto_provider_types[i].id;
-	return 0;
-}
-
-PCWCHAR kuhl_m_crypto_provider_to_realname(PCWSTR name)
-{
-	DWORD i;
-	if(name)
-		for(i = 0; i < ARRAYSIZE(kuhl_m_crypto_provider_names); i++)
-			if((_wcsicmp(name, kuhl_m_crypto_provider_names[i].name) == 0) || (_wcsicmp(name, kuhl_m_crypto_provider_names[i].name + 3) == 0))
-				return kuhl_m_crypto_provider_names[i].realname;
-	return NULL;
-}
-
-const wchar_t * kuhl_m_crypto_keytype_to_str(const DWORD keyType)
-{
-	switch (keyType)
-	{
-	case AT_KEYEXCHANGE:
-		return L"AT_KEYEXCHANGE";
-	case AT_SIGNATURE:
-		return L"AT_SIGNATURE";
-	case CERT_NCRYPT_KEY_SPEC:
-		return L"CNG Key";
-	default:
-		return L"?";
-	}
 }
 
 BYTE PATC_WIN5_CPExportKey_EXPORT[]	= {0xeb};

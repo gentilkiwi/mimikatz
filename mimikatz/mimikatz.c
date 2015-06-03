@@ -23,6 +23,7 @@ const KUHL_M * mimikatz_modules[] = {
 #ifdef NET_MODULE
 	&kuhl_m_net,
 #endif
+	&kuhl_m_dpapi,
 };
 
 int wmain(int argc, wchar_t * argv[])

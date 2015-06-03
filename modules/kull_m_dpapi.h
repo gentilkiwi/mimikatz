@@ -4,9 +4,13 @@
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
 */
 #pragma once
-#ifdef DPAPI_TOOLS
 #include "globals.h"
+#include "kull_m_crypto.h"
 #include "kull_m_string.h"
+
+#define KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS	"Hj1diQ6kpUx7VC4m"
+#define KIWI_DPAPI_ENTROPY_CNG_KEY_PROPERTIES	"6jnkd5J3ZdQDtrsu"
+#define KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB			"xT5rZW5qVVbrvpuA"
 
 typedef struct _KULL_M_DWORD_TO_DWORD{
 	PCWSTR	name;
@@ -54,6 +58,7 @@ typedef struct _KULL_M_DPAPI_MASTERKEY {
 	ALG_ID	algHash;
 	ALG_ID	algCrypt;
 	PBYTE	pbKey;
+	DWORD	__dwKeyLen;
 } KULL_M_DPAPI_MASTERKEY, *PKULL_M_DPAPI_MASTERKEY;
 
 typedef struct _KULL_M_DPAPI_CREDHIST {
@@ -89,7 +94,6 @@ typedef struct _KULL_M_DPAPI_MASTERKEYS {
 } KULL_M_DPAPI_MASTERKEYS, *PKULL_M_DPAPI_MASTERKEYS;
 #pragma pack(pop) 
 
-PCWCHAR kull_m_dpapi_algid_to_name(ALG_ID algid);
 void kull_m_dpapi_ptr_replace(PVOID ptr, DWORD64 size);
 PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(PVOID data/*, DWORD size*/);
 void kull_m_dpapi_blob_delete(PKULL_M_DPAPI_BLOB blob);
@@ -97,4 +101,12 @@ void kull_m_dpapi_blob_descr(PKULL_M_DPAPI_BLOB blob);
 PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(PVOID data/*, DWORD size*/);
 void kull_m_dpapi_masterkeys_delete(PKULL_M_DPAPI_MASTERKEYS masterkeys);
 void kull_m_dpapi_masterkeys_descr(PKULL_M_DPAPI_MASTERKEYS masterkeys);
-#endif
+PKULL_M_DPAPI_MASTERKEY kull_m_dpapi_masterkey_create(PVOID data, DWORD64 size);
+void kull_m_dpapi_masterkey_delete(PKULL_M_DPAPI_MASTERKEY masterkey);
+void kull_m_dpapi_masterkey_descr(PKULL_M_DPAPI_MASTERKEY masterkey);
+PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(PVOID data, DWORD64 size);
+void kull_m_dpapi_credhist_delete(PKULL_M_DPAPI_CREDHIST credhist);
+void kull_m_dpapi_credhist_descr(PKULL_M_DPAPI_CREDHIST credhist);
+PKULL_M_DPAPI_DOMAINKEY kull_m_dpapi_domainkey_create(PVOID data, DWORD64 size);
+void kull_m_dpapi_domainkey_delete(PKULL_M_DPAPI_DOMAINKEY domainkey);
+void kull_m_dpapi_domainkey_descr(PKULL_M_DPAPI_DOMAINKEY domainkey);

@@ -27,7 +27,6 @@ typedef struct _SAM_ENTRY {
 	DWORD unk;
 } SAM_ENTRY, *PSAM_SENTRY;
 
-
 typedef struct _KIWI_BACKUP_KEY {
 	DWORD version;
 	DWORD keyLen;
@@ -145,21 +144,6 @@ typedef struct _SAM_HASH {
 	DWORD flag;
 	BYTE hash[LM_NTLM_HASH_LENGTH];
 } SAM_HASH, *PSAM_HASH;
-
-#define AES_256_KEY_SIZE	(256/8)
-#define AES_128_KEY_SIZE	(128/8)
-#define AES_BLOCK_SIZE		16
-typedef struct _AES_256_KEY_BLOB {
-	BLOBHEADER Header;
-	DWORD keySize;
-	BYTE key[AES_256_KEY_SIZE];
-} AES_256_KEY_BLOB, *PAES_256_KEY_BLOB;
-
-typedef struct _AES_128_KEY_BLOB {
-	BLOBHEADER Header;
-	DWORD keySize;
-	BYTE key[AES_128_KEY_SIZE];
-} AES_128_KEY_BLOB, *PAES_128_KEY_BLOB;
 
 typedef struct _POL_REVISION {
 	USHORT Minor;
@@ -351,7 +335,6 @@ void kuhl_m_lsadump_getInfosFromServiceName(IN PKULL_M_REGISTRY_HANDLE hSystem, 
 BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecret, IN PNT6_SYSTEM_KEYS lsaKeysStream, IN PNT5_SYSTEM_KEY lsaKeyUnique, IN PVOID * pBufferOut, IN PDWORD pSzBufferOut);
 void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix, PCWSTR secretName);
 BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecretBlobSize, PNT6_SYSTEM_KEYS lsaKeysStream, PBYTE sysKey);
-void kuhl_m_lsadump_hmac_md5(LPCVOID key, DWORD szKey, LPCVOID data, DWORD szData, LPVOID output);
 
 PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);

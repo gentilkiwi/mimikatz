@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kuhl_m.h"
+#include "../modules/kull_m_crypto.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
 #include "../modules/kull_m_memory.h"
@@ -33,11 +34,6 @@ typedef struct _KUHL_M_CRYPTO_NAME_TO_REALNAME{
 	PCWSTR	name;
 	PCWSTR	realname;
 } KUHL_M_CRYPTO_NAME_TO_REALNAME, *PKUHL_M_CRYPTO_NAME_TO_REALNAME;
-
-/*typedef struct _GENERICKEY_BLOB {
-	BLOBHEADER BlobHeader;
-	DWORD dwKeyLen;
-} GENERICKEY_BLOB, *PGENERICKEY_BLOB;*/
 
 #define PVK_FILE_VERSION_0				0
 #define PVK_MAGIC						0xb0b5f11e // bob's file
@@ -68,11 +64,7 @@ NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[]);
 
 BOOL WINAPI kuhl_m_crypto_l_stores_enumCallback_print(const void *pvSystemStore, DWORD dwFlags, PCERT_SYSTEM_STORE_INFO pStoreInfo, void *pvReserved, void *pvArg);
-DWORD kuhl_m_crypto_system_store_to_dword(PCWSTR name);
-DWORD kuhl_m_crypto_provider_type_to_dword(PCWSTR name);
-PCWCHAR kuhl_m_crypto_provider_to_realname(PCWSTR name);
 
-const wchar_t * kuhl_m_crypto_keytype_to_str(const DWORD keyType);
 void kuhl_m_crypto_printKeyInfos(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE monProv, HCRYPTKEY maCle);
 void kuhl_m_crypto_exportKeyToFile(NCRYPT_KEY_HANDLE hCngKey, HCRYPTKEY hCapiKey, DWORD keySpec, const wchar_t * store, const DWORD index, const wchar_t * name);
 void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, const wchar_t * systemStore, const wchar_t * store, const DWORD index, const wchar_t * name);

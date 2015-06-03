@@ -17,7 +17,6 @@
 #include <wchar.h>
 #include "../modules/kull_m_output.h"
 //#define KERBEROS_TOOLS
-//#define DPAPI_TOOLS
 //#define LSASS_DECRYPT
 //#define LSARPDATA
 #define NET_MODULE
@@ -68,6 +67,9 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 
 #define RtlEqualLuid(L1, L2) (((L1)->LowPart == (L2)->LowPart) && ((L1)->HighPart == (L2)->HighPart))
 #define RtlEqualGuid(L1, L2) (RtlEqualMemory(L1, L2, sizeof(GUID)))
+
+#define KIWI_MINIMUM(a,b) (((a) < (b)) ? (a) : (b))
+
 #define LM_NTLM_HASH_LENGTH	16
 
 #define KULL_M_WIN_BUILD_XP		2600
