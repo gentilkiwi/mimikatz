@@ -49,7 +49,7 @@ const PCWCHAR TicketFlagsToStrings[] = {
 void kuhl_m_kerberos_ticket_displayFlags(ULONG flags)
 {
 	DWORD i;
-	for(i = 0; i < 16; i++)
+	for(i = 0; i < ARRAYSIZE(TicketFlagsToStrings); i++)
 		if((flags >> (i + 16)) & 1)
 			kprintf(L"%s ; ", TicketFlagsToStrings[i]);
 }

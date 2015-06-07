@@ -23,7 +23,7 @@
 #ifdef NET_MODULE
 #include "modules/kuhl_m_net.h"
 #endif
-#include "modules/kuhl_m_dpapi.h"
+#include "modules/dpapi/kuhl_m_dpapi.h"
 #include "modules/kuhl_m_kernel.h"
 
 #include <io.h>

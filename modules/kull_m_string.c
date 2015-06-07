@@ -98,6 +98,26 @@ BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size)
 	return result;
 }
 
+BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWORD *size)
+{
+	BOOL result = FALSE;
+	*size = (DWORD) wcslen(string);
+	if(!(*size % 2))
+	{
+		*size >>= 1;
+		if(*hex = (PBYTE) LocalAlloc(LPTR, *size))
+		{
+			result = kull_m_string_stringToHex(string, *hex, *size);
+			if(!result)
+			{
+				*hex = (PBYTE) LocalFree(*hex);
+				*size = 0;
+			}
+		}
+	}
+	return result;
+}
+
 PCWCHAR WPRINTF_TYPES[] =
 {
 	L"%02x",		// WPRINTF_HEX_SHORT
@@ -111,12 +131,21 @@ void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
 	DWORD i, sep = flags >> 16;
 	PCWCHAR pType = WPRINTF_TYPES[flags & 0x0000000f];
 
+	if((flags & 0x0000000f) == 2)
+		kprintf(L"\nBYTE data[] = {\n\t");
+
 	for(i = 0; i < cbData; i++)
 	{
 		kprintf(pType, ((LPCBYTE) lpData)[i]);
 		if(sep && !((i+1) % sep))
+		{
 			kprintf(L"\n");
+			if((flags & 0x0000000f) == 2)
+				kprintf(L"\t");
+		}
 	}
+	if((flags & 0x0000000f) == 2)
+		kprintf(L"\n};\n");
 }
 
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime)
@@ -164,6 +193,28 @@ void kull_m_string_displaySID(IN PSID pSid)
 		LocalFree(stringSid);
 	}
 	else PRINT_ERROR_AUTO(L"ConvertSidToStringSid");
+}
+
+PWSTR kull_m_string_getRandomGUID()
+{
+	UNICODE_STRING uString;
+	GUID guid;
+	HCRYPTPROV hTmpCryptProv;
+	PWSTR buffer = NULL;
+	if(CryptAcquireContext(&hTmpCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptGenRandom(hTmpCryptProv, sizeof(GUID), (PBYTE) &guid))
+		{
+			if(NT_SUCCESS(RtlStringFromGUID(&guid, &uString)))
+			{
+				if(buffer = (PWSTR) LocalAlloc(LPTR, uString.MaximumLength))
+					RtlCopyMemory(buffer, uString.Buffer, uString.MaximumLength);
+				RtlFreeUnicodeString(&uString);
+			}
+		}
+		CryptReleaseContext(hTmpCryptProv, 0);
+	}
+	return buffer;
 }
 
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue)

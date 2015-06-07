@@ -149,11 +149,11 @@
     <ClCompile Include="modules\kuhl_m_minesweeper.c">
       <Filter>local modules</Filter>
     </ClCompile>
-    <ClCompile Include="modules\kuhl_m_dpapi.c">
-      <Filter>local modules</Filter>
-    </ClCompile>
     <ClCompile Include="..\modules\kull_m_crypto.c">
       <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c">
+      <Filter>local modules\dpapi</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -323,11 +323,11 @@
     <ClInclude Include="modules\kuhl_m_minesweeper.h">
       <Filter>local modules</Filter>
     </ClInclude>
-    <ClInclude Include="modules\kuhl_m_dpapi.h">
-      <Filter>local modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\kull_m_crypto.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h">
+      <Filter>local modules\dpapi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -350,6 +350,9 @@
     </Filter>
     <Filter Include="local modules\kerberos">
       <UniqueIdentifier>{46c85327-a2e7-45c4-b764-c072222267bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\dpapi">
+      <UniqueIdentifier>{17902a14-db65-4d8a-be9a-45fb98a65ec1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

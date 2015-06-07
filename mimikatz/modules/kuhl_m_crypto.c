@@ -521,43 +521,34 @@ BOOL kuhl_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD 
 {
 	BOOL isExported = FALSE;
 	CRYPT_KEY_PROV_INFO infos = {NULL, MS_ENHANCED_PROV, PROV_RSA_FULL, 0, 0, NULL, AT_KEYEXCHANGE};
-	HCRYPTPROV hTmpCryptProv, hCryptProv;
+	HCRYPTPROV hCryptProv;
 	HCRYPTKEY hCryptKey;
 	PCCERT_CONTEXT pCertContext;
 	HCERTSTORE hTempStore = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, 0, CERT_STORE_CREATE_NEW_FLAG, NULL); 			
-	GUID guid;
-	UNICODE_STRING uString;
 
-	if(CryptAcquireContext(&hTmpCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+	if(infos.pwszContainerName = kull_m_string_getRandomGUID())
 	{
-		if(CryptGenRandom(hTmpCryptProv, sizeof(GUID), (PBYTE) &guid))
+		if(CertAddEncodedCertificateToStore(hTempStore, X509_ASN_ENCODING, (LPCBYTE) der, derLen, CERT_STORE_ADD_NEW, &pCertContext))
 		{
-			if(NT_SUCCESS(RtlStringFromGUID(&guid, &uString)))
+			if(CryptAcquireContext(&hCryptProv, infos.pwszContainerName, infos.pwszProvName, infos.dwProvType, CRYPT_NEWKEYSET))
 			{
-				infos.pwszContainerName = uString.Buffer;
-				if(CertAddEncodedCertificateToStore(hTempStore, X509_ASN_ENCODING, (LPCBYTE) der, derLen, CERT_STORE_ADD_NEW, &pCertContext))
+				if(CryptImportKey(hCryptProv, (LPCBYTE) key,  keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
 				{
-					if(CryptAcquireContext(&hCryptProv, infos.pwszContainerName, infos.pwszProvName, infos.dwProvType, CRYPT_NEWKEYSET))
-					{
-						if(CryptImportKey(hCryptProv, (LPCBYTE) key,  keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
-						{
-							if(CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, (LPCVOID) &infos))
-								isExported = kuhl_m_crypto_exportPfx(hTempStore, filename);
-							CryptDestroyKey(hCryptKey);
-						}
-						else PRINT_ERROR_AUTO(L"CryptImportKey");
-						CryptReleaseContext(hCryptProv, 0);
-						if(!CryptAcquireContext(&hCryptProv, infos.pwszContainerName, NULL, PROV_RSA_FULL, CRYPT_DELETEKEYSET))
-							PRINT_ERROR(L"Unable to delete temp keyset %wZ\n", &uString);
-					}
-					else PRINT_ERROR_AUTO(L"CryptAcquireContext");
-					CertFreeCertificateContext(pCertContext);
+					if(CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, (LPCVOID) &infos))
+						isExported = kuhl_m_crypto_exportPfx(hTempStore, filename);
+					CryptDestroyKey(hCryptKey);
 				}
-				else PRINT_ERROR_AUTO(L"CertAddEncodedCertificateToStore");
-				RtlFreeUnicodeString(&uString);
+				else PRINT_ERROR_AUTO(L"CryptImportKey");
+				CryptReleaseContext(hCryptProv, 0);
+				if(!CryptAcquireContext(&hCryptProv, infos.pwszContainerName, NULL, PROV_RSA_FULL, CRYPT_DELETEKEYSET))
+					PRINT_ERROR(L"Unable to delete temp keyset %s\n", infos.pwszContainerName);
 			}
+			else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+			CertFreeCertificateContext(pCertContext);
 		}
-		CryptReleaseContext(hTmpCryptProv, 0);
+	
+		else PRINT_ERROR_AUTO(L"CertAddEncodedCertificateToStore");
+		LocalFree(infos.pwszContainerName);
 	}
 	CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
 	return isExported;

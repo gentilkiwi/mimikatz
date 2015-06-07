@@ -6,6 +6,7 @@
 #pragma once
 #include "globals.h"
 #include "kull_m_crypto.h"
+#include "kull_m_crypto_system.h"
 #include "kull_m_string.h"
 
 #define KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS	"Hj1diQ6kpUx7VC4m"
@@ -110,3 +111,10 @@ void kull_m_dpapi_credhist_descr(PKULL_M_DPAPI_CREDHIST credhist);
 PKULL_M_DPAPI_DOMAINKEY kull_m_dpapi_domainkey_create(PVOID data, DWORD64 size);
 void kull_m_dpapi_domainkey_delete(PKULL_M_DPAPI_DOMAINKEY domainkey);
 void kull_m_dpapi_domainkey_descr(PKULL_M_DPAPI_DOMAINKEY domainkey);
+
+BOOL kull_m_dpapi_hmac_sha1_incorrect(LPCVOID key, DWORD keyLen, LPCVOID salt, DWORD saltLen, LPCVOID entropy, DWORD entropyLen, LPCVOID data, DWORD dataLen, LPVOID outKey);
+BOOL kull_m_dpapi_sessionkey(LPCVOID masterkey, DWORD masterkeyLen, LPCVOID salt, DWORD saltLen, LPCVOID entropy, DWORD entropyLen, LPCVOID data, DWORD dataLen, ALG_ID hashAlg, LPVOID outKey, DWORD outKeyLen);
+BOOL kull_m_dpapi_unprotect_blob(PKULL_M_DPAPI_BLOB blob, LPCVOID masterkey, DWORD masterkeyLen, LPCVOID entropy, DWORD entropyLen, LPCWSTR password, LPVOID *dataOut, DWORD *dataOutLen);
+
+void kull_m_dpapi_displayPromptFlags(DWORD flags);
+void kull_m_dpapi_displayProtectionFlags(DWORD flags);

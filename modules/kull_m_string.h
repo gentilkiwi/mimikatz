@@ -52,11 +52,13 @@ BOOL kull_m_string_suspectUnicodeString(IN PUNICODE_STRING pUnicodeString);
 wchar_t * kull_m_string_qad_ansi_to_unicode(const char * ansi);
 wchar_t * kull_m_string_qad_ansi_c_to_unicode(const char * ansi, SIZE_T szStr);
 BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size);
+BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWORD *size);
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags);
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime);
 void kull_m_string_displayLocalFileTime(IN PFILETIME pFileTime);
 void kull_m_string_displayGUID(IN LPCGUID pGuid);
 void kull_m_string_displaySID(IN PSID pSid);
+PWSTR kull_m_string_getRandomGUID();
 
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue);

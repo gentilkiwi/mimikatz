@@ -4,23 +4,118 @@
 	Licence : http://creativecommons.org/licenses/by/3.0/fr/
 */
 #include "kull_m_crypto.h"
-#include "kull_m_string.h"
 
-BOOL kull_m_crypto_hkey(HCRYPTPROV hProv, DWORD calgid, LPCVOID key, DWORD keyLen, DWORD flags, HCRYPTKEY *hKey)
+BOOL kull_m_crypto_hash(ALG_ID algid, LPCVOID data, DWORD dataLen, LPVOID hash, DWORD hashWanted)
+{
+	BOOL status = FALSE;
+	HCRYPTPROV hProv;
+	HCRYPTHASH hHash;
+	DWORD hashLen;
+	PBYTE buffer;
+
+	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptCreateHash(hProv, algid, 0, 0, &hHash))
+		{
+			if(CryptHashData(hHash, (LPCBYTE) data, dataLen, 0))
+			{
+				if(CryptGetHashParam(hHash, HP_HASHVAL, NULL, &hashLen, 0))
+				{
+					if(buffer = (PBYTE) LocalAlloc(LPTR, hashLen))
+					{
+						status = CryptGetHashParam(hHash, HP_HASHVAL, buffer, &hashLen, 0);
+						RtlCopyMemory(hash, buffer, KIWI_MINIMUM(hashLen, hashWanted));
+						LocalFree(buffer);
+					}
+				}
+			}
+			CryptDestroyHash(hHash);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_hkey(HCRYPTPROV hProv, DWORD calgid, LPCVOID key, DWORD keyLen, DWORD flags, HCRYPTKEY *hKey, HCRYPTPROV *hSessionProv)
 {
 	BOOL status = FALSE;
 	PGENERICKEY_BLOB keyBlob;
 	DWORD szBlob = sizeof(GENERICKEY_BLOB) + keyLen;
-	if(keyBlob = (PGENERICKEY_BLOB) LocalAlloc(LPTR, szBlob))
+	
+	if(calgid != CALG_3DES)
 	{
-		keyBlob->Header.bType = PLAINTEXTKEYBLOB;
-		keyBlob->Header.bVersion = CUR_BLOB_VERSION;
-		keyBlob->Header.reserved = 0;
-		keyBlob->Header.aiKeyAlg = calgid;
-		keyBlob->dwKeyLen = keyLen;
-		RtlCopyMemory((PBYTE) keyBlob + sizeof(GENERICKEY_BLOB), key, keyBlob->dwKeyLen);
-		status = CryptImportKey(hProv, (LPCBYTE) keyBlob, szBlob, 0, flags, hKey);
-		LocalFree(keyBlob);
+		if(keyBlob = (PGENERICKEY_BLOB) LocalAlloc(LPTR, szBlob))
+		{
+			keyBlob->Header.bType = PLAINTEXTKEYBLOB;
+			keyBlob->Header.bVersion = CUR_BLOB_VERSION;
+			keyBlob->Header.reserved = 0;
+			keyBlob->Header.aiKeyAlg = calgid;
+			keyBlob->dwKeyLen = keyLen;
+			RtlCopyMemory((PBYTE) keyBlob + sizeof(GENERICKEY_BLOB), key, keyBlob->dwKeyLen);
+			status = CryptImportKey(hProv, (LPCBYTE) keyBlob, szBlob, 0, flags, hKey);
+			LocalFree(keyBlob);
+		}
+	}
+	else if(hSessionProv)
+		status = kull_m_crypto_hkey_session(calgid, key, keyLen, flags, hKey, hSessionProv);
+	
+	return status;
+}
+
+BOOL kull_m_crypto_DeriveKeyRaw(ALG_ID hashId, LPVOID hash, DWORD hashLen, LPVOID key, DWORD keyLen)
+{
+	BOOL status = FALSE;
+	BYTE buffer[152], ipad[64], opad[64];
+	DWORD i;
+	
+	if(status = (hashLen >= keyLen))
+		RtlCopyMemory(key, hash, keyLen);
+	else
+	{
+		RtlFillMemory(ipad, sizeof(ipad), '6');
+		RtlFillMemory(opad, sizeof(opad), '\\');
+		for(i = 0; i < hashLen; i++)
+		{
+			ipad[i] ^= ((PBYTE) hash)[i];
+			opad[i] ^= ((PBYTE) hash)[i];
+		}
+		if(kull_m_crypto_hash(hashId, ipad, sizeof(ipad), buffer, hashLen))
+			if(status = kull_m_crypto_hash(hashId, opad, sizeof(opad), buffer + hashLen, hashLen))
+				RtlCopyMemory(key, buffer, KIWI_MINIMUM(keyLen, 2 * hashLen));
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_close_hprov_delete_container(HCRYPTPROV hProv)
+{
+	BOOL status = FALSE;
+	DWORD provtype, szLen = 0;
+	PSTR container, provider;
+	if(CryptGetProvParam(hProv, PP_CONTAINER, NULL, &szLen, 0))
+	{
+		if(container = (PSTR) LocalAlloc(LPTR, szLen))
+		{
+			if(CryptGetProvParam(hProv, PP_CONTAINER, (LPBYTE) container, &szLen, 0))
+			{
+				if(CryptGetProvParam(hProv, PP_NAME, NULL, &szLen, 0))
+				{
+					if(provider = (PSTR) LocalAlloc(LPTR, szLen))
+					{
+						if(CryptGetProvParam(hProv, PP_NAME, (LPBYTE) provider, &szLen, 0))
+						{
+							szLen = sizeof(DWORD);
+							if(CryptGetProvParam(hProv, PP_PROVTYPE, (LPBYTE) &provtype, &szLen, 0))
+							{
+								CryptReleaseContext(hProv, 0);
+								status = CryptAcquireContextA(&hProv, container, provider, provtype, CRYPT_DELETEKEYSET);
+							}
+						}
+						LocalFree(provider);
+					}
+				}
+				LocalFree(container);
+			}
+		}
 	}
 	return status;
 }
@@ -37,7 +132,7 @@ BOOL kull_m_crypto_hmac(DWORD calgid, LPCVOID key, DWORD keyLen, LPCVOID message
 
 	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
 	{
-		if(kull_m_crypto_hkey(hProv, CALG_RC2, key, keyLen, CRYPT_IPSEC_HMAC_KEY, &hKey))
+		if(kull_m_crypto_hkey(hProv, CALG_RC2, key, keyLen, CRYPT_IPSEC_HMAC_KEY, &hKey, NULL))
 		{
 			if(CryptCreateHash(hProv, CALG_HMAC, hKey, 0, &hHash))
 			{
@@ -206,13 +301,89 @@ BOOL kull_m_crypto_aesCTSEncryptDecrypt(DWORD aesCalgId, PVOID data, DWORD szDat
 
 	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
 	{
-		if(kull_m_crypto_hkey(hProv, aesCalgId, key, szKey, 0, &hKey))
+		if(kull_m_crypto_hkey(hProv, aesCalgId, key, szKey, 0, &hKey, NULL))
 		{
 			if(CryptSetKeyParam(hKey, KP_MODE, (LPCBYTE) &mode, 0))
 				status = (encrypt ? kull_m_crypto_aesCTSEncrypt(hKey, (PBYTE) data, szData, (PBYTE) pbIV) : kull_m_crypto_aesCTSDecrypt(hKey, (PBYTE) data, szData, (PBYTE) pbIV));
 			CryptDestroyKey(hKey);
 		}
 		CryptReleaseContext(hProv, 0);
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD flags, HCRYPTKEY *hSessionKey, HCRYPTPROV *hSessionProv)
+{
+	BOOL status = FALSE;
+	PBYTE keyblob, pbSessionBlob, ptr;
+	DWORD dwkeyblob, dwLen, i;
+	PWSTR container;
+	HCRYPTKEY hPrivateKey;
+
+	if(container = kull_m_string_getRandomGUID())
+	{
+		if(CryptAcquireContext(hSessionProv, container, NULL, PROV_RSA_AES, CRYPT_NEWKEYSET))
+		{
+			hPrivateKey = 0;
+			if(CryptGenKey(*hSessionProv, AT_KEYEXCHANGE, CRYPT_EXPORTABLE | RSA1024BIT_KEY, &hPrivateKey)) // 1024
+			{
+				if(CryptExportKey(hPrivateKey, 0, PRIVATEKEYBLOB, 0, NULL, &dwkeyblob))
+				{
+					if(keyblob = (LPBYTE)LocalAlloc(LPTR, dwkeyblob))
+					{
+						if(CryptExportKey(hPrivateKey, 0, PRIVATEKEYBLOB, 0, keyblob, &dwkeyblob))
+						{
+							CryptDestroyKey(hPrivateKey);
+							hPrivateKey = 0;
+
+							dwLen = ((RSAPUBKEY *) (keyblob + sizeof(PUBLICKEYSTRUC)))->bitlen / 8;
+							((RSAPUBKEY *) (keyblob + sizeof(PUBLICKEYSTRUC)))->pubexp = 1;
+							ptr = keyblob + sizeof(PUBLICKEYSTRUC) + sizeof(RSAPUBKEY);
+
+							ptr += 2 * dwLen; // Skip pubexp, modulus, prime1, prime2
+							*ptr = 1; // Convert exponent1 to 1
+							RtlZeroMemory(ptr + 1, dwLen / 2 - 1);
+							ptr += dwLen / 2; // Skip exponent1
+							*ptr = 1; // Convert exponent2 to 1
+							RtlZeroMemory(ptr + 1, dwLen / 2 - 1);
+							ptr += dwLen; // Skip exponent2, coefficient
+							*ptr = 1; // Convert privateExponent to 1
+							RtlZeroMemory(ptr + 1, (dwLen/2) - 1);
+
+							if(CryptImportKey(*hSessionProv, keyblob, dwkeyblob, 0, 0, &hPrivateKey))
+							{
+								dwkeyblob = (1024 / 8) + sizeof(ALG_ID) + sizeof(BLOBHEADER); // 1024
+								if(pbSessionBlob = (LPBYTE)LocalAlloc(LPTR, dwkeyblob))
+								{
+									((BLOBHEADER *) pbSessionBlob)->bType = SIMPLEBLOB;
+									((BLOBHEADER *) pbSessionBlob)->bVersion = CUR_BLOB_VERSION;
+									((BLOBHEADER *) pbSessionBlob)->reserved = 0;
+									((BLOBHEADER *) pbSessionBlob)->aiKeyAlg = calgid;
+									ptr = pbSessionBlob + sizeof(BLOBHEADER);
+									*(ALG_ID *) ptr = CALG_RSA_KEYX;
+									ptr += sizeof(ALG_ID);
+
+									for (i = 0; i < keyLen; i++)
+										ptr[i] = ((LPCBYTE) key)[keyLen - i - 1];
+									ptr += (keyLen + 1);
+									for (i = 0; i < dwkeyblob - (sizeof(ALG_ID) + sizeof(BLOBHEADER) + keyLen + 3); i++)
+										if (ptr[i] == 0) ptr[i] = 0x42;
+									pbSessionBlob[dwkeyblob - 2] = 2;
+									status = CryptImportKey(*hSessionProv, pbSessionBlob, dwkeyblob, hPrivateKey, flags, hSessionKey);
+									LocalFree(pbSessionBlob);
+								}
+							}
+						}
+						LocalFree(keyblob);
+					}
+				}
+			}
+			if(hPrivateKey)
+				CryptDestroyKey(hPrivateKey);
+			if(!status)
+				kull_m_crypto_close_hprov_delete_container(*hSessionProv);
+		}
+		LocalFree(container);
 	}
 	return status;
 }
@@ -265,53 +436,53 @@ const KULL_M_CRYPTO_DUAL_STRING_DWORD kull_m_crypto_provider_types[] = {
 };
 
 const KULL_M_CRYPTO_DUAL_STRING_DWORD kull_m_crypto_calgid[] = {
-	{L"CALG_MD2",	CALG_MD2},
-	{L"CALG_MD4",	CALG_MD4},
-	{L"CALG_MD5",	CALG_MD5},
-	//{L"CALG_SHA",	CALG_SHA},
-	{L"CALG_SHA1",	CALG_SHA1},
-	{L"CALG_MAC",	CALG_MAC},
-	{L"CALG_RSA_SIGN",	CALG_RSA_SIGN},
-	{L"CALG_DSS_SIGN",	CALG_DSS_SIGN},
-	{L"CALG_NO_SIGN",	CALG_NO_SIGN},
-	{L"CALG_RSA_KEYX",	CALG_RSA_KEYX},
-	{L"CALG_DES",	CALG_DES},
-	{L"CALG_3DES_112",	CALG_3DES_112},
-	{L"CALG_3DES",	CALG_3DES},
-	{L"CALG_DESX",	CALG_DESX},
-	{L"CALG_RC2",	CALG_RC2},
-	{L"CALG_RC4",	CALG_RC4},
-	{L"CALG_SEAL",	CALG_SEAL},
-	{L"CALG_DH_SF",	CALG_DH_SF},
-	{L"CALG_DH_EPHEM",	CALG_DH_EPHEM},
-	{L"CALG_AGREEDKEY_ANY",	CALG_AGREEDKEY_ANY},
-	{L"CALG_KEA_KEYX",	CALG_KEA_KEYX},
-	{L"CALG_HUGHES_MD5",	CALG_HUGHES_MD5},
-	{L"CALG_SKIPJACK",	CALG_SKIPJACK},
-	{L"CALG_TEK",	CALG_TEK},
-	{L"CALG_CYLINK_MEK",	CALG_CYLINK_MEK},
-	{L"CALG_SSL3_SHAMD5",	CALG_SSL3_SHAMD5},
-	{L"CALG_SSL3_MASTER",	CALG_SSL3_MASTER},
+	{L"CALG_MD2",					CALG_MD2},
+	{L"CALG_MD4",					CALG_MD4},
+	{L"CALG_MD5",					CALG_MD5},
+	//{L"CALG_SHA",					CALG_SHA},
+	{L"CALG_SHA1",					CALG_SHA1},
+	{L"CALG_MAC",					CALG_MAC},
+	{L"CALG_RSA_SIGN",				CALG_RSA_SIGN},
+	{L"CALG_DSS_SIGN",				CALG_DSS_SIGN},
+	{L"CALG_NO_SIGN",				CALG_NO_SIGN},
+	{L"CALG_RSA_KEYX",				CALG_RSA_KEYX},
+	{L"CALG_DES",					CALG_DES},
+	{L"CALG_3DES_112",				CALG_3DES_112},
+	{L"CALG_3DES",					CALG_3DES},
+	{L"CALG_DESX",					CALG_DESX},
+	{L"CALG_RC2",					CALG_RC2},
+	{L"CALG_RC4",					CALG_RC4},
+	{L"CALG_SEAL",					CALG_SEAL},
+	{L"CALG_DH_SF",					CALG_DH_SF},
+	{L"CALG_DH_EPHEM",				CALG_DH_EPHEM},
+	{L"CALG_AGREEDKEY_ANY",			CALG_AGREEDKEY_ANY},
+	{L"CALG_KEA_KEYX",				CALG_KEA_KEYX},
+	{L"CALG_HUGHES_MD5",			CALG_HUGHES_MD5},
+	{L"CALG_SKIPJACK",				CALG_SKIPJACK},
+	{L"CALG_TEK",					CALG_TEK},
+	{L"CALG_CYLINK_MEK",			CALG_CYLINK_MEK},
+	{L"CALG_SSL3_SHAMD5",			CALG_SSL3_SHAMD5},
+	{L"CALG_SSL3_MASTER",			CALG_SSL3_MASTER},
 	{L"CALG_SCHANNEL_MASTER_HASH",	CALG_SCHANNEL_MASTER_HASH},
-	{L"CALG_SCHANNEL_MAC_KEY",	CALG_SCHANNEL_MAC_KEY},
-	{L"CALG_SCHANNEL_ENC_KEY",	CALG_SCHANNEL_ENC_KEY},
-	{L"CALG_PCT1_MASTER",	CALG_PCT1_MASTER},
-	{L"CALG_SSL2_MASTER",	CALG_SSL2_MASTER},
-	{L"CALG_TLS1_MASTER",	CALG_TLS1_MASTER},
-	{L"CALG_RC5",	CALG_RC5},
-	{L"CALG_HMAC",	CALG_HMAC},
-	{L"CALG_TLS1PRF",	CALG_TLS1PRF},
-	{L"CALG_HASH_REPLACE_OWF",	CALG_HASH_REPLACE_OWF},
-	{L"CALG_AES_128",	CALG_AES_128},
-	{L"CALG_AES_192",	CALG_AES_192},
-	{L"CALG_AES_256",	CALG_AES_256},
-	{L"CALG_AES",	CALG_AES},
-	{L"CALG_SHA_256",	CALG_SHA_256},
-	{L"CALG_SHA_384",	CALG_SHA_384},
-	{L"CALG_SHA_512",	CALG_SHA_512},
-	{L"CALG_ECDH",	CALG_ECDH},
-	{L"CALG_ECMQV",	CALG_ECMQV},
-	{L"CALG_ECDSA",	CALG_ECDSA},
+	{L"CALG_SCHANNEL_MAC_KEY",		CALG_SCHANNEL_MAC_KEY},
+	{L"CALG_SCHANNEL_ENC_KEY",		CALG_SCHANNEL_ENC_KEY},
+	{L"CALG_PCT1_MASTER",			CALG_PCT1_MASTER},
+	{L"CALG_SSL2_MASTER",			CALG_SSL2_MASTER},
+	{L"CALG_TLS1_MASTER",			CALG_TLS1_MASTER},
+	{L"CALG_RC5",					CALG_RC5},
+	{L"CALG_HMAC",					CALG_HMAC},
+	{L"CALG_TLS1PRF",				CALG_TLS1PRF},
+	{L"CALG_HASH_REPLACE_OWF",		CALG_HASH_REPLACE_OWF},
+	{L"CALG_AES_128",				CALG_AES_128},
+	{L"CALG_AES_192",				CALG_AES_192},
+	{L"CALG_AES_256",				CALG_AES_256},
+	{L"CALG_AES",					CALG_AES},
+	{L"CALG_SHA_256",				CALG_SHA_256},
+	{L"CALG_SHA_384",				CALG_SHA_384},
+	{L"CALG_SHA_512",				CALG_SHA_512},
+	{L"CALG_ECDH",					CALG_ECDH},
+	{L"CALG_ECMQV",					CALG_ECMQV},
+	{L"CALG_ECDSA",					CALG_ECDSA},
 };
 
 DWORD kull_m_crypto_system_store_to_dword(PCWSTR name)

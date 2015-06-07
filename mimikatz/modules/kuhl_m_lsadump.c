@@ -362,7 +362,7 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 			if(status = NT_SUCCESS(RtlDecryptDES2blocks1DWORD(cypheredHash, &rid, clearHash)))
 				kull_m_string_wprintf_hex(clearHash, LM_NTLM_HASH_LENGTH, 0);
 			else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
-		} else PRINT_ERROR(L"RtlEncryptDecryptARC4");
+		} else PRINT_ERROR(L"RtlEncryptDecryptRC4");
 	}
 	kprintf(L"\n");
 	return status;
@@ -395,7 +395,7 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 				RtlCopyMemory(samKey, pDomAccF->keys1.Key, SAM_KEY_DATA_KEY_LENGTH);
 				if(status = NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key)))
 					kull_m_string_wprintf_hex(samKey, LM_NTLM_HASH_LENGTH, 0);
-				else PRINT_ERROR(L"RtlEncryptDecryptARC4 KO");
+				else PRINT_ERROR(L"RtlEncryptDecryptRC4 KO");
 			}
 			else PRINT_ERROR(L"kull_m_registry_RegQueryValueEx F KO");
 			LocalFree(pDomAccF);
@@ -944,7 +944,7 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 
 	if(pKey)
 	{
-		if(CryptAcquireContext(&hContext, NULL, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_2K3) ? MS_ENH_RSA_AES_PROV_XP : MS_ENH_RSA_AES_PROV, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+		if(CryptAcquireContext(&hContext, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
 		{
 			if(CryptCreateHash(hContext, CALG_SHA_256, 0, 0, &hHash))
 			{
@@ -955,7 +955,7 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 				szNeeded = sizeof(keyBuffer);
 				if(CryptGetHashParam(hHash, HP_HASHVAL, keyBuffer, &szNeeded, 0))
 				{
-					if(kull_m_crypto_hkey(hContext, CALG_AES_256, keyBuffer, sizeof(keyBuffer), 0, &hKey))
+					if(kull_m_crypto_hkey(hContext, CALG_AES_256, keyBuffer, sizeof(keyBuffer), 0, &hKey, NULL))
 					{
 						i = CRYPT_MODE_ECB;
 						if(CryptSetKeyParam(hKey, KP_MODE, (LPCBYTE) &i, 0))
@@ -1470,11 +1470,8 @@ NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
 	UNICODE_STRING uPassword, uUsername, uTmp;
 	ANSI_STRING aTmp;
 	DWORD count = 10240;
-	BYTE hash[LM_NTLM_HASH_LENGTH], dcc[LM_NTLM_HASH_LENGTH];
-	MD5_CTX md5Ctx;
-	SHA_CTX shaCtx;
-	SHA_DIGEST shaD;
-
+	BYTE hash[LM_NTLM_HASH_LENGTH], dcc[LM_NTLM_HASH_LENGTH], sha1[SHA_DIGEST_LENGTH], md5[MD5_DIGEST_LENGTH];
+	
 	kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
 	kull_m_string_args_byName(argc, argv, L"user", &szUsername, NULL);
 	if(kull_m_string_args_byName(argc, argv, L"count", &szCount, NULL))
@@ -1511,15 +1508,14 @@ NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
 		RtlFreeUnicodeString(&uTmp);
 	}
 
-	A_SHAInit(&shaCtx);
-	A_SHAUpdate(&shaCtx, uPassword.Buffer, uPassword.Length);
-	A_SHAFinal(&shaCtx, &shaD);
-	kprintf(L"SHA1: "); kull_m_string_wprintf_hex(shaD.digest, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
-
-	MD5Init(&md5Ctx);
-	MD5Update(&md5Ctx, uPassword.Buffer, uPassword.Length);
-	MD5Final(&md5Ctx);
-	kprintf(L"MD5 : "); kull_m_string_wprintf_hex(md5Ctx.digest, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
+	if(kull_m_crypto_hash(CALG_SHA1, uPassword.Buffer, uPassword.Length, sha1, SHA_DIGEST_LENGTH))
+	{
+		kprintf(L"SHA1: "); kull_m_string_wprintf_hex(sha1, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+	}
+	if(kull_m_crypto_hash(CALG_MD5, uPassword.Buffer, uPassword.Length, md5, MD5_DIGEST_LENGTH))
+	{
+		kprintf(L"MD5 : "); kull_m_string_wprintf_hex(md5, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
+	}
 
 	return STATUS_SUCCESS;
 }
