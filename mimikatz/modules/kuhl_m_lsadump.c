@@ -648,7 +648,7 @@ NTSTATUS kuhl_m_lsadump_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username,
 			status = RtlDigestNTLM(&HashAndLowerUsername, dcc);
 			if(realIterations && NT_SUCCESS(status))
 			{
-				if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA1, dcc, LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length, realIterations, buffer, LM_NTLM_HASH_LENGTH))
+				if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA1, dcc, LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length, realIterations, buffer, LM_NTLM_HASH_LENGTH, FALSE))
 				{
 					RtlCopyMemory(dcc, buffer, LM_NTLM_HASH_LENGTH);
 					status = STATUS_SUCCESS;

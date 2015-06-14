@@ -217,6 +217,15 @@ PWSTR kull_m_string_getRandomGUID()
 	return buffer;
 }
 
+void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size)
+{
+	PVOID tempPtr = NULL;
+	if(size)
+		if(tempPtr = LocalAlloc(LPTR, (SIZE_T) size))
+			RtlCopyMemory(tempPtr, *(PVOID *) ptr, (size_t) size);
+	*(PVOID *) ptr = tempPtr;
+}
+
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue)
 {
 	BOOL result = FALSE;

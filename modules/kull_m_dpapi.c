@@ -5,19 +5,10 @@
 */
 #include "kull_m_dpapi.h"
 
-void kull_m_dpapi_ptr_replace(PVOID ptr, DWORD64 size)
-{
-	PVOID tempPtr = NULL;
-	if(size)
-		if(tempPtr = LocalAlloc(LPTR, (SIZE_T) size))
-			RtlCopyMemory(tempPtr, *(PVOID *) ptr, (size_t) size);
-	*(PVOID *) ptr = tempPtr;
-}
-
 PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(PVOID data/*, DWORD size*/)
 {
 	PKULL_M_DPAPI_BLOB blob = NULL;
-	if(blob = (PKULL_M_DPAPI_BLOB) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_BLOB)))
+	if(data && (blob = (PKULL_M_DPAPI_BLOB) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_BLOB))))
 	{
 		RtlCopyMemory(blob, data, FIELD_OFFSET(KULL_M_DPAPI_BLOB, szDescription));
 		blob->szDescription = (PWSTR) ((PBYTE) data + FIELD_OFFSET(KULL_M_DPAPI_BLOB, szDescription));
@@ -32,12 +23,12 @@ PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(PVOID data/*, DWORD size*/)
 		blob->dwSignLen = *(PDWORD) ((PBYTE) blob->pbData + blob->dwDataLen);
 		blob->pbSign = (PBYTE) blob->pbData + blob->dwDataLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbSign) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwSignLen);
 		
-		kull_m_dpapi_ptr_replace(&blob->szDescription, blob->dwDescriptionLen);
-		kull_m_dpapi_ptr_replace(&blob->pbSalt, blob->dwSaltLen);
-		kull_m_dpapi_ptr_replace(&blob->pbHmackKey, blob->dwHmacKeyLen);
-		kull_m_dpapi_ptr_replace(&blob->pbHmack2Key, blob->dwHmac2KeyLen);
-		kull_m_dpapi_ptr_replace(&blob->pbData, blob->dwDataLen);
-		kull_m_dpapi_ptr_replace(&blob->pbSign, blob->dwSignLen);
+		kull_m_string_ptr_replace(&blob->szDescription, blob->dwDescriptionLen);
+		kull_m_string_ptr_replace(&blob->pbSalt, blob->dwSaltLen);
+		kull_m_string_ptr_replace(&blob->pbHmackKey, blob->dwHmacKeyLen);
+		kull_m_string_ptr_replace(&blob->pbHmack2Key, blob->dwHmac2KeyLen);
+		kull_m_string_ptr_replace(&blob->pbData, blob->dwDataLen);
+		kull_m_string_ptr_replace(&blob->pbSign, blob->dwSignLen);
 	}
 	return blob;
 }
@@ -87,19 +78,19 @@ void kull_m_dpapi_blob_descr(PKULL_M_DPAPI_BLOB blob)
 		kprintf(L"  dwDataLen          : %08x - %u\n", blob->dwDataLen, blob->dwDataLen);
 		kprintf(L"  pbData             : "); kull_m_string_wprintf_hex(blob->pbData, blob->dwDataLen, 0); kprintf(L"\n");
 		kprintf(L"  dwSignLen          : %08x - %u\n", blob->dwSignLen, blob->dwSignLen);
-		kprintf(L"  pbSign             : "); kull_m_string_wprintf_hex(blob->pbSign, blob->dwSignLen, 0); kprintf(L"\n");
+		kprintf(L"  pbSign             : "); kull_m_string_wprintf_hex(blob->pbSign, blob->dwSignLen, 0); kprintf(L"\n\n");
 	}
 }
 
 PKULL_M_DPAPI_MASTERKEY kull_m_dpapi_masterkey_create(PVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_MASTERKEY masterkey = NULL;
-	if(masterkey = (PKULL_M_DPAPI_MASTERKEY) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEY)))
+	if(data && (masterkey = (PKULL_M_DPAPI_MASTERKEY) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEY))))
 	{
 		RtlCopyMemory(masterkey, data, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey));
 		masterkey->pbKey = (PBYTE) data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey);
 		masterkey->__dwKeyLen = (DWORD) size - FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey);
-		kull_m_dpapi_ptr_replace(&masterkey->pbKey, masterkey->__dwKeyLen);
+		kull_m_string_ptr_replace(&masterkey->pbKey, masterkey->__dwKeyLen);
 	}
 	return masterkey;
 }
@@ -124,14 +115,14 @@ void kull_m_dpapi_masterkey_descr(PKULL_M_DPAPI_MASTERKEY masterkey)
 		kprintf(L"    rounds           : %08x - %u\n", masterkey->rounds, masterkey->rounds);
 		kprintf(L"    algHash          : %08x - %u (%s)\n", masterkey->algHash, masterkey->algHash, kull_m_crypto_algid_to_name(masterkey->algHash));
 		kprintf(L"    algCrypt         : %08x - %u (%s)\n", masterkey->algCrypt, masterkey->algCrypt, kull_m_crypto_algid_to_name(masterkey->algCrypt));
-		kprintf(L"    pbKey            : "); kull_m_string_wprintf_hex(masterkey->pbKey, masterkey->__dwKeyLen, 0); kprintf(L"\n");
+		kprintf(L"    pbKey            : "); kull_m_string_wprintf_hex(masterkey->pbKey, masterkey->__dwKeyLen, 0); kprintf(L"\n\n");
 	}
 }
 
 PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(PVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_CREDHIST credhist = NULL;
-	if(credhist = (PKULL_M_DPAPI_CREDHIST) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_CREDHIST)))
+	if(data && (credhist = (PKULL_M_DPAPI_CREDHIST) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_CREDHIST))))
 		RtlCopyMemory(credhist, data, sizeof(KULL_M_DPAPI_CREDHIST));
 	return credhist;
 }
@@ -148,20 +139,20 @@ void kull_m_dpapi_credhist_descr(PKULL_M_DPAPI_CREDHIST credhist)
 	if(credhist)
 	{
 		kprintf(L"    dwVersion        : %08x - %u\n", credhist->dwVersion, credhist->dwVersion);
-		kprintf(L"    guid             : "); kull_m_string_displayGUID(&credhist->guid); kprintf(L"\n");
+		kprintf(L"    guid             : "); kull_m_string_displayGUID(&credhist->guid); kprintf(L"\n\n");
 	}
 }
 
 PKULL_M_DPAPI_DOMAINKEY kull_m_dpapi_domainkey_create(PVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_DOMAINKEY domainkey = NULL;
-	if(domainkey = (PKULL_M_DPAPI_DOMAINKEY) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_DOMAINKEY)))
+	if(data && (domainkey = (PKULL_M_DPAPI_DOMAINKEY) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_DOMAINKEY))))
 	{
 		RtlCopyMemory(domainkey, data, FIELD_OFFSET(KULL_M_DPAPI_DOMAINKEY, pbSecret));
 		domainkey->pbSecret = (PBYTE) data + FIELD_OFFSET(KULL_M_DPAPI_DOMAINKEY, pbSecret);
 		domainkey->pbAccesscheck = (PBYTE) data + FIELD_OFFSET(KULL_M_DPAPI_DOMAINKEY, pbSecret) + domainkey->dwSecretLen;
-		kull_m_dpapi_ptr_replace(&domainkey->pbSecret, domainkey->dwSecretLen);
-		kull_m_dpapi_ptr_replace(&domainkey->pbAccesscheck, domainkey->dwAccesscheckLen);
+		kull_m_string_ptr_replace(&domainkey->pbSecret, domainkey->dwSecretLen);
+		kull_m_string_ptr_replace(&domainkey->pbAccesscheck, domainkey->dwAccesscheckLen);
 	}
 	return domainkey;
 }
@@ -188,14 +179,14 @@ void kull_m_dpapi_domainkey_descr(PKULL_M_DPAPI_DOMAINKEY domainkey)
 		kprintf(L"    dwAccesscheckLen : %08x - %u\n", domainkey->dwAccesscheckLen, domainkey->dwAccesscheckLen);
 		kprintf(L"    guidMasterKey    : "); kull_m_string_displayGUID(&domainkey->guidMasterKey); kprintf(L"\n");
 		kprintf(L"    pbSecret         : "); kull_m_string_wprintf_hex(domainkey->pbSecret, domainkey->dwSecretLen, 0); kprintf(L"\n");
-		kprintf(L"    pbAccesscheck    : "); kull_m_string_wprintf_hex(domainkey->pbAccesscheck, domainkey->dwAccesscheckLen, 0); kprintf(L"\n");
+		kprintf(L"    pbAccesscheck    : "); kull_m_string_wprintf_hex(domainkey->pbAccesscheck, domainkey->dwAccesscheckLen, 0); kprintf(L"\n\n");
 	}
 }
 
 PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(PVOID data/*, DWORD size*/)
 {
 	PKULL_M_DPAPI_MASTERKEYS masterkeys = NULL;
-	if(masterkeys = (PKULL_M_DPAPI_MASTERKEYS) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEYS)))
+	if(data && (masterkeys = (PKULL_M_DPAPI_MASTERKEYS) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEYS))))
 	{
 		RtlCopyMemory(masterkeys, data, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey));
 		if(masterkeys->dwMasterKeyLen)
@@ -259,6 +250,7 @@ void kull_m_dpapi_masterkeys_descr(PKULL_M_DPAPI_MASTERKEYS masterkeys)
 			kprintf(L"[domainkey]\n");
 			kull_m_dpapi_domainkey_descr(masterkeys->DomainKey);
 		}
+		kprintf(L"\n");
 	}
 }
 
@@ -391,9 +383,236 @@ BOOL kull_m_dpapi_unprotect_blob(PKULL_M_DPAPI_BLOB blob, LPCVOID masterkey, DWO
 			LocalFree(hmac);
 		}
 	}
-
 	if(hashPassword)
 		LocalFree(hashPassword);
+	return status;
+}
+
+BOOL kull_m_dpapi_unprotect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR password, PCWSTR sid, BOOL isKeyOfProtectedUser, PVOID *output, DWORD *outputLen)
+{
+	BOOL status = FALSE;
+	ALG_ID PassAlg;
+	DWORD PassLen, SidLen = (DWORD) wcslen(sid) * sizeof(wchar_t);
+	PVOID PassHash;
+	BYTE sha2[32];
+	
+	PassAlg = (flags & 4) ? CALG_SHA1 : CALG_MD4;
+	PassLen = kull_m_crypto_hash_len(PassAlg);
+	if(PassHash = LocalAlloc(LPTR, PassLen))
+	{
+		if(kull_m_crypto_hash(PassAlg, password, (DWORD) wcslen(password) * sizeof(wchar_t), PassHash, PassLen))
+		{
+			if(isKeyOfProtectedUser && (PassAlg == CALG_MD4))
+				if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA_256, PassHash, PassLen, sid, SidLen, 10000, sha2, sizeof(sha2), FALSE))
+					kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA_256, sha2, sizeof(sha2), sid, SidLen, 1, (PBYTE) PassHash, PassLen, FALSE);
+
+			status = kull_m_dpapi_unprotect_masterkey_with_userHash(masterkey, PassHash, PassLen, sid, output, outputLen);
+		}
+		LocalFree(PassHash);
+	}
+	return status;
+}
+
+BOOL kull_m_dpapi_unprotect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID userHash, DWORD userHashLen, PCWSTR sid, PVOID *output, DWORD *outputLen)
+{
+	BOOL status = FALSE;
+	BYTE sha1DerivedKey[SHA_DIGEST_LENGTH];
+	
+	if(kull_m_crypto_hmac(CALG_SHA1, userHash, userHashLen, sid, (DWORD) (wcslen(sid) + 1) * sizeof(wchar_t), sha1DerivedKey, SHA_DIGEST_LENGTH))
+		status = kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkey, sha1DerivedKey, SHA_DIGEST_LENGTH, output, outputLen);
+	return status;
+}
+
+BOOL kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID shaDerivedkey, DWORD shaDerivedkeyLen, PVOID *output, DWORD *outputLen)
+{
+	BOOL status = FALSE;
+	HCRYPTPROV hSessionProv;
+	HCRYPTKEY hSessionKey;
+	ALG_ID HMACAlg;
+	DWORD HMACLen, BlockLen, KeyLen, OutLen;
+	PVOID  HMACHash, CryptBuffer, hmac1, hmac2;
+
+	HMACAlg = (masterkey->algHash == CALG_HMAC) ? CALG_SHA1 : masterkey->algHash;
+	HMACLen = kull_m_crypto_hash_len(HMACAlg);
+	KeyLen =  kull_m_crypto_cipher_keylen(masterkey->algCrypt);
+	BlockLen = kull_m_crypto_cipher_blocklen(masterkey->algCrypt);
+
+	if(HMACHash = LocalAlloc(LPTR, KeyLen + BlockLen))
+	{
+		if(kull_m_crypto_pkcs5_pbkdf2_hmac(HMACAlg, shaDerivedkey, shaDerivedkeyLen, masterkey->salt, sizeof(masterkey->salt), masterkey->rounds, (PBYTE) HMACHash, KeyLen + BlockLen, TRUE))
+		{
+			if(kull_m_crypto_hkey_session(masterkey->algCrypt, HMACHash, KeyLen, 0, &hSessionKey, &hSessionProv))
+			{
+				if(CryptSetKeyParam(hSessionKey, KP_IV, (PBYTE) HMACHash + KeyLen, 0))
+				{
+					OutLen = masterkey->__dwKeyLen;
+					if(CryptBuffer = LocalAlloc(LPTR, OutLen))
+					{
+						RtlCopyMemory(CryptBuffer, masterkey->pbKey, OutLen);
+						if(CryptDecrypt(hSessionKey, 0, FALSE, 0, (PBYTE) CryptBuffer, &OutLen))
+						{
+							*outputLen = OutLen - 16 - HMACLen - ((masterkey->algCrypt == CALG_3DES) ? 4 : 0); // reversed
+							if(hmac1 = LocalAlloc(LPTR, HMACLen))
+							{
+								if(kull_m_crypto_hmac(HMACAlg, shaDerivedkey, shaDerivedkeyLen, CryptBuffer, 16, hmac1, HMACLen))
+								{
+									if(hmac2 = LocalAlloc(LPTR, HMACLen))
+									{
+										if(kull_m_crypto_hmac(HMACAlg, hmac1, HMACLen, (PBYTE) CryptBuffer + OutLen - *outputLen, *outputLen, hmac2, HMACLen))
+										{
+											if(status = RtlEqualMemory(hmac2, (PBYTE) CryptBuffer + 16, HMACLen))
+											{
+												if(*output = LocalAlloc(LPTR, *outputLen))
+													RtlCopyMemory(*output, (PBYTE) CryptBuffer + OutLen - *outputLen, *outputLen);
+											}
+										}
+										LocalFree(hmac2);
+									}
+								}
+								LocalFree(hmac1);
+							}
+						}
+						LocalFree(CryptBuffer);
+					}
+				}
+				CryptDestroyKey(hSessionKey);
+				if(!kull_m_crypto_close_hprov_delete_container(hSessionProv))
+					PRINT_ERROR_AUTO(L"kull_m_crypto_close_hprov_delete_container");
+			}
+			else PRINT_ERROR_AUTO(L"kull_m_crypto_hkey_session");
+		}
+		LocalFree(HMACHash);
+	}
+	return status;
+}
+
+BOOL kull_m_dpapi_unprotect_backupkey_with_secret(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR sid, LPCVOID secret, DWORD secretLen, PVOID *output, DWORD *outputLen)
+{
+	BOOL status = FALSE, isDPAPISecret = flags & 1;
+	LPCVOID ptrSecret = secret;
+	PVOID data, hash;
+	ALG_ID algID = (masterkey->algHash == CALG_SHA_512) ? CALG_SHA_512 : CALG_SHA1;
+	DWORD sidLen = (DWORD) (wcslen(sid) + 1) * sizeof(wchar_t), hashSize = kull_m_crypto_hash_len(algID), dataSize = sidLen;
+
+	if(!isDPAPISecret || (isDPAPISecret && ptrSecret && secretLen))
+	{
+		if(secretLen == 2 * SHA_DIGEST_LENGTH + sizeof(DWORD))
+		{
+			ptrSecret = (PBYTE) secret + sizeof(DWORD);
+			secretLen -= sizeof(DWORD);
+		}
+		if(isDPAPISecret)
+			dataSize += secretLen;
+		if(data = (PBYTE) LocalAlloc(LPTR, dataSize))
+		{
+			RtlCopyMemory(data, sid, sidLen);
+			if(isDPAPISecret)
+				RtlCopyMemory((PBYTE) data + sidLen, ptrSecret, secretLen);
+
+			if(hash = LocalAlloc(LPTR, hashSize))
+			{
+				if(kull_m_crypto_hash(algID, data, dataSize, hash, hashSize))
+					status = kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkey, hash, hashSize, output, outputLen);
+				LocalFree(hash);
+			}
+			LocalFree(data);
+		}
+	}
+	else PRINT_ERROR(L"This backup key need DPAPI_SYSTEM secret\n");
+	return status;
+}
+
+BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_DOMAINKEY domainkey, LPCVOID key, DWORD keyLen, PVOID *output, DWORD *outputLen, PSID *sid)
+{
+	BOOL status = FALSE;
+	HCRYPTPROV hProv, hSessionProv;
+	HCRYPTKEY hKey, hSessionKey;
+	PKULL_M_DPAPI_DOMAIN_RSA_MASTER_KEY rsa_buffer;
+	PKULL_M_DPAPI_DOMAIN_ACCESS_CHECK des_buffer;
+	BYTE digest[SHA_DIGEST_LENGTH];
+	DWORD cbOutput;
+	PSID pSid;
+	
+	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptImportKey(hProv, (PBYTE) key, keyLen, 0, 0, &hKey))
+		{
+			cbOutput = domainkey->dwSecretLen;
+			if(rsa_buffer = (PKULL_M_DPAPI_DOMAIN_RSA_MASTER_KEY) LocalAlloc(LPTR, cbOutput))
+			{
+				RtlCopyMemory(rsa_buffer, domainkey->pbSecret, cbOutput);
+				if(CryptDecrypt(hKey, 0, TRUE, 0, (PBYTE) rsa_buffer, &cbOutput))
+				{
+					//kprintf(L"\nRSA decrypt is a success\n");
+					//kprintf(L" * MasterKey len: %u\n", rsa_buffer->cbMasterKey);
+					//kull_m_string_wprintf_hex(rsa_buffer->buffer, rsa_buffer->cbMasterKey, 1 | (16 << 16));
+					//kprintf(L" * SuppKey   len: %u\n", rsa_buffer->cbSuppKey);
+					//kull_m_string_wprintf_hex(rsa_buffer->buffer + rsa_buffer->cbMasterKey, rsa_buffer->cbSuppKey, 1 | (16 << 16));
+					if(kull_m_crypto_hkey(hProv, CALG_3DES, rsa_buffer->buffer + rsa_buffer->cbMasterKey, 192 / 8, 0, &hSessionKey, &hSessionProv))
+					{
+						if(CryptSetKeyParam(hSessionKey, KP_IV, rsa_buffer->buffer + rsa_buffer->cbMasterKey + 192 / 8, 0))
+						{
+							cbOutput = domainkey->dwAccesscheckLen;
+
+							if(des_buffer = (PKULL_M_DPAPI_DOMAIN_ACCESS_CHECK) LocalAlloc(LPTR, cbOutput))
+							{
+								RtlCopyMemory(des_buffer, domainkey->pbAccesscheck, cbOutput);
+
+								if(CryptDecrypt(hSessionKey, 0, FALSE, 0, (PBYTE) des_buffer, &cbOutput))
+								{
+									pSid = (PSID) (des_buffer->data + des_buffer->dataLen);
+									//kprintf(L"\n3DES decrypt is a success too\n");
+									////kull_m_string_wprintf_hex(des_buffer, outSize, 1 | (16 << 16)); kprintf(L"\n");
+									//kprintf(L" * nonce    : "); kull_m_string_wprintf_hex(des_buffer->data, des_buffer->dataLen, 0); kprintf(L"\n"); // try to leave it as is =)
+									//kprintf(L" * SID      : "); kull_m_string_displaySID(pSid); kprintf(L"\n");
+									//kprintf(L" * SHA1     : "); kull_m_string_wprintf_hex((PBYTE) des_buffer + cbOutput - SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+									if(kull_m_crypto_hash(CALG_SHA1, des_buffer, cbOutput - SHA_DIGEST_LENGTH, digest, SHA_DIGEST_LENGTH))
+									{
+										//kprintf(L" > Calc SHA1: "); kull_m_string_wprintf_hex(digest, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+										if(RtlEqualMemory((PBYTE) des_buffer + cbOutput - SHA_DIGEST_LENGTH, digest, SHA_DIGEST_LENGTH))
+										{
+											*outputLen = rsa_buffer->cbMasterKey;
+											if(*output = LocalAlloc(LPTR, *outputLen))
+											{
+												RtlCopyMemory(*output, rsa_buffer->buffer, *outputLen);
+												status = TRUE;
+												*sid = 0;
+												if(sid)
+												{
+													status = FALSE;
+													cbOutput = GetLengthSid(pSid);
+													if(*sid = (PSID) LocalAlloc(LPTR, cbOutput))
+														status = CopySid(cbOutput, *sid, pSid);
+												}
+												if(!status)
+												{
+													if(*output)
+														*output = LocalFree(*output);
+													if(*sid)
+														*sid = LocalFree(*sid);
+													*outputLen = 0;
+												}
+											}
+										}
+									}
+								}
+								else PRINT_ERROR_AUTO(L"CryptDecrypt");
+								LocalFree(des_buffer);
+							}
+						}
+						else PRINT_ERROR_AUTO(L"CryptSetKeyParam");
+						CryptDestroyKey(hSessionKey);
+						if(!kull_m_crypto_close_hprov_delete_container(hSessionProv))
+							PRINT_ERROR_AUTO(L"kull_m_crypto_close_hprov_delete_container");
+					}
+				}
+				else PRINT_ERROR_AUTO(L"CryptDecrypt");
+				LocalFree(rsa_buffer);
+			}
+			CryptDestroyKey(hKey);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
 	return status;
 }
 

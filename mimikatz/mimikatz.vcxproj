@@ -93,6 +93,7 @@
     <ClCompile Include="..\modules\kull_m_file.c" />
     <ClCompile Include="..\modules\kull_m_handle.c" />
     <ClCompile Include="..\modules\kull_m_kernel.c" />
+    <ClCompile Include="..\modules\kull_m_key.c" />
     <ClCompile Include="..\modules\kull_m_net.c" />
     <ClCompile Include="..\modules\kull_m_memory.c" />
     <ClCompile Include="..\modules\kull_m_minidump.c" />
@@ -106,6 +107,7 @@
     <ClCompile Include="..\modules\kull_m_token.c" />
     <ClCompile Include="mimikatz.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c" />
@@ -148,6 +150,7 @@
     <ClInclude Include="..\modules\kull_m_file.h" />
     <ClInclude Include="..\modules\kull_m_handle.h" />
     <ClInclude Include="..\modules\kull_m_kernel.h" />
+    <ClInclude Include="..\modules\kull_m_key.h" />
     <ClInclude Include="..\modules\kull_m_net.h" />
     <ClInclude Include="..\modules\kull_m_memory.h" />
     <ClInclude Include="..\modules\kull_m_minidump.h" />
@@ -164,6 +167,7 @@
     <ClInclude Include="..\modules\kull_m_token.h" />
     <ClInclude Include="mimikatz.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h" />

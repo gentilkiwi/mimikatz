@@ -249,10 +249,10 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 {
 	HCRYPTPROV hCryptProv;
-	DWORD i, dwSizeNeeded, ks, CRYPT_first_next = CRYPT_FIRST;
+	DWORD i, dwSizeNeeded, dwUniqueSizeNeeded, ks, CRYPT_first_next = CRYPT_FIRST;
 	BOOL success;
-	char * aContainerName;
-	wchar_t * containerName;
+	char *aContainerName, *aUniqueName;
+	wchar_t *containerName, *uUniqueName;
 	HCRYPTPROV hCryptKeyProv;
 	HCRYPTKEY hCapiKey;
 
@@ -306,6 +306,16 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 						kprintf(L"\n%2u. %s\n", i,  containerName);
 						if(CryptAcquireContext(&hCryptKeyProv, containerName, pProvider, dwProviderType, dwFlags))
 						{
+							if(CryptGetProvParam(hCryptKeyProv, PP_UNIQUE_CONTAINER, NULL, &dwUniqueSizeNeeded, 0))
+							{
+								if(aUniqueName = (char *) LocalAlloc(LPTR, dwUniqueSizeNeeded))
+								{
+									if(CryptGetProvParam(hCryptKeyProv, PP_UNIQUE_CONTAINER, (BYTE *) aUniqueName, &dwUniqueSizeNeeded, 0))
+										kprintf(L"    %S\n", aUniqueName);
+									LocalFree(aUniqueName);
+								}
+							}
+
 							for(ks = AT_KEYEXCHANGE, hCapiKey = 0; (ks <= AT_SIGNATURE) && !CryptGetUserKey(hCryptKeyProv, ks, &hCapiKey); ks++);
 							if(hCapiKey)
 							{
@@ -344,6 +354,15 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 
 				if(NT_SUCCESS(retour = K_NCryptOpenKey(hProvider, &hCngKey, pKeyName->pszName, 0, dwFlags)))
 				{
+					if(NT_SUCCESS(K_NCryptGetProperty(hCngKey, NCRYPT_UNIQUE_NAME_PROPERTY, NULL, 0, &dwUniqueSizeNeeded, 0)))
+					{
+						if(uUniqueName = (wchar_t *) LocalAlloc(LPTR, dwUniqueSizeNeeded))
+						{
+							if(NT_SUCCESS(K_NCryptGetProperty(hCngKey, NCRYPT_UNIQUE_NAME_PROPERTY, (BYTE *) uUniqueName, dwUniqueSizeNeeded, &dwUniqueSizeNeeded, 0)))
+								kprintf(L"    %s\n", uUniqueName);
+							LocalFree(uUniqueName);
+						}
+					}
 					kuhl_m_crypto_printKeyInfos(hCngKey, 0);
 					if(export)
 						kuhl_m_crypto_exportKeyToFile(hCngKey, 0, AT_KEYEXCHANGE, szStore, i, pKeyName->pszName);

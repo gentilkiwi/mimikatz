@@ -156,13 +156,13 @@ BOOL kull_m_crypto_hmac(DWORD calgid, LPCVOID key, DWORD keyLen, LPCVOID message
 	return status;
 }
 
-BOOL kull_m_crypto_pkcs5_pbkdf2_hmac(DWORD calgid, LPCVOID password, DWORD passwordLen, LPCVOID salt, DWORD saltLen, DWORD iterations, BYTE *key, DWORD keyLen)
+BOOL kull_m_crypto_pkcs5_pbkdf2_hmac(DWORD calgid, LPCVOID password, DWORD passwordLen, LPCVOID salt, DWORD saltLen, DWORD iterations, BYTE *key, DWORD keyLen, BOOL isDpapiInternal)
 {
 	BOOL status = FALSE;
 	HCRYPTPROV hProv;
 	HCRYPTHASH hHash;
 	DWORD sizeHmac, count, i, j, r;
-	PBYTE asalt, obuf, d1, d2;
+	PBYTE asalt, obuf, d1;
 
 	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
 	{
@@ -170,34 +170,31 @@ BOOL kull_m_crypto_pkcs5_pbkdf2_hmac(DWORD calgid, LPCVOID password, DWORD passw
 		{
 			if(CryptGetHashParam(hHash, HP_HASHVAL, NULL, &sizeHmac, 0))
 			{
-				if(asalt = (PBYTE) LocalAlloc(LPTR, saltLen + 4))
+				if(asalt = (PBYTE) LocalAlloc(LPTR, saltLen + sizeof(DWORD)))
 				{
 					if(obuf = (PBYTE) LocalAlloc(LPTR, sizeHmac))
 					{
 						if(d1 = (PBYTE) LocalAlloc(LPTR, sizeHmac))
 						{
-							if(d2 = (PBYTE) LocalAlloc(LPTR, sizeHmac))
+							status = TRUE;
+							RtlCopyMemory(asalt, salt, saltLen);
+							for (count = 1; keyLen > 0; count++)
 							{
-								status = TRUE;
-								RtlCopyMemory(asalt, salt, saltLen);
-								for (count = 1; keyLen > 0; count++)
+								*(PDWORD) (asalt + saltLen) = _byteswap_ulong(count);
+								kull_m_crypto_hmac(calgid, password, passwordLen, asalt, saltLen + 4, d1, sizeHmac);
+								RtlCopyMemory(obuf, d1, sizeHmac);
+								for (i = 1; i < iterations; i++)
 								{
-									*(PDWORD) (asalt + saltLen) = _byteswap_ulong(count);
-									kull_m_crypto_hmac(calgid, password, passwordLen, asalt, saltLen + 4, d1, sizeHmac);
-									RtlCopyMemory(obuf, d1, sizeHmac);
-									for (i = 1; i < iterations; i++)
-									{
-										kull_m_crypto_hmac(calgid, password, passwordLen, d1, sizeHmac, d2, sizeHmac);
-										RtlCopyMemory(d1, d2, sizeHmac);
-										for (j = 0; j < sizeHmac; j++)
-											obuf[j] ^= d1[j];
-									}
-									r = KIWI_MINIMUM(keyLen, sizeHmac);
-									RtlCopyMemory(key, obuf, r);
-									key += r;
-									keyLen -= r;
+									kull_m_crypto_hmac(calgid, password, passwordLen, d1, sizeHmac, d1, sizeHmac);
+									for (j = 0; j < sizeHmac; j++)
+										obuf[j] ^= d1[j];
+									if(isDpapiInternal) // thank you MS!
+										RtlCopyMemory(d1, obuf, sizeHmac);
 								}
-								LocalFree(d2);
+								r = KIWI_MINIMUM(keyLen, sizeHmac);
+								RtlCopyMemory(key, obuf, r);
+								key += r;
+								keyLen -= r;
 							}
 							LocalFree(d1);
 						}
@@ -386,6 +383,57 @@ BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD 
 		LocalFree(container);
 	}
 	return status;
+}
+
+DWORD kull_m_crypto_hash_len(ALG_ID hashId)
+{
+	DWORD len = 0;
+	HCRYPTPROV hProv;
+	HCRYPTHASH hHash;
+	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptCreateHash(hProv, hashId, 0, 0, &hHash))
+		{
+			CryptGetHashParam(hHash, HP_HASHVAL, NULL, &len, 0);
+			CryptDestroyHash(hHash);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
+	return len;
+}
+
+DWORD kull_m_crypto_cipher_blocklen(ALG_ID hashId)
+{
+	DWORD len = 0, dwSize = sizeof(DWORD);
+	HCRYPTPROV hProv;
+	HCRYPTKEY hKey;
+	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptGenKey(hProv, hashId, 0, &hKey))
+		{
+			CryptGetKeyParam(hKey, KP_BLOCKLEN, (PBYTE) &len, &dwSize, 0);
+			CryptDestroyKey(hKey);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
+	return len / 8;
+}
+
+DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId)
+{
+	DWORD len = 0, dwSize = sizeof(DWORD);
+	HCRYPTPROV hProv;
+	HCRYPTKEY hKey;
+	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptGenKey(hProv, hashId, 0, &hKey))
+		{
+			CryptGetKeyParam(hKey, KP_KEYLEN, (PBYTE) &len, &dwSize, 0);
+			CryptDestroyKey(hKey);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
+	return len / 8;
 }
 
 const KULL_M_CRYPTO_DUAL_STRING_DWORD kull_m_crypto_system_stores[] = {

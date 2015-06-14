@@ -35,21 +35,6 @@ typedef struct _KUHL_M_CRYPTO_NAME_TO_REALNAME{
 	PCWSTR	realname;
 } KUHL_M_CRYPTO_NAME_TO_REALNAME, *PKUHL_M_CRYPTO_NAME_TO_REALNAME;
 
-#define PVK_FILE_VERSION_0				0
-#define PVK_MAGIC						0xb0b5f11e // bob's file
-#define PVK_NO_ENCRYPT					0
-#define PVK_RC4_PASSWORD_ENCRYPT		1
-#define PVK_RC2_CBC_PASSWORD_ENCRYPT	2
-
-typedef struct _PVK_FILE_HDR {
-	DWORD	dwMagic;
-	DWORD	dwVersion;
-	DWORD	dwKeySpec;
-	DWORD	dwEncryptType;
-	DWORD	cbEncryptData;
-	DWORD	cbPvk;
-} PVK_FILE_HDR, *PPVK_FILE_HDR;
-
 const KUHL_M kuhl_m_crypto;
 
 NTSTATUS kuhl_m_crypto_init();

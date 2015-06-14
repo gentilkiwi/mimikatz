@@ -60,5 +60,6 @@ void kull_m_string_displayLocalFileTime(IN PFILETIME pFileTime);
 void kull_m_string_displayGUID(IN LPCGUID pGuid);
 void kull_m_string_displaySID(IN PSID pSid);
 PWSTR kull_m_string_getRandomGUID();
+void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size);
 
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue);

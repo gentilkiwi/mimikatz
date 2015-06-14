@@ -155,6 +155,12 @@
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c">
       <Filter>local modules\dpapi</Filter>
     </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_key.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -329,6 +335,12 @@
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h">
       <Filter>local modules\dpapi</Filter>
     </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_key.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -353,6 +365,9 @@
     </Filter>
     <Filter Include="local modules\dpapi">
       <UniqueIdentifier>{17902a14-db65-4d8a-be9a-45fb98a65ec1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\dpapi\packages">
+      <UniqueIdentifier>{0068506b-99c4-4d30-936a-d54598f49425}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
