@@ -513,7 +513,7 @@ void kuhl_m_crypto_exportKeyToFile(NCRYPT_KEY_HANDLE hCngKey, HCRYPTKEY hCapiKey
 		}
 
 		if(pExport)
-		{if(hCapiKey) kull_m_file_writeData(L"cool.bin", pExport+ sizeof(PVK_FILE_HDR), szExport);
+		{
 			pvkHeader.cbPvk = szExport;
 			RtlCopyMemory(pExport, &pvkHeader, sizeof(PVK_FILE_HDR));
 			isExported = kull_m_file_writeData(filenamebuffer, pExport, szPVK);
