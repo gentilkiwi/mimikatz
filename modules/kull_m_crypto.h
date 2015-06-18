@@ -16,6 +16,11 @@ typedef struct _GENERICKEY_BLOB {
 	DWORD dwKeyLen;
 } GENERICKEY_BLOB, *PGENERICKEY_BLOB;
 
+typedef struct _RSA_GENERICKEY_BLOB {
+	BLOBHEADER Header;
+	RSAPUBKEY RsaKey; // works with RSA2 ;)
+} RSA_GENERICKEY_BLOB, *PRSA_GENERICKEY_BLOB;
+
 #define PVK_FILE_VERSION_0				0
 #define PVK_MAGIC						0xb0b5f11e // bob's file
 #define PVK_NO_ENCRYPT					0

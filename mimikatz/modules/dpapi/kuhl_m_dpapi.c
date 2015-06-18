@@ -6,55 +6,109 @@
 #include "kuhl_m_dpapi.h"
 
 const KUHL_M_C kuhl_m_c_dpapi[] = {
-	{kuhl_m_dpapi_masterkeys,	L"masterkeys",	L"Describe a Masterkeys file"},
-	{kuhl_m_dpapi_blob,			L"blob",		L"Describe a DPAPI blob (secret)"},
+	{kuhl_m_dpapi_blob,			L"blob",		L"Describe a DPAPI blob, unprotect it with API or Masterkey"},
 	{kuhl_m_dpapi_protect,		L"protect",		L"Protect a data via a DPAPI call"},
-	{kuhl_m_dpapi_unprotect,	L"unprotect",	L"Unprotect a data via DPAPI call or with a Masterkey/its SHA1"},
-	{kuhl_m_dpapi_masterkey,	L"masterkey",	L"Unprotect each Masterkey in a Masterkeys file (key depending)"},
-	{kuhl_m_dpapi_keys_test,	L"test",		L"Test"},
+	{kuhl_m_dpapi_masterkey,	L"masterkey",	L"Describe a Masterkey file, unprotect each Masterkey (key depending)"},
+	{kuhl_m_dpapi_keys_capi,	L"capi",		L"CAPI key test"},
+	{kuhl_m_dpapi_keys_cng,		L"cng",			L"CNG key test"},
 };
 const KUHL_M kuhl_m_dpapi = {
-	L"dpapi",	L"", NULL,
+	L"dpapi",	L"DPAPI Module (by API or RAW access)", L"Data Protection application programming interface",
 	ARRAYSIZE(kuhl_m_c_dpapi), kuhl_m_c_dpapi, NULL, NULL
 };
 
-NTSTATUS kuhl_m_dpapi_masterkeys(int argc, wchar_t * argv[])
-{
-	PKULL_M_DPAPI_MASTERKEYS masterkeys;
-	PBYTE buffer;
-	DWORD szBuffer;
-
-	if(argc && kull_m_file_readData(argv[0], &buffer, &szBuffer))
-	{
-		if(masterkeys = kull_m_dpapi_masterkeys_create(buffer))
-		{
-			kull_m_dpapi_masterkeys_descr(masterkeys);
-			kull_m_dpapi_masterkeys_delete(masterkeys);
-		}
-		LocalFree(buffer);
-	}
-	return STATUS_SUCCESS;
-}
-
 NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[])
 {
+	DATA_BLOB dataIn, dataOut, dataEntropy = {0, NULL};
 	PKULL_M_DPAPI_BLOB blob;
-	PBYTE buffer;
-	DWORD szBuffer;
+	PCWSTR szEntropy, outfile, infile, szMasterkey, szPassword = NULL;
+	PWSTR description = NULL;
+	CRYPTPROTECT_PROMPTSTRUCT promptStructure = {sizeof(CRYPTPROTECT_PROMPTSTRUCT), CRYPTPROTECT_PROMPT_ON_PROTECT | CRYPTPROTECT_PROMPT_ON_UNPROTECT | CRYPTPROTECT_PROMPT_STRONG, NULL, MIMIKATZ}, *pPrompt;
+	PBYTE masterkey = NULL;
+	DWORD masterkeyLen = 0, flags = 0;
+	UNICODE_STRING uString;
+	BOOL statusDecrypt;;
 
-	if(argc && kull_m_file_readData(argv[0], &buffer, &szBuffer))
+	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
-		if(blob = kull_m_dpapi_blob_create(buffer))
+		if(kull_m_file_readData(infile, &dataIn.pbData, &dataIn.cbData))
 		{
-			kull_m_dpapi_blob_descr(blob);
-			kull_m_dpapi_blob_delete(blob);
+			if(blob = kull_m_dpapi_blob_create(dataIn.pbData))
+			{
+				kull_m_dpapi_blob_descr(0, blob);
+
+				if(kull_m_string_args_byName(argc, argv, L"masterkey", &szMasterkey, NULL))
+					kull_m_string_stringToHexBuffer(szMasterkey, &masterkey, &masterkeyLen);
+
+				if((masterkey && masterkeyLen) || kull_m_string_args_byName(argc, argv, L"unprotect", NULL, NULL))
+				{
+					kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
+					if(kull_m_string_args_byName(argc, argv, L"entropy", &szEntropy, NULL))
+						kull_m_string_stringToHexBuffer(szEntropy, &dataEntropy.pbData, &dataEntropy.cbData);
+					if(kull_m_string_args_byName(argc, argv, L"machine", NULL, NULL))
+						flags |= CRYPTPROTECT_LOCAL_MACHINE;
+					pPrompt = kull_m_string_args_byName(argc, argv, L"prompt", NULL, NULL) ? &promptStructure : NULL;
+
+					kprintf(L"\nflags       : "); kull_m_dpapi_displayProtectionFlags(flags); kprintf(L"\n");
+					kprintf(L"prompt flags: "); if(pPrompt) kull_m_dpapi_displayPromptFlags(pPrompt->dwPromptFlags); kprintf(L"\n");
+					kprintf(L"entropy     : "); kull_m_string_wprintf_hex(dataEntropy.pbData, dataEntropy.cbData, 0); kprintf(L"\n");
+					kprintf(L"masterkey   : "); kull_m_string_wprintf_hex(masterkey, masterkeyLen, 0); kprintf(L"\n");
+					kprintf(L"password    : %s\n\n", szPassword ? szPassword : L"");
+
+					if(masterkey && masterkeyLen)
+						statusDecrypt = kull_m_dpapi_unprotect_blob(blob, masterkey, masterkeyLen, dataEntropy.pbData, dataEntropy.cbData, szPassword, (LPVOID *) &dataOut.pbData, &dataOut.cbData);
+					else
+						statusDecrypt = CryptUnprotectData(&dataIn, &description, &dataEntropy, NULL, pPrompt, 0, &dataOut);
+
+					if(statusDecrypt)
+					{
+						if(description)
+						{
+							kprintf(L"description : %s\n", description);
+							LocalFree(description);
+						}
+
+						if(kull_m_string_args_byName(argc, argv, L"out", &outfile, NULL))
+						{
+							if(kull_m_file_writeData(outfile, dataOut.pbData, dataOut.cbData))
+								kprintf(L"Write to file \'%s\' is OK\n", outfile);
+						}
+						else
+						{
+							uString.Length = uString.MaximumLength = (USHORT) dataOut.cbData;
+							uString.Buffer = (PWSTR) dataOut.pbData;
+							kprintf(L"data - ");
+							if((uString.Length <= USHRT_MAX) && (kull_m_string_suspectUnicodeString(&uString)))
+								kprintf(L"text : %s", dataOut.pbData);
+							else
+							{
+								kprintf(L"hex  : ");
+								kull_m_string_wprintf_hex(dataOut.pbData, dataOut.cbData, 1 | (16 << 16));
+							}
+							kprintf(L"\n");
+						}
+						LocalFree(dataOut.pbData);
+					}
+					else if(!masterkey) PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				}
+
+				kull_m_dpapi_blob_delete(blob);
+			}
+			LocalFree(dataIn.pbData);
 		}
-		LocalFree(buffer);
+		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 	}
+
+	if(dataEntropy.pbData)
+		LocalFree(dataEntropy.pbData);
+
+	if(masterkey)
+		LocalFree(masterkey);
+
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[])
+NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[]) // no support for protecting with RAW masterkey at this time
 {
 	DATA_BLOB dataIn, dataOut, dataEntropy = {0, NULL};
 	PKULL_M_DPAPI_BLOB blob;
@@ -84,7 +138,7 @@ NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[])
 	{
 		if(blob = kull_m_dpapi_blob_create(dataOut.pbData))
 		{
-			kull_m_dpapi_blob_descr(blob);
+			kull_m_dpapi_blob_descr(0, blob);
 			kull_m_dpapi_blob_delete(blob);
 		}
 		kprintf(L"\n");
@@ -109,94 +163,6 @@ NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_dpapi_unprotect(int argc, wchar_t * argv[])
-{
-	DATA_BLOB dataIn, dataOut, dataEntropy = {0, NULL};
-	PKULL_M_DPAPI_BLOB blob;
-	PCWSTR szEntropy, outfile, infile, szMasterkey, szPassword = NULL;
-	PWSTR description = NULL;
-	CRYPTPROTECT_PROMPTSTRUCT promptStructure = {sizeof(CRYPTPROTECT_PROMPTSTRUCT), CRYPTPROTECT_PROMPT_ON_PROTECT | CRYPTPROTECT_PROMPT_ON_UNPROTECT | CRYPTPROTECT_PROMPT_STRONG, NULL, MIMIKATZ}, *pPrompt;
-	DWORD flags = 0;
-	UNICODE_STRING uString;
-
-	BOOL statusDecrypt = FALSE;
-	PBYTE masterkey = NULL;
-	DWORD masterkeyLen = 0;
-
-	if(kull_m_string_args_byName(argc, argv, L"entropy", &szEntropy, NULL))
-		kull_m_string_stringToHexBuffer(szEntropy, &dataEntropy.pbData, &dataEntropy.cbData);
-	if(kull_m_string_args_byName(argc, argv, L"machine", NULL, NULL))
-		flags |= CRYPTPROTECT_LOCAL_MACHINE;
-	pPrompt = kull_m_string_args_byName(argc, argv, L"prompt", NULL, NULL) ? &promptStructure : NULL;
-	if(kull_m_string_args_byName(argc, argv, L"masterkey", &szMasterkey, NULL))
-		kull_m_string_stringToHexBuffer(szMasterkey, &masterkey, &masterkeyLen);
-	kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
-
-	kprintf(L"\nflags       : "); kull_m_dpapi_displayProtectionFlags(flags); kprintf(L"\n");
-	kprintf(L"prompt flags: "); if(pPrompt) kull_m_dpapi_displayPromptFlags(pPrompt->dwPromptFlags); kprintf(L"\n");
-	kprintf(L"entropy     : "); kull_m_string_wprintf_hex(dataEntropy.pbData, dataEntropy.cbData, 0); kprintf(L"\n");
-	kprintf(L"masterkey   : "); kull_m_string_wprintf_hex(masterkey, masterkeyLen, 0); kprintf(L"\n");
-	kprintf(L"password    : %s\n\n", szPassword ? szPassword : L"");
-
-	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
-	{
-		if(kull_m_file_readData(infile, &dataIn.pbData, &dataIn.cbData))
-		{
-			if(blob = kull_m_dpapi_blob_create(dataIn.pbData))
-			{
-				kull_m_dpapi_blob_descr(blob);
-
-				if(masterkey && masterkeyLen)
-					statusDecrypt = kull_m_dpapi_unprotect_blob(blob, masterkey, masterkeyLen, dataEntropy.pbData, dataEntropy.cbData, szPassword, (LPVOID *) &dataOut.pbData, &dataOut.cbData);
-				else
-					statusDecrypt = CryptUnprotectData(&dataIn, &description, &dataEntropy, NULL, pPrompt, 0, &dataOut);
-
-				if(statusDecrypt)
-				{
-					if(description)
-					{
-						kprintf(L"description : %s\n", description);
-						LocalFree(description);
-					}
-
-					if(kull_m_string_args_byName(argc, argv, L"out", &outfile, NULL))
-					{
-						if(kull_m_file_writeData(outfile, dataOut.pbData, dataOut.cbData))
-							kprintf(L"Write to file \'%s\' is OK\n", outfile);
-					}
-					else
-					{
-						uString.Length = uString.MaximumLength = (USHORT) dataOut.cbData;
-						uString.Buffer = (PWSTR) dataOut.pbData;
-						kprintf(L"data - ");
-						if((uString.Length <= USHRT_MAX) && (kull_m_string_suspectUnicodeString(&uString)))
-							kprintf(L"text : %s", dataOut.pbData);
-						else
-						{
-							kprintf(L"hex  : ");
-							kull_m_string_wprintf_hex(dataOut.pbData, dataOut.cbData, 1 | (16 << 16));
-						}
-						kprintf(L"\n");
-					}
-					LocalFree(dataOut.pbData);
-				}
-				else if(!masterkey) PRINT_ERROR_AUTO(L"CryptUnprotectData");
-
-				kull_m_dpapi_blob_delete(blob);
-			}
-			LocalFree(dataIn.pbData);
-		}
-	}
-
-	if(dataEntropy.pbData)
-		LocalFree(dataEntropy.pbData);
-
-	if(masterkey)
-		LocalFree(masterkey);
-
-	return STATUS_SUCCESS;
-}
-
 NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 {
 	PKULL_M_DPAPI_MASTERKEYS masterkeys;
@@ -210,25 +176,20 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 	PSID pSid;
 
 	PBYTE pHash = NULL, pSystem = NULL;
-	DWORD cbHash = 0, cbSystem = 0;
+	DWORD cbHash = 0, cbSystem = 0, cbSystemOffset = 0;
 
 	PVOID output;
 	DWORD cbOutput;
-
+	
 	if(kull_m_string_args_byName(argc, argv, L"in", &szIn, NULL))
 	{
-		kull_m_string_args_byName(argc, argv, L"sid", &szSid, NULL);
-		kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
-		kull_m_string_args_byName(argc, argv, L"hash", &szHash, NULL);
-		kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL);
-		kull_m_string_args_byName(argc, argv, L"domainpvk", &szDomainpvk, NULL);
-
 		if(kull_m_file_readData(szIn, &buffer, &szBuffer))
 		{
 			if(masterkeys = kull_m_dpapi_masterkeys_create(buffer))
 			{
-				//kull_m_dpapi_masterkeys_descr(masterkeys);
-				if(szSid)
+				kull_m_dpapi_masterkeys_descr(1, masterkeys);
+
+				if(kull_m_string_args_byName(argc, argv, L"sid", &szSid, NULL))
 				{
 					if(ConvertStringSidToSid(szSid, &pSid))
 					{
@@ -237,16 +198,47 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 					}
 					else PRINT_ERROR_AUTO(L"ConvertStringSidToSid");
 				}
-				if(szHash)
+				if(kull_m_string_args_byName(argc, argv, L"hash", &szHash, NULL))
 					kull_m_string_stringToHexBuffer(szHash, &pHash, &cbHash);
-				if(szSystem)
+				if(kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL))
 					kull_m_string_stringToHexBuffer(szSystem, &pSystem, &cbSystem);
 
-				if(convertedSid)
+				if(masterkeys->MasterKey && masterkeys->dwMasterKeyLen)
 				{
-					if(masterkeys->MasterKey && masterkeys->dwMasterKeyLen)
+					if(masterkeys->dwFlags & 2)
 					{
-						if(szPassword)
+						if(pSystem && cbSystem)
+						{
+							if(cbSystem == 2 * SHA_DIGEST_LENGTH + sizeof(DWORD))
+								cbSystemOffset = sizeof(DWORD);
+
+							if((cbSystem - cbSystemOffset) == 2 * SHA_DIGEST_LENGTH)
+							{
+								kprintf(L"\n[masterkey] with DPAPI_SYSTEM (machine, then user): "); kull_m_string_wprintf_hex(pSystem + cbSystemOffset, 2 * SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+								if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset, SHA_DIGEST_LENGTH, &output, &cbOutput))
+								{
+									kprintf(L"** MACHINE **\n");
+									kuhl_m_dpapi_displayInfosAndFree(output, cbOutput, NULL);
+								}
+								else if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset + SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, &output, &cbOutput))
+								{
+									kprintf(L"** USER **\n");
+									kuhl_m_dpapi_displayInfosAndFree(output, cbOutput, NULL);
+								}
+								else PRINT_ERROR(L"kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey\n");
+							}
+							else
+							{
+								kprintf(L"\n[masterkey] with DPAPI_SYSTEM: "); kull_m_string_wprintf_hex(pSystem + cbSystemOffset, cbSystem - cbSystemOffset, 0); kprintf(L"\n");
+								if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset, cbSystem - cbSystemOffset, &output, &cbOutput))
+									kuhl_m_dpapi_displayInfosAndFree(output, cbOutput, NULL);
+								else PRINT_ERROR(L"kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey\n");
+							}
+						}
+					}
+					else if(convertedSid)
+					{
+						if(kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL))
 						{
 							kprintf(L"\n[masterkey] with password: %s (%s user)\n", szPassword, isProtected ? L"protected" : L"normal");
 							if(kull_m_dpapi_unprotect_masterkey_with_password(masterkeys->dwFlags, masterkeys->MasterKey, szPassword, convertedSid, isProtected, &output, &cbOutput))
@@ -268,29 +260,25 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 							else PRINT_ERROR(L"kull_m_dpapi_unprotect_masterkey_with_userHash\n");
 						}
 					}
-					if(masterkeys->BackupKey && masterkeys->dwBackupKeyLen)
+				}
+				
+				if(masterkeys->BackupKey && masterkeys->dwBackupKeyLen && convertedSid && (!(masterkeys->dwFlags & 1) || (pSystem && cbSystem)))
+				{
+					kprintf(L"\n[backupkey] %s DPAPI_SYSTEM: ", pSystem ? L"with" : L"without");
+					if(pSystem)
 					{
-						if(!(masterkeys->dwFlags & 1) || (pSystem && cbSystem))
-						{
-							kprintf(L"\n[backupkey] %s DPAPI_SYSTEM: ", pSystem ? L"with" : L"without");
-							if(pSystem)
-								kull_m_string_wprintf_hex(pSystem, cbSystem, 0);
-							kprintf(L"\n");
-
-							if(kull_m_dpapi_unprotect_backupkey_with_secret(masterkeys->dwFlags, masterkeys->BackupKey, convertedSid, pSystem, cbSystem, &output, &cbOutput))
-								kuhl_m_dpapi_displayInfosAndFree(output, cbOutput, NULL);
-							else PRINT_ERROR(L"kull_m_dpapi_unprotect_backupkey_with_secret\n");
-						}
+						kull_m_string_wprintf_hex(pSystem, cbSystem, 0);
+						if(!(masterkeys->dwFlags & 1))
+							kprintf(L" (but is not needed)");
 					}
-					LocalFree(convertedSid);
+					kprintf(L"\n");
+
+					if(kull_m_dpapi_unprotect_backupkey_with_secret(masterkeys->dwFlags, masterkeys->BackupKey, convertedSid, pSystem, cbSystem, &output, &cbOutput))
+						kuhl_m_dpapi_displayInfosAndFree(output, cbOutput, NULL);
+					else PRINT_ERROR(L"kull_m_dpapi_unprotect_backupkey_with_secret\n");
 				}
 
-				if(pHash)
-					LocalFree(pHash);
-				if(pSystem)
-					LocalFree(pSystem);
-
-				if(szDomainpvk && masterkeys->DomainKey && masterkeys->dwDomainKeyLen)
+				if(kull_m_string_args_byName(argc, argv, L"domainpvk", &szDomainpvk, NULL) && masterkeys->DomainKey && masterkeys->dwDomainKeyLen)
 				{
 					kprintf(L"\n[domainkey] with RSA private key\n");
 					if(kull_m_file_readData(szDomainpvk, (PBYTE *) &pvkBuffer, &szPvkBuffer))
@@ -301,6 +289,14 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 						LocalFree(pvkBuffer);
 					}
 				}
+
+				if(convertedSid)
+					LocalFree(convertedSid);
+				if(pHash)
+					LocalFree(pHash);
+				if(pSystem)
+					LocalFree(pSystem);
+
 				kull_m_dpapi_masterkeys_delete(masterkeys);
 			}
 			LocalFree(buffer);

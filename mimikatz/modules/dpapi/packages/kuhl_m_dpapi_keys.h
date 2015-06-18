@@ -7,6 +7,5 @@
 #include "../kuhl_m_dpapi.h"
 #include "../modules/kull_m_key.h"
 
-#define PRINTHEX(data, len) kull_m_string_wprintf_hex(data, len, 1 | (16 << 16)); kprintf(L"\n")
-
-NTSTATUS kuhl_m_dpapi_keys_test(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[]);

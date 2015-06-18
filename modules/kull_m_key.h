@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "globals.h"
+#include "kull_m_dpapi.h"
 #include "kull_m_string.h"
 
 #define KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS	"Hj1diQ6kpUx7VC4m"
@@ -64,18 +65,19 @@ typedef struct _KULL_M_KEY_CNG_BLOB {
 
 PKULL_M_KEY_CAPI_BLOB kull_m_key_capi_create(PVOID data/*, DWORD size*/);
 void kull_m_key_capi_delete(PKULL_M_KEY_CAPI_BLOB capiKey);
-void kull_m_key_capi_descr(PKULL_M_KEY_CAPI_BLOB capiKey);
+void kull_m_key_capi_descr(DWORD level, PKULL_M_KEY_CAPI_BLOB capiKey);
 BOOL kull_m_key_capi_write(PKULL_M_KEY_CAPI_BLOB capiKey, PVOID *data, DWORD *size);
+BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID decrypted, DWORD decryptedLen, PRSA_GENERICKEY_BLOB *blob, DWORD *blobLen);
 
 PKULL_M_KEY_CNG_BLOB kull_m_key_cng_create(PVOID data/*, DWORD size*/);
 void kull_m_key_cng_delete(PKULL_M_KEY_CNG_BLOB cngKey);
-void kull_m_key_cng_descr(PKULL_M_KEY_CNG_BLOB cngKey);
+void kull_m_key_cng_descr(DWORD level, PKULL_M_KEY_CNG_BLOB cngKey);
 //
 PKULL_M_KEY_CNG_PROPERTY kull_m_key_cng_property_create(PVOID data/*, DWORD size*/);
 void kull_m_key_cng_property_delete(PKULL_M_KEY_CNG_PROPERTY property);
-void kull_m_key_cng_property_descr(PKULL_M_KEY_CNG_PROPERTY property);
+void kull_m_key_cng_property_descr(DWORD level, PKULL_M_KEY_CNG_PROPERTY property);
 //
 BOOL kull_m_key_cng_properties_create(PVOID data, DWORD size, PKULL_M_KEY_CNG_PROPERTY ** properties, DWORD *count);
 void kull_m_key_cng_properties_delete(PKULL_M_KEY_CNG_PROPERTY *properties, DWORD count);
-void kull_m_key_cng_properties_descr(PKULL_M_KEY_CNG_PROPERTY *properties, DWORD count);
+void kull_m_key_cng_properties_descr(DWORD level, PKULL_M_KEY_CNG_PROPERTY *properties, DWORD count);
 //

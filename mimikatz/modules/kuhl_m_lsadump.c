@@ -887,19 +887,10 @@ void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PC
 {
 	UNICODE_STRING candidateString = {(USHORT) szBytesSecrets, (USHORT) szBytesSecrets, (PWSTR) bufferSecret};
 	BOOL isStringOk = FALSE;
-	MD4_CTX ctx;
-	if(szBytesSecrets)
+	PVOID bufferHash[SHA_DIGEST_LENGTH]; // ok for NTLM too
+	if(bufferSecret && szBytesSecrets)
 	{
 		kprintf(L"%s", prefix);
-		if(_wcsicmp(secretName, L"$MACHINE.ACC") == 0)
-		{
-			kprintf(L"NTLM:");
-			MD4Init(&ctx);
-			MD4Update(&ctx, bufferSecret, szBytesSecrets);
-			MD4Final(&ctx);
-			kull_m_string_wprintf_hex(ctx.digest, MD4_DIGEST_LENGTH, 0);
-			kprintf(L"/");
-		}
 		if(szBytesSecrets <= USHRT_MAX)
 			if(isStringOk = kull_m_string_suspectUnicodeString(&candidateString))
 				kprintf(L"text: %wZ", &candidateString);
@@ -908,6 +899,29 @@ void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PC
 		{
 			kprintf(L"hex : ");
 			kull_m_string_wprintf_hex(bufferSecret, szBytesSecrets, 1);
+		}
+
+		if(_wcsicmp(secretName, L"$MACHINE.ACC") == 0)
+		{
+			if(kull_m_crypto_hash(CALG_MD4, bufferSecret, szBytesSecrets, bufferHash, MD4_DIGEST_LENGTH))
+			{
+				kprintf(L"\n    NTLM:");
+				kull_m_string_wprintf_hex(bufferHash, MD4_DIGEST_LENGTH, 0);
+			}
+			if(kull_m_crypto_hash(CALG_SHA1, bufferSecret, szBytesSecrets, bufferHash, SHA_DIGEST_LENGTH))
+			{
+				kprintf(L"\n    SHA1:");
+				kull_m_string_wprintf_hex(bufferHash, SHA_DIGEST_LENGTH, 0);
+			}
+		}
+		else if((_wcsicmp(secretName, L"DPAPI_SYSTEM") == 0) && (szBytesSecrets == sizeof(DWORD) + 2 * SHA_DIGEST_LENGTH))
+		{
+			kprintf(L"\n    full: ");
+			kull_m_string_wprintf_hex((PBYTE) bufferSecret + sizeof(DWORD), 2 * SHA_DIGEST_LENGTH, 0);
+			kprintf(L"\n    m/u : ");
+			kull_m_string_wprintf_hex((PBYTE) bufferSecret + sizeof(DWORD), SHA_DIGEST_LENGTH, 0);
+			kprintf(L" / ");
+			kull_m_string_wprintf_hex((PBYTE) bufferSecret + sizeof(DWORD) + SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, 0);
 		}
 	}
 }
@@ -1605,8 +1619,6 @@ NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretN
 
 void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size, BOOL isExport)
 {
-	HCRYPTPROV hCryptProv;
-	HCRYPTKEY hCryptKey;
 	PVOID data;
 	DWORD len;
 	UNICODE_STRING uString;
@@ -1620,27 +1632,17 @@ void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size
 		{
 		case 2:
 			kprintf(L"  * RSA key\n");
-			if(CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+			kuhl_m_crypto_exportRawKeyToFile(secret->data, secret->keyLen, FALSE, L"ntds", 0, shortname, isExport, TRUE);
+			if(isExport)
 			{
-				if(CryptImportKey(hCryptProv, secret->data, secret->keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
+				data = secret->data + secret->keyLen;
+				len = secret->certLen;
+				if(filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"pfx"))
 				{
-					kuhl_m_crypto_printKeyInfos(0, hCryptKey);
-					if(isExport)
-					{
-						kuhl_m_crypto_exportKeyToFile(0, hCryptKey, AT_KEYEXCHANGE, L"ntds", 0, shortname);
-						
-						data = secret->data + secret->keyLen;
-						len = secret->certLen;
-						if(filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"pfx"))
-						{
-							kprintf(L"\tPFX container  : %s - \'%s\'\n", kuhl_m_crypto_DerAndKeyToPfx(data, len, secret->data, secret->keyLen, FALSE, filename) ? L"OK" : L"KO", filename);
-							LocalFree(filename);
-						}
-						filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"der");
-					}
-					CryptDestroyKey(hCryptKey);
+					kprintf(L"\tPFX container  : %s - \'%s\'\n", kuhl_m_crypto_DerAndKeyToPfx(data, len, secret->data, secret->keyLen, FALSE, filename) ? L"OK" : L"KO", filename);
+					LocalFree(filename);
 				}
-				CryptReleaseContext(hCryptProv, 0);
+				filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"der");
 			}
 			break;
 		case 1:

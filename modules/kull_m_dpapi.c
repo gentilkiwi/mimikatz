@@ -53,32 +53,42 @@ void kull_m_dpapi_blob_delete(PKULL_M_DPAPI_BLOB blob)
 	}
 }
 
-void kull_m_dpapi_blob_descr(PKULL_M_DPAPI_BLOB blob)
+void kull_m_dpapi_blob_descr(DWORD level, PKULL_M_DPAPI_BLOB blob)
 {
-	kprintf(L"**BLOB**\n");
+	kprintf(L"%*s" L"**BLOB**\n", level << 1, L"");
 	if(blob)
 	{
-		kprintf(L"  dwVersion          : %08x - %u\n", blob->dwVersion, blob->dwVersion);
-		kprintf(L"  guidProvider       : "); kull_m_string_displayGUID(&blob->guidProvider); kprintf(L"\n");
-		kprintf(L"  dwMasterKeyVersion : %08x - %u\n", blob->dwMasterKeyVersion, blob->dwMasterKeyVersion);
-		kprintf(L"  guidMasterKey      : "); kull_m_string_displayGUID(&blob->guidMasterKey); kprintf(L"\n");
-		kprintf(L"  dwFlags            : %08x - %u\n", blob->dwFlags, blob->dwFlags);
-		kprintf(L"  dwDescriptionLen   : %08x - %u\n", blob->dwDescriptionLen, blob->dwDescriptionLen);
-		kprintf(L"  szDescription      : %s\n", blob->szDescription);
-		kprintf(L"  algCrypt           : %08x - %u (%s)\n", blob->algCrypt, blob->algCrypt, kull_m_crypto_algid_to_name(blob->algCrypt));
-		kprintf(L"  dwAlgCryptLen      : %08x - %u\n", blob->dwAlgCryptLen, blob->dwAlgCryptLen);
-		kprintf(L"  dwSaltLen          : %08x - %u\n", blob->dwSaltLen, blob->dwSaltLen);
-		kprintf(L"  pbSalt             : "); kull_m_string_wprintf_hex(blob->pbSalt, blob->dwSaltLen, 0); kprintf(L"\n");
-		kprintf(L"  dwHmacKeyLen       : %08x - %u\n", blob->dwHmacKeyLen, blob->dwHmacKeyLen);
-		kprintf(L"  pbHmackKey         : "); kull_m_string_wprintf_hex(blob->pbHmackKey, blob->dwHmacKeyLen, 0); kprintf(L"\n");
-		kprintf(L"  algHash            : %08x - %u (%s)\n", blob->algHash, blob->algHash, kull_m_crypto_algid_to_name(blob->algHash));
-		kprintf(L"  dwAlgHashLen       : %08x - %u\n", blob->dwAlgHashLen, blob->dwAlgHashLen);
-		kprintf(L"  dwHmac2KeyLen      : %08x - %u\n", blob->dwHmac2KeyLen, blob->dwHmac2KeyLen);
-		kprintf(L"  pbHmack2Key        : "); kull_m_string_wprintf_hex(blob->pbHmack2Key, blob->dwHmac2KeyLen, 0); kprintf(L"\n");
-		kprintf(L"  dwDataLen          : %08x - %u\n", blob->dwDataLen, blob->dwDataLen);
-		kprintf(L"  pbData             : "); kull_m_string_wprintf_hex(blob->pbData, blob->dwDataLen, 0); kprintf(L"\n");
-		kprintf(L"  dwSignLen          : %08x - %u\n", blob->dwSignLen, blob->dwSignLen);
-		kprintf(L"  pbSign             : "); kull_m_string_wprintf_hex(blob->pbSign, blob->dwSignLen, 0); kprintf(L"\n\n");
+		kprintf(L"%*s" L"  dwVersion          : %08x - %u\n", level << 1, L"", blob->dwVersion, blob->dwVersion);
+		kprintf(L"%*s" L"  guidProvider       : ", level << 1, L""); kull_m_string_displayGUID(&blob->guidProvider); kprintf(L"\n");
+		kprintf(L"%*s" L"  dwMasterKeyVersion : %08x - %u\n", level << 1, L"", blob->dwMasterKeyVersion, blob->dwMasterKeyVersion);
+		kprintf(L"%*s" L"  guidMasterKey      : ", level << 1, L""); kull_m_string_displayGUID(&blob->guidMasterKey); kprintf(L"\n");
+		kprintf(L"%*s" L"  dwFlags            : %08x - %u\n", level << 1, L"", blob->dwFlags, blob->dwFlags);
+		kprintf(L"%*s" L"  dwDescriptionLen   : %08x - %u\n", level << 1, L"", blob->dwDescriptionLen, blob->dwDescriptionLen);
+		kprintf(L"%*s" L"  szDescription      : %s\n", level << 1, L"", blob->szDescription);
+		kprintf(L"%*s" L"  algCrypt           : %08x - %u (%s)\n", level << 1, L"", blob->algCrypt, blob->algCrypt, kull_m_crypto_algid_to_name(blob->algCrypt));
+		kprintf(L"%*s" L"  dwAlgCryptLen      : %08x - %u\n", level << 1, L"", blob->dwAlgCryptLen, blob->dwAlgCryptLen);
+		kprintf(L"%*s" L"  dwSaltLen          : %08x - %u\n", level << 1, L"", blob->dwSaltLen, blob->dwSaltLen);
+		kprintf(L"%*s" L"  pbSalt             : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbSalt, blob->dwSaltLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  dwHmacKeyLen       : %08x - %u\n", level << 1, L"", blob->dwHmacKeyLen, blob->dwHmacKeyLen);
+		kprintf(L"%*s" L"  pbHmackKey         : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbHmackKey, blob->dwHmacKeyLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  algHash            : %08x - %u (%s)\n", level << 1, L"", blob->algHash, blob->algHash, kull_m_crypto_algid_to_name(blob->algHash));
+		kprintf(L"%*s" L"  dwAlgHashLen       : %08x - %u\n", level << 1, L"", blob->dwAlgHashLen, blob->dwAlgHashLen);
+		kprintf(L"%*s" L"  dwHmac2KeyLen      : %08x - %u\n", level << 1, L"", blob->dwHmac2KeyLen, blob->dwHmac2KeyLen);
+		kprintf(L"%*s" L"  pbHmack2Key        : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbHmack2Key, blob->dwHmac2KeyLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  dwDataLen          : %08x - %u\n", level << 1, L"", blob->dwDataLen, blob->dwDataLen);
+		kprintf(L"%*s" L"  pbData             : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbData, blob->dwDataLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  dwSignLen          : %08x - %u\n", level << 1, L"", blob->dwSignLen, blob->dwSignLen);
+		kprintf(L"%*s" L"  pbSign             : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbSign, blob->dwSignLen, 0); kprintf(L"\n\n");
+	}
+}
+
+void kull_m_dpapi_blob_quick_descr(DWORD level, PVOID data/*, DWORD size*/)
+{
+	PKULL_M_DPAPI_BLOB blob;
+	if(blob = kull_m_dpapi_blob_create(data))
+	{
+		kull_m_dpapi_blob_descr(level, blob);
+		kull_m_dpapi_blob_delete(blob);
 	}
 }
 
@@ -105,17 +115,17 @@ void kull_m_dpapi_masterkey_delete(PKULL_M_DPAPI_MASTERKEY masterkey)
 	}
 }
 
-void kull_m_dpapi_masterkey_descr(PKULL_M_DPAPI_MASTERKEY masterkey)
+void kull_m_dpapi_masterkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY masterkey)
 {
-	kprintf(L"  **MASTERKEY**\n");
+	kprintf(L"%*s" L"**MASTERKEY**\n", level << 1, L"");
 	if(masterkey)
 	{
-		kprintf(L"    dwVersion        : %08x - %u\n", masterkey->dwVersion, masterkey->dwVersion);
-		kprintf(L"    salt             : "); kull_m_string_wprintf_hex(masterkey->salt, sizeof(masterkey->salt), 0); kprintf(L"\n");
-		kprintf(L"    rounds           : %08x - %u\n", masterkey->rounds, masterkey->rounds);
-		kprintf(L"    algHash          : %08x - %u (%s)\n", masterkey->algHash, masterkey->algHash, kull_m_crypto_algid_to_name(masterkey->algHash));
-		kprintf(L"    algCrypt         : %08x - %u (%s)\n", masterkey->algCrypt, masterkey->algCrypt, kull_m_crypto_algid_to_name(masterkey->algCrypt));
-		kprintf(L"    pbKey            : "); kull_m_string_wprintf_hex(masterkey->pbKey, masterkey->__dwKeyLen, 0); kprintf(L"\n\n");
+		kprintf(L"%*s" L"  dwVersion        : %08x - %u\n", level << 1, L"", masterkey->dwVersion, masterkey->dwVersion);
+		kprintf(L"%*s" L"  salt             : ", level << 1, L""); kull_m_string_wprintf_hex(masterkey->salt, sizeof(masterkey->salt), 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  rounds           : %08x - %u\n", level << 1, L"", masterkey->rounds, masterkey->rounds);
+		kprintf(L"%*s" L"  algHash          : %08x - %u (%s)\n", level << 1, L"", masterkey->algHash, masterkey->algHash, kull_m_crypto_algid_to_name(masterkey->algHash));
+		kprintf(L"%*s" L"  algCrypt         : %08x - %u (%s)\n", level << 1, L"", masterkey->algCrypt, masterkey->algCrypt, kull_m_crypto_algid_to_name(masterkey->algCrypt));
+		kprintf(L"%*s" L"  pbKey            : ", level << 1, L""); kull_m_string_wprintf_hex(masterkey->pbKey, masterkey->__dwKeyLen, 0); kprintf(L"\n\n");
 	}
 }
 
@@ -133,13 +143,13 @@ void kull_m_dpapi_credhist_delete(PKULL_M_DPAPI_CREDHIST credhist)
 		LocalFree(credhist);
 }
 
-void kull_m_dpapi_credhist_descr(PKULL_M_DPAPI_CREDHIST credhist)
+void kull_m_dpapi_credhist_descr(DWORD level, PKULL_M_DPAPI_CREDHIST credhist)
 {
-	kprintf(L"  **CREDHIST**\n");
+	kprintf(L"%*s" L"**CREDHIST**\n", level << 1, L"");
 	if(credhist)
 	{
-		kprintf(L"    dwVersion        : %08x - %u\n", credhist->dwVersion, credhist->dwVersion);
-		kprintf(L"    guid             : "); kull_m_string_displayGUID(&credhist->guid); kprintf(L"\n\n");
+		kprintf(L"%*s" L"  dwVersion        : %08x - %u\n", level << 1, L"", credhist->dwVersion, credhist->dwVersion);
+		kprintf(L"%*s" L"  guid             : ", level << 1, L""); kull_m_string_displayGUID(&credhist->guid); kprintf(L"\n\n");
 	}
 }
 
@@ -169,17 +179,17 @@ void kull_m_dpapi_domainkey_delete(PKULL_M_DPAPI_DOMAINKEY domainkey)
 	}
 }
 
-void kull_m_dpapi_domainkey_descr(PKULL_M_DPAPI_DOMAINKEY domainkey)
+void kull_m_dpapi_domainkey_descr(DWORD level, PKULL_M_DPAPI_DOMAINKEY domainkey)
 {
-	kprintf(L"  **DOMAINKEY**\n");
+	kprintf(L"%*s" L"**DOMAINKEY**\n", level << 1, L"");
 	if(domainkey)
 	{
-		kprintf(L"    dwVersion        : %08x - %u\n", domainkey->dwVersion, domainkey->dwVersion);
-		kprintf(L"    dwSecretLen      : %08x - %u\n", domainkey->dwSecretLen, domainkey->dwSecretLen);
-		kprintf(L"    dwAccesscheckLen : %08x - %u\n", domainkey->dwAccesscheckLen, domainkey->dwAccesscheckLen);
-		kprintf(L"    guidMasterKey    : "); kull_m_string_displayGUID(&domainkey->guidMasterKey); kprintf(L"\n");
-		kprintf(L"    pbSecret         : "); kull_m_string_wprintf_hex(domainkey->pbSecret, domainkey->dwSecretLen, 0); kprintf(L"\n");
-		kprintf(L"    pbAccesscheck    : "); kull_m_string_wprintf_hex(domainkey->pbAccesscheck, domainkey->dwAccesscheckLen, 0); kprintf(L"\n\n");
+		kprintf(L"%*s" L"  dwVersion        : %08x - %u\n", level << 1, L"", domainkey->dwVersion, domainkey->dwVersion);
+		kprintf(L"%*s" L"  dwSecretLen      : %08x - %u\n", level << 1, L"", domainkey->dwSecretLen, domainkey->dwSecretLen);
+		kprintf(L"%*s" L"  dwAccesscheckLen : %08x - %u\n", level << 1, L"", domainkey->dwAccesscheckLen, domainkey->dwAccesscheckLen);
+		kprintf(L"%*s" L"  guidMasterKey    : ", level << 1, L""); kull_m_string_displayGUID(&domainkey->guidMasterKey); kprintf(L"\n");
+		kprintf(L"%*s" L"  pbSecret         : ", level << 1, L""); kull_m_string_wprintf_hex(domainkey->pbSecret, domainkey->dwSecretLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  pbAccesscheck    : ", level << 1, L""); kull_m_string_wprintf_hex(domainkey->pbAccesscheck, domainkey->dwAccesscheckLen, 0); kprintf(L"\n\n");
 	}
 }
 
@@ -217,38 +227,38 @@ void kull_m_dpapi_masterkeys_delete(PKULL_M_DPAPI_MASTERKEYS masterkeys)
 	}
 }
 
-void kull_m_dpapi_masterkeys_descr(PKULL_M_DPAPI_MASTERKEYS masterkeys)
+void kull_m_dpapi_masterkeys_descr(DWORD level, PKULL_M_DPAPI_MASTERKEYS masterkeys)
 {
-	kprintf(L"**MASTERKEYS**\n");
+	kprintf(L"%*s" L"**MASTERKEYS**\n", level << 1, L"");
 	if(masterkeys)
 	{
-		kprintf(L"  dwVersion          : %08x - %u\n", masterkeys->dwVersion, masterkeys->dwVersion);
-		kprintf(L"  szGuid             : {%.36s}\n", masterkeys->szGuid);
-		kprintf(L"  dwFlags            : %08x - %u\n", masterkeys->dwFlags, masterkeys->dwFlags);
-		kprintf(L"  dwMasterKeyLen     : %08x - %u\n", (DWORD) masterkeys->dwMasterKeyLen, (DWORD) masterkeys->dwMasterKeyLen);
-		kprintf(L"  dwBackupKeyLen     : %08x - %u\n", (DWORD) masterkeys->dwBackupKeyLen, (DWORD) masterkeys->dwBackupKeyLen);
-		kprintf(L"  dwCredHistLen      : %08x - %u\n", (DWORD) masterkeys->dwCredHistLen, (DWORD) masterkeys->dwCredHistLen);
-		kprintf(L"  dwDomainKeyLen     : %08x - %u\n", (DWORD) masterkeys->dwDomainKeyLen, (DWORD) masterkeys->dwDomainKeyLen);
+		kprintf(L"%*s" L"  dwVersion          : %08x - %u\n", level << 1, L"", masterkeys->dwVersion, masterkeys->dwVersion);
+		kprintf(L"%*s" L"  szGuid             : {%.36s}\n", level << 1, L"", masterkeys->szGuid);
+		kprintf(L"%*s" L"  dwFlags            : %08x - %u\n", level << 1, L"", masterkeys->dwFlags, masterkeys->dwFlags);
+		kprintf(L"%*s" L"  dwMasterKeyLen     : %08x - %u\n", level << 1, L"", (DWORD) masterkeys->dwMasterKeyLen, (DWORD) masterkeys->dwMasterKeyLen);
+		kprintf(L"%*s" L"  dwBackupKeyLen     : %08x - %u\n", level << 1, L"", (DWORD) masterkeys->dwBackupKeyLen, (DWORD) masterkeys->dwBackupKeyLen);
+		kprintf(L"%*s" L"  dwCredHistLen      : %08x - %u\n", level << 1, L"", (DWORD) masterkeys->dwCredHistLen, (DWORD) masterkeys->dwCredHistLen);
+		kprintf(L"%*s" L"  dwDomainKeyLen     : %08x - %u\n", level << 1, L"", (DWORD) masterkeys->dwDomainKeyLen, (DWORD) masterkeys->dwDomainKeyLen);
 		
 		if(masterkeys->MasterKey)
 		{
-			kprintf(L"[masterkey]\n");
-			kull_m_dpapi_masterkey_descr(masterkeys->MasterKey);
+			kprintf(L"%*s" L"[masterkey]\n", level << 1, L"");
+			kull_m_dpapi_masterkey_descr(level + 1, masterkeys->MasterKey);
 		}
 		if(masterkeys->BackupKey)
 		{
-			kprintf(L"[backupkey]\n");
-			kull_m_dpapi_masterkey_descr(masterkeys->BackupKey);
+			kprintf(L"%*s" L"[backupkey]\n", level << 1, L"");
+			kull_m_dpapi_masterkey_descr(level + 1, masterkeys->BackupKey);
 		}
 		if(masterkeys->CredHist)
 		{
-			kprintf(L"[credhist]\n");
-			kull_m_dpapi_credhist_descr(masterkeys->CredHist);
+			kprintf(L"%*s" L"[credhist]\n", level << 1, L"");
+			kull_m_dpapi_credhist_descr(level + 1, masterkeys->CredHist);
 		}
 		if(masterkeys->DomainKey)
 		{
-			kprintf(L"[domainkey]\n");
-			kull_m_dpapi_domainkey_descr(masterkeys->DomainKey);
+			kprintf(L"%*s" L"[domainkey]\n", level << 1, L"");
+			kull_m_dpapi_domainkey_descr(level + 1, masterkeys->DomainKey);
 		}
 		kprintf(L"\n");
 	}
@@ -489,7 +499,7 @@ BOOL kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY
 BOOL kull_m_dpapi_unprotect_backupkey_with_secret(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR sid, LPCVOID secret, DWORD secretLen, PVOID *output, DWORD *outputLen)
 {
 	BOOL status = FALSE, isDPAPISecret = flags & 1;
-	LPCVOID ptrSecret = secret;
+	LPCBYTE ptrSecret = (LPCBYTE) secret;
 	PVOID data, hash;
 	ALG_ID algID = (masterkey->algHash == CALG_SHA_512) ? CALG_SHA_512 : CALG_SHA1;
 	DWORD sidLen = (DWORD) (wcslen(sid) + 1) * sizeof(wchar_t), hashSize = kull_m_crypto_hash_len(algID), dataSize = sidLen;
@@ -498,7 +508,7 @@ BOOL kull_m_dpapi_unprotect_backupkey_with_secret(DWORD flags, PKULL_M_DPAPI_MAS
 	{
 		if(secretLen == 2 * SHA_DIGEST_LENGTH + sizeof(DWORD))
 		{
-			ptrSecret = (PBYTE) secret + sizeof(DWORD);
+			ptrSecret += sizeof(DWORD);
 			secretLen -= sizeof(DWORD);
 		}
 		if(isDPAPISecret)
@@ -576,7 +586,7 @@ BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_DOMAINKEY domainkey
 											{
 												RtlCopyMemory(*output, rsa_buffer->buffer, *outputLen);
 												status = TRUE;
-												*sid = 0;
+												*sid = NULL;
 												if(sid)
 												{
 													status = FALSE;

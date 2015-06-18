@@ -107,19 +107,20 @@ typedef struct _KULL_M_DPAPI_DOMAIN_ACCESS_CHECK {
 
 PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(PVOID data/*, DWORD size*/);
 void kull_m_dpapi_blob_delete(PKULL_M_DPAPI_BLOB blob);
-void kull_m_dpapi_blob_descr(PKULL_M_DPAPI_BLOB blob);
+void kull_m_dpapi_blob_descr(DWORD level, PKULL_M_DPAPI_BLOB blob);
+void kull_m_dpapi_blob_quick_descr(DWORD level, PVOID data/*, DWORD size*/);
 PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(PVOID data/*, DWORD size*/);
 void kull_m_dpapi_masterkeys_delete(PKULL_M_DPAPI_MASTERKEYS masterkeys);
-void kull_m_dpapi_masterkeys_descr(PKULL_M_DPAPI_MASTERKEYS masterkeys);
+void kull_m_dpapi_masterkeys_descr(DWORD level, PKULL_M_DPAPI_MASTERKEYS masterkeys);
 PKULL_M_DPAPI_MASTERKEY kull_m_dpapi_masterkey_create(PVOID data, DWORD64 size);
 void kull_m_dpapi_masterkey_delete(PKULL_M_DPAPI_MASTERKEY masterkey);
-void kull_m_dpapi_masterkey_descr(PKULL_M_DPAPI_MASTERKEY masterkey);
+void kull_m_dpapi_masterkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY masterkey);
 PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(PVOID data, DWORD64 size);
 void kull_m_dpapi_credhist_delete(PKULL_M_DPAPI_CREDHIST credhist);
-void kull_m_dpapi_credhist_descr(PKULL_M_DPAPI_CREDHIST credhist);
+void kull_m_dpapi_credhist_descr(DWORD level, PKULL_M_DPAPI_CREDHIST credhist);
 PKULL_M_DPAPI_DOMAINKEY kull_m_dpapi_domainkey_create(PVOID data, DWORD64 size);
 void kull_m_dpapi_domainkey_delete(PKULL_M_DPAPI_DOMAINKEY domainkey);
-void kull_m_dpapi_domainkey_descr(PKULL_M_DPAPI_DOMAINKEY domainkey);
+void kull_m_dpapi_domainkey_descr(DWORD level, PKULL_M_DPAPI_DOMAINKEY domainkey);
 
 BOOL kull_m_dpapi_hmac_sha1_incorrect(LPCVOID key, DWORD keyLen, LPCVOID salt, DWORD saltLen, LPCVOID entropy, DWORD entropyLen, LPCVOID data, DWORD dataLen, LPVOID outKey);
 BOOL kull_m_dpapi_sessionkey(LPCVOID masterkey, DWORD masterkeyLen, LPCVOID salt, DWORD saltLen, LPCVOID entropy, DWORD entropyLen, LPCVOID data, DWORD dataLen, ALG_ID hashAlg, LPVOID outKey, DWORD outKeyLen);

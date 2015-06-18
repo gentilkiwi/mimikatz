@@ -13,10 +13,8 @@
 
 const KUHL_M kuhl_m_dpapi;
 
-NTSTATUS kuhl_m_dpapi_masterkeys(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_dpapi_unprotect(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[]);
 
 void kuhl_m_dpapi_displayInfosAndFree(PVOID data, DWORD dataLen, PSID sid);
