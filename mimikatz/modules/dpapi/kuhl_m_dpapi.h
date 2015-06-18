@@ -17,4 +17,5 @@ NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[]);
 
+BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWSTR *ppszDataDescr, int argc, wchar_t * argv[], LPCVOID pOptionalEntropy, DWORD dwOptionalEntropyLen, LPVOID *pDataOut, DWORD *dwDataOutLen, LPCWSTR pText);
 void kuhl_m_dpapi_displayInfosAndFree(PVOID data, DWORD dataLen, PSID sid);

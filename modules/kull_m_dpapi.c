@@ -5,7 +5,7 @@
 */
 #include "kull_m_dpapi.h"
 
-PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(PVOID data/*, DWORD size*/)
+PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(LPCVOID data/*, DWORD size*/)
 {
 	PKULL_M_DPAPI_BLOB blob = NULL;
 	if(data && (blob = (PKULL_M_DPAPI_BLOB) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_BLOB))))
@@ -45,7 +45,7 @@ void kull_m_dpapi_blob_delete(PKULL_M_DPAPI_BLOB blob)
 			LocalFree(blob->pbHmackKey);
 		if(blob->pbHmack2Key)
 			LocalFree(blob->pbHmack2Key);
-		if(blob->pbData)
+		if(blob->pbData) 
 			LocalFree(blob->pbData);
 		if(blob->pbSign)
 			LocalFree(blob->pbSign);
@@ -82,7 +82,7 @@ void kull_m_dpapi_blob_descr(DWORD level, PKULL_M_DPAPI_BLOB blob)
 	}
 }
 
-void kull_m_dpapi_blob_quick_descr(DWORD level, PVOID data/*, DWORD size*/)
+void kull_m_dpapi_blob_quick_descr(DWORD level, LPCVOID data/*, DWORD size*/)
 {
 	PKULL_M_DPAPI_BLOB blob;
 	if(blob = kull_m_dpapi_blob_create(data))
@@ -92,7 +92,7 @@ void kull_m_dpapi_blob_quick_descr(DWORD level, PVOID data/*, DWORD size*/)
 	}
 }
 
-PKULL_M_DPAPI_MASTERKEY kull_m_dpapi_masterkey_create(PVOID data, DWORD64 size)
+PKULL_M_DPAPI_MASTERKEY kull_m_dpapi_masterkey_create(LPCVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_MASTERKEY masterkey = NULL;
 	if(data && (masterkey = (PKULL_M_DPAPI_MASTERKEY) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEY))))
@@ -129,7 +129,7 @@ void kull_m_dpapi_masterkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY masterkey
 	}
 }
 
-PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(PVOID data, DWORD64 size)
+PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(LPCVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_CREDHIST credhist = NULL;
 	if(data && (credhist = (PKULL_M_DPAPI_CREDHIST) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_CREDHIST))))
@@ -153,7 +153,7 @@ void kull_m_dpapi_credhist_descr(DWORD level, PKULL_M_DPAPI_CREDHIST credhist)
 	}
 }
 
-PKULL_M_DPAPI_DOMAINKEY kull_m_dpapi_domainkey_create(PVOID data, DWORD64 size)
+PKULL_M_DPAPI_DOMAINKEY kull_m_dpapi_domainkey_create(LPCVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_DOMAINKEY domainkey = NULL;
 	if(data && (domainkey = (PKULL_M_DPAPI_DOMAINKEY) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_DOMAINKEY))))
@@ -193,7 +193,7 @@ void kull_m_dpapi_domainkey_descr(DWORD level, PKULL_M_DPAPI_DOMAINKEY domainkey
 	}
 }
 
-PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(PVOID data/*, DWORD size*/)
+PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(LPCVOID data/*, DWORD size*/)
 {
 	PKULL_M_DPAPI_MASTERKEYS masterkeys = NULL;
 	if(data && (masterkeys = (PKULL_M_DPAPI_MASTERKEYS) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEYS))))
@@ -395,6 +395,36 @@ BOOL kull_m_dpapi_unprotect_blob(PKULL_M_DPAPI_BLOB blob, LPCVOID masterkey, DWO
 	}
 	if(hashPassword)
 		LocalFree(hashPassword);
+	return status;
+}
+
+BOOL kull_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWSTR *ppszDataDescr, LPCVOID pOptionalEntropy, DWORD dwOptionalEntropyLen, CRYPTPROTECT_PROMPTSTRUCT* pPromptStruct, DWORD dwFlags, LPVOID *pDataOut, DWORD *dwDataOutLen, LPCVOID pMasterKey, DWORD dwMasterKeyLen, LPCWSTR pPassword)
+{
+	BOOL status = FALSE;
+	DATA_BLOB dataIn = {dwDataInLen, (PBYTE) pDataIn}, dataEntropy = {dwOptionalEntropyLen, (PBYTE) pOptionalEntropy}, dataOut;
+	PKULL_M_DPAPI_BLOB blob;
+
+	if(pMasterKey && dwMasterKeyLen)
+	{
+		if(blob = kull_m_dpapi_blob_create(pDataIn))
+		{
+			if(status = kull_m_dpapi_unprotect_blob(blob, pMasterKey, dwMasterKeyLen, pOptionalEntropy, dwOptionalEntropyLen, pPassword, pDataOut, dwDataOutLen))
+				if(ppszDataDescr && blob->szDescription && blob->dwDescriptionLen)
+					if(*ppszDataDescr = (LPWSTR) LocalAlloc(LPTR, blob->dwDescriptionLen))
+						RtlCopyMemory(*ppszDataDescr, blob->szDescription, blob->dwDescriptionLen);
+			kull_m_dpapi_blob_delete(blob);
+		}
+	}
+	else
+	{
+		if(status = CryptUnprotectData(&dataIn, ppszDataDescr, &dataEntropy, NULL, pPromptStruct, dwFlags, &dataOut))
+		{
+			*dwDataOutLen = dataOut.cbData;
+			if(*pDataOut = LocalAlloc(LPTR, *dwDataOutLen))
+				RtlCopyMemory(*pDataOut, dataOut.pbData, *dwDataOutLen);
+			LocalFree(dataOut.pbData);
+		}
+	}
 	return status;
 }
 

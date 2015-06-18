@@ -434,15 +434,19 @@ void kuhl_m_crypto_exportRawKeyToFile(LPCVOID data, DWORD size, BOOL isCNG, cons
 
 	if(isCNG)
 	{
-		if(NT_SUCCESS(K_NCryptOpenStorageProvider(&hCngProv, MS_KEY_STORAGE_PROVIDER, 0)))
+		if(kuhl_m_crypto_hNCrypt)
 		{
-			if(NT_SUCCESS(K_NCryptImportKey(hCngProv, 0, BCRYPT_RSAPRIVATE_BLOB, NULL, &hCngKey, (PBYTE) data, size, 0)))
+			if(NT_SUCCESS(K_NCryptOpenStorageProvider(&hCngProv, MS_KEY_STORAGE_PROVIDER, 0)))
 			{
-				if(!NT_SUCCESS(K_NCryptSetProperty(hCngKey, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE) &exportPolicy, sizeof(DWORD), 0)))
-					PRINT_ERROR(L"NCryptSetProperty\n");
+				if(NT_SUCCESS(K_NCryptImportKey(hCngProv, 0, BCRYPT_RSAPRIVATE_BLOB, NULL, &hCngKey, (PBYTE) data, size, 0)))
+				{
+					if(!NT_SUCCESS(K_NCryptSetProperty(hCngKey, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE) &exportPolicy, sizeof(DWORD), 0)))
+						PRINT_ERROR(L"NCryptSetProperty\n");
+				}
+				else PRINT_ERROR(L"NCryptImportKey\n");
 			}
-			else PRINT_ERROR(L"NCryptImportKey\n");
 		}
+		else PRINT_ERROR(L"No CNG!\n");
 	}
 	else
 	{
@@ -459,7 +463,6 @@ void kuhl_m_crypto_exportRawKeyToFile(LPCVOID data, DWORD size, BOOL isCNG, cons
 			kuhl_m_crypto_printKeyInfos(hCngKey, hCapiKey);
 		if(wantExport)
 			kuhl_m_crypto_exportKeyToFile(hCngKey, hCapiKey, AT_KEYEXCHANGE, store, 0, name);
-
 		if(hCngKey)
 			K_NCryptFreeObject(hCngKey);
 		if(hCapiKey)
