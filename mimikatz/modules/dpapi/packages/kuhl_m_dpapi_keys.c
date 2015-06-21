@@ -7,43 +7,50 @@
 
 NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[])
 {
-	PBYTE file;
-	PVOID out;
+	PVOID file, out;
 	PRSA_GENERICKEY_BLOB blob;
 	DWORD szFile, outLen, szBlob;
 	PKULL_M_KEY_CAPI_BLOB capiKey;
+	LPCWSTR infile;
 	PWSTR name;
-	if(argc && kull_m_file_readData(argv[0], &file, &szFile))
+
+	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
-		if(capiKey = kull_m_key_capi_create(file))
+		if(kull_m_file_readData(infile, (PBYTE *) &file, &szFile))
 		{
-			kull_m_key_capi_descr(0, capiKey);
-
-			if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pExportFlag, capiKey->dwExportFlagLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS, sizeof(KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS), &out, &outLen, L"Decrypting Export flags:\n"))
+			if(capiKey = kull_m_key_capi_create(file))
 			{
-				kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
-				LocalFree(out);
-			}
+				kull_m_key_capi_descr(0, capiKey);
 
-			if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pPrivateKey, capiKey->dwPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting Private Key:\n"))
-			{
-				kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
-				if(kull_m_key_capi_decryptedkey_to_raw(out, outLen, &blob, &szBlob))
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pExportFlag, capiKey->dwExportFlagLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS, sizeof(KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS), &out, &outLen, L"Decrypting Export flags:\n"))
 				{
-					if(name = kull_m_string_qad_ansi_to_unicode(capiKey->pName))
-					{
-						kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw", 0, name, TRUE, TRUE);
-						LocalFree(name);
-					}
-					LocalFree(blob);
+					kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
+					LocalFree(out);
 				}
-				LocalFree(out);
+
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pPrivateKey, capiKey->dwPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting Private Key:\n"))
+				{
+					kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
+					if(kull_m_key_capi_decryptedkey_to_raw(out, outLen, &blob, &szBlob))
+					{
+						if(name = kull_m_string_qad_ansi_to_unicode(capiKey->pName))
+						{
+							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw", 0, name, TRUE, TRUE);
+							LocalFree(name);
+						}
+						LocalFree(blob);
+					}
+					LocalFree(out);
+				}
+
+				kull_m_key_capi_delete(capiKey);
 			}
-			
-			kull_m_key_capi_delete(capiKey);
+			LocalFree(file);
 		}
-		LocalFree(file);
+		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 	}
+	else PRINT_ERROR(L"Input CAPI private key file needed (/in:file)\n");
+
 	return STATUS_SUCCESS;
 }
 
@@ -54,38 +61,46 @@ NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 	DWORD szFile, outLen, cbProperties;
 	PKULL_M_KEY_CNG_BLOB cngKey;
 	PKULL_M_KEY_CNG_PROPERTY * properties;
+	LPCWSTR infile;
 	PWSTR name;
-	if(argc && kull_m_file_readData(argv[0], &file, &szFile))
+
+	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
-		if(cngKey = kull_m_key_cng_create(file))
+		if(kull_m_file_readData(infile, (PBYTE *) &file, &szFile))
 		{
-			kull_m_key_cng_descr(0, cngKey);
-
-			if(kuhl_m_dpapi_unprotect_raw_or_blob(cngKey->pPrivateProperties, cngKey->dwPrivatePropertiesLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CNG_KEY_PROPERTIES, sizeof(KIWI_DPAPI_ENTROPY_CNG_KEY_PROPERTIES), &out, &outLen, L"Decrypting Private Properties:\n"))
+			if(cngKey = kull_m_key_cng_create(file))
 			{
-				if(kull_m_key_cng_properties_create(out, outLen, &properties, &cbProperties))
-				{
-					kull_m_key_cng_properties_descr(0, properties, cbProperties);
-					kull_m_key_cng_properties_delete(properties, cbProperties);
-				}
-				LocalFree(out);
-			}
+				kull_m_key_cng_descr(0, cngKey);
 
-			if(kuhl_m_dpapi_unprotect_raw_or_blob(cngKey->pPrivateKey, cngKey->dwPrivateKeyLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB, sizeof(KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB), &out, &outLen, L"Decrypting Private Key:\n"))
-			{
-				kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
-				if(name = (PWSTR) LocalAlloc(LPTR, cngKey->dwNameLen + sizeof(wchar_t)))
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(cngKey->pPrivateProperties, cngKey->dwPrivatePropertiesLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CNG_KEY_PROPERTIES, sizeof(KIWI_DPAPI_ENTROPY_CNG_KEY_PROPERTIES), &out, &outLen, L"Decrypting Private Properties:\n"))
 				{
-					RtlCopyMemory(name, cngKey->pName, cngKey->dwNameLen);
-					kuhl_m_crypto_exportRawKeyToFile(out, outLen, TRUE, L"raw", 0, name, TRUE, TRUE);
-					LocalFree(name);
+					if(kull_m_key_cng_properties_create(out, outLen, &properties, &cbProperties))
+					{
+						kull_m_key_cng_properties_descr(0, properties, cbProperties);
+						kull_m_key_cng_properties_delete(properties, cbProperties);
+					}
+					LocalFree(out);
 				}
-				LocalFree(out);
-			}
 
-			kull_m_key_cng_delete(cngKey);
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(cngKey->pPrivateKey, cngKey->dwPrivateKeyLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB, sizeof(KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB), &out, &outLen, L"Decrypting Private Key:\n"))
+				{
+					kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
+					if(name = (PWSTR) LocalAlloc(LPTR, cngKey->dwNameLen + sizeof(wchar_t)))
+					{
+						RtlCopyMemory(name, cngKey->pName, cngKey->dwNameLen);
+						kuhl_m_crypto_exportRawKeyToFile(out, outLen, TRUE, L"raw", 0, name, TRUE, TRUE);
+						LocalFree(name);
+					}
+					LocalFree(out);
+				}
+
+				kull_m_key_cng_delete(cngKey);
+			}
+			LocalFree(file);
 		}
-		LocalFree(file);
+		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 	}
+	else PRINT_ERROR(L"Input CNG private key file needed (/in:file)\n");
+
 	return STATUS_SUCCESS;
 }
