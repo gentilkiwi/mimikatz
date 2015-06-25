@@ -82,7 +82,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_credman(IN PKIWI_BASIC_SECURIT
 									kiwiCreds.Domaine = *(PUNICODE_STRING) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetDomain);
 									kiwiCreds.Password.Length = kiwiCreds.Password.MaximumLength = *(PUSHORT) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetCbPassword);;
 									kiwiCreds.Password.Buffer = *(PWSTR *) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetPassword);
-									kuhl_m_sekurlsa_genericCredsOutput(&kiwiCreds, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS);
+									kuhl_m_sekurlsa_genericCredsOutput(&kiwiCreds, pData, KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS);
 									aLsassMemory.address = *(PVOID *) ((PBYTE) aLocalMemory.address + credhelper[CredOffsetIndex].offsetFLink);
 								}
 								else break;

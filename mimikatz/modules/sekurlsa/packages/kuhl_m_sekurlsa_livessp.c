@@ -44,7 +44,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURIT
 				{
 					aLocalMemory.address = &primaryCredential;
 					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_LIVESSP_PRIMARY_CREDENTIAL)))
-						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, (pData->cLsass->osContext.BuildNumber != 9431) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT);
+						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData, (pData->cLsass->osContext.BuildNumber != 9431) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT);
 				}
 			}
 		}

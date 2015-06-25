@@ -16,6 +16,7 @@
 #include "../modules/kull_m_samlib.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
+#include "dpapi/kuhl_m_dpapi_oe.h"
 
 #define	SYSKEY_LENGTH	16
 #define	SAM_KEY_DATA_SALT_LENGTH	16

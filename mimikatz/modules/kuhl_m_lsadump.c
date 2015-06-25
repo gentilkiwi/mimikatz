@@ -879,7 +879,6 @@ BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY 
 			LocalFree(secret);
 		}
 	}
-
 	return status;
 }
 
@@ -942,7 +941,7 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 		for(i = 0, offset = 0; i < lsaKeysStream->nbKeys; i++, offset += FIELD_OFFSET(NT6_SYSTEM_KEY, Key) + lsaKey->KeySize)
 		{
 			lsaKey = (PNT6_SYSTEM_KEY) ((PBYTE) lsaKeysStream->Keys + offset);
-			if(RtlEqualMemory(&hardSecretBlob->KeyId, &lsaKey->KeyId, sizeof(GUID)))
+			if(RtlEqualGuid(&hardSecretBlob->KeyId, &lsaKey->KeyId))
 			{
 				pKey = lsaKey->Key;
 				szNeeded = lsaKey->KeySize;
@@ -1632,6 +1631,7 @@ void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size
 		{
 		case 2:
 			kprintf(L"  * RSA key\n");
+			kuhl_m_dpapi_oe_domainkey_add(guid, secret->data, secret->keyLen, TRUE);
 			kuhl_m_crypto_exportRawKeyToFile(secret->data, secret->keyLen, FALSE, L"ntds", 0, shortname, isExport, TRUE);
 			if(isExport)
 			{
@@ -1647,6 +1647,7 @@ void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size
 			break;
 		case 1:
 			kprintf(L"  * Legacy key\n");
+			kuhl_m_dpapi_oe_domainkey_add(guid, (PBYTE) secret + sizeof(DWORD), size - sizeof(DWORD), FALSE);
 			kull_m_string_wprintf_hex((PBYTE) secret + sizeof(DWORD), size - sizeof(DWORD), (32 << 16));
 			kprintf(L"\n");
 			if(isExport)

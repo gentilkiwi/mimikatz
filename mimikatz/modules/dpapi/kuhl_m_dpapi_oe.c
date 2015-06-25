@@ -7,7 +7,7 @@
 
 LIST_ENTRY gDPAPI_Masterkeys = {&gDPAPI_Masterkeys, &gDPAPI_Masterkeys};
 LIST_ENTRY gDPAPI_Credentials = {&gDPAPI_Credentials, &gDPAPI_Credentials};
-// to do PVK
+LIST_ENTRY gDPAPI_Domainkeys = {&gDPAPI_Domainkeys, &gDPAPI_Domainkeys};
 // to do CREDHIST_encrypted
 // to do Masterkey_encrypted
 
@@ -37,11 +37,11 @@ BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID keyHash, DWORD keyLen)
 			{
 				RtlCopyMemory(&entry->guid, guid, sizeof(GUID));
 				RtlCopyMemory(entry->keyHash, (keyLen == SHA_DIGEST_LENGTH) ? keyHash : digest, SHA_DIGEST_LENGTH);
-				
 				entry->navigator.Blink = gDPAPI_Masterkeys.Blink;
 				entry->navigator.Flink = &gDPAPI_Masterkeys;
 				((PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
 				gDPAPI_Masterkeys.Blink= (PLIST_ENTRY) entry;
+				status = TRUE;
 			}
 		}
 	}
@@ -194,7 +194,7 @@ BOOL kuhl_m_dpapi_oe_credential_add(LPCWSTR sid, LPCGUID guid, LPCVOID md4hash, 
 			}
 		}
 		if(entry)
-			kuhl_m_dpapi_oe_credential_addtoEntry(entry, guid, md4hash, sha1hash, md4protectedhash, password);
+			status = kuhl_m_dpapi_oe_credential_addtoEntry(entry, guid, md4hash, sha1hash, md4protectedhash, password);
 	}
 	else PRINT_ERROR(L"No SID?");
 	return status;
@@ -265,13 +265,89 @@ void kuhl_m_dpapi_oe_credentials_descr()
 		kuhl_m_dpapi_oe_credential_descr(entry);
 }
 
+PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY kuhl_m_dpapi_oe_domainkey_get(LPCGUID guid)
+{
+	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry;
+	for(entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Flink; entry != (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) &gDPAPI_Domainkeys; entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Flink)
+		if(RtlEqualGuid(guid, &entry->guid))
+			return entry;
+	return NULL;
+}
+
+BOOL kuhl_m_dpapi_oe_domainkey_add(LPCGUID guid, LPCVOID key, DWORD keyLen, BOOL isNewKey)
+{
+	BOOL status = FALSE;
+	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry;
+	if(guid && key && keyLen)
+	{
+		if(!kuhl_m_dpapi_oe_domainkey_get(guid))
+		{
+			if(entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_DOMAINKEY_ENTRY)))
+			{
+				RtlCopyMemory(&entry->guid, guid, sizeof(GUID));
+				entry->isNewKey = isNewKey;
+				if(entry->key = LocalAlloc(LPTR, keyLen))
+				{
+					RtlCopyMemory(entry->key, key, keyLen);
+					entry->keyLen = keyLen;
+					status = TRUE;
+				}
+				entry->navigator.Blink = gDPAPI_Domainkeys.Blink;
+				entry->navigator.Flink = &gDPAPI_Domainkeys;
+				((PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
+				gDPAPI_Domainkeys.Blink= (PLIST_ENTRY) entry;
+			}
+		}
+	}
+	else PRINT_ERROR(L"No GUID or Key?");
+	return status;
+}
+
+void kuhl_m_dpapi_oe_domainkey_delete(PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry)
+{
+	if(entry)
+	{
+		((PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Blink)->navigator.Flink = entry->navigator.Flink;
+		((PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Flink)->navigator.Blink = entry->navigator.Blink;
+
+		if(entry->key)
+			LocalFree(entry->key);
+		LocalFree(entry);
+	}
+}
+
+void kuhl_m_dpapi_oe_domainkey_descr(PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry)
+{
+	if(entry)
+	{
+		kprintf(L"GUID:");
+		kull_m_string_displayGUID(&entry->guid);
+		kprintf(L";TYPE:%s\n", entry->isNewKey ? L"RSA" : L"LEGACY");
+	}
+}
+
+void kuhl_m_dpapi_oe_domainkeys_delete()
+{
+	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY tmp, entry;
+	for(entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Flink; entry != (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) &gDPAPI_Domainkeys; entry = tmp)
+	{
+		tmp = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Flink;
+		kuhl_m_dpapi_oe_domainkey_delete(entry);
+	}
+}
+
+void kuhl_m_dpapi_oe_domainkeys_descr()
+{
+	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry;
+	for(entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Flink; entry != (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) &gDPAPI_Domainkeys; entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Flink)
+		kuhl_m_dpapi_oe_domainkey_descr(entry);
+}
+
 NTSTATUS kuhl_m_dpapi_oe_clean()
 {
-	
 	kuhl_m_dpapi_oe_credentials_delete();
-	
 	kuhl_m_dpapi_oe_masterkeys_delete();
-	
+	kuhl_m_dpapi_oe_domainkeys_delete();
 	return STATUS_SUCCESS;
 }
 
@@ -283,5 +359,35 @@ NTSTATUS kuhl_m_dpapi_oe_cache(int argc, wchar_t * argv[])
 	kprintf(L"\nMASTERKEYS cache\n================\n");
 	kuhl_m_dpapi_oe_masterkeys_descr();
 
+	kprintf(L"\nDOMAINKEYS cache\n================\n");
+	kuhl_m_dpapi_oe_domainkeys_descr();
+
 	return STATUS_SUCCESS;
+}
+
+BOOL kuhl_m_dpapi_oe_autosid(LPCWSTR filename, LPWSTR * pSid)
+{
+	BOOL status = FALSE;
+	wchar_t *duplicate, *pE;
+	PSID tmpSid;
+	if(filename && (duplicate = _wcsdup(filename)))
+	{
+		if(pE = wcsrchr(duplicate, L'\\'))
+		{
+			*pE = L'\0';
+			if(pE = wcsrchr(duplicate, L'\\'))
+			{
+				if(ConvertStringSidToSid(++pE, &tmpSid))
+				{
+					if(status = ConvertSidToStringSid(tmpSid, pSid))
+					{
+						kprintf(L"Auto SID from path seems to be: %s\n", *pSid);
+					}
+					LocalFree(tmpSid);
+				}
+			}
+		}
+		free(duplicate);
+	}
+	return status;
 }

