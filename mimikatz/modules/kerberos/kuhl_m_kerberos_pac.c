@@ -66,7 +66,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_CHECKSUM_KDC;
 				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szSignatureAligned;
 				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
-
+				
 				status = TRUE;
 			}
 		}
@@ -180,10 +180,8 @@ BOOL kuhl_m_pac_marshall_sid(PISID pSid, PVOID * current, DWORD * size)
 	BOOL status = FALSE;
 	PVOID newbuffer;
 	DWORD sidSize, actualsize;
-
-	sidSize = 1 + 1 + 6 + pSid->SubAuthorityCount * sizeof(DWORD);
+	sidSize = GetLengthSid(pSid);
 	actualsize = sizeof(ULONG32) + sidSize;
-
 	if(newbuffer = LocalAlloc(LPTR, *size + actualsize))
 	{
 		RtlCopyMemory(newbuffer, *current, *size);
@@ -195,6 +193,39 @@ BOOL kuhl_m_pac_marshall_sid(PISID pSid, PVOID * current, DWORD * size)
 		*size += actualsize;
 
 		status = TRUE;
+	}
+	return status;
+}
+
+BOOL kuhl_m_pac_marshall_extrasids(PKERB_VALIDATION_INFO validationInfo, RPCEID base, PVOID * current, DWORD * size)
+{
+	BOOL status = FALSE;
+	PVOID newbuffer;
+	PBYTE ptr;
+	DWORD i, actualsize = sizeof(DWORD) + validationInfo->SidCount * (sizeof(RPCEID) + sizeof(DWORD));
+
+	if(newbuffer = LocalAlloc(LPTR, *size + actualsize))
+	{
+		RtlCopyMemory(newbuffer, *current, *size);
+		ptr = (PBYTE) newbuffer + *size;
+		*(PDWORD) ptr = validationInfo->SidCount;
+		
+		for(
+			i = 0, base += 4, ptr += sizeof(DWORD);
+			i < validationInfo->SidCount;
+			i++, base += 4, ptr += sizeof(RPCEID) + sizeof(DWORD)
+			)
+		{
+			*(RPCEID *) ptr = base;
+			*(PDWORD) (ptr + sizeof(RPCEID)) = validationInfo->ExtraSids[i].Attributes;
+		}
+		LocalFree(*current);
+		*current = newbuffer;
+		*size += actualsize;
+
+		status = TRUE;
+		for(i = 0; (i < validationInfo->SidCount) && status; i++)
+			status = kuhl_m_pac_marshall_sid(validationInfo->ExtraSids[i].Sid, current, size);
 	}
 	return status;
 }
@@ -259,8 +290,17 @@ BOOL kuhl_m_pac_validationInfo_to_LOGON_INFO(PKERB_VALIDATION_INFO validationInf
 
 	rpce.infos.Reserved3 = validationInfo->Reserved3;
 
-	rpce.infos.SidCount = 0; //validationInfo->SidCount;
-	rpce.infos.ExtraSids = 0; // lazy;
+	if(validationInfo->SidCount && validationInfo->ExtraSids)
+	{
+		rpce.infos.SidCount = validationInfo->SidCount;
+		rpce.infos.ExtraSids = PACINFO_ID_KERB_EXTRASIDS;
+		kuhl_m_pac_marshall_extrasids(validationInfo, PACINFO_ID_KERB_EXTRASIDS, &buffer, &szBuffer);
+	}
+	else
+	{
+		rpce.infos.SidCount = 0;
+		rpce.infos.ExtraSids = 0;
+	}
 	rpce.infos.ResourceGroupDomainSid = 0; //lazy
 	rpce.infos.ResourceGroupCount = 0; //validationInfo->ResourceGroupCount;
 	rpce.infos.ResourceGroupIds = 0; // lazy
@@ -377,7 +417,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 	PSID pSid;
 	PVOID base;
 
-	if(kull_m_file_readData(L"C:\\security\\mimikatz\\mimikatz\\out.pac", (PBYTE *) &pacType, &pacLenght))
+	if(kull_m_file_readData(L"C:\\security\\mimikatz\\mimikatz\\bad.pac", (PBYTE *) &pacType, &pacLenght))
 	{
 		kprintf(L"version %u, nbBuffer = %u\n\n", pacType->Version, pacType->cBuffers);
 		
@@ -389,7 +429,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 				pValInfo = (PRPCE_KERB_VALIDATION_INFO) ((PBYTE) pacType + pacType->Buffers[i].Offset);
 				base = (PBYTE) &pValInfo->infos + sizeof(MARSHALL_KERB_VALIDATION_INFO);
 				kprintf(L"[%02u] %08x @ offset %016llx (%u)\n", i, pacType->Buffers[i].ulType, pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize);
-				kull_m_string_wprintf_hex((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, 1);
+				kull_m_string_wprintf_hex((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, 1 | (16 << 16));
 				kprintf(L"\n");
 				kprintf(L"*** Validation Informations *** (%u)\n", pacType->Buffers[i].cbBufferSize);
 				kprintf(L"TypeHeader    : version 0x%02x, endianness 0x%02x, length %hu (%u), filer %08x\n", pValInfo->typeHeader.Version, pValInfo->typeHeader.Endianness, pValInfo->typeHeader.CommonHeaderLength, sizeof(MARSHALL_KERB_VALIDATION_INFO), pValInfo->typeHeader.Filler);
@@ -443,13 +483,13 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 				kprintf(L"ExtraSids              @ %08x\n", pValInfo->infos.ExtraSids);
 				pExtraSids = (PRPCE_KERB_EXTRA_SID) kuhl_m_kerberos_pac_giveElementById(pValInfo->infos.ExtraSids, base);
 				for(j = 0; j < pValInfo->infos.SidCount; j++)
-				{
+				{kull_m_string_wprintf_hex(pExtraSids, 64, 1);
 					pSid = (PSID) kuhl_m_kerberos_pac_giveElementById(pExtraSids[j].ExtraSid, base);
 					kprintf(L"ExtraSid [%u]           @ %08x\n * SID : ", j, pExtraSids[j].ExtraSid); kull_m_string_displaySID(pSid); kprintf(L"\n");
 				}
 				kprintf(L"\n");
 				pSid = (PSID) kuhl_m_kerberos_pac_giveElementById(pValInfo->infos.ResourceGroupDomainSid, base);
-				kprintf(L"ResourceGroupDomainSid @ %08x\n * SID : ", pValInfo->infos.ResourceGroupDomainSid); kull_m_string_displaySID(pSid); kprintf(L"\n");
+				kprintf(L"ResourceGroupDomainSid @ %08x\n * SID : ", pValInfo->infos.ResourceGroupDomainSid); if(pSid) kull_m_string_displaySID(pSid); kprintf(L"\n");
 				kprintf(L"ResourceGroupCount     %u\n", pValInfo->infos.ResourceGroupCount);
 				pGroup = (PGROUP_MEMBERSHIP) kuhl_m_kerberos_pac_giveElementById(pValInfo->infos.ResourceGroupIds, base);
 				kprintf(L"ResourceGroupIds       @ %08x\n * RID : ", pValInfo->infos.ResourceGroupIds);
