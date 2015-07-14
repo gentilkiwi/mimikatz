@@ -243,7 +243,7 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 		uString.Buffer = (PWSTR) getItem8->Authenticator->data.ByteArray.Value;
 		kprintf(L"\t\tPassword        : ");
 		if(kull_m_string_suspectUnicodeString(&uString))
-			kprintf(L"%s", uString.Buffer);
+			kprintf(L"%wZ", &uString);
 		else 
 			kull_m_string_wprintf_hex(uString.Buffer, uString.Length, 1);
 		kprintf(L"\n");
@@ -384,9 +384,11 @@ const PCWCHAR CredTypeToStrings[] = {
 	L"?", L"generic", L"domain_password", L"domain_certificate",
 	L"domain_visible_password", L"generic_certificate", L"domain_extended"
 };
+const PCWCHAR CredPersistToStrings[] = {L"none", L"session", L"local_machine", L"enterprise"};
+
 NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 {
-	DWORD credCount, i;
+	DWORD credCount, i, j;
 	PCREDENTIAL * pCredential = NULL;
 	DWORD flags = 0;
 	UNICODE_STRING creds;
@@ -440,17 +442,25 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 						L"UserName   : %s\n"
 						L"Comment    : %s\n"
 						L"Type       : %u - %s\n"
-						L"Credential : ",				
+						L"Persist    : %u - %s\n"
+						L"Flags      : %08x\n"
+						L"Attributes :\n",
 						pCredential[i]->TargetName ? pCredential[i]->TargetName : L"<NULL>",  pCredential[i]->TargetAlias ? pCredential[i]->TargetAlias : L"<NULL>",
 						pCredential[i]->UserName ? pCredential[i]->UserName : L"<NULL>",
 						pCredential[i]->Comment ? pCredential[i]->Comment : L"<NULL>",
-						pCredential[i]->Type, (pCredential[i]->Type < CRED_TYPE_MAXIMUM) ? CredTypeToStrings[pCredential[i]->Type] : L"? (type > CRED_TYPE_MAXIMUM)"
+						pCredential[i]->Type, (pCredential[i]->Type < CRED_TYPE_MAXIMUM) ? CredTypeToStrings[pCredential[i]->Type] : L"? (type > CRED_TYPE_MAXIMUM)",
+						pCredential[i]->Persist, (pCredential[i]->Persist < ARRAYSIZE(CredPersistToStrings) ) ? CredPersistToStrings[pCredential[i]->Persist] : L"? (Persist > maximum)",
+						pCredential[i]->Flags
 						);
+
+					// TODO deal with Properties
+
 					creds.Buffer = (PWSTR) pCredential[i]->CredentialBlob;
 					creds.Length = creds.MaximumLength = (USHORT) pCredential[i]->CredentialBlobSize;
 
+					kprintf(L"Credential : ");
 					if(kull_m_string_suspectUnicodeString(&creds))
-						kprintf(L"%wZ", &creds);
+						kprintf(L"%s", pCredential[i]->CredentialBlob);
 					else
 						kull_m_string_wprintf_hex(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize, 1);
 					kprintf(L"\n\n");

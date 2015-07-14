@@ -167,6 +167,9 @@
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c">
       <Filter>local modules\dpapi</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_cred.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -352,6 +355,9 @@
     </ClInclude>
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h">
       <Filter>local modules\dpapi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_cred.h">
+      <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

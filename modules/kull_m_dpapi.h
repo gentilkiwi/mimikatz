@@ -9,6 +9,8 @@
 #include "kull_m_crypto_system.h"
 #include "kull_m_string.h"
 
+#define	CRYPTPROTECT_SYSTEM	0x20000000
+
 typedef struct _KULL_M_DWORD_TO_DWORD{
 	PCWSTR	name;
 	DWORD	id;

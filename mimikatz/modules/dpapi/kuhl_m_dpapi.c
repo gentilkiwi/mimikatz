@@ -13,6 +13,8 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	
 	{kuhl_m_dpapi_keys_capi,	L"capi",		L"CAPI key test"},
 	{kuhl_m_dpapi_keys_cng,		L"cng",			L"CNG key test"},
+	{kuhl_m_dpapi_cred,			L"cred",		L"CRED test"},
+	{kuhl_m_dpapi_vault,		L"vault",		L"VAULT test"},
 
 	{kuhl_m_dpapi_oe_cache,		L"cache", NULL},
 };
@@ -434,53 +436,51 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 	if(blob = kull_m_dpapi_blob_create(pDataIn))
 	{
 		entry = kuhl_m_dpapi_oe_masterkey_get(&blob->guidMasterKey);
-	
+		if(entry || (masterkey && masterkeyLen) || isNormalAPI)
+		{
+			if(pText)
+				kprintf(L"%s", pText);
 
-	if(entry || (masterkey && masterkeyLen) || isNormalAPI)
-	{
-		if(pText)
-			kprintf(L"%s", pText);
-		
-		if(entry)
-		{
-			kprintf(L" * volatile cache: ");
-			kuhl_m_dpapi_oe_masterkey_descr(entry);
-		}
-		if(masterkey)
-		{
-			kprintf(L" * masterkey     : ");
-			kull_m_string_wprintf_hex(masterkey, masterkeyLen, 0);
-			kprintf(L"\n");
-		}
-		if(pPrompt)
-		{
-			kprintf(L" > prompt flags  : ");
-			kull_m_dpapi_displayPromptFlags(pPrompt->dwPromptFlags);
-			kprintf(L"\n");
-		}
-		if(entropy)
-		{
-			kprintf(L" > entropy       : ");
-			kull_m_string_wprintf_hex(entropy, entropyLen, 0);
-			kprintf(L"\n");
-		}
-		if(szPassword)
-			kprintf(L" > password      : %s\n", szPassword);
+			if(entry)
+			{
+				kprintf(L" * volatile cache: ");
+				kuhl_m_dpapi_oe_masterkey_descr(entry);
+			}
+			if(masterkey)
+			{
+				kprintf(L" * masterkey     : ");
+				kull_m_string_wprintf_hex(masterkey, masterkeyLen, 0);
+				kprintf(L"\n");
+			}
+			if(pPrompt)
+			{
+				kprintf(L" > prompt flags  : ");
+				kull_m_dpapi_displayPromptFlags(pPrompt->dwPromptFlags);
+				kprintf(L"\n");
+			}
+			if(entropy)
+			{
+				kprintf(L" > entropy       : ");
+				kull_m_string_wprintf_hex(entropy, entropyLen, 0);
+				kprintf(L"\n");
+			}
+			if(szPassword)
+				kprintf(L" > password      : %s\n", szPassword);
 
-		if(entry)
-			status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, NULL, 0, pDataOut, dwDataOutLen, entry->keyHash, sizeof(entry->keyHash), szPassword);
-		
-		if(!status && ((masterkey && masterkeyLen) || isNormalAPI))
-		{
-			status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, pPrompt, pPrompt ? 0 : CRYPTPROTECT_UI_FORBIDDEN, pDataOut, dwDataOutLen, masterkey, masterkeyLen, szPassword);
-			if(status && masterkey && masterkeyLen)
-				kuhl_m_dpapi_oe_masterkey_add(&blob->guidMasterKey, masterkey, masterkeyLen);
-			
-			if(!status && !masterkey)
-				PRINT_ERROR_AUTO(L"CryptUnprotectData");
+			if(entry)
+				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, NULL, 0, pDataOut, dwDataOutLen, entry->keyHash, sizeof(entry->keyHash), szPassword);
+
+			if(!status && ((masterkey && masterkeyLen) || isNormalAPI))
+			{
+				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, pPrompt, CRYPTPROTECT_SYSTEM | (pPrompt ? 0 : CRYPTPROTECT_UI_FORBIDDEN), pDataOut, dwDataOutLen, masterkey, masterkeyLen, szPassword);
+				if(status && masterkey && masterkeyLen)
+					kuhl_m_dpapi_oe_masterkey_add(&blob->guidMasterKey, masterkey, masterkeyLen);
+
+				if(!status && !masterkey)
+					PRINT_ERROR_AUTO(L"CryptUnprotectData");
+			}
+			kprintf(L"\n");
 		}
-		kprintf(L"\n");
-	}
 		kull_m_dpapi_blob_delete(blob);
 	}
 

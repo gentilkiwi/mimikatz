@@ -6,21 +6,7 @@
 #pragma once
 #include "../globals_sekurlsa.h"
 
-typedef struct _KIWI_HARD_KEY {
-	ULONG cbSecret;
-	BYTE data[ANYSIZE_ARRAY]; // etc...
-} KIWI_HARD_KEY, *PKIWI_HARD_KEY;
-
-typedef struct _KIWI_BCRYPT_KEY {
-	ULONG size;
-	ULONG tag;	// 'MSSK'
-	ULONG type;
-	ULONG unk0;
-	ULONG unk1;
-	ULONG unk2;
-	KIWI_HARD_KEY hardkey;
-} KIWI_BCRYPT_KEY, *PKIWI_BCRYPT_KEY;
-
+// generic in KULL_M_CRYPTO.H
 typedef struct _KIWI_BCRYPT_KEY8 {
 	ULONG size;
 	ULONG tag;	// 'MSSK'

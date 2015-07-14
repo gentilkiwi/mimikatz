@@ -36,6 +36,21 @@ typedef struct _PVK_FILE_HDR {
 	DWORD	cbPvk;
 } PVK_FILE_HDR, *PPVK_FILE_HDR;
 
+typedef struct _KIWI_HARD_KEY {
+	ULONG cbSecret;
+	BYTE data[ANYSIZE_ARRAY]; // etc...
+} KIWI_HARD_KEY, *PKIWI_HARD_KEY;
+
+typedef struct _KIWI_BCRYPT_KEY {
+	ULONG size;
+	ULONG tag;	// 'MSSK'
+	ULONG type;
+	ULONG unk0;
+	ULONG unk1;
+	ULONG bits;
+	KIWI_HARD_KEY hardkey;
+} KIWI_BCRYPT_KEY, *PKIWI_BCRYPT_KEY;
+
 BOOL kull_m_crypto_hash(ALG_ID algid, LPCVOID data, DWORD dataLen, LPVOID hash, DWORD hashWanted);
 BOOL kull_m_crypto_hkey(HCRYPTPROV hProv, DWORD calgid, LPCVOID key, DWORD keyLen, DWORD flags, HCRYPTKEY *hKey, HCRYPTPROV *hSessionProv);
 BOOL kull_m_crypto_hmac(DWORD calgid, LPCVOID key, DWORD keyLen, LPCVOID message, DWORD messageLen, LPVOID hash, DWORD hashWanted);
