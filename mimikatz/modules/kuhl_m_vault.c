@@ -388,7 +388,7 @@ const PCWCHAR CredPersistToStrings[] = {L"none", L"session", L"local_machine", L
 
 NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 {
-	DWORD credCount, i, j;
+	DWORD credCount, i;
 	PCREDENTIAL * pCredential = NULL;
 	DWORD flags = 0;
 	UNICODE_STRING creds;
