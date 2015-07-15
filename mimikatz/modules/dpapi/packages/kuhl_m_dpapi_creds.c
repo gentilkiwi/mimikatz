@@ -77,7 +77,7 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 											if(attribute = vaultCredential->attributes[i])
 											{
 												kprintf(L"  > Attribute %u : ", attribute->id);
-												if(attribute->id < 100)
+												if(attribute->id && (attribute->id < 100))
 												{
 													if(len = (attribute->attributeElement.simpleAttribute.size >= 1) ? (attribute->attributeElement.simpleAttribute.size - 1) :  0)
 													{
@@ -91,6 +91,7 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 																{
 																	kull_m_string_wprintf_hex(buffer, len, 0);
 																}
+																else PRINT_ERROR_AUTO(L"CryptDecrypt");
 																CryptDestroyKey(hKey);
 																LocalFree(buffer);
 															}
@@ -110,7 +111,7 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 																if(CryptDecrypt(hKey, 0, TRUE, 0, (PBYTE) buffer, &len))
 																{
 																	kprintf(L"\n");
-																	if(attribute->id == 100)
+																	if(!attribute->id || (attribute->id == 100))
 																	{
 																		if(clear = kull_m_cred_vault_clear_create(buffer))
 																		{
@@ -121,6 +122,7 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 																	else kull_m_string_wprintf_hex(buffer, len, 1 | (16 << 16));
 																	kprintf(L"\n");
 																}
+																else PRINT_ERROR_AUTO(L"CryptDecrypt");
 																CryptDestroyKey(hKey);
 																LocalFree(buffer);
 															}

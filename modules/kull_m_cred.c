@@ -329,7 +329,7 @@ PKULL_M_CRED_VAULT_CREDENTIAL kull_m_cred_vault_credential_create(PVOID data/*, 
 		kull_m_string_ptr_replace(&credential->attributesMap, credential->dwAttributesMapSize);
 
 		credential->__cbElements = credential->dwAttributesMapSize / sizeof(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_MAP);
-		if(credential->attributes = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE * ) LocalAlloc(LPTR, credential->__cbElements * sizeof(PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE)))
+		if(credential->attributes = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE * ) LocalAlloc(LPTR, (credential->__cbElements + ((credential->unk0 < 4) ? 1 : 0)) * sizeof(PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE)))
 		{
 			for(i = 0; i < credential->__cbElements; i++)
 			{
@@ -349,6 +349,17 @@ PKULL_M_CRED_VAULT_CREDENTIAL kull_m_cred_vault_credential_create(PVOID data/*, 
 						credential->attributes[i]->attributeElement.complexAttribute.attributeData = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA) &attribute->attributeElement.complexAttribute.attributeData;
 						kull_m_string_ptr_replace(&credential->attributes[i]->attributeElement.complexAttribute.attributeData, credential->attributes[i]->attributeElement.complexAttribute.size);
 					}
+				}
+			}
+
+			if(attribute && credential->unk0 < 4)
+			{
+				if(credential->attributes[i] = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE) LocalAlloc(LPTR, sizeof(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE)))
+				{
+					RtlCopyMemory(&credential->attributes[i]->attributeElement.complexAttribute.size, (PBYTE) attribute + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, attributeElement) + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE, attributeData) + attribute->attributeElement.simpleAttribute.size + sizeof(USHORT), FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, attributeData) - FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, size));
+					credential->attributes[i]->attributeElement.complexAttribute.attributeData = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA) ((PBYTE) attribute + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, attributeElement) + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE, attributeData) + attribute->attributeElement.simpleAttribute.size + sizeof(USHORT) + (FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, attributeData)  - FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, size)));
+					kull_m_string_ptr_replace(&credential->attributes[i]->attributeElement.complexAttribute.attributeData, credential->attributes[i]->attributeElement.complexAttribute.size);
+					credential->__cbElements++;
 				}
 			}
 		}
@@ -372,7 +383,7 @@ void kull_m_cred_vault_credential_delete(PKULL_M_CRED_VAULT_CREDENTIAL credentia
 			{
 				if(credential->attributes[i])
 				{
-					if(credential->attributes[i]->id < 100)
+					if(credential->attributes[i]->id && (credential->attributes[i]->id < 100))
 					{
 						if(credential->attributes[i]->attributeElement.simpleAttribute.attributeData)
 							LocalFree(credential->attributes[i]->attributeElement.simpleAttribute.attributeData);
@@ -419,7 +430,7 @@ void kull_m_cred_vault_credential_attribute_descr(DWORD level, PKULL_M_CRED_VAUL
 	{
 		kprintf(L"%*s" L"  id      : %08x - %u\n", level << 1, L"", attribute->id, attribute->id);
 		kprintf(L"%*s" L"  unk0/1/2: %08x/%08x/%08x\n", level << 1, L"", attribute->unk0, attribute->unk1, attribute->unk2);
-		if(attribute->id < 100)
+		if(attribute->id && (attribute->id < 100))
 		{
 			if((attribute->attributeElement.simpleAttribute.size >= 1) && attribute->attributeElement.simpleAttribute.attributeData)
 			{
