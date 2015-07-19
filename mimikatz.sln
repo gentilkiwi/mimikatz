@@ -41,6 +41,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilib", "mimilib\mimilib.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimidrv", "mimidrv\mimidrv.vcxproj", "{86FF6D04-208C-442F-B27C-E4255DD39402}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilove", "mimilove\mimilove.vcxproj", "{60D02E32-1711-4D9E-9AC2-10627C52EB40}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -73,6 +75,11 @@ Global
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.Build.0 = Release|x64
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|Win32.ActiveCfg = Release|Win32
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|Win32.Build.0 = Release|Win32
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|x64.ActiveCfg = Release|x64
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -374,6 +374,7 @@ BOOL kull_m_process_peb(PKULL_M_MEMORY_HANDLE memory, PPEB pPeb, BOOL isWOW)
 
 	switch(memory->type)
 	{
+#ifndef MIMIKATZ_W2000_SUPPORT
 	case KULL_M_MEMORY_TYPE_OWN:
 		if(!isWOW)
 		{
@@ -381,6 +382,7 @@ BOOL kull_m_process_peb(PKULL_M_MEMORY_HANDLE memory, PPEB pPeb, BOOL isWOW)
 			status = TRUE;
 			break;
 		}
+#endif
 	case KULL_M_MEMORY_TYPE_PROCESS:
 		if(NT_SUCCESS(NtQueryInformationProcess(hProcess, info, buffer, szBuffer, &szInfos)) && (szInfos == szBuffer) && processInformations.PebBaseAddress)
 		{

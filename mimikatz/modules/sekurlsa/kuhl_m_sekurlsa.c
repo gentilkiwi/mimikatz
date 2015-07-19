@@ -320,14 +320,18 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 							kull_m_string_getUnicodeString(sessionData.UserName, cLsass.hLsassMem);
 							kull_m_string_getUnicodeString(sessionData.LogonDomain, cLsass.hLsassMem);
 							kull_m_string_getUnicodeString(sessionData.LogonServer, cLsass.hLsassMem);
-							kuhl_m_sekurlsa_utils_getSid(&sessionData.pSid, cLsass.hLsassMem);
+							kull_m_string_getSid(&sessionData.pSid, cLsass.hLsassMem);
 
 							retCallback = callback(&sessionData, pOptionalData);
 
-							LocalFree(sessionData.UserName->Buffer);
-							LocalFree(sessionData.LogonDomain->Buffer);
-							LocalFree(sessionData.LogonServer->Buffer);
-							LocalFree(sessionData.pSid);
+							if(sessionData.UserName->Buffer)
+								LocalFree(sessionData.UserName->Buffer);
+							if(sessionData.LogonDomain->Buffer)
+								LocalFree(sessionData.LogonDomain->Buffer);
+							if(sessionData.LogonServer->Buffer)
+								LocalFree(sessionData.LogonServer->Buffer);
+							if(sessionData.pSid)
+								LocalFree(sessionData.pSid);
 
 							data.address = ((PLIST_ENTRY) (aBuffer.address))->Flink;
 						}
@@ -692,7 +696,7 @@ void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 		if(kull_m_string_getUnicodeString(&info->NetBiosName, cLsass.hLsassMem))
 		{
 			kprintf(L"\nDomain: %wZ (%wZ", &info->FullDomainName, &info->NetBiosName);
-			if(kuhl_m_sekurlsa_utils_getSid(&info->DomainSid, cLsass.hLsassMem))
+			if(kull_m_string_getSid(&info->DomainSid, cLsass.hLsassMem))
 			{
 				kprintf(L" / "); kull_m_string_displaySID(info->DomainSid);
 				LocalFree(info->DomainSid);
@@ -916,8 +920,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 				{
 				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY:
 					pPrimaryCreds = (PMSV1_0_PRIMARY_CREDENTIAL) credentials->Buffer;
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
+					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
+					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
 
 					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
 					if(pPrimaryCreds->isLmOwfPassword)
@@ -940,8 +944,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10:
 					pPrimaryCreds10 = (PMSV1_0_PRIMARY_CREDENTIAL_10) credentials->Buffer;
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->UserName, FALSE);
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->LogonDomainName, FALSE);
+					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->UserName, FALSE);
+					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->LogonDomainName, FALSE);
 
 					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds10->UserName, &pPrimaryCreds10->LogonDomainName);
 					kprintf(L"\n\t * Flags    : I%02x/N%02x/L%02x/S%02x", pPrimaryCreds10->isIso, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword);

@@ -176,33 +176,3 @@ PVOID kuhl_m_sekurlsa_utils_pFromAVLByLuidRec(PKULL_M_MEMORY_ADDRESS pTable, ULO
 	}
 	return resultat;
 }
-
-void kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(PVOID BaseAddress, PLSA_UNICODE_STRING String, BOOL relative)
-{
-	if(String->Buffer)
-		String->Buffer = (PWSTR) ((ULONG_PTR)(String->Buffer) + ((relative ? -1 : 1) * (ULONG_PTR)(BaseAddress)));
-}
-
-BOOL kuhl_m_sekurlsa_utils_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source)
-{
-	BOOL status = FALSE;
-	BYTE nbAuth;
-	DWORD sizeSid;
-	KULL_M_MEMORY_HANDLE hOwn = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aDestin = {&nbAuth, &hOwn};
-	KULL_M_MEMORY_ADDRESS aSource = {(PBYTE) *pSid + 1, source};
-
-	*pSid = NULL;
-	if(kull_m_memory_copy(&aDestin, &aSource, sizeof(BYTE)))
-	{
-		aSource.address = (PBYTE) aSource.address - 1;
-		sizeSid =  4 * nbAuth + 6 + 1 + 1;
-
-		if(aDestin.address = LocalAlloc(LPTR, sizeSid))
-		{
-			*pSid = (PSID) aDestin.address;
-			status = kull_m_memory_copy(&aDestin, &aSource, sizeSid);
-		}
-	}
-	return status;
-}

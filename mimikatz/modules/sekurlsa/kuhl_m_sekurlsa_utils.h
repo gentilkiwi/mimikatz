@@ -18,9 +18,6 @@ PVOID kuhl_m_sekurlsa_utils_pFromAVLByLuidRec(PKULL_M_MEMORY_ADDRESS pTable, ULO
 BOOL kuhl_m_sekurlsa_utils_search(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib);
 BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, PVOID * genericPtr, PVOID * genericPtr1, PVOID * genericPtr2, PLONG genericOffset1);
 
-void kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(PVOID BaseAddress, PLSA_UNICODE_STRING String, BOOL relative);
-BOOL kuhl_m_sekurlsa_utils_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source);
-
 typedef struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS {
 	struct _KIWI_MSV1_0_PRIMARY_CREDENTIALS *next;
 	ANSI_STRING Primary;
