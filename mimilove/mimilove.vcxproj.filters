@@ -46,9 +46,6 @@
     <Filter Include="common modules">
       <UniqueIdentifier>{7cb872e7-a52b-4394-a979-fd7a0a89d729}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sekurlsa">
-      <UniqueIdentifier>{22523588-1016-45eb-b8d6-cc8f2763c695}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="mimilove.rc" />
