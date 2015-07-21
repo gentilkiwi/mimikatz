@@ -317,6 +317,7 @@ PKULL_M_CRED_VAULT_CREDENTIAL kull_m_cred_vault_credential_create(PVOID data/*, 
 {
 	PKULL_M_CRED_VAULT_CREDENTIAL credential = NULL;
 	PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribute;
+	PBYTE ptr;
 	DWORD i;
 	if(credential = (PKULL_M_CRED_VAULT_CREDENTIAL) LocalAlloc(LPTR, sizeof(KULL_M_CRED_VAULT_CREDENTIAL)))
 	{
@@ -336,35 +337,52 @@ PKULL_M_CRED_VAULT_CREDENTIAL kull_m_cred_vault_credential_create(PVOID data/*, 
 				if(credential->attributes[i] = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE) LocalAlloc(LPTR, sizeof(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE)))
 				{
 					attribute = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE) ((PBYTE) data + credential->attributesMap[i].offset);
-					RtlCopyMemory(credential->attributes[i], attribute, FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, attributeElement));
-					if(attribute->id < 100)
-					{
-						RtlCopyMemory(&credential->attributes[i]->attributeElement.simpleAttribute, &attribute->attributeElement.simpleAttribute, FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE, attributeData));
-						credential->attributes[i]->attributeElement.simpleAttribute.attributeData = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA) &attribute->attributeElement.simpleAttribute.attributeData;
-						kull_m_string_ptr_replace(&credential->attributes[i]->attributeElement.simpleAttribute.attributeData, credential->attributes[i]->attributeElement.simpleAttribute.size);
-					}
-					else
-					{
-						RtlCopyMemory(&credential->attributes[i]->attributeElement.complexAttribute, &attribute->attributeElement.complexAttribute, FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, attributeData));
-						credential->attributes[i]->attributeElement.complexAttribute.attributeData = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA) &attribute->attributeElement.complexAttribute.attributeData;
-						kull_m_string_ptr_replace(&credential->attributes[i]->attributeElement.complexAttribute.attributeData, credential->attributes[i]->attributeElement.complexAttribute.size);
-					}
+
+					RtlCopyMemory(credential->attributes[i], attribute, FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, szData));
+					ptr = (PBYTE) attribute;
+					if(attribute->id >= 100)
+						ptr += sizeof(DWORD); // boo!
+					ptr += FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, szData);
+					kull_m_cred_vault_credential_create_attribute_from_data(ptr, credential->attributes[i]);
 				}
 			}
-
 			if(attribute && credential->unk0 < 4)
 			{
 				if(credential->attributes[i] = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE) LocalAlloc(LPTR, sizeof(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE)))
 				{
-					RtlCopyMemory(&credential->attributes[i]->attributeElement.complexAttribute.size, (PBYTE) attribute + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, attributeElement) + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE, attributeData) + attribute->attributeElement.simpleAttribute.size + sizeof(USHORT), FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, attributeData) - FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, size));
-					credential->attributes[i]->attributeElement.complexAttribute.attributeData = (PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA) ((PBYTE) attribute + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, attributeElement) + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE, attributeData) + attribute->attributeElement.simpleAttribute.size + sizeof(USHORT) + (FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, attributeData)  - FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, size)));
-					kull_m_string_ptr_replace(&credential->attributes[i]->attributeElement.complexAttribute.attributeData, credential->attributes[i]->attributeElement.complexAttribute.size);
+					kull_m_cred_vault_credential_create_attribute_from_data((PBYTE) attribute + FIELD_OFFSET(KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, data) + attribute->szData + sizeof(USHORT), credential->attributes[i]);
 					credential->__cbElements++;
 				}
 			}
 		}
 	}
 	return credential;
+}
+
+void kull_m_cred_vault_credential_create_attribute_from_data(PBYTE ptr, PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribute)
+{
+	BOOLEAN isIV;
+	if(attribute->szData = *(PDWORD) ptr)
+	{
+		attribute->szData--;
+		ptr += sizeof(DWORD);
+		isIV = *(PBOOLEAN) ptr;
+		ptr += sizeof(BOOLEAN);
+		if(isIV)
+		{
+			attribute->szData -= sizeof(DWORD);;
+			if(attribute->szIV = *(PDWORD) ptr)
+			{
+				attribute->szData -= attribute->szIV;
+				ptr += sizeof(DWORD);
+				attribute->IV = ptr;
+				ptr += attribute->szIV;
+				kull_m_string_ptr_replace(&attribute->IV, attribute->szIV);
+			}
+		}
+		attribute->data = ptr;
+		kull_m_string_ptr_replace(&attribute->data, attribute->szData);
+	}
 }
 
 void kull_m_cred_vault_credential_delete(PKULL_M_CRED_VAULT_CREDENTIAL credential)
@@ -383,16 +401,10 @@ void kull_m_cred_vault_credential_delete(PKULL_M_CRED_VAULT_CREDENTIAL credentia
 			{
 				if(credential->attributes[i])
 				{
-					if(credential->attributes[i]->id && (credential->attributes[i]->id < 100))
-					{
-						if(credential->attributes[i]->attributeElement.simpleAttribute.attributeData)
-							LocalFree(credential->attributes[i]->attributeElement.simpleAttribute.attributeData);
-					}
-					else
-					{
-						if(credential->attributes[i]->attributeElement.complexAttribute.attributeData)
-							LocalFree(credential->attributes[i]->attributeElement.complexAttribute.attributeData);
-					}
+					if(credential->attributes[i]->data)
+							LocalFree(credential->attributes[i]->data);
+					if(credential->attributes[i]->IV)
+							LocalFree(credential->attributes[i]->IV);
 					LocalFree(credential->attributes[i]);
 				}
 			}
@@ -430,23 +442,17 @@ void kull_m_cred_vault_credential_attribute_descr(DWORD level, PKULL_M_CRED_VAUL
 	{
 		kprintf(L"%*s" L"  id      : %08x - %u\n", level << 1, L"", attribute->id, attribute->id);
 		kprintf(L"%*s" L"  unk0/1/2: %08x/%08x/%08x\n", level << 1, L"", attribute->unk0, attribute->unk1, attribute->unk2);
-		if(attribute->id && (attribute->id < 100))
+		if(attribute->szIV && attribute->IV)
 		{
-			if((attribute->attributeElement.simpleAttribute.size >= 1) && attribute->attributeElement.simpleAttribute.attributeData)
-			{
-				kprintf(L"%*s" L"  Simple data (%02x): ", level << 1, L"", attribute->attributeElement.simpleAttribute.attributeData->unkByte);
-				kull_m_string_wprintf_hex(attribute->attributeElement.simpleAttribute.attributeData->data, attribute->attributeElement.simpleAttribute.size - 1, 0);
-				kprintf(L"\n");
-			}
+			kprintf(L"%*s" L"  IV      : ", level << 1, L"");
+			kull_m_string_wprintf_hex(attribute->IV, attribute->szIV, 0);
+			kprintf(L"\n");
 		}
-		else
+		if(attribute->szData && attribute->data)
 		{
-			if((attribute->attributeElement.complexAttribute.size >= (4 + 1)) && attribute->attributeElement.complexAttribute.attributeData)
-			{
-				kprintf(L"%*s" L"  Complex data : (%08x - %08x - %02x) - ", level << 1, L"", attribute->attributeElement.complexAttribute.unk0, attribute->attributeElement.complexAttribute.unk1, attribute->attributeElement.complexAttribute.attributeData->unkByte);
-				kull_m_string_wprintf_hex(attribute->attributeElement.complexAttribute.attributeData->data, attribute->attributeElement.complexAttribute.size - (4 + 1), 0);
-				kprintf(L"\n");
-			}
+			kprintf(L"%*s" L"  Data    : ", level << 1, L"");
+			kull_m_string_wprintf_hex(attribute->data, attribute->szData, 0);
+			kprintf(L"\n");
 		}
 	}
 }
@@ -497,10 +503,9 @@ void kull_m_cred_vault_clear_descr(DWORD level, PKULL_M_CRED_VAULT_CLEAR clear)
 	kprintf(L"%*s" L"**VAULT CREDENTIAL CLEAR ATTRIBUTES**\n", level << 1, L"");
 	if(clear)
 	{
-		kprintf(L"%*s" L"  unkArray : ", level << 1, L""); kull_m_string_wprintf_hex(clear->unkArray, sizeof(clear->unkArray), 0); kprintf(L"\n");
-		kprintf(L"%*s" L"  version  : %08x - %u\n", level << 1, L"", clear->version, clear->version);
-		kprintf(L"%*s" L"  count    : %08x - %u\n", level << 1, L"", clear->count, clear->count);
-		kprintf(L"%*s" L"  unk      : %08x - %u\n", level << 1, L"", clear->unk, clear->unk);
+		kprintf(L"%*s" L"  version: %08x - %u\n", level << 1, L"", clear->version, clear->version);
+		kprintf(L"%*s" L"  count  : %08x - %u\n", level << 1, L"", clear->count, clear->count);
+		kprintf(L"%*s" L"  unk    : %08x - %u\n", level << 1, L"", clear->unk, clear->unk);
 
 		if(clear->entries)
 		{

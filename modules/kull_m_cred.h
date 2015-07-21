@@ -9,32 +9,16 @@
 #include "kull_m_string.h"
 
 #pragma pack(push, 1)
-typedef struct _KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA {
-	BYTE unkByte;
-	BYTE data[ANYSIZE_ARRAY];
-} KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA, *PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA;
-
-typedef struct _KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE {
-	DWORD size; // inc bullshit
-	PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA attributeData;
-} KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE, *PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE;
-
-typedef struct _KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX {
-	DWORD unk0;
-	DWORD size; // inc bullshit
-	DWORD unk1; // maybe flags;
-	PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_DATA attributeData;
-} KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX, *PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX;
-
 typedef struct _KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE {
 	DWORD id;
 	DWORD unk0; // maybe flags
 	DWORD unk1; // maybe type
 	DWORD unk2; // 0a 00 00 00
-	union {
-		KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_SIMPLE simpleAttribute; // if id < 100
-		KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE_COMPLEX complexAttribute;
-	} attributeElement;
+	//DWORD unkComplex; // only in complex (and 0, avoid it ?)
+	DWORD szData; // when parsing, inc bullshit... clean in structure
+	PBYTE data;
+	DWORD szIV;
+	PBYTE IV;
 } KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE, *PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE;
 #pragma pack(pop)
 
@@ -137,7 +121,6 @@ typedef struct _KULL_M_CRED_VAULT_CLEAR_ENTRY {
 } KULL_M_CRED_VAULT_CLEAR_ENTRY, *PKULL_M_CRED_VAULT_CLEAR_ENTRY;
 
 typedef struct _KULL_M_CRED_VAULT_CLEAR {
-	BYTE unkArray[16];
 	DWORD version;
 	DWORD count;
 	DWORD unk;
@@ -166,6 +149,7 @@ void kull_m_cred_vault_policy_key_delete(PKULL_M_CRED_VAULT_POLICY_KEY key);
 void kull_m_cred_vault_policy_key_descr(DWORD level, PKULL_M_CRED_VAULT_POLICY_KEY key);
 
 PKULL_M_CRED_VAULT_CREDENTIAL kull_m_cred_vault_credential_create(PVOID data/*, DWORD size*/);
+void kull_m_cred_vault_credential_create_attribute_from_data(PBYTE ptr, PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribute);
 void kull_m_cred_vault_credential_delete(PKULL_M_CRED_VAULT_CREDENTIAL credential);
 void kull_m_cred_vault_credential_descr(DWORD level, PKULL_M_CRED_VAULT_CREDENTIAL credential);
 void kull_m_cred_vault_credential_attribute_descr(DWORD level, PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribute);
