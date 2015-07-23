@@ -106,7 +106,7 @@ BOOL kull_m_memory_copy(OUT PKULL_M_MEMORY_ADDRESS Destination, IN PKULL_M_MEMOR
 			status = kull_m_minidump_copy(Source->hMemory->pHandleProcessDmp->hMinidump, Destination->address, Source->address, Length);
 			break;
 		case KULL_M_MEMORY_TYPE_FILE:
-			if(SetFilePointer(Source->hMemory->pHandleFile->hFile, (LONG) Source->address, NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER)
+			if(SetFilePointer(Source->hMemory->pHandleFile->hFile, PtrToLong(Source->address), NULL, FILE_BEGIN) != INVALID_SET_FILE_POINTER)
 				status = ReadFile(Source->hMemory->pHandleFile->hFile, Destination->address, (DWORD) Length, &nbReadWrite, NULL);
 			break;
 		case KULL_M_MEMORY_TYPE_KERNEL:
@@ -131,7 +131,7 @@ BOOL kull_m_memory_copy(OUT PKULL_M_MEMORY_ADDRESS Destination, IN PKULL_M_MEMOR
 		switch(Source->hMemory->type)
 		{
 		case KULL_M_MEMORY_TYPE_OWN:
-			if(!Destination->address || SetFilePointer(Destination->hMemory->pHandleFile->hFile, (LONG) Destination->address, NULL, FILE_BEGIN))
+			if(!Destination->address || SetFilePointer(Destination->hMemory->pHandleFile->hFile, PtrToLong(Destination->address), NULL, FILE_BEGIN))
 				status = WriteFile(Destination->hMemory->pHandleFile->hFile, Source->address, (DWORD) Length, &nbReadWrite, NULL);
 			break;
 		default:

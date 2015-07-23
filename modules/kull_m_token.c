@@ -65,11 +65,11 @@ BOOL CALLBACK kull_m_token_getTokens_process_callback(PSYSTEM_PROCESS_INFORMATIO
 	BOOL status = TRUE;
 	HANDLE hProcess, hToken;
 	
-	if(hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (ULONG) pSystemProcessInformation->UniqueProcessId))
+	if(hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, PtrToUlong(pSystemProcessInformation->UniqueProcessId)))
 	{
 		if(OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_DUPLICATE, &hToken))
 		{
-			status = ((PKULL_M_TOKEN_ENUM_DATA) pvArg)->callback(hToken, (ULONG) pSystemProcessInformation->UniqueProcessId, ((PKULL_M_TOKEN_ENUM_DATA) pvArg)->pvArg);
+			status = ((PKULL_M_TOKEN_ENUM_DATA) pvArg)->callback(hToken, PtrToUlong(pSystemProcessInformation->UniqueProcessId), ((PKULL_M_TOKEN_ENUM_DATA) pvArg)->pvArg);
 			CloseHandle(hToken);
 		}
 		CloseHandle(hProcess);

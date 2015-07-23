@@ -1537,7 +1537,7 @@ typedef enum {
     hdSym,      // where symbols are stored
     hdSrc,      // where source is stored
     hdMax       // end marker
-};
+} DBG_HD_ENUM;
 
 typedef struct _OMAP {
     ULONG  rva;
@@ -3053,7 +3053,7 @@ typedef enum {
     sfPdb,
     sfMpd,
     sfMax
-};
+} DBG_SF_ENUM;
 
 BOOL
 IMAGEAPI

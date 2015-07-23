@@ -214,7 +214,7 @@ BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION p
 {
 	HANDLE hProcess;
 	PKULL_M_MEMORY_HANDLE hMemoryProcess;
-	DWORD pid = (DWORD) pSystemProcessInformation->UniqueProcessId;
+	DWORD pid = PtrToUlong(pSystemProcessInformation->UniqueProcessId);
 
 	if(pid > 4)
 	{

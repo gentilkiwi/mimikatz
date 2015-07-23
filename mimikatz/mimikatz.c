@@ -53,7 +53,7 @@ int wmain(int argc, wchar_t * argv[])
 	while (status != STATUS_FATAL_APP_EXIT)
 	{
 		kprintf(L"\n" MIMIKATZ L" # "); fflush(stdin);
-		if(wscanf_s(L"%[^\n]s", input, ARRAYSIZE(input)) == 1)
+		if(fgetws(input, ARRAYSIZE(input), stdin) && (input[0] != L'\n'))
 		{
 			kprintf_inputline(L"%s\n", input);
 			status = mimikatz_dispatchCommand(input);

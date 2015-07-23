@@ -44,7 +44,7 @@ NTSTATUS kull_m_process_getProcessInformation(PKULL_M_PROCESS_ENUM_CALLBACK call
 BOOL CALLBACK kull_m_process_callback_pidForName(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
 {
 	if(((PKULL_M_PROCESS_PID_FOR_NAME) pvArg)->isFound = RtlEqualUnicodeString(&pSystemProcessInformation->ImageName, ((PKULL_M_PROCESS_PID_FOR_NAME) pvArg)->name, TRUE))
-		*((PKULL_M_PROCESS_PID_FOR_NAME) pvArg)->processId = (DWORD) pSystemProcessInformation->UniqueProcessId;
+		*((PKULL_M_PROCESS_PID_FOR_NAME) pvArg)->processId = PtrToUlong(pSystemProcessInformation->UniqueProcessId);
 	return !((PKULL_M_PROCESS_PID_FOR_NAME) pvArg)->isFound;
 }
 
@@ -105,17 +105,17 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 		if(continueCallback && NT_SUCCESS(status) && kull_m_process_peb(memory, (PPEB) &Peb32, TRUE))
 		{
 			status = STATUS_PARTIAL_COPY;
-
-			for(pLdrEntry32  = (PLDR_DATA_TABLE_ENTRY_F32) ((PBYTE) (((PEB_LDR_DATA_F32 *) Peb32.Ldr)->InMemoryOrderModulevector.Flink) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks));
-				(pLdrEntry32 != (PLDR_DATA_TABLE_ENTRY_F32) ((PBYTE) (Peb32.Ldr) + FIELD_OFFSET(PEB_LDR_DATA, InLoadOrderModulevector))) && continueCallback;
-				pLdrEntry32  = (PLDR_DATA_TABLE_ENTRY_F32) ((PBYTE) (pLdrEntry32->InMemoryOrderLinks.Flink ) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks))
+			
+			for(pLdrEntry32  = (PLDR_DATA_TABLE_ENTRY_F32) ((PBYTE) ULongToPtr(((PEB_LDR_DATA_F32 *) ULongToPtr(Peb32.Ldr))->InMemoryOrderModulevector.Flink) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks));
+				(pLdrEntry32 != (PLDR_DATA_TABLE_ENTRY_F32) ((PBYTE) ULongToPtr(Peb32.Ldr) + FIELD_OFFSET(PEB_LDR_DATA, InLoadOrderModulevector))) && continueCallback;
+				pLdrEntry32  = (PLDR_DATA_TABLE_ENTRY_F32) ((PBYTE) ULongToPtr(pLdrEntry32->InMemoryOrderLinks.Flink) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks))
 				)
 			{
-				moduleInformation.DllBase.address = (PVOID) pLdrEntry32->DllBase;
+				moduleInformation.DllBase.address = ULongToPtr(pLdrEntry32->DllBase);
 				moduleInformation.SizeOfImage = pLdrEntry32->SizeOfImage;
 				moduleName.Length = pLdrEntry32->BaseDllName.Length;
 				moduleName.MaximumLength = pLdrEntry32->BaseDllName.MaximumLength;
-				moduleName.Buffer = (PWSTR) pLdrEntry32->BaseDllName.Buffer;
+				moduleName.Buffer = (PWSTR) ULongToPtr(pLdrEntry32->BaseDllName.Buffer);
 				kull_m_process_adjustTimeDateStamp(&moduleInformation);
 				continueCallback = callBack(&moduleInformation, pvArg);
 			}
@@ -163,27 +163,27 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 		if(continueCallback && NT_SUCCESS(status) && kull_m_process_peb(memory, (PPEB) &Peb32, TRUE))
 		{
 			status = STATUS_PARTIAL_COPY;
-			aBuffer.address = &LdrData32; aProcess.address = (PVOID) Peb32.Ldr;
+			aBuffer.address = &LdrData32; aProcess.address = ULongToPtr(Peb32.Ldr);
 			if(kull_m_memory_copy(&aBuffer, &aProcess, sizeof(LdrData32)))
 			{
 				for(
-					aLire  = (PBYTE) (LdrData32.InMemoryOrderModulevector.Flink) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks),
-					fin    = (PBYTE) (Peb32.Ldr) + FIELD_OFFSET(PEB_LDR_DATA_F32, InLoadOrderModulevector);
+					aLire  = (PBYTE) ULongToPtr(LdrData32.InMemoryOrderModulevector.Flink) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks),
+					fin    = (PBYTE) ULongToPtr(Peb32.Ldr) + FIELD_OFFSET(PEB_LDR_DATA_F32, InLoadOrderModulevector);
 					(aLire != fin) && continueCallback;
-					aLire  = (PBYTE) LdrEntry32.InMemoryOrderLinks.Flink - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks)
+					aLire  = (PBYTE) ULongToPtr(LdrEntry32.InMemoryOrderLinks.Flink) - FIELD_OFFSET(LDR_DATA_TABLE_ENTRY_F32, InMemoryOrderLinks)
 					)
 				{
 					aBuffer.address = &LdrEntry32; aProcess.address = aLire;
 					if(kull_m_memory_copy(&aBuffer, &aProcess, sizeof(LdrEntry32)))
 					{
-						moduleInformation.DllBase.address = (PVOID) LdrEntry32.DllBase;
+						moduleInformation.DllBase.address = ULongToPtr(LdrEntry32.DllBase);
 						moduleInformation.SizeOfImage = LdrEntry32.SizeOfImage;
 						
 						moduleName.Length = LdrEntry32.BaseDllName.Length;
 						moduleName.MaximumLength = LdrEntry32.BaseDllName.MaximumLength;
 						if(moduleName.Buffer = (PWSTR) LocalAlloc(LPTR, moduleName.MaximumLength))
 						{
-							aBuffer.address = moduleName.Buffer; aProcess.address = (PVOID) LdrEntry32.BaseDllName.Buffer;
+							aBuffer.address = moduleName.Buffer; aProcess.address = ULongToPtr(LdrEntry32.BaseDllName.Buffer);
 							if(kull_m_memory_copy(&aBuffer, &aProcess, moduleName.MaximumLength))
 							{
 								kull_m_process_adjustTimeDateStamp(&moduleInformation);
