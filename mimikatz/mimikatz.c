@@ -29,6 +29,7 @@ const KUHL_M * mimikatz_modules[] = {
 int wmain(int argc, wchar_t * argv[])
 {
 	int i, status = STATUS_SUCCESS;
+	size_t len;
 #ifndef _WINDLL
 	wchar_t input[0xffff];
 	kull_m_output_init();
@@ -53,8 +54,10 @@ int wmain(int argc, wchar_t * argv[])
 	while (status != STATUS_FATAL_APP_EXIT)
 	{
 		kprintf(L"\n" MIMIKATZ L" # "); fflush(stdin);
-		if(fgetws(input, ARRAYSIZE(input), stdin) && (input[0] != L'\n'))
+		if(fgetws(input, ARRAYSIZE(input), stdin) && (len = wcslen(input)) && (input[0] != L'\n'))
 		{
+			if(input[len - 1] == L'\n')
+				input[len - 1] = L'\0';
 			kprintf_inputline(L"%s\n", input);
 			status = mimikatz_dispatchCommand(input);
 		}
