@@ -472,7 +472,7 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 
 			if(!status && ((masterkey && masterkeyLen) || isNormalAPI))
 			{
-				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, pPrompt, CRYPTPROTECT_SYSTEM | (pPrompt ? 0 : CRYPTPROTECT_UI_FORBIDDEN), pDataOut, dwDataOutLen, masterkey, masterkeyLen, szPassword);
+				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, pPrompt, /*CRYPTPROTECT_SYSTEM |*/ (pPrompt ? 0 : CRYPTPROTECT_UI_FORBIDDEN), pDataOut, dwDataOutLen, masterkey, masterkeyLen, szPassword);
 				if(status && masterkey && masterkeyLen)
 					kuhl_m_dpapi_oe_masterkey_add(&blob->guidMasterKey, masterkey, masterkeyLen);
 
