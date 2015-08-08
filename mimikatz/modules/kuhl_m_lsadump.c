@@ -1333,15 +1333,15 @@ PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_
 }
 
 const wchar_t * TRUST_AUTH_TYPE[] = {
-	L"NONE    ",
-	L"NT4OWF  ",
-	L"CLEAR   ",
-	L"VERSION ",
+	L"NONE   ",
+	L"NT4OWF ",
+	L"CLEAR  ",
+	L"VERSION",
 };
 const UNICODE_STRING uKrbtgt = {12, 14, L"krbtgt"};
 void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest)
 {
-	DWORD i;
+	DWORD i, j;
 	UNICODE_STRING dst, password;
 	LONG kerbType[] = {KERB_ETYPE_AES256_CTS_HMAC_SHA1_96, KERB_ETYPE_AES128_CTS_HMAC_SHA1_96, KERB_ETYPE_RC4_HMAC_NT};
 
@@ -1363,8 +1363,8 @@ void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD coun
 				RtlAppendUnicodeStringToString(&dst, dest);
 				password.Length = password.MaximumLength = (USHORT) info[i].AuthInfoLength;
 				password.Buffer = (PWSTR) info[i].AuthInfo;
-				for(i = 0; i < ARRAYSIZE(kerbType); i++)
-					kuhl_m_kerberos_hash_data(kerbType[i], &password, &dst, 4096);
+				for(j = 0; j < ARRAYSIZE(kerbType); j++)
+					kuhl_m_kerberos_hash_data(kerbType[j], &password, &dst, 4096);
 				LocalFree(dst.Buffer);
 			}
 		}
