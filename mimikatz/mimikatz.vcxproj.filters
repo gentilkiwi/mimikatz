@@ -170,6 +170,12 @@
     <ClCompile Include="..\modules\kull_m_cred.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc_ms-drsr_c.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc_drsr.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -357,6 +363,15 @@
       <Filter>local modules\dpapi</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_cred.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_ms-drsr.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_ms-dtyp.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_drsr.h">
       <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>

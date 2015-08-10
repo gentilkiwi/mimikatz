@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kuhl_m.h"
+#include <DsGetDC.h>
 #include "kerberos/kuhl_m_kerberos.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
@@ -14,6 +15,7 @@
 #include "../modules/kull_m_crypto_system.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
+#include "../modules/kull_m_rpc_drsr.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
 #include "dpapi/kuhl_m_dpapi_oe.h"
@@ -35,6 +37,41 @@ typedef struct _KIWI_BACKUP_KEY {
 	BYTE data[ANYSIZE_ARRAY];
 } KIWI_BACKUP_KEY, *PKIWI_BACKUP_KEY;
 
+typedef struct _NTDS_LSA_AUTH_INFORMATION {
+    LARGE_INTEGER LastUpdateTime;
+    ULONG AuthType;
+    ULONG AuthInfoLength;
+	UCHAR AuthInfo[ANYSIZE_ARRAY]; //
+} NTDS_LSA_AUTH_INFORMATION, *PNTDS_LSA_AUTH_INFORMATION;
+
+typedef struct _NTDS_LSA_AUTH_INFORMATIONS {
+	DWORD count; // or version ?
+	DWORD offsetToAuthenticationInformation;	// PLSA_AUTH_INFORMATION
+	DWORD offsetToPreviousAuthenticationInformation;	// PLSA_AUTH_INFORMATION
+	// ...
+} NTDS_LSA_AUTH_INFORMATIONS, *PNTDS_LSA_AUTH_INFORMATIONS;
+
+#pragma pack(push, 1) 
+typedef struct _USER_PROPERTY {
+	USHORT NameLength;
+	USHORT ValueLength;
+	USHORT Reserved;
+	wchar_t PropertyName[ANYSIZE_ARRAY];
+	// PropertyValue in HEX !
+} USER_PROPERTY, *PUSER_PROPERTY;
+
+typedef struct _USER_PROPERTIES {
+	DWORD Reserved1;
+	DWORD Length;
+	USHORT Reserved2;
+	USHORT Reserved3;
+	BYTE Reserved4[96];
+	wchar_t PropertySignature;
+	USHORT PropertyCount;
+	USER_PROPERTY UserProperties[ANYSIZE_ARRAY];
+} USER_PROPERTIES, *PUSER_PROPERTIES;
+#pragma pack(pop)
+
 const KUHL_M kuhl_m_lsadump;
 
 NTSTATUS kuhl_m_lsadump_init();
@@ -48,6 +85,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
 BOOL kuhl_m_lsadump_getComputerAndSyskey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase, OUT LPBYTE sysKey);
@@ -61,7 +99,7 @@ NTSTATUS kuhl_m_lsadump_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username,
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
-void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
+void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PNTDS_LSA_AUTH_INFORMATION infoNtds, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
 
 NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretName, PUNICODE_STRING secret, BOOL isInject);
 void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size, BOOL isExport);
@@ -340,3 +378,52 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
 void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize);
+
+#define ATT_RDN							589825
+#define ATT_OBJECT_SID					589970
+#define ATT_WHEN_CREATED				131074
+#define ATT_WHEN_CHANGED				131075
+
+#define ATT_SAM_ACCOUNT_NAME			590045
+#define ATT_USER_PRINCIPAL_NAME			590480
+#define ATT_SERVICE_PRINCIPAL_NAME		590595
+#define ATT_SID_HISTORY					590433
+
+#define ATT_SAM_ACCOUNT_TYPE			590126
+#define ATT_LOGON_HOURS					589888
+#define ATT_LOGON_WORKSTATION			589889
+#define ATT_LAST_LOGON					589876
+#define ATT_PWD_LAST_SET				589920
+#define ATT_ACCOUNT_EXPIRES				589983
+#define ATT_LOCKOUT_TIME				590486
+
+#define ATT_UNICODE_PWD					589914
+#define ATT_NT_PWD_HISTORY				589918
+#define ATT_DBCS_PWD					589879
+#define ATT_LM_PWD_HISTORY				589984
+#define ATT_SUPPLEMENTAL_CREDENTIALS	589949
+
+#define ATT_CURRENT_VALUE				589851
+
+#define ATT_TRUST_ATTRIBUTES			590294
+#define ATT_TRUST_AUTH_INCOMING			589953
+#define ATT_TRUST_AUTH_OUTGOING			589959
+#define ATT_TRUST_DIRECTION				589956
+#define ATT_TRUST_PARENT				590295
+#define ATT_TRUST_PARTNER				589957
+#define ATT_TRUST_TYPE					589960
+
+SecPkgContext_SessionKey g_sKey;
+
+DWORD WINAPI NetApiBufferFree (IN LPVOID Buffer);
+void RPC_ENTRY RpcSecurityCallback(void *Context);
+
+PVOID findMonoAttr(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size);
+void findPrintMonoAttr(LPCWSTR prefix, ATTRBLOCK *attributes, ATTRTYP type, BOOL newLine);
+
+BOOL decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
+void descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
+void descrUser(ATTRBLOCK *attributes);
+void descrUserProperties(PUSER_PROPERTIES properties);
+void descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
+void descrTrustAuthentication(ATTRBLOCK *attributes, ATTRTYP type, PCUNICODE_STRING domain, PCUNICODE_STRING partner);
