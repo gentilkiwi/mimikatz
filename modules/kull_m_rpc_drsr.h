@@ -69,3 +69,7 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 	(RpcExceptionCode() != STATUS_ASSERTION_FAILURE) && \
 	(RpcExceptionCode() != STATUS_STACK_BUFFER_OVERRUN) && \
 	(RpcExceptionCode() != STATUS_GUARD_PAGE_VIOLATION)
+
+void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_DCINFOREPLY * reply);
+void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply);
+void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_GETCHGREPLY * reply);

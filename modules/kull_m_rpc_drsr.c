@@ -111,12 +111,12 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 							DomainGUIDfound = TRUE;
 							*DomainGUID = dcInfoRep.V2.rItems[i].NtdsDsaObjectGuid;
 						}
-						// to free !
 					}
 					if(!DomainGUIDfound)
 						PRINT_ERROR(L"DomainControllerInfo: DC \'%s\' not found\n", ServerName);
 				}
 				else PRINT_ERROR(L"DomainControllerInfo: bad version (%u)\n", dcOutVersion);
+				kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(dcOutVersion, &dcInfoRep);
 			}
 			else PRINT_ERROR(L"DomainControllerInfo: 0x%08x (%u)\n", drsStatus, drsStatus);
 			
@@ -127,29 +127,34 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 			}
 			else if(User)
 			{
-				nameCrackReq.V1.formatOffered = wcschr(User, L'\\') ? DS_NT4_ACCOUNT_NAME : wcschr(User, L'=') ? DS_FQDN_1779_NAME : DS_NT4_ACCOUNT_NAME_SANS_DOMAIN;
+				nameCrackReq.V1.formatOffered = wcschr(User, L'\\') ? DS_NT4_ACCOUNT_NAME : wcschr(User, L'=') ? DS_FQDN_1779_NAME : wcschr(User, L'@') ? DS_USER_PRINCIPAL_NAME : DS_NT4_ACCOUNT_NAME_SANS_DOMAIN;
 				nameCrackReq.V1.formatDesired = DS_UNIQUE_ID_NAME;
 				nameCrackReq.V1.cNames = 1;
 				nameCrackReq.V1.rpNames = (LPWSTR *) &User;
 				drsStatus = IDL_DRSCrackNames(hDrs, 1, &nameCrackReq, &nameCrackOutVersion, &nameCrackRep);
 				if(drsStatus == 0)
 				{
-					if(nameCrackRep.V1.pResult->cItems == 1)
+					if(nameCrackOutVersion == 1)
 					{
-						nameStatus = nameCrackRep.V1.pResult->rItems[0].status;
-						if(!nameStatus)
+						if(nameCrackRep.V1.pResult->cItems == 1)
 						{
-							RtlInitUnicodeString(&uGuid, nameCrackRep.V1.pResult->rItems[0].pName);
-							ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
-							// to free !
+							nameStatus = nameCrackRep.V1.pResult->rItems[0].status;
+							if(!nameStatus)
+							{
+								RtlInitUnicodeString(&uGuid, nameCrackRep.V1.pResult->rItems[0].pName);
+								ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+							}
+							else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u)\n", nameStatus, nameStatus);
 						}
-						else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u)\n", nameStatus, nameStatus);
+						else PRINT_ERROR(L"CrackNames: no item!\n");
 					}
-					else PRINT_ERROR(L"CrackNames: no item!\n");
+					else PRINT_ERROR(L"CrackNames: bad version (%u)\n", nameCrackOutVersion);
+					kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(nameCrackOutVersion, &nameCrackRep);
 				}
 				else PRINT_ERROR(L"CrackNames: 0x%08x (%u)\n", drsStatus, drsStatus);
 			}
 			drsStatus = IDL_DRSUnbind(&hDrs);
+			MIDL_user_free(pDrsExtensionsOutput);
 		}
 	}
 	RpcExcept(DRS_EXCEPTION)
@@ -169,9 +174,153 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 	DrsExtensionsInt.dwFlags = 0x04408000; // DRS_EXT_GETCHGREQ_V6 | DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION
 
 	RpcTryExcept
+	{
 		drsStatus = IDL_DRSBind(*hBinding, NtdsDsaObjectGuid, (DRS_EXTENSIONS *) &DrsExtensionsInt, &pDrsExtensionsOutput, hDrs); // to free ?
+		if(status = (drsStatus == 0))
+			MIDL_user_free(pDrsExtensionsOutput);
+	}
 	RpcExcept(DRS_EXCEPTION)
 		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 	RpcEndExcept
-	return (drsStatus == 0);
+		return status;
+}
+
+void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply)
+{
+	DWORD i;
+	if(reply)
+	{
+		switch (nameCrackOutVersion)
+		{
+		case 1:
+			if(reply->V1.pResult)
+			{
+				for(i = 0; i < reply->V1.pResult->cItems; i++)
+				{
+					if(reply->V1.pResult->rItems[i].pDomain)
+						MIDL_user_free(reply->V1.pResult->rItems[i].pDomain);
+					if(reply->V1.pResult->rItems[i].pName)
+						MIDL_user_free(reply->V1.pResult->rItems[i].pName);
+				}
+				if(reply->V1.pResult->rItems)
+					MIDL_user_free(reply->V1.pResult->rItems);
+				MIDL_user_free(reply->V1.pResult);
+			}
+			break;
+		default:
+			PRINT_ERROR(L"nameCrackOutVersion not valid (0x%08x - %u)\n", nameCrackOutVersion, nameCrackOutVersion);
+			break;
+		}
+	}
+}
+
+void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_DCINFOREPLY * reply)
+{
+	DWORD i;
+	if(reply)
+	{
+		switch (dcOutVersion)
+		{
+		case 2:
+			for(i = 0; i < reply->V2.cItems; i++)
+			{
+				if(reply->V2.rItems[i].NetbiosName)
+					MIDL_user_free(reply->V2.rItems[i].NetbiosName);
+				if(reply->V2.rItems[i].DnsHostName)
+					MIDL_user_free(reply->V2.rItems[i].DnsHostName);
+				if(reply->V2.rItems[i].SiteName)
+					MIDL_user_free(reply->V2.rItems[i].SiteName);
+				if(reply->V2.rItems[i].SiteObjectName)
+					MIDL_user_free(reply->V2.rItems[i].SiteObjectName);
+				if(reply->V2.rItems[i].ComputerObjectName)
+					MIDL_user_free(reply->V2.rItems[i].ComputerObjectName);
+				if(reply->V2.rItems[i].ServerObjectName)
+					MIDL_user_free(reply->V2.rItems[i].ServerObjectName);
+				if(reply->V2.rItems[i].NtdsDsaObjectName)
+					MIDL_user_free(reply->V2.rItems[i].NtdsDsaObjectName);
+			}
+			if(reply->V2.rItems)
+				MIDL_user_free(reply->V2.rItems);
+			break;
+		case 1:
+		case 3:
+		case 0xffffffff:
+			PRINT_ERROR(L"TODO (maybe?)\n");
+			break;
+		default:
+			PRINT_ERROR(L"dcOutVersion not valid (0x%08x - %u)\n", dcOutVersion, dcOutVersion);
+			break;
+		}
+	}
+}
+
+void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_GETCHGREPLY * reply)
+{
+	DWORD i, j;
+	REPLENTINFLIST * pReplentinflist, *pNextReplentinflist;
+	if(reply)
+	{
+		switch(dwOutVersion)
+		{
+		case 6:
+			if(reply->V6.pNC)
+				MIDL_user_free(reply->V6.pNC);
+			if(reply->V6.pUpToDateVecSrc)
+				MIDL_user_free(reply->V6.pUpToDateVecSrc);
+			if(reply->V6.PrefixTableSrc.pPrefixEntry)
+			{
+				for(i = 0; i < reply->V6.PrefixTableSrc.PrefixCount; i++)
+					if(reply->V6.PrefixTableSrc.pPrefixEntry[i].prefix.elements)
+						MIDL_user_free(reply->V6.PrefixTableSrc.pPrefixEntry[i].prefix.elements);
+				MIDL_user_free(reply->V6.PrefixTableSrc.pPrefixEntry);
+			}
+			pNextReplentinflist = reply->V6.pObjects;
+			while(pReplentinflist = pNextReplentinflist)
+			{
+				pNextReplentinflist = pReplentinflist->pNextEntInf;
+				if(pReplentinflist->Entinf.pName)
+					MIDL_user_free(pReplentinflist->Entinf.pName);
+				if(pReplentinflist->Entinf.AttrBlock.pAttr)
+				{
+					for(i = 0; i < pReplentinflist->Entinf.AttrBlock.attrCount; i++)
+					{
+						if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal)
+						{
+							for(j = 0; j < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; j++)
+								if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j].pVal)
+									MIDL_user_free(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j].pVal);
+							MIDL_user_free(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal);
+						}
+					}
+					MIDL_user_free(pReplentinflist->Entinf.AttrBlock.pAttr);
+				}
+				if(pReplentinflist->pParentGuid)
+					MIDL_user_free(pReplentinflist->pParentGuid);
+				if(pReplentinflist->pMetaDataExt)
+					MIDL_user_free(pReplentinflist->pMetaDataExt);
+				MIDL_user_free(pReplentinflist);
+			}
+			if(reply->V6.rgValues)
+			{
+				for(i = 0; i < reply->V6.cNumValues; i++)
+				{
+					if(reply->V6.rgValues[i].pObject)
+						MIDL_user_free(reply->V6.rgValues[i].pObject);
+					if(reply->V6.rgValues[i].Aval.pVal)
+						MIDL_user_free(reply->V6.rgValues[i].Aval.pVal);
+				}
+				MIDL_user_free(reply->V6.rgValues);
+			}
+			break;
+		case 1:
+		case 2:
+		case 7:
+		case 9:
+			PRINT_ERROR(L"TODO (maybe?)\n");
+			break;
+		default:
+			PRINT_ERROR(L"dwOutVersion not valid (0x%08x - %u)\n", dwOutVersion, dwOutVersion);
+			break;
+		}
+	}
 }

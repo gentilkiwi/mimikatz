@@ -5,7 +5,6 @@
 */
 #pragma once
 #include "kuhl_m.h"
-#include <DsGetDC.h>
 #include "kerberos/kuhl_m_kerberos.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
@@ -15,6 +14,7 @@
 #include "../modules/kull_m_crypto_system.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
+#include "../modules/kull_m_net.h"
 #include "../modules/kull_m_rpc_drsr.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
@@ -413,17 +413,17 @@ void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize);
 #define ATT_TRUST_PARTNER				589957
 #define ATT_TRUST_TYPE					589960
 
-SecPkgContext_SessionKey g_sKey;
+SecPkgContext_SessionKey kuhl_m_lsadump_dcsync_g_sKey;
 
 DWORD WINAPI NetApiBufferFree (IN LPVOID Buffer);
-void RPC_ENTRY RpcSecurityCallback(void *Context);
+void RPC_ENTRY kuhl_m_lsadump_dcsync_RpcSecurityCallback(void *Context);
 
-PVOID findMonoAttr(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size);
-void findPrintMonoAttr(LPCWSTR prefix, ATTRBLOCK *attributes, ATTRTYP type, BOOL newLine);
+PVOID kuhl_m_lsadump_dcsync_findMonoAttr(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size);
+void kuhl_m_lsadump_dcsync_findPrintMonoAttr(LPCWSTR prefix, ATTRBLOCK *attributes, ATTRTYP type, BOOL newLine);
 
-BOOL decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
-void descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
-void descrUser(ATTRBLOCK *attributes);
-void descrUserProperties(PUSER_PROPERTIES properties);
-void descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
-void descrTrustAuthentication(ATTRBLOCK *attributes, ATTRTYP type, PCUNICODE_STRING domain, PCUNICODE_STRING partner);
+BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
+void kuhl_m_lsadump_dcsync_descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
+void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes);
+void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties);
+void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
+void kuhl_m_lsadump_dcsync_descrTrustAuthentication(ATTRBLOCK *attributes, ATTRTYP type, PCUNICODE_STRING domain, PCUNICODE_STRING partner);
