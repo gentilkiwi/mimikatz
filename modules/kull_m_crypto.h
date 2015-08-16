@@ -62,6 +62,7 @@ BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD 
 DWORD kull_m_crypto_hash_len(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_blocklen(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId);
+DWORD kull_m_crypto_crc32(DWORD startCrc, LPCVOID data, DWORD size);
 
 typedef struct _KULL_M_CRYPTO_DUAL_STRING_DWORD {
 	PCWSTR	name;

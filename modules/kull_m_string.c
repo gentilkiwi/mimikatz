@@ -296,3 +296,19 @@ BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wch
 
 	return result;
 }
+
+BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src)
+{
+	BOOL status = FALSE;
+	size_t size;
+	if(src && dst && (size = wcslen(src)))
+	{
+		size = (size + 1) * sizeof(wchar_t);
+		if(*dst = (LPWSTR) LocalAlloc(LPTR, size))
+		{
+			RtlCopyMemory(*dst, src, size);
+			status = TRUE;
+		}
+	}
+	return status;
+}

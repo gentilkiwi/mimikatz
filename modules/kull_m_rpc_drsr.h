@@ -5,6 +5,8 @@
 */
 #pragma once
 #include "globals.h"
+#include "../modules/kull_m_crypto_system.h"
+#include "../modules/kull_m_crypto.h"
 #include "kull_m_rpc_ms-drsr.h"
 #include "kull_m_string.h"
 
@@ -17,6 +19,12 @@ typedef struct _DRS_EXTENSIONS_INT {
 	DWORD dwFlagsExt;
 	GUID ConfigObjGUID;
 } DRS_EXTENSIONS_INT, *PDRS_EXTENSIONS_INT;
+
+typedef struct _ENCRYPTED_PAYLOAD {
+	UCHAR Salt[16];
+	ULONG CheckSum;
+	UCHAR EncryptedData[ANYSIZE_ARRAY];
+} ENCRYPTED_PAYLOAD, *PENCRYPTED_PAYLOAD;
 
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes);
 void __RPC_USER midl_user_free(void __RPC_FAR * p);
@@ -53,11 +61,60 @@ typedef enum {
 	DS_USER_PRINCIPAL_NAME_AND_ALTSECID = -17,
 } DS_NAME_FORMAT;
 
-BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_SECURITY_CALLBACK_FN securityCallback, RPC_BINDING_HANDLE *hBinding);
+typedef enum  { 
+	DS_NAME_NO_ERROR = 0,
+	DS_NAME_ERROR_RESOLVING = 1,
+	DS_NAME_ERROR_NOT_FOUND = 2,
+	DS_NAME_ERROR_NOT_UNIQUE = 3,
+	DS_NAME_ERROR_NO_MAPPING = 4,
+	DS_NAME_ERROR_DOMAIN_ONLY = 5,
+	DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING = 6,
+	DS_NAME_ERROR_TRUST_REFERRAL = 7
+} DS_NAME_ERROR;
+
+#define ATT_RDN							589825
+#define ATT_OBJECT_SID					589970
+#define ATT_WHEN_CREATED				131074
+#define ATT_WHEN_CHANGED				131075
+
+#define ATT_SAM_ACCOUNT_NAME			590045
+#define ATT_USER_PRINCIPAL_NAME			590480
+#define ATT_SERVICE_PRINCIPAL_NAME		590595
+#define ATT_SID_HISTORY					590433
+#define ATT_USER_ACCOUNT_CONTROL		589832
+#define ATT_SAM_ACCOUNT_TYPE			590126
+#define ATT_LOGON_HOURS					589888
+#define ATT_LOGON_WORKSTATION			589889
+#define ATT_LAST_LOGON					589876
+#define ATT_PWD_LAST_SET				589920
+#define ATT_ACCOUNT_EXPIRES				589983
+#define ATT_LOCKOUT_TIME				590486
+
+#define ATT_UNICODE_PWD					589914
+#define ATT_NT_PWD_HISTORY				589918
+#define ATT_DBCS_PWD					589879
+#define ATT_LM_PWD_HISTORY				589984
+#define ATT_SUPPLEMENTAL_CREDENTIALS	589949
+
+#define ATT_CURRENT_VALUE				589851
+
+#define ATT_TRUST_ATTRIBUTES			590294
+#define ATT_TRUST_AUTH_INCOMING			589953
+#define ATT_TRUST_AUTH_OUTGOING			589959
+#define ATT_TRUST_DIRECTION				589956
+#define ATT_TRUST_PARENT				590295
+#define ATT_TRUST_PARTNER				589957
+#define ATT_TRUST_TYPE					589960
+
+void RPC_ENTRY  kull_m_rpc_drsr_RpcSecurityCallback(void *Context);
+BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding);
 BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding);
 
 BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid);
 BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs);
+BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain);
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects);
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val);
 
 #define DRS_EXCEPTION (RpcExceptionCode() != STATUS_ACCESS_VIOLATION) && \
 	(RpcExceptionCode() != STATUS_DATATYPE_MISALIGNMENT) && \

