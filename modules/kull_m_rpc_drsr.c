@@ -94,7 +94,7 @@ BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding)
 	return status;
 }
 
-UUID DRSUAPI_DS_BIND_UUID_Standard = {0xe24d201a, 0x4fd6, 0x11d1, {0xa3, 0xda, 0x00, 0x00, 0xf8, 0x75, 0xae, 0x0d}};
+GUID DRSUAPI_DS_BIND_GUID_Standard	= {0xe24d201a, 0x4fd6, 0x11d1, {0xa3, 0xda, 0x00, 0x00, 0xf8, 0x75, 0xae, 0x0d}};
 BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid)
 {
 	BOOL DomainGUIDfound = FALSE, ObjectGUIDfound = FALSE;
@@ -112,7 +112,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	RpcTryExcept
 	{
 		DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
-		drsStatus = IDL_DRSBind(*hBinding, &DRSUAPI_DS_BIND_UUID_Standard, (DRS_EXTENSIONS *) &DrsExtensionsInt, &pDrsExtensionsOutput, &hDrs);
+		drsStatus = IDL_DRSBind(*hBinding, &DRSUAPI_DS_BIND_GUID_Standard, (DRS_EXTENSIONS *) &DrsExtensionsInt, &pDrsExtensionsOutput, &hDrs);
 		if(drsStatus == 0)
 		{
 			dcInfoReq.V1.InfoLevel = 2;
@@ -169,7 +169,7 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 	DRS_EXTENSIONS *pDrsExtensionsOutput = NULL;
 
 	DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
-	DrsExtensionsInt.dwFlags = 0x04408000; // DRS_EXT_GETCHGREQ_V6 | DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION
+	DrsExtensionsInt.dwFlags = DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION;
 
 	RpcTryExcept
 	{
@@ -183,6 +183,7 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 		return status;
 }
 
+const wchar_t * KULL_M_RPC_DRSR_CrackNames_Error[] = {L"NO_ERROR", L"ERROR_RESOLVING", L"ERROR_NOT_FOUND", L"ERROR_NOT_UNIQUE", L"ERROR_NO_MAPPING", L"ERROR_DOMAIN_ONLY", L"ERROR_NO_SYNTACTICAL_MAPPING", L"ERROR_TRUST_REFERRAL"};
 BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain)
 {
 	BOOL status = FALSE;
@@ -210,7 +211,7 @@ BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWS
 						kull_m_string_copy(CrackedName, nameCrackRep.V1.pResult->rItems[0].pName);
 						kull_m_string_copy(CrackedDomain, nameCrackRep.V1.pResult->rItems[0].pDomain);
 					}
-					else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u)\n", drsStatus, drsStatus);
+					else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u) - %s\n", drsStatus, drsStatus, (drsStatus < ARRAYSIZE(KULL_M_RPC_DRSR_CrackNames_Error)) ? KULL_M_RPC_DRSR_CrackNames_Error[drsStatus] : L"?");
 				}
 				else PRINT_ERROR(L"CrackNames: no item!\n");
 			}

