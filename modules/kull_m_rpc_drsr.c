@@ -34,8 +34,11 @@ void RPC_ENTRY kull_m_rpc_drsr_RpcSecurityCallback(void *Context)
 			kull_m_rpc_drsr_g_sKey.SessionKeyLength = 0;
 			kull_m_rpc_drsr_g_sKey.SessionKey = NULL;
 		}
-		secStatus = QueryContextAttributes((PCtxtHandle) data, SECPKG_ATTR_SESSION_KEY, (LPVOID) &kull_m_rpc_drsr_g_sKey);
+		secStatus = QueryContextAttributes(data, SECPKG_ATTR_SESSION_KEY, (LPVOID) &kull_m_rpc_drsr_g_sKey);
+		if(secStatus != SEC_E_OK)
+			PRINT_ERROR(L"QueryContextAttributes %08x\n", secStatus);
 	}
+	else PRINT_ERROR(L"I_RpcBindingInqSecurityContext %08x\n", rpcStatus);
 }
 
 const wchar_t PREFIX_LDAP[] = L"ldap/";
@@ -62,7 +65,7 @@ BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding)
 					RtlCopyMemory(fullServer, PREFIX_LDAP, szPrefix);
 					RtlCopyMemory((PBYTE) fullServer + (szPrefix - sizeof(wchar_t)), server, szServer);
 
-					rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) fullServer, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, 0, &SecurityQOS);
+					rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) fullServer, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, 0, &SecurityQOS); // in case of problem with session key on old OS: RPC_C_AUTHN_GSS_KERBEROS
 					status = (rpcStatus == RPC_S_OK);
 					if(!status)
 						PRINT_ERROR(L"RpcBindingSetAuthInfoEx: 0x%08x (%u)\n", rpcStatus, rpcStatus);
@@ -303,7 +306,7 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
 						MIDL_user_free(toFree);
 					}
 				}
-				else PRINT_ERROR(L"Checksums don\'t match (C:0x%08 - R:0x%08x)\n", calcChecksum == encrypted->CheckSum);
+				else PRINT_ERROR(L"Checksums don\'t match (C:0x%08x - R:0x%08x)\n", calcChecksum, encrypted->CheckSum);
 			}
 			else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
 		}
