@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_crypto.h"
 
@@ -434,6 +434,37 @@ DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId)
 		CryptReleaseContext(hProv, 0);
 	}
 	return len / 8;
+}
+
+NTSTATUS kull_m_crypto_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations)
+{
+	NTSTATUS status;
+	LSA_UNICODE_STRING HashAndLowerUsername;
+	LSA_UNICODE_STRING LowerUsername;
+	BYTE buffer[LM_NTLM_HASH_LENGTH];
+
+	status = RtlDowncaseUnicodeString(&LowerUsername, Username, TRUE);
+	if(NT_SUCCESS(status))
+	{
+		HashAndLowerUsername.Length = HashAndLowerUsername.MaximumLength = LowerUsername.Length + LM_NTLM_HASH_LENGTH;
+		if(HashAndLowerUsername.Buffer = (PWSTR) LocalAlloc(LPTR, HashAndLowerUsername.MaximumLength))
+		{
+			RtlCopyMemory(HashAndLowerUsername.Buffer, ntlm, LM_NTLM_HASH_LENGTH);
+			RtlCopyMemory((PBYTE) HashAndLowerUsername.Buffer + LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length);
+			status = RtlDigestNTLM(&HashAndLowerUsername, dcc);
+			if(realIterations && NT_SUCCESS(status))
+			{
+				if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA1, dcc, LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length, realIterations, buffer, LM_NTLM_HASH_LENGTH, FALSE))
+				{
+					RtlCopyMemory(dcc, buffer, LM_NTLM_HASH_LENGTH);
+					status = STATUS_SUCCESS;
+				}
+			}
+			LocalFree(HashAndLowerUsername.Buffer);
+		}
+		RtlFreeUnicodeString(&LowerUsername);
+	}
+	return status;
 }
 
 

@@ -1,7 +1,6 @@
-/*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
-	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+/*	Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com / http://blog.gentilkiwi.com )
+	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_rpc_drsr.h"
 
@@ -275,7 +274,7 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
 
 	if(kull_m_rpc_drsr_g_sKey.SessionKey && kull_m_rpc_drsr_g_sKey.SessionKeyLength)
 	{
-		if((val->valLen >= FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData)) && val->pVal)
+		if((val->valLen >= (ULONG) FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData)) && val->pVal)
 		{
 			encrypted = (PENCRYPTED_PAYLOAD) val->pVal;
 			MD5Init(&md5ctx);

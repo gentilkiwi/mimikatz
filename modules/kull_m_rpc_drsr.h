@@ -1,7 +1,6 @@
-/*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
-	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+/*	Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com / http://blog.gentilkiwi.com )
+	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "globals.h"

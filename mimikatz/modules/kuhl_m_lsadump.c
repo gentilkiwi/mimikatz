@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_lsadump.h"
 
@@ -11,10 +11,9 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_cache,	L"cache",		L"Get the SysKey to decrypt NL$KM then MSCache(v2) (from registry or hives)"},
 	{kuhl_m_lsadump_lsa,	L"lsa",			L"Ask LSA Server to retrieve SAM/AD entries (normal, patch on the fly or inject)"},
 	{kuhl_m_lsadump_trust,	L"trust",		L"Ask LSA Server to retrieve Trust Auth Information (normal or patch on the fly)"},
-	{kuhl_m_lsadump_hash,	L"hash",		NULL},
 	{kuhl_m_lsadump_bkey,	L"backupkeys",	NULL},
 	{kuhl_m_lsadump_rpdata,	L"rpdata",		NULL},
-	{kuhl_m_lsadump_dcsync,	L"dcsync",		NULL},
+	{kuhl_m_lsadump_dcsync,	L"dcsync",		L"Ask a DC to synchronize an object"},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -631,37 +630,6 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 	return status;
 }
 
-NTSTATUS kuhl_m_lsadump_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations)
-{
-	NTSTATUS status;
-	LSA_UNICODE_STRING HashAndLowerUsername;
-	LSA_UNICODE_STRING LowerUsername;
-	BYTE buffer[LM_NTLM_HASH_LENGTH];
-
-	status = RtlDowncaseUnicodeString(&LowerUsername, Username, TRUE);
-	if(NT_SUCCESS(status))
-	{
-		HashAndLowerUsername.Length = HashAndLowerUsername.MaximumLength = LowerUsername.Length + LM_NTLM_HASH_LENGTH;
-		if(HashAndLowerUsername.Buffer = (PWSTR) LocalAlloc(LPTR, HashAndLowerUsername.MaximumLength))
-		{
-			RtlCopyMemory(HashAndLowerUsername.Buffer, ntlm, LM_NTLM_HASH_LENGTH);
-			RtlCopyMemory((PBYTE) HashAndLowerUsername.Buffer + LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length);
-			status = RtlDigestNTLM(&HashAndLowerUsername, dcc);
-			if(realIterations && NT_SUCCESS(status))
-			{
-				if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA1, dcc, LM_NTLM_HASH_LENGTH, LowerUsername.Buffer, LowerUsername.Length, realIterations, buffer, LM_NTLM_HASH_LENGTH, FALSE))
-				{
-					RtlCopyMemory(dcc, buffer, LM_NTLM_HASH_LENGTH);
-					status = STATUS_SUCCESS;
-				}
-			}
-			LocalFree(HashAndLowerUsername.Buffer);
-		}
-		RtlFreeUnicodeString(&LowerUsername);
-	}
-	return status;
-}
-
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, BOOL kiwime)
 {
 	BOOL status = FALSE;
@@ -726,7 +694,7 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 												kprintf(L"> Kiwi mode...\n");
 												usr.Length = usr.MaximumLength = pMsCacheEntry->szUserName;
 												usr.Buffer = (PWSTR) ((PBYTE) pMsCacheEntry->enc_data + sizeof(MSCACHE_DATA));
-												if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, kiwiKey, &usr, iter)))
+												if(NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, kiwiKey, &usr, iter)))
 												{
 													kprintf(L"  MsCacheV2 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 													if(kull_m_crypto_hmac(CALG_SHA1, pNLKM, AES_128_KEY_SIZE, pMsCacheEntry->enc_data, s1, pMsCacheEntry->cksum, MD5_DIGEST_LENGTH))
@@ -758,7 +726,7 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 													kprintf(L"> Kiwi mode...\n");
 													usr.Length = usr.MaximumLength = pMsCacheEntry->szUserName;
 													usr.Buffer = (PWSTR) ((PBYTE) pMsCacheEntry->enc_data + sizeof(MSCACHE_DATA));
-													if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, kiwiKey, &usr, 0)))
+													if(NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, kiwiKey, &usr, 0)))
 													{
 														kprintf(L"  MsCacheV1 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 														if(kull_m_crypto_hmac(CALG_MD5, key.Buffer, MD5_DIGEST_LENGTH, pMsCacheEntry->enc_data, s1, pMsCacheEntry->cksum, MD5_DIGEST_LENGTH))
@@ -1504,60 +1472,6 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_lsadump_hash(int argc, wchar_t * argv[])
-{
-	PCWCHAR szCount, szPassword = NULL, szUsername = NULL;
-	UNICODE_STRING uPassword, uUsername, uTmp;
-	ANSI_STRING aTmp;
-	DWORD count = 10240;
-	BYTE hash[LM_NTLM_HASH_LENGTH], dcc[LM_NTLM_HASH_LENGTH], md5[MD5_DIGEST_LENGTH], sha1[SHA_DIGEST_LENGTH], sha2[32];
-	
-	kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL);
-	kull_m_string_args_byName(argc, argv, L"user", &szUsername, NULL);
-	if(kull_m_string_args_byName(argc, argv, L"count", &szCount, NULL))
-		count = wcstoul(szCount, NULL, 0);
-
-	RtlInitUnicodeString(&uPassword, szPassword);
-	RtlInitUnicodeString(&uUsername, szUsername);
-	if(NT_SUCCESS(RtlDigestNTLM(&uPassword, hash)))
-	{
-		kprintf(L"NTLM: "); kull_m_string_wprintf_hex(hash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-		if(szUsername)
-		{
-			if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, 0)))
-			{
-				kprintf(L"DCC1: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-				if(NT_SUCCESS(kuhl_m_lsadump_get_dcc(dcc, hash, &uUsername, count)))
-				{
-					kprintf(L"DCC2: "); kull_m_string_wprintf_hex(dcc, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-				}
-			}
-		}
-	}
-
-	if(NT_SUCCESS(RtlUpcaseUnicodeString(&uTmp, &uPassword, TRUE)))
-	{
-		if(NT_SUCCESS(RtlUnicodeStringToAnsiString(&aTmp, &uTmp, TRUE)))
-		{
-			if(NT_SUCCESS(RtlDigestLM(aTmp.Buffer, hash)))
-			{
-				kprintf(L"LM  : "); kull_m_string_wprintf_hex(hash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-			}
-			RtlFreeAnsiString(&aTmp);
-		}
-		RtlFreeUnicodeString(&uTmp);
-	}
-
-	if(kull_m_crypto_hash(CALG_MD5, uPassword.Buffer, uPassword.Length, md5, MD5_DIGEST_LENGTH))
-		kprintf(L"MD5 : "); kull_m_string_wprintf_hex(md5, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
-	if(kull_m_crypto_hash(CALG_SHA1, uPassword.Buffer, uPassword.Length, sha1, SHA_DIGEST_LENGTH))
-		kprintf(L"SHA1: "); kull_m_string_wprintf_hex(sha1, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
-	if(kull_m_crypto_hash(CALG_SHA_256, uPassword.Buffer, uPassword.Length, sha2, 32))
-		kprintf(L"SHA2: "); kull_m_string_wprintf_hex(sha2, 32, 0); kprintf(L"\n");
-
-	return STATUS_SUCCESS;
-}
-
 NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretName, PUNICODE_STRING secret, BOOL isInject)
 {
 #ifdef LSARPDATA
@@ -1793,7 +1707,9 @@ NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[])
 	}
 	return STATUS_SUCCESS;
 }
-
+/*	This function `dcsync` was co-writed with
+	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
+*/
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 {
 	LSA_OBJECT_ATTRIBUTES objectAttributes = {0};
