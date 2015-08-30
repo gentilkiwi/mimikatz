@@ -29,8 +29,8 @@ const KUHL_M * mimikatz_modules[] = {
 int wmain(int argc, wchar_t * argv[])
 {
 	int i, status = STATUS_SUCCESS;
-	size_t len;
 #ifndef _WINDLL
+	size_t len;
 	wchar_t input[0xffff];
 	kull_m_output_init();
 	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH L" (oe.eo)");

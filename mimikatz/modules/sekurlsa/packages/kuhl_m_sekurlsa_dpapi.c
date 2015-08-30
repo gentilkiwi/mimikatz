@@ -64,7 +64,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 				{
 					if(kull_m_memory_copy(&aBuffer, &aLsass, sizeof(KIWI_MASTERKEY_CACHE_ENTRY)))
 					{
-						if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId))
+						if(SecEqualLuid(pData->LogonId, &mesCredentials.LogonId))
 						{
 							kprintf(L"\t [%08x]\n\t * GUID      :\t", monNb++);
 							kull_m_string_displayGUID(&mesCredentials.KeyUid);

@@ -98,7 +98,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_msv_pth(IN PKIWI_BASIC_SECURITY_LOGO
 	PSEKURLSA_PTH_DATA pthData = (PSEKURLSA_PTH_DATA) pOptionalData;
 	MSV1_0_PTH_DATA_CRED credData = {pData, pthData};
 	
-	if(RtlEqualLuid(pData->LogonId, pthData->LogonId))
+	if(SecEqualLuid(pData->LogonId, pthData->LogonId))
 	{
 		kuhl_m_sekurlsa_msv_enum_cred(pData->cLsass, pData->pCredentials, kuhl_m_sekurlsa_msv_enum_cred_callback_pth, &credData);
 		return FALSE;

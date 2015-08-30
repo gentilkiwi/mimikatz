@@ -1727,7 +1727,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
-				szDomain = pPolicyDnsDomainInfo->DnsDomainName.Buffer;
+			szDomain = pPolicyDnsDomainInfo->DnsDomainName.Buffer;
 
 	if(szDomain && wcschr(szDomain, L'.'))
 	{
@@ -1938,7 +1938,7 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_USER_ACCOUNT_CONTROL, &data, NULL))
 	{
 		kprintf(L"User Account Control : %08x ( ", *(PDWORD) data);
-		for(i = 0; i < KIWI_MINIMUM(ARRAYSIZE(KUHL_M_LSADUMP_UF_FLAG), sizeof(DWORD) * 8); i++)
+		for(i = 0; i < min(ARRAYSIZE(KUHL_M_LSADUMP_UF_FLAG), sizeof(DWORD) * 8); i++)
 			if((1 << i) & *(PDWORD) data)
 				kprintf(L"%s ", KUHL_M_LSADUMP_UF_FLAG[i]);
 		kprintf(L")\n");

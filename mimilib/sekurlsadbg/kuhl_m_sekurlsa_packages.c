@@ -205,7 +205,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN ULONG_PTR pSspCredentia
 		{
 			if(ReadMemory(ptr, &mesCredentials, sizeof(KIWI_SSP_CREDENTIAL_LIST_ENTRY), NULL))
 			{
-				if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId) && (mesCredentials.credentials.UserName.Buffer || mesCredentials.credentials.Domaine.Buffer || mesCredentials.credentials.Password.Buffer))
+				if(SecEqualLuid(pData->LogonId, &mesCredentials.LogonId) && (mesCredentials.credentials.UserName.Buffer || mesCredentials.credentials.Domaine.Buffer || mesCredentials.credentials.Password.Buffer))
 				{
 					dprintf("\n\t [%08x]", monNb++);
 					kuhl_m_sekurlsa_genericCredsOutput(&mesCredentials.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_SSP | KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
@@ -232,7 +232,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_masterkeys(IN ULONG_PTR pMaste
 		{
 			if(ReadMemory(ptr, &mesCredentials, sizeof(KIWI_MASTERKEY_CACHE_ENTRY), NULL))
 			{
-				if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId))
+				if(SecEqualLuid(pData->LogonId, &mesCredentials.LogonId))
 				{
 					dprintf("\n\t [%08x]\n\t * GUID      :\t", monNb++);
 					kull_m_string_displayGUID(&mesCredentials.KeyUid);

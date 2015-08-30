@@ -470,7 +470,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_kerberos_pth(IN PKIWI_BASIC_SECURITY
 {
 	PSEKURLSA_PTH_DATA pthData = (PSEKURLSA_PTH_DATA) pOptionalData;
 	KIWI_KERBEROS_ENUM_DATA data = {kuhl_m_sekurlsa_enum_kerberos_callback_pth, pthData};
-	if(RtlEqualLuid(pData->LogonId, pthData->LogonId))
+	if(SecEqualLuid(pData->LogonId, pthData->LogonId))
 	{
 		kuhl_m_sekurlsa_enum_generic_callback_kerberos(pData, &data);
 		return FALSE;

@@ -24,7 +24,7 @@ BOOL kull_m_crypto_hash(ALG_ID algid, LPCVOID data, DWORD dataLen, LPVOID hash, 
 					if(buffer = (PBYTE) LocalAlloc(LPTR, hashLen))
 					{
 						status = CryptGetHashParam(hHash, HP_HASHVAL, buffer, &hashLen, 0);
-						RtlCopyMemory(hash, buffer, KIWI_MINIMUM(hashLen, hashWanted));
+						RtlCopyMemory(hash, buffer, min(hashLen, hashWanted));
 						LocalFree(buffer);
 					}
 				}
@@ -81,7 +81,7 @@ BOOL kull_m_crypto_DeriveKeyRaw(ALG_ID hashId, LPVOID hash, DWORD hashLen, LPVOI
 		}
 		if(kull_m_crypto_hash(hashId, ipad, sizeof(ipad), buffer, hashLen))
 			if(status = kull_m_crypto_hash(hashId, opad, sizeof(opad), buffer + hashLen, hashLen))
-				RtlCopyMemory(key, buffer, KIWI_MINIMUM(keyLen, 2 * hashLen));
+				RtlCopyMemory(key, buffer, min(keyLen, 2 * hashLen));
 	}
 	return status;
 }
@@ -143,7 +143,7 @@ BOOL kull_m_crypto_hmac(DWORD calgid, LPCVOID key, DWORD keyLen, LPCVOID message
 							if(buffer = (PBYTE) LocalAlloc(LPTR, hashLen))
 							{
 								status = CryptGetHashParam(hHash, HP_HASHVAL, buffer, &hashLen, 0);
-								RtlCopyMemory(hash, buffer, KIWI_MINIMUM(hashLen, hashWanted));
+								RtlCopyMemory(hash, buffer, min(hashLen, hashWanted));
 								LocalFree(buffer);
 							}
 						}
@@ -191,7 +191,7 @@ BOOL kull_m_crypto_pkcs5_pbkdf2_hmac(DWORD calgid, LPCVOID password, DWORD passw
 									if(isDpapiInternal) // thank you MS!
 										RtlCopyMemory(d1, obuf, sizeHmac);
 								}
-								r = KIWI_MINIMUM(keyLen, sizeHmac);
+								r = min(keyLen, sizeHmac);
 								RtlCopyMemory(key, obuf, r);
 								key += r;
 								keyLen -= r;

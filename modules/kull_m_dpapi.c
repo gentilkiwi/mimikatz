@@ -789,8 +789,8 @@ BOOL kull_m_dpapi_unprotect_credhist_entry_with_shaDerivedkey(PKULL_M_DPAPI_CRED
 						RtlCopyMemory(CryptBuffer, entry->pSecret, OutLen);
 						if(CryptDecrypt(hSessionKey, 0, FALSE, 0, (PBYTE) CryptBuffer, &OutLen))
 						{
-							RtlCopyMemory(sha1hash, CryptBuffer, KIWI_MINIMUM(entry->sha1Len, SHA_DIGEST_LENGTH));
-							RtlCopyMemory(md4hash, (PBYTE) CryptBuffer + entry->sha1Len, KIWI_MINIMUM(entry->md4Len, LM_NTLM_HASH_LENGTH));
+							RtlCopyMemory(sha1hash, CryptBuffer, min(entry->sha1Len, SHA_DIGEST_LENGTH));
+							RtlCopyMemory(md4hash, (PBYTE) CryptBuffer + entry->sha1Len, min(entry->md4Len, LM_NTLM_HASH_LENGTH));
 
 							status = TRUE;
 							if(entry->md4Len - LM_NTLM_HASH_LENGTH)
