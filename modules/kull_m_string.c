@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_string.h"
 
@@ -295,4 +295,20 @@ BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wch
 	}
 
 	return result;
+}
+
+BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src)
+{
+	BOOL status = FALSE;
+	size_t size;
+	if(src && dst && (size = wcslen(src)))
+	{
+		size = (size + 1) * sizeof(wchar_t);
+		if(*dst = (LPWSTR) LocalAlloc(LPTR, size))
+		{
+			RtlCopyMemory(*dst, src, size);
+			status = TRUE;
+		}
+	}
+	return status;
 }

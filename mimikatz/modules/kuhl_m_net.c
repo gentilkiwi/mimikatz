@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_net.h"
 
@@ -9,6 +9,7 @@ const KUHL_M_C kuhl_m_c_net[] = {
 	{kuhl_m_net_user,		L"user",		L""},
 	{kuhl_m_net_localgroup,	L"localgroup",	L""},
 	{kuhl_m_net_group,		L"group",		L""},
+	//{kuhl_m_net_autoda,		L"autoda",		L""},
 };
 const KUHL_M kuhl_m_net = {
 	L"net",	L"", NULL,
@@ -120,10 +121,9 @@ NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 														SamFreeMemory(alias);
 													} else PRINT_ERROR(L"SamGetAliasMembership %08x", status);
 												}
-
-
 												SamFreeMemory(userSid);
 											} else PRINT_ERROR(L"SamRidToSid %08x", status);
+											SamCloseHandle(hUserHandle);
 										} else PRINT_ERROR(L"SamOpenUser %08x", status);
 									}
 									SamFreeMemory(pEnumUsersBuffer);
@@ -157,12 +157,10 @@ NTSTATUS kuhl_m_net_localgroup(int argc, wchar_t * argv[])
 {
 	return ERROR_SUCCESS;
 }
-
-/*#include "../modules/kull_m_net.h"
-#include "../modules/kull_m_token.h"
-NTSTATUS kuhl_m_standard_test(int argc, wchar_t * argv[])
+/*
+NTSTATUS kuhl_m_net_autoda(int argc, wchar_t * argv[])
 {
-PDOMAIN_CONTROLLER_INFO pDCInfos;
+	PDOMAIN_CONTROLLER_INFO pDCInfos;
 	USER_INFO_1 userInfo = {L"", L"", 0, USER_PRIV_USER, NULL, NULL, UF_SCRIPT | UF_DONT_EXPIRE_PASSWD | UF_NORMAL_ACCOUNT, NULL,};
 	PPOLICY_DNS_DOMAIN_INFO pDomainInfo;
 	PSID pSid;
@@ -178,7 +176,7 @@ PDOMAIN_CONTROLLER_INFO pDCInfos;
 			{
 				LocalFree(domain);
 				kprintf(L"DA group : %s\n", name);
-
+				
 				if(DsGetDcName(NULL, NULL, NULL, NULL, DS_DIRECTORY_SERVICE_PREFERRED | DS_WRITABLE_REQUIRED, &pDCInfos) == ERROR_SUCCESS)
 				{
 					domain = pDCInfos->DomainControllerName + 2;
@@ -201,4 +199,5 @@ PDOMAIN_CONTROLLER_INFO pDCInfos;
 		LsaFreeMemory(pDomainInfo);
 	}
 	return STATUS_SUCCESS;
-}*/
+}
+*/

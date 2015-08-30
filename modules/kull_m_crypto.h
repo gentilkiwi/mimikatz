@@ -1,11 +1,12 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "globals.h"
 #include "kull_m_string.h"
+#include "kull_m_crypto_system.h"
 
 #define AES_256_KEY_SIZE	(256/8)
 #define AES_128_KEY_SIZE	(128/8)
@@ -62,6 +63,8 @@ BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD 
 DWORD kull_m_crypto_hash_len(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_blocklen(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId);
+NTSTATUS kull_m_crypto_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations);
+DWORD kull_m_crypto_crc32(DWORD startCrc, LPCVOID data, DWORD size);
 
 typedef struct _KULL_M_CRYPTO_DUAL_STRING_DWORD {
 	PCWSTR	name;

@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #define IOCTL_MIMIDRV_RAW					CTL_CODE(FILE_DEVICE_UNKNOWN, 0x000, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)
 #define IOCTL_MIMIDRV_PING					CTL_CODE(FILE_DEVICE_UNKNOWN, 0x001, METHOD_NEITHER, FILE_READ_DATA | FILE_WRITE_DATA)

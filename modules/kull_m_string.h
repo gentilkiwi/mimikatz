@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "globals.h"
@@ -16,6 +16,10 @@ typedef STRING OEM_STRING;
 typedef PSTRING POEM_STRING;
 typedef CONST STRING* PCOEM_STRING;
 typedef CONST UNICODE_STRING *PCUNICODE_STRING;
+
+#define DECLARE_UNICODE_STRING(_var, _string) \
+const WCHAR _var ## _buffer[] = _string; \
+UNICODE_STRING _var = { sizeof(_string) - sizeof(WCHAR), sizeof(_string), (PWCH) _var ## _buffer }
 
 extern VOID WINAPI RtlInitString(OUT PSTRING DestinationString, IN PCSZ SourceString);
 extern VOID WINAPI RtlInitUnicodeString(OUT PUNICODE_STRING DestinationString, IN PCWSTR SourceString);
@@ -68,3 +72,4 @@ PWSTR kull_m_string_getRandomGUID();
 void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size);
 
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue);
+BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src);
