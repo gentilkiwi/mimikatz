@@ -1734,7 +1734,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		kprintf(L"[DC] \'%s\' will be the domain\n", szDomain);
 		if(!(kull_m_string_args_byName(argc, argv, L"dc", &szDc, NULL) || kull_m_string_args_byName(argc, argv, L"kdc", &szDc, NULL)))
 		{
-			ret = DsGetDcName(NULL, szDomain, NULL, NULL, DS_IS_DNS_NAME | DS_RETURN_DNS_NAME, &cInfo);
+			ret = DsGetDcName(NULL, szDomain, NULL, NULL, DS_DIRECTORY_SERVICE_REQUIRED | DS_IS_DNS_NAME | DS_RETURN_DNS_NAME, &cInfo);
 			if(ret == ERROR_SUCCESS)
 				szDc = cInfo->DomainControllerName + 2;
 			else PRINT_ERROR(L"[DC] DsGetDcName: %u\n", ret);
