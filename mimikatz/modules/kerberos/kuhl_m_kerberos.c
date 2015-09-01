@@ -445,7 +445,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 									L"User Id   : %u\n", szUser, szDomain, szSid, id);
 								kprintf(L"Groups Id : *");
 								for(i = 0; i < nbGroups; i++)
-									kprintf(L"%u ", groups[i]);
+									kprintf(L"%u ", groups[i].RelativeId);
 								if(nbSids)
 								{
 									kprintf(L"\nExtra SIDs: ");
