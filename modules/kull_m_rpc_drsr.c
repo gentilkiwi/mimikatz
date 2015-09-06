@@ -47,7 +47,7 @@ BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding)
 	RPC_STATUS rpcStatus;
 	RPC_WSTR StringBinding = NULL;
 	RPC_SECURITY_QOS SecurityQOS = {RPC_C_SECURITY_QOS_VERSION, RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH, RPC_C_QOS_IDENTITY_STATIC, RPC_C_IMP_LEVEL_DEFAULT};
-	LPWSTR fullServer = NULL;
+	LPWSTR fullServer;
 	DWORD szServer = (DWORD) (wcslen(server) * sizeof(wchar_t)), szPrefix = sizeof(PREFIX_LDAP); // includes NULL;
 
 	*hBinding = NULL;
