@@ -12,12 +12,12 @@
 typedef struct _DRS_EXTENSIONS_INT {
 	DWORD cb;
 	DWORD dwFlags;
-	GUID SiteObjGuid;
-	DWORD Pid;
-	DWORD dwReplEpoch;
-	DWORD dwFlagsExt;
-	GUID ConfigObjGUID;
-	DWORD dwExtCaps;
+	//GUID SiteObjGuid;
+	//DWORD Pid;
+	//DWORD dwReplEpoch;
+	//DWORD dwFlagsExt;
+	//GUID ConfigObjGUID;
+	//DWORD dwExtCaps;
 } DRS_EXTENSIONS_INT, *PDRS_EXTENSIONS_INT;
 
 typedef struct _ENCRYPTED_PAYLOAD {

@@ -163,7 +163,7 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 {
 	BOOL status = FALSE;
 	ULONG drsStatus;
-	DRS_EXTENSIONS_INT DrsExtensionsInt = {0};
+	DRS_EXTENSIONS_INT DrsExtensionsInt;// = {0};
 	DRS_EXTENSIONS *pDrsExtensionsOutput = NULL;
 
 	DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
@@ -172,8 +172,21 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 	RpcTryExcept
 	{
 		drsStatus = IDL_DRSBind(*hBinding, NtdsDsaObjectGuid, (DRS_EXTENSIONS *) &DrsExtensionsInt, &pDrsExtensionsOutput, hDrs); // to free ?
-		if(status = (drsStatus == 0))
-			MIDL_user_free(pDrsExtensionsOutput);
+		if(drsStatus == 0)
+		{
+			if(pDrsExtensionsOutput)
+			{
+				if(((DRS_EXTENSIONS_INT *) pDrsExtensionsOutput)->dwFlags & (DRS_EXT_GETCHGREQ_V8 | DRS_EXT_STRONG_ENCRYPTION))
+					status = TRUE;
+				else PRINT_ERROR(L"Incorrect DRS Extensions Output (%08x)\n", ((DRS_EXTENSIONS_INT *) pDrsExtensionsOutput)->dwFlags);
+				MIDL_user_free(pDrsExtensionsOutput);
+			}
+			else PRINT_ERROR(L"No DRS Extensions Output\n");
+		
+			if(!status)
+				IDL_DRSUnbind(hDrs);
+		}
+		else PRINT_ERROR(L"IDL_DRSBind: %u\n", drsStatus);
 	}
 	RpcExcept(DRS_EXCEPTION)
 		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
