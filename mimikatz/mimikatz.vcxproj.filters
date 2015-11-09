@@ -179,6 +179,9 @@
     <ClCompile Include="..\modules\kull_m_busylight.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\kuhl_m_busylight.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -378,6 +381,12 @@
       <Filter>common modules</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_busylight.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_busylight.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_busylight_hid.h">
       <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>

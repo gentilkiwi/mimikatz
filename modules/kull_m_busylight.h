@@ -5,13 +5,44 @@
 */
 #pragma once
 #include "globals.h"
-#include <hidsdi.h>
-#include <setupapi.h>
+#include "kull_m_busylight_hid.h"
 
-#define BUSYLIGHT_CAP_INPUTEVENT	0x01
-#define BUSYLIGHT_CAP_LIGHT			0x02
-#define BUSYLIGHT_CAP_SOUND			0x04
-#define BUSYLIGHT_CAP_JINGLECLIPS	0x08
+#define BUSYLIGHT_INPUT_REPORT_SIZE				65
+#define BUSYLIGHT_OUTPUT_REPORT_SIZE			65
+
+#define BUSYLIGHT_CAP_INPUTEVENT				0x01
+#define BUSYLIGHT_CAP_LIGHT						0x02
+#define BUSYLIGHT_CAP_SOUND						0x04
+#define BUSYLIGHT_CAP_JINGLE_CLIPS				0x08
+
+#define BUSYLIGHT_MEDIA							0x80
+typedef enum _BUSYLIGHT_MEDIA_VOLUME {
+	BUSYLIGHT_MEDIA_VOLUME_0_MUTE =				0,
+	BUSYLIGHT_MEDIA_VOLUME_1_MIN =				1,
+	BUSYLIGHT_MEDIA_VOLUME_2 =					2,
+	BUSYLIGHT_MEDIA_VOLUME_3 =					3,
+	BUSYLIGHT_MEDIA_VOLUME_4_MEDIUM =			4,
+	BUSYLIGHT_MEDIA_VOLUME_5 =					5,
+	BUSYLIGHT_MEDIA_VOLUME_6 =					6,
+	BUSYLIGHT_MEDIA_VOLUME_7_MAX =				7,
+} BUSYLIGHT_MEDIA_VOLUME, *PBUSYLIGHT_MEDIA_VOLUME;
+typedef const BUSYLIGHT_MEDIA_VOLUME *PCBUSYLIGHT_MEDIA_VOLUME;
+
+typedef enum _BUSYLIGHT_MEDIA_SOUND_JINGLE {
+	BUSYLIGHT_MEDIA_SOUND_MUTE =				(0  << 3),
+	BUSYLIGHT_MEDIA_SOUND_OPENOFFICE =			(1  << 3),
+	BUSYLIGHT_MEDIA_SOUND_QUIET =				(2  << 3),
+	BUSYLIGHT_MEDIA_SOUND_FUNKY =				(3  << 3),
+	BUSYLIGHT_MEDIA_SOUND_FAIRYTALE =			(4  << 3),
+	BUSYLIGHT_MEDIA_SOUND_KUANDOTRAIN =			(5  << 3),
+	BUSYLIGHT_MEDIA_SOUND_TELEPHONENORDIC =		(6  << 3),
+	BUSYLIGHT_MEDIA_SOUND_TELEPHONEORIGINAL =	(7  << 3),
+	BUSYLIGHT_MEDIA_SOUND_TELEPHONEPICKMEUP =	(8  << 3),
+	BUSYLIGHT_MEDIA_JINGLE_IM1 =				(9  << 3),
+	BUSYLIGHT_MEDIA_JINGLE_IM2 =				(10 << 3),
+} BUSYLIGHT_MEDIA_SOUND_JINGLE, *PBUSYLIGHT_MEDIA_SOUND_JINGLE;
+typedef const BUSYLIGHT_MEDIA_SOUND_JINGLE *PCBUSYLIGHT_MEDIA_SOUND_JINGLE;
+#define BUSYLIGHT_MEDIA_MUTE (BUSYLIGHT_MEDIA | BUSYLIGHT_MEDIA_SOUND_MUTE | BUSYLIGHT_MEDIA_VOLUME_0_MUTE)
 
 typedef struct _BUSYLIGHT_DEVICE_ID {
 	USHORT	Vid;
@@ -42,14 +73,16 @@ typedef struct _BUSYLIGHT_INFO {
 typedef struct _BUSYLIGHT_DEVICE {
 	struct _BUSYLIGHT_DEVICE * next;
 	DWORD id;
+	PWCHAR DevicePath;
 	HIDD_ATTRIBUTES hidAttributes;
 	HIDP_CAPS hidCaps;
 	PCBUSYLIGHT_DEVICE_ID deviceId;
 	BUSYLIGHT_DPI dpi;
 	HANDLE hBusy;
-	BUSYLIGHT_INFO info;
-	DWORD ThreadDelay;
-	HANDLE hThread;
+	DWORD dKeepAliveThread;
+	HANDLE hKeepAliveThread;
+	DWORD dWorkerThread;
+	HANDLE hWorkerThread;
 } BUSYLIGHT_DEVICE, *PBUSYLIGHT_DEVICE;
 
 typedef struct _BUSYLIGHT_COLOR {
@@ -67,10 +100,37 @@ typedef struct _BUSYLIGHT_COMMAND_STEP {
 	BYTE OffTimeSteps;
 	BYTE AudioByte;
 } BUSYLIGHT_COMMAND_STEP, *PBUSYLIGHT_COMMAND_STEP;
+typedef const BUSYLIGHT_COMMAND_STEP *PCBUSYLIGHT_COMMAND_STEP;
 
-PCBUSYLIGHT_DEVICE_ID kull_m_busylight_getDeviceIdFromAttributes(PHIDD_ATTRIBUTES attributes);
-BOOL kull_m_busylight_getDevices(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask);
-BOOL kull_m_busylight_sendRawRequest(PBUSYLIGHT_DEVICE device, const BYTE * request, DWORD size);
+const BUSYLIGHT_COLOR
+	BUSYLIGHT_COLOR_OFF,
+	BUSYLIGHT_COLOR_RED,
+	BUSYLIGHT_COLOR_ORANGE,
+	BUSYLIGHT_COLOR_YELLOW,
+	BUSYLIGHT_COLOR_CHARTREUSE_GREEN,
+	BUSYLIGHT_COLOR_GREEN,
+	BUSYLIGHT_COLOR_SPRING_GREEN,
+	BUSYLIGHT_COLOR_CYAN,
+	BUSYLIGHT_COLOR_AZURE,
+	BUSYLIGHT_COLOR_BLUE,
+	BUSYLIGHT_COLOR_VIOLET,
+	BUSYLIGHT_COLOR_MAGENTA,
+	BUSYLIGHT_COLOR_ROSE,
+	BUSYLIGHT_COLOR_WHITE
+;
+
+PCBUSYLIGHT_DEVICE_ID kull_m_busylight_devices_getIdFromAttributes(PHIDD_ATTRIBUTES attributes);
+BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask);
+void kull_m_busylight_devices_free(PBUSYLIGHT_DEVICE devices, BOOL instantOff);
+
+//BOOL kull_m_busylight_request_create(PBUSYLIGHT_COMMAND_STEP commands, DWORD count, PCBUSYLIGHT_DPI dpi, PBYTE *data, DWORD *size);
+BOOL kull_m_busylight_request_create(PCBUSYLIGHT_COMMAND_STEP commands, DWORD count, PBYTE *data, DWORD *size);
+BOOL kull_m_busylight_device_send_raw(PBUSYLIGHT_DEVICE device, LPCVOID request, DWORD size);
+BOOL kull_m_busylight_device_read_raw(PBUSYLIGHT_DEVICE device, LPVOID *data, DWORD *size);
+
 DWORD WINAPI kull_m_busylight_keepAliveThread(LPVOID lpThreadParameter);
-void kull_m_busylight_start();
-void kull_m_busylight_stop();
+
+BOOL kull_m_busylight_device_read_infos(PBUSYLIGHT_DEVICE device, BUSYLIGHT_INFO *info);
+BOOL kull_m_busylight_request_send(PBUSYLIGHT_DEVICE device, PCBUSYLIGHT_COMMAND_STEP commands, DWORD count, BOOL all);
+BOOL kull_m_busylight_request_send_keepalive(PBUSYLIGHT_DEVICE device, BOOL all);
+BOOL kull_m_busylight_request_send_off(PBUSYLIGHT_DEVICE device, BOOL all);

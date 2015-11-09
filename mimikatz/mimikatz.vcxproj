@@ -120,6 +120,7 @@
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ticket.c" />
+    <ClCompile Include="modules\kuhl_m_busylight.c" />
     <ClCompile Include="modules\kuhl_m_crypto.c" />
     <ClCompile Include="modules\kuhl_m_event.c" />
     <ClCompile Include="modules\kuhl_m_kernel.c" />
@@ -153,6 +154,7 @@
   <ItemGroup>
     <ClInclude Include="..\modules\kull_m_asn1.h" />
     <ClInclude Include="..\modules\kull_m_busylight.h" />
+    <ClInclude Include="..\modules\kull_m_busylight_hid.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
@@ -188,6 +190,7 @@
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ticket.h" />
     <ClInclude Include="modules\kuhl_m.h" />
+    <ClInclude Include="modules\kuhl_m_busylight.h" />
     <ClInclude Include="modules\kuhl_m_crypto.h" />
     <ClInclude Include="modules\kuhl_m_event.h" />
     <ClInclude Include="modules\kuhl_m_kernel.h" />

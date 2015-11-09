@@ -5,31 +5,43 @@
 */
 #include "kull_m_busylight.h"
 
-PBUSYLIGHT_DEVICE kull_m_busylight_devices = NULL;
-
 const BUSYLIGHT_DEVICE_ID KULL_M_BUSYLIGHT_CATALOG[] = {
-	{0x27bb, 0x3bca, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND | BUSYLIGHT_CAP_JINGLECLIPS, L"Busylight Lync model (with bootloader)"},
-	{0x27bb, 0x3bcb, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND, L"Busylight UC model"},
-	{0x27bb, 0x3bcc, BUSYLIGHT_CAP_INPUTEVENT, L"kuandoBOX"},
-	{0x27bb, 0x3bcd, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND | BUSYLIGHT_CAP_JINGLECLIPS, L"Busylight Omega model"},
-	{0x04d8, 0xf848, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND, L"Busylight Lync model"},
-	{0x0bf8, 0x1020, BUSYLIGHT_CAP_LIGHT, L"Fujitsu MMM2"},
+	{0x27bb, 0x3bca, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND | BUSYLIGHT_CAP_JINGLE_CLIPS,	L"Busylight Lync model (with bootloader)"},
+	{0x27bb, 0x3bcb, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND,									L"Busylight UC model"},
+	{0x27bb, 0x3bcc, BUSYLIGHT_CAP_INPUTEVENT,													L"kuandoBOX"},
+	{0x27bb, 0x3bcd, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND | BUSYLIGHT_CAP_JINGLE_CLIPS,	L"Busylight Omega model"},
+	{0x04d8, 0xf848, BUSYLIGHT_CAP_LIGHT | BUSYLIGHT_CAP_SOUND,									L"Busylight Lync model (Microchip Id)"},
+	{0x0bf8, 0x1020, BUSYLIGHT_CAP_LIGHT,														L"Fujitsu MMM2"},
 };
-const BYTE BUSYLIGHT_RAW_KEEPALIVE[] =		{0x00, 0x8f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x8c,};
-const BYTE BUSYLIGHT_RAW_RENE_COTY_HACK[] = {0x00, 0x11, 0x00, 0x00, 0x00, 0x07, 0x07, 0x00, 0x80, 0x12, 0x00, 0x07, 0x07, 0x07, 0x07, 0x00, 0x80, 0x10, 0x00, 0x07, 0x00, 0x00, 0x07, 0x0a, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x04, 0xf2,};
-const BYTE BUSYLIGHT_RAW_KIWI_HACK[] =		{0x00, 0x11, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x80, 0x12, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x80, 0x13, 0x00, 0x00, 0x05, 0x00, 0x01, 0x00, 0x80, 0x14, 0x00, 0x00, 0x07, 0x00, 0x02, 0x00, 0x80, 0x15, 0x00, 0x00, 0x05, 0x00, 0x01, 0x00, 0x80, 0x10, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x8b,};
-const BYTE BUSYLIGHT_RAW_OFF[] =			{0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x8d,};
 
-PCBUSYLIGHT_DEVICE_ID kull_m_busylight_getDeviceIdFromAttributes(PHIDD_ATTRIBUTES attributes)
+const BUSYLIGHT_COLOR
+	BUSYLIGHT_COLOR_OFF					= {0,	0,		0},
+	BUSYLIGHT_COLOR_RED					= {100,	0,		0},
+	BUSYLIGHT_COLOR_ORANGE				= {100,	50,		0},
+	BUSYLIGHT_COLOR_YELLOW				= {100,	100,	0},
+	BUSYLIGHT_COLOR_CHARTREUSE_GREEN	= {50,	100,	0},
+	BUSYLIGHT_COLOR_GREEN				= {0,	100,	0},
+	BUSYLIGHT_COLOR_SPRING_GREEN		= {0,	100,	50},
+	BUSYLIGHT_COLOR_CYAN				= {0,	100,	100},
+	BUSYLIGHT_COLOR_AZURE				= {0,	50,		100},
+	BUSYLIGHT_COLOR_BLUE				= {0,	0,		100},
+	BUSYLIGHT_COLOR_VIOLET				= {50,	0,		100},
+	BUSYLIGHT_COLOR_MAGENTA				= {100,	0,		100},
+	BUSYLIGHT_COLOR_ROSE				= {100,	0,		50},
+	BUSYLIGHT_COLOR_WHITE				= {100, 100,	100}
+;
+
+PCBUSYLIGHT_DEVICE_ID kull_m_busylight_devices_getIdFromAttributes(PHIDD_ATTRIBUTES attributes)
 {
 	DWORD i;
-	for(i = 0; i < ARRAYSIZE(KULL_M_BUSYLIGHT_CATALOG); i++)
-		if((KULL_M_BUSYLIGHT_CATALOG[i].Vid == attributes->VendorID) && (KULL_M_BUSYLIGHT_CATALOG[i].Pid == attributes->ProductID))
-			return &KULL_M_BUSYLIGHT_CATALOG[i];
+	if(attributes)
+		for(i = 0; i < ARRAYSIZE(KULL_M_BUSYLIGHT_CATALOG); i++)
+			if((KULL_M_BUSYLIGHT_CATALOG[i].Vid == attributes->VendorID) && (KULL_M_BUSYLIGHT_CATALOG[i].Pid == attributes->ProductID))
+				return &KULL_M_BUSYLIGHT_CATALOG[i];
 	return NULL;
 }
 
-BOOL kull_m_busylight_getDevices(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask)
+BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask)
 {
 	PBUSYLIGHT_DEVICE *next = devices;
 	GUID guidHid;
@@ -42,6 +54,7 @@ BOOL kull_m_busylight_getDevices(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD
 	HIDD_ATTRIBUTES attributes;
 	PCBUSYLIGHT_DEVICE_ID deviceId;
 	PHIDP_PREPARSED_DATA PreparsedData;
+	NTSTATUS status;
 
 	*next = NULL;
 	HidD_GetHidGuid(&guidHid);
@@ -67,7 +80,7 @@ BOOL kull_m_busylight_getDevices(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD
 								attributes.Size = sizeof(HIDD_ATTRIBUTES);
 								if(HidD_GetAttributes(deviceHandle, &attributes))
 								{
-									if(deviceId = kull_m_busylight_getDeviceIdFromAttributes(&attributes))
+									if(deviceId = kull_m_busylight_devices_getIdFromAttributes(&attributes))
 									{
 										if((deviceId->Capabilities & mask) == mask)
 										{
@@ -75,23 +88,34 @@ BOOL kull_m_busylight_getDevices(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD
 											{
 												if(HidD_GetPreparsedData(deviceHandle, &PreparsedData))
 												{
-													if(!NT_SUCCESS(HidP_GetCaps(PreparsedData, &(*next)->hidCaps)))
-														PRINT_ERROR(L"HidP_GetCaps\n");
+													status = HidP_GetCaps(PreparsedData, &(*next)->hidCaps);
+													if(!NT_SUCCESS(status))
+														PRINT_ERROR(L"HidP_GetCaps (%08x)\n", status);
 													HidD_FreePreparsedData(PreparsedData);
 												}
+												(*next)->DevicePath = _wcsdup(DeviceInterfaceDetailData->DevicePath);
 												(*next)->hidAttributes = attributes;
 												(*next)->deviceId = deviceId;
 												//(*next)->dpi.box_sensivity = 6;
 												//(*next)->dpi.box_timeout = 4;
 												//(*next)->dpi.box_triggertime = 85;
 												(*next)->id = id;
-												(*next)->hBusy = CreateFile(DeviceInterfaceDetailData->DevicePath, GENERIC_WRITE /*| GENERIC_READ*/, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-												(*next)->ThreadDelay = 5000;
-
-												if((*next)->hBusy != INVALID_HANDLE_VALUE)
+												(*next)->hBusy = CreateFile(DeviceInterfaceDetailData->DevicePath, FILE_READ_DATA | FILE_WRITE_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+												
+												if((*next)->hBusy && ((*next)->hBusy != INVALID_HANDLE_VALUE))
 												{
-													next = &(*next)->next;
-													id++;
+													(*next)->dKeepAliveThread = 5000;
+													if((*next)->hKeepAliveThread = CreateThread(NULL, 0, kull_m_busylight_keepAliveThread, *next, 0, NULL))
+													{
+														next = &(*next)->next;
+														id++;
+													}
+													else
+													{
+														PRINT_ERROR_AUTO(L"CreateThread (hKeepAliveThread)");
+														CloseHandle((*next)->hBusy);
+														LocalFree(*next);
+													}
 												}
 												else
 												{
@@ -120,36 +144,153 @@ BOOL kull_m_busylight_getDevices(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD
 	return (id > 0);
 }
 
-void kull_m_busylight_freeDevices(PBUSYLIGHT_DEVICE devices)
+void kull_m_busylight_devices_free(PBUSYLIGHT_DEVICE devices, BOOL instantOff)
 {
 	PBUSYLIGHT_DEVICE tmp;
 	while(devices)
 	{
 		if(devices->hBusy)
 		{
-			//if(devices->hBusy != INVALID_HANDLE_VALUE)
-			//	kull_m_busylight_sendRawRequest(devices, BUSYLIGHT_RAW_OFF, sizeof(BUSYLIGHT_RAW_OFF));
+			if(instantOff && (devices->hBusy != INVALID_HANDLE_VALUE))
+				kull_m_busylight_request_send_off(devices, FALSE);
 			CloseHandle(devices->hBusy);
 			devices->hBusy = NULL;
 		}
-		devices->ThreadDelay = 0;
-		if(devices->hThread)
-			TerminateThread(devices->hThread, ERROR_SUCCESS);
+		devices->dKeepAliveThread = 0;
+		if(devices->hKeepAliveThread)
+		{
+			TerminateThread(devices->hKeepAliveThread, ERROR_SUCCESS);
+			devices->hKeepAliveThread = NULL;
+		}
+		devices->dWorkerThread = 0;
+		if(devices->hWorkerThread)
+		{
+			TerminateThread(devices->hWorkerThread, ERROR_SUCCESS);
+			devices->hWorkerThread = NULL;
+		}
+		if(devices->DevicePath)
+			free(devices->DevicePath);
 		tmp = devices->next;
 		LocalFree(devices);
 		devices = tmp;
 	}
 }
 
-BOOL kull_m_busylight_sendRawRequest(PBUSYLIGHT_DEVICE device, const BYTE * request, DWORD size)
+//BOOL kull_m_busylight_request_create(PBUSYLIGHT_COMMAND_STEP commands, DWORD count, PCBUSYLIGHT_DPI dpi, PBYTE *data, DWORD *size)
+//{
+//	BOOL status = FALSE;
+//	DWORD i;
+//	USHORT sum;
+//	
+//	*size = BUSYLIGHT_OUTPUT_REPORT_SIZE;
+//	if(*data = (PBYTE) LocalAlloc(LPTR, *size))
+//	{
+//		for(i = 0; i < min(count, 7); i++)
+//		{
+//			(*data)[i * 8 + 1] = (commands[i].NextStep & 0xf0) ? commands[i].NextStep : (commands[i].NextStep | 0x10);
+//			(*data)[i * 8 + 2] = commands[i].RepeatInterval;
+//			// TODO avoid color (or not ?)
+//			(*data)[i * 8 + 3] = commands[i].color.red;
+//			(*data)[i * 8 + 4] = commands[i].color.green;
+//			(*data)[i * 8 + 5] = commands[i].color.blue;
+//
+//			(*data)[i * 8 + 6] = commands[i].OnTimeSteps;
+//			(*data)[i * 8 + 7] = commands[i].OffTimeSteps;
+//			(*data)[i * 8 + 8] = commands[i].AudioByte;
+//		}
+//		if(dpi)
+//		{
+//			(*data)[57] = dpi->box_sensivity;
+//			(*data)[58] = dpi->box_timeout;
+//			(*data)[59] = dpi->box_triggertime;
+//		}
+//		(*data)[60] = (*data)[61] = (*data)[62] = 0xff;
+//		
+//		for(i = 1, sum = 0; i < (*size - 2); i++)
+//			sum += (*data)[i];
+//		(*data)[63] = (BYTE) (sum / 256);
+//		(*data)[64] = (BYTE) (sum % 256);
+//
+//		status = TRUE; // TODO add checks
+//		if(!status)
+//		{
+//			*data = (PBYTE) LocalFree(*data);
+//			*size = 0;
+//		}
+//	}
+//	return status;
+//}
+
+BOOL kull_m_busylight_request_create(PCBUSYLIGHT_COMMAND_STEP commands, DWORD count, PBYTE *data, DWORD *size)
 {
 	BOOL status = FALSE;
-	DWORD readed;
+	DWORD i;
+
+	*size = BUSYLIGHT_OUTPUT_REPORT_SIZE;
+	if(*data = (PBYTE) LocalAlloc(LPTR, *size))
+	{
+		for(i = 0; i < min(count, 8); i++)
+		{
+			(*data)[i * 8 + 1] = /*(commands[i].NextStep & 0xf0) ? */commands[i].NextStep/* : (commands[i].NextStep | 0x10)*/;
+			(*data)[i * 8 + 2] = commands[i].RepeatInterval;
+			// TODO avoid color (or not ?)
+			(*data)[i * 8 + 3] = commands[i].color.red;
+			(*data)[i * 8 + 4] = commands[i].color.green;
+			(*data)[i * 8 + 5] = commands[i].color.blue;
+
+			(*data)[i * 8 + 6] = commands[i].OnTimeSteps;
+			(*data)[i * 8 + 7] = commands[i].OffTimeSteps;
+			(*data)[i * 8 + 8] = commands[i].AudioByte;
+		}
+
+		status = TRUE; // TODO add checks
+		if(!status)
+		{
+			*data = (PBYTE) LocalFree(*data);
+			*size = 0;
+		}
+	}
+	return status;
+}
+
+BOOL kull_m_busylight_device_send_raw(PBUSYLIGHT_DEVICE device, LPCVOID request, DWORD size)
+{
+	BOOL status = FALSE;
+	DWORD writed;
 	if(device && device->hBusy && (device->hBusy != INVALID_HANDLE_VALUE))
 	{
-		status = WriteFile(device->hBusy, request, size, &readed, NULL);
-		if(!status)
-			PRINT_ERROR(L"[device %u] WriteFile (0x%08x)\n", device->id, GetLastError());
+		if(size <= device->hidCaps.OutputReportByteLength)
+		{
+			status = WriteFile(device->hBusy, request, size, &writed, NULL);
+			if(!status)
+				PRINT_ERROR(L"[device %u] WriteFile (0x%08x)\n", device->id, GetLastError());
+		}
+		else PRINT_ERROR(L"[device %u] Size is not valide (siz = %u, max = %u)\n", device->id, size, device->hidCaps.OutputReportByteLength);
+	}
+	else PRINT_ERROR(L"[device %u] Invalid Device/Busy Handle\n", device->id);
+	return status;
+}
+
+BOOL kull_m_busylight_device_read_raw(PBUSYLIGHT_DEVICE device, LPVOID *data, DWORD *size)
+{
+	BOOL status = FALSE;
+	DWORD toRead;
+	if(device && device->hBusy && (device->hBusy != INVALID_HANDLE_VALUE))
+	{
+		toRead = device->hidCaps.InputReportByteLength;
+		if(*data = LocalAlloc(LPTR, toRead))
+		{
+			status = ReadFile(device->hBusy, *data, toRead, size, NULL);
+			if(!status || (status && (*size != toRead)))
+			{
+				if(!status)
+					PRINT_ERROR(L"[device %u] ReadFile (0x%08x)\n", device->id, GetLastError());
+				else
+					PRINT_ERROR(L"[device %u] %u byte(s) readed, %u wanted\n", *size, toRead);
+				*data = LocalFree(*data);
+				*size = 0;
+			}
+		}
 	}
 	else PRINT_ERROR(L"[device %u] Invalid Device/Busy Handle\n", device->id);
 	return status;
@@ -158,26 +299,84 @@ BOOL kull_m_busylight_sendRawRequest(PBUSYLIGHT_DEVICE device, const BYTE * requ
 DWORD WINAPI kull_m_busylight_keepAliveThread(LPVOID lpThreadParameter)
 {
 	PBUSYLIGHT_DEVICE device = (PBUSYLIGHT_DEVICE) lpThreadParameter;
-	while(device->hThread && device->hBusy)
+	while(device && device->hKeepAliveThread && device->dKeepAliveThread && device->hBusy)
 	{
-		kull_m_busylight_sendRawRequest(device, BUSYLIGHT_RAW_KEEPALIVE, sizeof(BUSYLIGHT_RAW_KEEPALIVE));
-		Sleep(device->ThreadDelay);
+		if(kull_m_busylight_request_send_keepalive(device, FALSE))
+			Sleep(device->dKeepAliveThread);
+		else
+		{
+			CloseHandle(device->hBusy);
+			device->hBusy = NULL;
+			device->dKeepAliveThread = 0;
+			device->hKeepAliveThread = NULL;
+			break;
+		}
 	};
 	return ERROR_SUCCESS;
 }
 
-void kull_m_busylight_start()
+BOOL kull_m_busylight_device_read_infos(PBUSYLIGHT_DEVICE device, BUSYLIGHT_INFO *info)
 {
-	BOOL isFR = (((((DWORD) GetKeyboardLayout(0)) & 0xffff0000) >> 16) == 0x40c);
-	if(kull_m_busylight_getDevices(&kull_m_busylight_devices, NULL, BUSYLIGHT_CAP_LIGHT)) // only deal with 1 device in this case.
+	BOOL status = FALSE;
+	LPBYTE data;
+	DWORD size;
+	if(kull_m_busylight_request_send_keepalive(device, FALSE))
 	{
-		kull_m_busylight_sendRawRequest(kull_m_busylight_devices, BUSYLIGHT_RAW_KEEPALIVE, sizeof(BUSYLIGHT_RAW_KEEPALIVE));
-		kull_m_busylight_devices->hThread = CreateThread(NULL, 0, kull_m_busylight_keepAliveThread, kull_m_busylight_devices, 0, NULL); 
-		kull_m_busylight_sendRawRequest(kull_m_busylight_devices, isFR ? BUSYLIGHT_RAW_KIWI_HACK : BUSYLIGHT_RAW_RENE_COTY_HACK, isFR ? sizeof(BUSYLIGHT_RAW_KIWI_HACK) : sizeof(BUSYLIGHT_RAW_RENE_COTY_HACK));
+		if(kull_m_busylight_device_read_raw(device, (LPVOID *) &data, &size))
+		{
+			RtlZeroMemory(info, sizeof(BUSYLIGHT_INFO));
+			if(status = !data[0])
+			{
+				info->status = data[1];
+				RtlCopyMemory(info->ProductId, data + 2, 3);
+				RtlCopyMemory(info->CostumerId, data + 5, 8);
+				RtlCopyMemory(info->Model, data + 13, 4);
+				RtlCopyMemory(info->Serial, data + 17, 8);
+				RtlCopyMemory(info->Mfg_ID, data + 25, 8);
+				RtlCopyMemory(info->Mfg_Date, data + 33, 8);
+				RtlCopyMemory(info->swrelease, data + 41, 6);
+			}
+			else PRINT_ERROR(L"[device %u] data[0] is not NULL (0x%02x)\n", data[0]);
+			LocalFree(data);
+		}
 	}
+	return status;
 }
 
-void kull_m_busylight_stop()
+BOOL kull_m_busylight_request_send(PBUSYLIGHT_DEVICE device, PCBUSYLIGHT_COMMAND_STEP commands, DWORD count, BOOL all)
 {
-	kull_m_busylight_freeDevices(kull_m_busylight_devices);
+	BOOL status = FALSE;
+	PBUSYLIGHT_DEVICE cur;
+	LPBYTE data;
+	DWORD size;
+	if(status = kull_m_busylight_request_create(commands, count, &data, &size))
+	{
+		for(cur = device; cur; cur = all ? cur->next : NULL)
+			status &= kull_m_busylight_device_send_raw(cur, data, size);
+		LocalFree(data);
+	}
+	return status;
+}
+
+BOOL kull_m_busylight_request_send_keepalive(PBUSYLIGHT_DEVICE device, BOOL all)
+{
+	BUSYLIGHT_COMMAND_STEP mdl = {0x8f, 0, {0, 0, 0}, 0, 0, 0};
+	return kull_m_busylight_request_send(device, &mdl, 1, all);
+}
+
+BOOL kull_m_busylight_request_send_off(PBUSYLIGHT_DEVICE device, BOOL all)
+{
+	PBUSYLIGHT_DEVICE cur;
+	BUSYLIGHT_COMMAND_STEP mdl = {0, 0, {0, 0, 0}, 0, 0, BUSYLIGHT_MEDIA_MUTE};
+
+	for(cur = device; cur; cur = all ? cur->next : NULL)
+	{
+		cur->dWorkerThread = 0;
+		if(cur->hWorkerThread)
+		{
+			TerminateThread(cur->hWorkerThread, ERROR_SUCCESS);
+			cur->hWorkerThread = NULL;
+		}
+	}
+	return kull_m_busylight_request_send(device, &mdl, 1, all);
 }

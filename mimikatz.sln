@@ -26,6 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Win32", "Win32", "{96078881
 	ProjectSection(SolutionItems) = preProject
 		lib\Win32\advapi32.hash.lib = lib\Win32\advapi32.hash.lib
 		lib\Win32\cryptdll.lib = lib\Win32\cryptdll.lib
+		lib\Win32\hid.lib = lib\Win32\hid.lib
 		lib\Win32\ntdll.min.lib = lib\Win32\ntdll.min.lib
 		lib\Win32\samlib.lib = lib\Win32\samlib.lib
 	EndProjectSection
@@ -34,6 +35,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x64", "x64", "{E9D1619F-D4A
 	ProjectSection(SolutionItems) = preProject
 		lib\x64\advapi32.hash.lib = lib\x64\advapi32.hash.lib
 		lib\x64\cryptdll.lib = lib\x64\cryptdll.lib
+		lib\x64\hid.lib = lib\x64\hid.lib
 		lib\x64\ntdll.min.lib = lib\x64\ntdll.min.lib
 		lib\x64\samlib.lib = lib\x64\samlib.lib
 	EndProjectSection
