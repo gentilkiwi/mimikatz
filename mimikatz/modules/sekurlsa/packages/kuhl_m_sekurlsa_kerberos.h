@@ -401,6 +401,8 @@ typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_6 {
 	LSA_UNICODE_STRING	Description;
 	LSA_UNICODE_STRING	AltTargetDomainName;
 	LSA_UNICODE_STRING	KDCServer;	//?
+	DWORD		unk10586_d;
+	PVOID		unk10586_p;
 	PKERB_EXTERNAL_NAME	ClientName;
 	PVOID		name0;
 	ULONG		TicketFlags;
