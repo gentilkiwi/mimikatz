@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_string.h"
 
@@ -42,10 +42,55 @@ BOOL kull_m_string_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY
 	return status;
 }
 
+BOOL kull_m_string_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source)
+{
+	BOOL status = FALSE;
+	BYTE nbAuth;
+	DWORD sizeSid;
+	KULL_M_MEMORY_HANDLE hOwn = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aDestin = {&nbAuth, &hOwn};
+	KULL_M_MEMORY_ADDRESS aSource = {(PBYTE) *pSid + 1, source};
+
+	*pSid = NULL;
+	if(kull_m_memory_copy(&aDestin, &aSource, sizeof(BYTE)))
+	{
+		aSource.address = (PBYTE) aSource.address - 1;
+		sizeSid =  4 * nbAuth + 6 + 1 + 1;
+
+		if(aDestin.address = LocalAlloc(LPTR, sizeSid))
+		{
+			*pSid = (PSID) aDestin.address;
+			status = kull_m_memory_copy(&aDestin, &aSource, sizeSid);
+		}
+	}
+	return status;
+}
+
+void kull_m_string_MakeRelativeOrAbsoluteString(PVOID BaseAddress, PLSA_UNICODE_STRING String, BOOL relative)
+{
+	if(String->Buffer)
+		String->Buffer = (PWSTR) ((ULONG_PTR)(String->Buffer) + ((relative ? -1 : 1) * (ULONG_PTR)(BaseAddress)));
+}
+
+BOOL kull_m_string_copyUnicodeStringBuffer(PUNICODE_STRING pSource, PUNICODE_STRING pDestination)
+{
+	BOOL status = FALSE;
+	if(pSource && pDestination && pSource->MaximumLength && pSource->Buffer)
+	{
+		*pDestination = *pSource;
+		if(pDestination->Buffer = (PWSTR) LocalAlloc(LPTR, pSource->MaximumLength))
+		{
+			status = TRUE;
+			RtlCopyMemory(pDestination->Buffer, pSource->Buffer, pSource->MaximumLength);
+		}
+	}
+	return status;
+}
+
 void kull_m_string_freeUnicodeStringBuffer(PUNICODE_STRING pString)
 {
-	if(pString->Buffer)
-		LocalFree(pString->Buffer);
+	if(pString && pString->Buffer)
+		pString->Buffer = (PWSTR) LocalFree(pString->Buffer);
 }
 
 wchar_t * kull_m_string_qad_ansi_to_unicode(const char * ansi)
@@ -83,6 +128,26 @@ BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size)
 	return result;
 }
 
+BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWORD *size)
+{
+	BOOL result = FALSE;
+	*size = (DWORD) wcslen(string);
+	if(!(*size % 2))
+	{
+		*size >>= 1;
+		if(*hex = (PBYTE) LocalAlloc(LPTR, *size))
+		{
+			result = kull_m_string_stringToHex(string, *hex, *size);
+			if(!result)
+			{
+				*hex = (PBYTE) LocalFree(*hex);
+				*size = 0;
+			}
+		}
+	}
+	return result;
+}
+
 PCWCHAR WPRINTF_TYPES[] =
 {
 	L"%02x",		// WPRINTF_HEX_SHORT
@@ -93,16 +158,24 @@ PCWCHAR WPRINTF_TYPES[] =
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
 {
-	DWORD i, sep;
+	DWORD i, sep = flags >> 16;
 	PCWCHAR pType = WPRINTF_TYPES[flags & 0x0000000f];
-	sep = flags >> 16;
+
+	if((flags & 0x0000000f) == 2)
+		kprintf(L"\nBYTE data[] = {\n\t");
 
 	for(i = 0; i < cbData; i++)
 	{
 		kprintf(pType, ((LPCBYTE) lpData)[i]);
 		if(sep && !((i+1) % sep))
+		{
 			kprintf(L"\n");
+			if((flags & 0x0000000f) == 2)
+				kprintf(L"\t");
+		}
 	}
+	if((flags & 0x0000000f) == 2)
+		kprintf(L"\n};\n");
 }
 
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime)
@@ -152,6 +225,37 @@ void kull_m_string_displaySID(IN PSID pSid)
 	else PRINT_ERROR_AUTO(L"ConvertSidToStringSid");
 }
 
+PWSTR kull_m_string_getRandomGUID()
+{
+	UNICODE_STRING uString;
+	GUID guid;
+	HCRYPTPROV hTmpCryptProv;
+	PWSTR buffer = NULL;
+	if(CryptAcquireContext(&hTmpCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+	{
+		if(CryptGenRandom(hTmpCryptProv, sizeof(GUID), (PBYTE) &guid))
+		{
+			if(NT_SUCCESS(RtlStringFromGUID(&guid, &uString)))
+			{
+				if(buffer = (PWSTR) LocalAlloc(LPTR, uString.MaximumLength))
+					RtlCopyMemory(buffer, uString.Buffer, uString.MaximumLength);
+				RtlFreeUnicodeString(&uString);
+			}
+		}
+		CryptReleaseContext(hTmpCryptProv, 0);
+	}
+	return buffer;
+}
+
+void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size)
+{
+	PVOID tempPtr = NULL;
+	if(size)
+		if(tempPtr = LocalAlloc(LPTR, (SIZE_T) size))
+			RtlCopyMemory(tempPtr, *(PVOID *) ptr, (size_t) size);
+	*(PVOID *) ptr = tempPtr;
+}
+
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue)
 {
 	BOOL result = FALSE;
@@ -191,4 +295,20 @@ BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wch
 	}
 
 	return result;
+}
+
+BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src)
+{
+	BOOL status = FALSE;
+	size_t size;
+	if(src && dst && (size = wcslen(src)))
+	{
+		size = (size + 1) * sizeof(wchar_t);
+		if(*dst = (LPWSTR) LocalAlloc(LPTR, size))
+		{
+			RtlCopyMemory(*dst, src, size);
+			status = TRUE;
+		}
+	}
+	return status;
 }

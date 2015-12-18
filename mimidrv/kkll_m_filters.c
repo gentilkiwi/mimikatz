@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kkll_m_filters.h"
 
@@ -16,6 +16,7 @@ const ULONG MF_OffSetTable[KiwiOsIndex_MAX][MF_MAX] =
 /* 7	*/	{0x004c, 0x000c, 0x0010, 0x0030},
 /* 8	*/	{0x004c, 0x000c, 0x0010, 0x0030},
 /* BLUE	*/	{0x004c, 0x000c, 0x0010, 0x0030},
+/* 10	*/	{0x004c, 0x000c, 0x0010, 0x0040},
 #else
 /* UNK	*/	{0},
 /* XP	*/	{0},
@@ -24,6 +25,7 @@ const ULONG MF_OffSetTable[KiwiOsIndex_MAX][MF_MAX] =
 /* 7	*/	{0x0090, 0x0018, 0x0020, 0x0050},
 /* 8	*/	{0x0090, 0x0018, 0x0020, 0x0050},
 /* BLUE	*/	{0x0090, 0x0018, 0x0020, 0x0050},
+/* 10	*/	{0x0090, 0x0018, 0x0020, 0x0060},
 #endif
 };
 

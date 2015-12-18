@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "kuhl_m.h"
@@ -21,3 +21,4 @@ NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_cd(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_standard_test(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_standard_markruss(int argc, wchar_t * argv[]);

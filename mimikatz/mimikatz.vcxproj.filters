@@ -140,6 +140,48 @@
     <ClCompile Include="modules\kuhl_m_service_remote.c">
       <Filter>local modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_dpapi.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c">
+      <Filter>local modules\kerberos</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_minesweeper.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_crypto.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c">
+      <Filter>local modules\dpapi</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_key.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c">
+      <Filter>local modules\dpapi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_cred.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc_ms-drsr_c.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc_drsr.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_busylight.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_busylight.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -299,6 +341,54 @@
     <ClInclude Include="modules\kuhl_m_service_remote.h">
       <Filter>local modules</Filter>
     </ClInclude>
+    <ClInclude Include="..\modules\kull_m_dpapi.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h">
+      <Filter>local modules\kerberos</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_minesweeper.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_crypto.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h">
+      <Filter>local modules\dpapi</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_key.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h">
+      <Filter>local modules\dpapi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_cred.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_ms-drsr.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_ms-dtyp.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_drsr.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_busylight.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_busylight.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_busylight_hid.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -320,6 +410,12 @@
     </Filter>
     <Filter Include="local modules\kerberos">
       <UniqueIdentifier>{46c85327-a2e7-45c4-b764-c072222267bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\dpapi">
+      <UniqueIdentifier>{17902a14-db65-4d8a-be9a-45fb98a65ec1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\dpapi\packages">
+      <UniqueIdentifier>{0068506b-99c4-4d30-936a-d54598f49425}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

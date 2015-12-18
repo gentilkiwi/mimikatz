@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_standard.h"
 
@@ -16,6 +16,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_base64,	L"base64",	L"Switch file output/base64 output"},
 	{kuhl_m_standard_version,	L"version",	L"Display some version informations"},
 	{kuhl_m_standard_cd,		L"cd",		L"Change or display current directory"},
+	{kuhl_m_standard_markruss,	L"markruss",L"Mark about PtH"},
 };
 const KUHL_M kuhl_m_standard = {
 	L"standard",	L"Standard module",	L"Basic commands (does not require module name)",
@@ -93,8 +94,9 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 	{
 		kprintf(
 			L"\n" MIMIKATZ L" " MIMIKATZ_VERSION L" (arch " MIMIKATZ_ARCH L")\n"
-			L"NT     -  Windows NT %u.%u build %u (arch x%s)\n",
-			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86"
+			L"Windows NT %u.%u build %u (arch x%s)\n"
+			L"msvc %u %u\n",
+			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _MSC_FULL_VER, _MSC_BUILD
 			);
 	}
 	return STATUS_SUCCESS;
@@ -106,7 +108,7 @@ NTSTATUS kuhl_m_standard_cd(int argc, wchar_t * argv[])
 	if(kull_m_file_getCurrentDirectory(&buffer))
 	{
 		if(argc)
-			kprintf(L"Old: ");
+			kprintf(L"Cur: ");
 		kprintf(L"%s\n", buffer);
 		LocalFree(buffer);
 	}
@@ -125,5 +127,11 @@ NTSTATUS kuhl_m_standard_cd(int argc, wchar_t * argv[])
 		}
 		else PRINT_ERROR_AUTO(L"SetCurrentDirectory");
 	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_standard_markruss(int argc, wchar_t * argv[])
+{
+	kprintf(L"Sorry you guys don\'t get it.\n");
 	return STATUS_SUCCESS;
 }

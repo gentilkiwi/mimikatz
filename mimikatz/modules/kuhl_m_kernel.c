@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_kernel.h"
 
@@ -21,6 +21,8 @@ const KUHL_K_C kuhl_k_c_kernel[] = {
 	{NULL,								IOCTL_MIMIDRV_NOTIFY_IMAGE_LIST,	L"notifImage",		L"List image notify callbacks"},
 	{NULL,								IOCTL_MIMIDRV_NOTIFY_REG_LIST,		L"notifReg",		L"List registry notify callbacks"},
 	{NULL,								IOCTL_MIMIDRV_NOTIFY_OBJECT_LIST,	L"notifObject",		L"List object notify callbacks"},
+	{kuhl_m_kernel_notifyProcessRemove,	IOCTL_MIMIDRV_NOTIFY_PROCESS_REMOVE,L"notifProcessRemove",	L"Remove process notify callback"},
+	{kuhl_m_kernel_notifyObjectRemove,	IOCTL_MIMIDRV_NOTIFY_OBJECT_REMOVE,	L"notifObjectRemove",	L"Remove object notify callback"},
 	{NULL,								IOCTL_MIMIDRV_FILTER_LIST,			L"filters",			L"List FS filters"},
 	{NULL,								IOCTL_MIMIDRV_MINIFILTER_LIST,		L"minifilters",		L"List minifilters"},
 };
@@ -249,5 +251,32 @@ NTSTATUS kuhl_m_kernel_processPrivilege(int argc, wchar_t * argv[])
 		pid = wcstoul(szPid, NULL, 0);
 	
 	kull_m_kernel_mimidrv_simple_output(IOCTL_MIMIDRV_PROCESS_FULLPRIV, pid ? &pid : NULL, pid ? sizeof(ULONG) : 0);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_kernel_notifyProcessRemove(int argc, wchar_t * argv[])
+{
+	return kuhl_m_kernel_notifyGenericRemove(argc, argv, IOCTL_MIMIDRV_NOTIFY_PROCESS_REMOVE);
+}
+
+NTSTATUS kuhl_m_kernel_notifyObjectRemove(int argc, wchar_t * argv[])
+{
+	return kuhl_m_kernel_notifyGenericRemove(argc, argv, IOCTL_MIMIDRV_NOTIFY_OBJECT_REMOVE);
+}
+
+NTSTATUS kuhl_m_kernel_notifyGenericRemove(int argc, wchar_t * argv[], DWORD code)
+{
+	PVOID p;
+	if(argc)
+	{
+#ifdef _M_X64
+		p = (PVOID) _wcstoui64(argv[0], NULL, 0);
+#else ifdef _M_IX86
+		p = (PVOID) wcstoul(argv[0], NULL, 0);
+#endif
+		kprintf(L"Target = 0x%p\n", p);	
+		kull_m_kernel_mimidrv_simple_output(code, &p, sizeof(PVOID));
+	}
+	else PRINT_ERROR(L"No address?\n");
 	return STATUS_SUCCESS;
 }

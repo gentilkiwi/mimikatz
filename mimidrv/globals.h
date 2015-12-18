@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include <ntifs.h>
@@ -34,8 +34,9 @@ typedef enum _KIWI_OS_INDEX {
 	KiwiOsIndex_7		= 4,
 	KiwiOsIndex_8		= 5,
 	KiwiOsIndex_BLUE	= 6,
-	
-	KiwiOsIndex_MAX		= 7,
+	KiwiOsIndex_10		= 7,
+
+	KiwiOsIndex_MAX		= 8,
 } KIWI_OS_INDEX, *PKIWI_OS_INDEX;
 
 #ifdef _M_IX86

@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "globals.h"
@@ -34,6 +34,7 @@ typedef struct _SHA_CTX {
 	BYTE buffer[64];
 	DWORD state[5];
 	DWORD count[2];
+	DWORD unk[6]; // to avoid error on XP
 } SHA_CTX, *PSHA_CTX;
 
 typedef struct _SHA_DIGEST {
@@ -171,15 +172,16 @@ typedef NTSTATUS (WINAPI * PKERB_ECRYPT_INITIALIZE) (LPCVOID Key, DWORD KeySize,
 typedef NTSTATUS (WINAPI * PKERB_ECRYPT_ENCRYPT) (PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize);
 typedef NTSTATUS (WINAPI * PKERB_ECRYPT_DECRYPT) (PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize);
 typedef NTSTATUS (WINAPI * PKERB_ECRYPT_FINISH) (PVOID * pContext);
-// HashPassword
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT5) (PCUNICODE_STRING String, PVOID Output);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT6) (PCUNICODE_STRING Password, PCUNICODE_STRING Salt, DWORD Count, PVOID Output);
 // RandomKey
 // Control
 
 typedef struct _KERB_ECRYPT {
 	LONG Type0;
-	DWORD unk0;
+	DWORD BlockSize;
 	LONG Type1;
-	DWORD unk1;
+	DWORD KeySize;
 	DWORD Size;
 	DWORD unk2;
 	DWORD unk3;
@@ -188,7 +190,10 @@ typedef struct _KERB_ECRYPT {
 	PKERB_ECRYPT_ENCRYPT Encrypt;
 	PKERB_ECRYPT_DECRYPT Decrypt;
 	PKERB_ECRYPT_FINISH Finish;
-	PVOID HashPassword;
+	union {
+		PKERB_ECRYPT_HASHPASSWORD_NT5 HashPassword_NT5;
+		PKERB_ECRYPT_HASHPASSWORD_NT6 HashPassword_NT6;
+	};
 	PVOID RandomKey;
 	PVOID Control;
 	PVOID unk0_null;

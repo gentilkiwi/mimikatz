@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_registry.h"
 
@@ -20,7 +20,7 @@ const wchar_t * KULL_M_REGISTRY_TYPE_WSTRING[] = {
 	L"QWORD",
 };
 
-BOOL kull_m_registry_open(IN KULL_M_REGISTRY_TYPE Type, IN HANDLE hAny, OUT PKULL_M_REGISTRY_HANDLE *hRegistry)
+BOOL kull_m_registry_open(IN KULL_M_REGISTRY_TYPE Type, IN HANDLE hAny, BOOL isWrite, OUT PKULL_M_REGISTRY_HANDLE *hRegistry)
 {
 	BOOL status = FALSE;
 	PKULL_M_REGISTRY_HIVE_HEADER pFh;
@@ -39,10 +39,10 @@ BOOL kull_m_registry_open(IN KULL_M_REGISTRY_TYPE Type, IN HANDLE hAny, OUT PKUL
 			(*hRegistry)->pHandleHive = (PKULL_M_REGISTRY_HIVE_HANDLE) LocalAlloc(LPTR, sizeof(KULL_M_REGISTRY_HIVE_HANDLE));
 			if((*hRegistry)->pHandleHive)
 			{
-				(*hRegistry)->pHandleHive->hFileMapping = CreateFileMapping(hAny, NULL, PAGE_READONLY, 0, 0, NULL);
+				(*hRegistry)->pHandleHive->hFileMapping = CreateFileMapping(hAny, NULL, isWrite ? PAGE_READWRITE : PAGE_READONLY, 0, 0, NULL);
 				if((*hRegistry)->pHandleHive->hFileMapping)
 				{
-					(*hRegistry)->pHandleHive->pMapViewOfFile = MapViewOfFile((*hRegistry)->pHandleHive->hFileMapping, FILE_MAP_READ, 0, 0, 0);
+					(*hRegistry)->pHandleHive->pMapViewOfFile = MapViewOfFile((*hRegistry)->pHandleHive->hFileMapping, isWrite ? FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, 0);
 					if(pFh = (PKULL_M_REGISTRY_HIVE_HEADER) (*hRegistry)->pHandleHive->pMapViewOfFile)
 					{
 						if((pFh->tag == 'fger') && (pFh->fileType == 0))
@@ -247,14 +247,56 @@ BOOL kull_m_registry_RegQueryInfoKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HK
 	return status;
 }
 
-BOOL kull_m_registry_RegQueryValueEx(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hKey, IN OPTIONAL LPCWSTR lpValueName, IN LPDWORD lpReserved, OUT OPTIONAL LPDWORD lpType, OUT OPTIONAL LPBYTE lpData, IN OUT OPTIONAL LPDWORD lpcbData)
+PKULL_M_REGISTRY_HIVE_VALUE_KEY kull_m_registry_searchValueNameInList(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hKey, IN OPTIONAL LPCWSTR lpValueName)
 {
-	BOOL status = FALSE;
-	DWORD dwErrCode, i, szData;
 	PKULL_M_REGISTRY_HIVE_KEY_NAMED pKn;
 	PKULL_M_REGISTRY_HIVE_VALUE_LIST pVl;
 	PKULL_M_REGISTRY_HIVE_VALUE_KEY pVk, pFvk = NULL;
+	DWORD i;
 	wchar_t * buffer;
+
+	pKn = hKey ? (PKULL_M_REGISTRY_HIVE_KEY_NAMED) hKey : hRegistry->pHandleHive->pRootNamedKey;
+	if(pKn->tag == 'kn')
+	{
+		if(pKn->nbValues && (pKn->offsetValues != -1))
+		{
+			pVl = (PKULL_M_REGISTRY_HIVE_VALUE_LIST) (hRegistry->pHandleHive->pStartOf + pKn->offsetValues);
+			for(i = 0 ; i < pKn->nbValues && !pFvk; i++)
+			{
+				pVk = (PKULL_M_REGISTRY_HIVE_VALUE_KEY) (hRegistry->pHandleHive->pStartOf + pVl->offsetValue[i]);
+				if(pVk->tag == 'kv')
+				{
+					if(lpValueName)
+					{
+						if(pVk->szValueName)
+						{
+							if(pVk->flags & KULL_M_REGISTRY_HIVE_VALUE_KEY_FLAG_ASCII_NAME)
+								buffer = kull_m_string_qad_ansi_c_to_unicode((char *) pVk->valueName, pVk->szValueName);
+							else if(buffer = (wchar_t *) LocalAlloc(LPTR, pVk->szValueName + sizeof(wchar_t)))
+								RtlCopyMemory(buffer, pVk->valueName, pVk->szValueName);
+
+							if(buffer)
+							{
+								if(_wcsicmp(lpValueName, buffer) == 0)
+									pFvk = pVk;
+								LocalFree(buffer);
+							}
+						}
+					}
+					else if(!pVk->szValueName)
+						pFvk = pVk;
+				}
+			}
+		}
+	}
+	return pFvk;
+}
+
+BOOL kull_m_registry_RegQueryValueEx(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hKey, IN OPTIONAL LPCWSTR lpValueName, IN LPDWORD lpReserved, OUT OPTIONAL LPDWORD lpType, OUT OPTIONAL LPBYTE lpData, IN OUT OPTIONAL LPDWORD lpcbData)
+{
+	BOOL status = FALSE;
+	DWORD dwErrCode, szData;
+	PKULL_M_REGISTRY_HIVE_VALUE_KEY pFvk = NULL;
 	PVOID dataLoc;
 
 	switch(hRegistry->type)
@@ -265,64 +307,66 @@ BOOL kull_m_registry_RegQueryValueEx(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HK
 				SetLastError(dwErrCode);
 			break;
 		case KULL_M_REGISTRY_TYPE_HIVE:
-			pKn = hKey ? (PKULL_M_REGISTRY_HIVE_KEY_NAMED) hKey : hRegistry->pHandleHive->pRootNamedKey;
-			if(pKn->tag == 'kn')
+			pFvk = kull_m_registry_searchValueNameInList(hRegistry, hKey, lpValueName);
+			if(status = (pFvk != NULL))
 			{
-				if(pKn->nbValues && (pKn->offsetValues != -1))
+				szData = pFvk->szData & ~0x80000000;
+				if(lpType)
+					*lpType = pFvk->typeData;
+
+				if(lpcbData)
 				{
-					pVl = (PKULL_M_REGISTRY_HIVE_VALUE_LIST) (hRegistry->pHandleHive->pStartOf + pKn->offsetValues);
-					for(i = 0 ; i < pKn->nbValues && !pFvk; i++)
+					if(lpData)
 					{
-						pVk = (PKULL_M_REGISTRY_HIVE_VALUE_KEY) (hRegistry->pHandleHive->pStartOf + pVl->offsetValue[i]);
-						if(pVk->tag == 'kv')
+						if(status = (*lpcbData >= szData))
 						{
-							if(lpValueName)
-							{
-								if(pVk->szValueName)
-								{
-									if(pVk->flags & KULL_M_REGISTRY_HIVE_VALUE_KEY_FLAG_ASCII_NAME)
-										buffer = kull_m_string_qad_ansi_c_to_unicode((char *) pVk->valueName, pVk->szValueName);
-									else if(buffer = (wchar_t *) LocalAlloc(LPTR, pVk->szValueName + sizeof(wchar_t)))
-										RtlCopyMemory(buffer, pVk->valueName, pVk->szValueName);
-
-									if(buffer)
-									{
-										if(_wcsicmp(lpValueName, buffer) == 0)
-											pFvk = pVk;
-										LocalFree(buffer);
-									}
-								}
-							}
-							else if(!pVk->szValueName)
-								pFvk = pVk;
-
-							if(status = (pFvk != NULL))
-							{
-								szData = pFvk->szData & ~0x80000000;
-								if(lpType)
-									*lpType = pFvk->typeData;
-								
-								if(lpcbData)
-								{
-									if(lpData)
-									{
-										if(status = (*lpcbData >= szData))
-										{
-											dataLoc = (pFvk->szData & 0x80000000) ? &pFvk->offsetData : (PVOID) &(((PKULL_M_REGISTRY_HIVE_BIN_CELL) (hRegistry->pHandleHive->pStartOf + pFvk->offsetData))->data);
-											RtlCopyMemory(lpData, dataLoc , szData);
-										}
-									}
-									*lpcbData = szData;
-								}
-							}
+							dataLoc = (pFvk->szData & 0x80000000) ? &pFvk->offsetData : (PVOID) &(((PKULL_M_REGISTRY_HIVE_BIN_CELL) (hRegistry->pHandleHive->pStartOf + pFvk->offsetData))->data);
+							RtlCopyMemory(lpData, dataLoc, szData);
 						}
 					}
+					*lpcbData = szData;
 				}
 			}
 			break;
 		default:
 			break;
 	}
+	return status;
+}
+
+BOOL kull_m_registry_RegSetValueEx(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hKey, IN OPTIONAL LPCWSTR lpValueName, IN DWORD Reserved, IN DWORD dwType, IN OPTIONAL LPCBYTE lpData, IN DWORD cbData)
+{
+	BOOL status = FALSE;
+	DWORD szData, flags, dwErrCode;
+	PKULL_M_REGISTRY_HIVE_VALUE_KEY pFvk;
+	PVOID dataLoc;
+
+	switch(hRegistry->type)
+	{
+		case KULL_M_REGISTRY_TYPE_OWN:
+			dwErrCode = RegSetValueEx(hKey, lpValueName, Reserved, dwType, lpData, cbData);
+			if(!(status = (dwErrCode == ERROR_SUCCESS)))
+				SetLastError(dwErrCode);
+			break;
+		case KULL_M_REGISTRY_TYPE_HIVE:
+			if(pFvk = kull_m_registry_searchValueNameInList(hRegistry, hKey, lpValueName))
+			{
+				flags = pFvk->szData & 0x80000000;
+				szData = pFvk->szData & ~0x80000000;
+				if(status = (szData >= cbData))
+				{
+					pFvk->typeData = dwType;
+					pFvk->szData = flags | cbData;
+					dataLoc = (pFvk->szData & 0x80000000) ? &pFvk->offsetData : (PVOID) &(((PKULL_M_REGISTRY_HIVE_BIN_CELL) (hRegistry->pHandleHive->pStartOf + pFvk->offsetData))->data);
+					RtlCopyMemory(dataLoc, lpData, szData);
+				}
+				else SetLastError(ERROR_NOT_SUPPORTED);
+			}
+			break;
+		default:
+			break;
+	}
+
 	return status;
 }
 

@@ -1,8 +1,9 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
+#ifdef LSASS_DECRYPT
 #include "kuhl_m_sekurlsa_nt63.h"
 
 #ifdef _M_IX86
@@ -131,3 +132,4 @@ NTSTATUS kuhl_m_sekurlsa_nt63_LsaEncryptMemory(IN PVOID Buffer, IN ULONG BufferS
 	}
 	return STATUS_SUCCESS;
 }
+#endif

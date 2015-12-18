@@ -1,11 +1,11 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "kuhl_m.h"
-#include "kerberos/kuhl_m_kerberos_ticket.h"
+#include "kerberos/kuhl_m_kerberos.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
 #include "../modules/kull_m_memory.h"
@@ -14,7 +14,11 @@
 #include "../modules/kull_m_crypto_system.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
+#include "../modules/kull_m_net.h"
+#include "../modules/kull_m_rpc_drsr.h"
 #include "kuhl_m_lsadump_remote.h"
+#include "kuhl_m_crypto.h"
+#include "dpapi/kuhl_m_dpapi_oe.h"
 
 #define	SYSKEY_LENGTH	16
 #define	SAM_KEY_DATA_SALT_LENGTH	16
@@ -26,14 +30,63 @@ typedef struct _SAM_ENTRY {
 	DWORD unk;
 } SAM_ENTRY, *PSAM_SENTRY;
 
+typedef struct _KIWI_BACKUP_KEY {
+	DWORD version;
+	DWORD keyLen;
+	DWORD certLen;
+	BYTE data[ANYSIZE_ARRAY];
+} KIWI_BACKUP_KEY, *PKIWI_BACKUP_KEY;
+
+typedef struct _NTDS_LSA_AUTH_INFORMATION {
+    LARGE_INTEGER LastUpdateTime;
+    ULONG AuthType;
+    ULONG AuthInfoLength;
+	UCHAR AuthInfo[ANYSIZE_ARRAY]; //
+} NTDS_LSA_AUTH_INFORMATION, *PNTDS_LSA_AUTH_INFORMATION;
+
+typedef struct _NTDS_LSA_AUTH_INFORMATIONS {
+	DWORD count; // or version ?
+	DWORD offsetToAuthenticationInformation;	// PLSA_AUTH_INFORMATION
+	DWORD offsetToPreviousAuthenticationInformation;	// PLSA_AUTH_INFORMATION
+	// ...
+} NTDS_LSA_AUTH_INFORMATIONS, *PNTDS_LSA_AUTH_INFORMATIONS;
+
+#pragma pack(push, 1) 
+typedef struct _USER_PROPERTY {
+	USHORT NameLength;
+	USHORT ValueLength;
+	USHORT Reserved;
+	wchar_t PropertyName[ANYSIZE_ARRAY];
+	// PropertyValue in HEX !
+} USER_PROPERTY, *PUSER_PROPERTY;
+
+typedef struct _USER_PROPERTIES {
+	DWORD Reserved1;
+	DWORD Length;
+	USHORT Reserved2;
+	USHORT Reserved3;
+	BYTE Reserved4[96];
+	wchar_t PropertySignature;
+	USHORT PropertyCount;
+	USER_PROPERTY UserProperties[ANYSIZE_ARRAY];
+} USER_PROPERTIES, *PUSER_PROPERTIES;
+#pragma pack(pop)
+
 const KUHL_M kuhl_m_lsadump;
+
+NTSTATUS kuhl_m_lsadump_init();
 
 NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secrets(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_cache(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsOrCache);
+NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
 
+BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
 BOOL kuhl_m_lsadump_getComputerAndSyskey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase, OUT LPBYTE sysKey);
 BOOL kuhl_m_lsadump_getUsersAndSamKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSAMBase, IN LPBYTE sysKey);
 
@@ -44,6 +97,11 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
+void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PNTDS_LSA_AUTH_INFORMATION infoNtds, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
+
+NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretName, PUNICODE_STRING secret, BOOL isInject);
+void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size, BOOL isExport);
+NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport, LPCWSTR systemName, BOOL isInject);
 
 typedef  enum _DOMAIN_SERVER_ROLE
 {
@@ -124,21 +182,6 @@ typedef struct _SAM_HASH {
 	BYTE hash[LM_NTLM_HASH_LENGTH];
 } SAM_HASH, *PSAM_HASH;
 
-#define AES_256_KEY_SIZE	(256/8)
-#define AES_128_KEY_SIZE	(128/8)
-#define AES_BLOCK_SIZE		16
-typedef struct _AES_256_KEY_BLOB {
-	BLOBHEADER Header;
-	DWORD keySize;
-	BYTE key[AES_256_KEY_SIZE];
-} AES_256_KEY_BLOB, *PAES_256_KEY_BLOB;
-
-typedef struct _AES_128_KEY_BLOB {
-	BLOBHEADER Header;
-	DWORD keySize;
-	BYTE key[AES_128_KEY_SIZE];
-} AES_128_KEY_BLOB, *PAES_128_KEY_BLOB;
-
 typedef struct _POL_REVISION {
 	USHORT Minor;
 	USHORT Major;
@@ -191,13 +234,13 @@ typedef struct _NT5_SYSTEM_KEY {
 	BYTE key[16];
 } NT5_SYSTEM_KEY, *PNT5_SYSTEM_KEY;
 
-#define LAZY_NT5_IV_SIZE	16
+#define LAZY_IV_SIZE	16
 typedef struct _NT5_SYSTEM_KEYS {
 	DWORD unk0;
 	DWORD unk1;
 	DWORD unk2;
 	NT5_SYSTEM_KEY keys[3];
-	BYTE lazyiv[LAZY_NT5_IV_SIZE];
+	BYTE lazyiv[LAZY_IV_SIZE];
 } NT5_SYSTEM_KEYS, *PNT5_SYSTEM_KEYS;
 
 typedef struct _MSCACHE_ENTRY {
@@ -222,7 +265,8 @@ typedef struct _MSCACHE_ENTRY {
 	DWORD logonPackage;
 	WORD szDnsDomainName;
 	WORD szupn;
-	BYTE iv[32];
+	BYTE iv[LAZY_IV_SIZE];
+	BYTE cksum[MD5_DIGEST_LENGTH];
 	BYTE enc_data[ANYSIZE_ARRAY];
 } MSCACHE_ENTRY, *PMSCACHE_ENTRY;
 
@@ -320,16 +364,25 @@ typedef struct _LSA_SUPCREDENTIALS_BUFFERS {
 	PVOID Buffer;
 } LSA_SUPCREDENTIALS_BUFFERS, *PLSA_SUPCREDENTIALS_BUFFERS;
 
-BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache);
+BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache, IN BOOL kiwime);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
-BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
+BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, BOOL kiwime);
 void kuhl_m_lsadump_printMsCache(PMSCACHE_ENTRY entry, CHAR version);
 void kuhl_m_lsadump_getInfosFromServiceName(IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN PCWSTR serviceName);
 BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecret, IN PNT6_SYSTEM_KEYS lsaKeysStream, IN PNT5_SYSTEM_KEY lsaKeyUnique, IN PVOID * pBufferOut, IN PDWORD pSzBufferOut);
-void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix);
+void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix, PCWSTR secretName);
 BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecretBlobSize, PNT6_SYSTEM_KEYS lsaKeysStream, PBYTE sysKey);
-void kuhl_m_lsadump_hmac_md5(LPCVOID key, DWORD szKey, LPCVOID data, DWORD szData, LPVOID output);
 
 PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
 void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize);
+
+PVOID kuhl_m_lsadump_dcsync_findMonoAttr(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size);
+void kuhl_m_lsadump_dcsync_findPrintMonoAttr(LPCWSTR prefix, ATTRBLOCK *attributes, ATTRTYP type, BOOL newLine);
+
+BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
+void kuhl_m_lsadump_dcsync_descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
+void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes);
+void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties);
+void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
+void kuhl_m_lsadump_dcsync_descrTrustAuthentication(ATTRBLOCK *attributes, ATTRTYP type, PCUNICODE_STRING domain, PCUNICODE_STRING partner);

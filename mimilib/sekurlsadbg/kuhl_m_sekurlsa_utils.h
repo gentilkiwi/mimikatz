@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "../utils.h"
@@ -262,9 +262,10 @@ typedef struct _KIWI_BASIC_SECURITY_LOGON_SESSION_DATA {
 	PVOID						pCredentials;
 	PSID						pSid;
 	PVOID						pCredentialManager;
+	FILETIME					LogonTime;
+	PLSA_UNICODE_STRING			LogonServer;
 } KIWI_BASIC_SECURITY_LOGON_SESSION_DATA, *PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA;
 
-#define RtlEqualLuid(L1, L2) (((L1)->LowPart == (L2)->LowPart) && ((L1)->HighPart == (L2)->HighPart))
 extern BOOLEAN WINAPI RtlEqualString(IN const STRING *String1, IN const STRING *String2, IN BOOLEAN CaseInSensitive);
 extern VOID WINAPI RtlFreeUnicodeString(IN PUNICODE_STRING UnicodeString);
 extern NTSTATUS WINAPI RtlStringFromGUID(IN LPCGUID Guid, PUNICODE_STRING UnicodeString);

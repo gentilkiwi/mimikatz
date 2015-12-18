@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "mimikatz.h"
 
@@ -19,19 +19,21 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_misc,
 	&kuhl_m_token,
 	&kuhl_m_vault,
+	&kuhl_m_minesweeper,
 #ifdef NET_MODULE
 	&kuhl_m_net,
 #endif
+	&kuhl_m_dpapi,
+	&kuhl_m_busylight,
 };
 
 int wmain(int argc, wchar_t * argv[])
 {
 	int i, status = STATUS_SUCCESS;
 #ifndef _WINDLL
-	wchar_t input[0xff];
-	_setmode(_fileno(stdout), _O_U8TEXT);
-	_setmode(_fileno(stderr), _O_U8TEXT);
-	SetConsoleOutputCP(CP_UTF8);
+	size_t len;
+	wchar_t input[0xffff];
+	kull_m_output_init();
 	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH L" (oe.eo)");
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 #endif
@@ -41,7 +43,7 @@ int wmain(int argc, wchar_t * argv[])
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'                                     with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
+		L"  '#####'    " MIMIKATZ_SPECIAL L" with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
 	
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)
@@ -53,14 +55,19 @@ int wmain(int argc, wchar_t * argv[])
 	while (status != STATUS_FATAL_APP_EXIT)
 	{
 		kprintf(L"\n" MIMIKATZ L" # "); fflush(stdin);
-		if(wscanf_s(L"%[^\n]s", input, ARRAYSIZE(input)) == 1)
+		if(fgetws(input, ARRAYSIZE(input), stdin) && (len = wcslen(input)) && (input[0] != L'\n'))
 		{
+			if(input[len - 1] == L'\n')
+				input[len - 1] = L'\0';
 			kprintf_inputline(L"%s\n", input);
 			status = mimikatz_dispatchCommand(input);
 		}
 	}
 #endif
 	mimikatz_initOrClean(FALSE);
+#ifndef _WINDLL
+	kull_m_output_clean();
+#endif
 	return STATUS_SUCCESS;
 }
 
@@ -81,7 +88,6 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	{
 		RtlGetNtVersionNumbers(&MIMIKATZ_NT_MAJOR_VERSION, &MIMIKATZ_NT_MINOR_VERSION, &MIMIKATZ_NT_BUILD_NUMBER);
 		MIMIKATZ_NT_BUILD_NUMBER &= 0x00003fff;
-
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pInit);
 	}
 	else
@@ -99,7 +105,6 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 
 	if(!Init)
 		kull_m_output_file(NULL);
-
 	return STATUS_SUCCESS;
 }
 
@@ -179,7 +184,8 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 			kprintf(L"\n");
 		}
 
-		LocalFree(module);
+		if(module)
+			LocalFree(module);
 		LocalFree(argv);
 	}
 	return status;
@@ -194,6 +200,7 @@ __declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
 	if(argv = CommandLineToArgvW(input, &argc))
 	{
 		outputBufferElements = 0xff;
+		outputBufferElementsPosition = 0;
 		if(outputBuffer = (wchar_t *) LocalAlloc(LPTR, outputBufferElements))
 			wmain(argc, argv);
 		LocalFree(argv);

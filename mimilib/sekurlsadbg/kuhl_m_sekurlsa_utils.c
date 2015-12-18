@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa_utils.h"
 
@@ -14,10 +14,14 @@ const char * PRINTF_TYPES[] =
 };
 void kull_m_string_dprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
 {
-	DWORD i;
+	DWORD i, sep = flags >> 16;
 	const char * pType = PRINTF_TYPES[flags & 0x0000000f];
 	for(i = 0; i < cbData; i++)
+	{
 		dprintf(pType, ((LPCBYTE) lpData)[i]);
+		if(sep && !((i+1) % sep))
+			dprintf("\n");
+	}
 }
 
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime)
@@ -104,7 +108,7 @@ ULONG_PTR kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(ULONG_PTR pSecurityStruct,
 			{
 				if(ReadMemory(pStruct, buffer, LUIDoffset + sizeof(LUID), NULL))
 				{
-					if(RtlEqualLuid(luidToFind, (PLUID) ((PBYTE) buffer + LUIDoffset)))
+					if(SecEqualLuid(luidToFind, (PLUID) ((PBYTE) buffer + LUIDoffset)))
 					{
 						resultat = pStruct;
 						break;
@@ -145,7 +149,7 @@ ULONG_PTR kuhl_m_sekurlsa_utils_pFromAVLByLuidRec(ULONG_PTR pTable, ULONG LUIDof
 			{
 				if(ReadMemory(pTable, buffer, LUIDoffset + sizeof(LUID), NULL))
 				{
-					if(RtlEqualLuid(luidToFind, (PLUID) ((PBYTE) buffer + LUIDoffset)))
+					if(SecEqualLuid(luidToFind, (PLUID) ((PBYTE) buffer + LUIDoffset)))
 						resultat = (ULONG_PTR) maTable.OrderedPointer;
 				}
 				LocalFree(buffer);

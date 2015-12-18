@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "kuhl_m.h"
@@ -11,6 +11,7 @@
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_net.h"
 #include "../modules/kull_m_remotelib.h"
+#include "../modules/kull_m_crypto_system.h"
 
 const KUHL_M kuhl_m_misc;
 
@@ -22,6 +23,7 @@ NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_misc_init();
 NTSTATUS kuhl_m_misc_clean();

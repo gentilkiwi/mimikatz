@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kkll_m_process.h"
 
@@ -15,6 +15,7 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 7	*/	{0x00b8, 0x026c, 0x0040},
 /* 8	*/	{0x00b8, 0x00c0, 0x0040, 0x02d4},
 /* BLUE	*/	{0x00b8, 0x00c0, 0x0040, 0x02cc},
+/* 10	*/	{0x00b8, 0x00c0, 0x0040, 0x02d4},
 #else
 /* UNK	*/	{0},
 /* XP	*/	{0},
@@ -23,6 +24,7 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 7	*/	{0x0188, 0x043c, 0x0040},
 /* 8	*/	{0x02e8, 0x02f8, 0x0040, 0x0648},
 /* BLUE	*/	{0x02e8, 0x02f8, 0x0040, 0x0678},
+/* 10	*/	{0x02f0, 0x0300, 0x0040, 0x0698},
 #endif
 };
 

@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_file.h"
 
@@ -52,7 +52,7 @@ BOOL kull_m_file_isFileExist(wchar_t *fileName)
 	return reussite;
 }
 
-BOOL kull_m_file_writeData(PCWCHAR fileName, PBYTE data, DWORD lenght)
+BOOL kull_m_file_writeData(PCWCHAR fileName, LPCVOID data, DWORD lenght)
 {
 	BOOL reussite = FALSE;
 	DWORD dwBytesWritten = 0, i;
@@ -61,11 +61,11 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, PBYTE data, DWORD lenght)
 	
 	if(isBase64Intercept)
 	{
-		if(CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64, NULL, &dwBytesWritten))
+		if(CryptBinaryToString((const BYTE *) data, lenght, CRYPT_STRING_BASE64, NULL, &dwBytesWritten))
 		{
 			if(base64 = (LPWSTR) LocalAlloc(LPTR, dwBytesWritten * sizeof(wchar_t)))
 			{
-				if(reussite = CryptBinaryToString(data, lenght, CRYPT_STRING_BASE64, base64, &dwBytesWritten))
+				if(reussite = CryptBinaryToString((const BYTE *) data, lenght, CRYPT_STRING_BASE64, base64, &dwBytesWritten))
 				{
 					kprintf(L"\n====================\nBase64 of file : %s\n====================\n", fileName);
 					for(i = 0; i < dwBytesWritten; i++)

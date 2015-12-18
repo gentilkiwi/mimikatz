@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "kuhl_m.h"
@@ -29,3 +29,6 @@ NTSTATUS kuhl_m_kernel_remove_mimidrv(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kernel_processProtect(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kernel_processToken(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kernel_processPrivilege(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_kernel_notifyProcessRemove(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_kernel_notifyObjectRemove(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_kernel_notifyGenericRemove(int argc, wchar_t * argv[], DWORD code);

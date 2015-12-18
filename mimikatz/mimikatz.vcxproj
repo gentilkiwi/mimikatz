@@ -37,6 +37,7 @@
     <PlatformToolset>v100</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath14)' != ''">v140_xp</PlatformToolset>
     <UseOfMfc>static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="Exists('$(VCTargetsPath)\Platforms\$(Platform)\PlatformToolsets\ddk2003') Or Exists('$(VCTargetsPath)\..\Platforms\$(Platform)\PlatformToolsets\ddk2003')">
@@ -77,20 +78,26 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;ntdsapi.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;advapi32.hash.lib;ntdll.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;netapi32.lib;ntdsapi.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;hid.lib;setupapi.lib;advapi32.hash.lib;ntdll.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
     <ClCompile Include="..\modules\kull_m_asn1.c" />
+    <ClCompile Include="..\modules\kull_m_busylight.c" />
+    <ClCompile Include="..\modules\kull_m_cred.c" />
+    <ClCompile Include="..\modules\kull_m_crypto.c" />
+    <ClCompile Include="..\modules\kull_m_dpapi.c" />
     <ClCompile Include="..\modules\kull_m_file.c" />
     <ClCompile Include="..\modules\kull_m_handle.c" />
     <ClCompile Include="..\modules\kull_m_kernel.c" />
+    <ClCompile Include="..\modules\kull_m_key.c" />
     <ClCompile Include="..\modules\kull_m_net.c" />
     <ClCompile Include="..\modules\kull_m_memory.c" />
     <ClCompile Include="..\modules\kull_m_minidump.c" />
@@ -99,13 +106,21 @@
     <ClCompile Include="..\modules\kull_m_process.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
     <ClCompile Include="..\modules\kull_m_remotelib.c" />
+    <ClCompile Include="..\modules\kull_m_rpc_drsr.c" />
+    <ClCompile Include="..\modules\kull_m_rpc_ms-drsr_c.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
     <ClCompile Include="mimikatz.c" />
+    <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
+    <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ticket.c" />
+    <ClCompile Include="modules\kuhl_m_busylight.c" />
     <ClCompile Include="modules\kuhl_m_crypto.c" />
     <ClCompile Include="modules\kuhl_m_event.c" />
     <ClCompile Include="modules\kuhl_m_kernel.c" />
@@ -121,6 +136,7 @@
     <ClCompile Include="modules\kuhl_m_token.c" />
     <ClCompile Include="modules\kuhl_m_ts.c" />
     <ClCompile Include="modules\kuhl_m_vault.c" />
+    <ClCompile Include="modules\kuhl_m_minesweeper.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c" />
@@ -137,10 +153,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\kull_m_asn1.h" />
+    <ClInclude Include="..\modules\kull_m_busylight.h" />
+    <ClInclude Include="..\modules\kull_m_busylight_hid.h" />
+    <ClInclude Include="..\modules\kull_m_cred.h" />
+    <ClInclude Include="..\modules\kull_m_crypto.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
+    <ClInclude Include="..\modules\kull_m_dpapi.h" />
     <ClInclude Include="..\modules\kull_m_file.h" />
     <ClInclude Include="..\modules\kull_m_handle.h" />
     <ClInclude Include="..\modules\kull_m_kernel.h" />
+    <ClInclude Include="..\modules\kull_m_key.h" />
     <ClInclude Include="..\modules\kull_m_net.h" />
     <ClInclude Include="..\modules\kull_m_memory.h" />
     <ClInclude Include="..\modules\kull_m_minidump.h" />
@@ -151,15 +173,24 @@
     <ClInclude Include="..\modules\kull_m_registry_structures.h" />
     <ClInclude Include="..\modules\kull_m_remotelib.h" />
     <ClInclude Include="..\modules\kull_m_rpce.h" />
+    <ClInclude Include="..\modules\kull_m_rpc_drsr.h" />
+    <ClInclude Include="..\modules\kull_m_rpc_ms-drsr.h" />
+    <ClInclude Include="..\modules\kull_m_rpc_ms-dtyp.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
     <ClInclude Include="..\modules\kull_m_service.h" />
     <ClInclude Include="..\modules\kull_m_string.h" />
     <ClInclude Include="..\modules\kull_m_token.h" />
     <ClInclude Include="mimikatz.h" />
+    <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
+    <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ticket.h" />
     <ClInclude Include="modules\kuhl_m.h" />
+    <ClInclude Include="modules\kuhl_m_busylight.h" />
     <ClInclude Include="modules\kuhl_m_crypto.h" />
     <ClInclude Include="modules\kuhl_m_event.h" />
     <ClInclude Include="modules\kuhl_m_kernel.h" />
@@ -175,6 +206,7 @@
     <ClInclude Include="modules\kuhl_m_token.h" />
     <ClInclude Include="modules\kuhl_m_ts.h" />
     <ClInclude Include="modules\kuhl_m_vault.h" />
+    <ClInclude Include="modules\kuhl_m_minesweeper.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h" />

@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "../kuhl_m.h"
@@ -29,6 +29,10 @@
 #define PACINFO_ID_KERB_LOGONSERVER			0x00020020
 #define PACINFO_ID_KERB_LOGONDOMAINNAME		0x00020024
 #define PACINFO_ID_KERB_LOGONDOMAINID		0x00020028
+#define PACINFO_ID_KERB_EXTRASIDS			0x0002002c
+#define PACINFO_ID_KERB_EXTRASID			0x00020030
+#define PACINFO_ID_KERB_RESGROUPDOMAINSID	0x00020034
+#define PACINFO_ID_KERB_RESGROUPIDS			0x00020038
 
 typedef struct _USER_SESSION_KEY {
 	UCHAR data[16];
@@ -152,6 +156,11 @@ typedef struct _RPCE_KERB_VALIDATION_INFO {
 	RPCEID RootElementId;
 	MARSHALL_KERB_VALIDATION_INFO infos;
 } RPCE_KERB_VALIDATION_INFO, *PRPCE_KERB_VALIDATION_INFO;
+
+typedef struct _RPCE_KERB_EXTRA_SID {
+	RPCEID ExtraSid;
+	DWORD Attributes;
+} RPCE_KERB_EXTRA_SID, *PRPCE_KERB_EXTRA_SID;
 #pragma pack(pop)
 
 typedef struct _PAC_CLIENT_INFO {
@@ -163,7 +172,7 @@ typedef struct _PAC_CLIENT_INFO {
 BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE * pacType, DWORD * pacLength);
 BOOL kuhl_m_pac_validationInfo_to_LOGON_INFO(PKERB_VALIDATION_INFO validationInfo, PRPCE_KERB_VALIDATION_INFO * rpceValidationInfo, DWORD * rpceValidationInfoLength);
 BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PKERB_VALIDATION_INFO validationInfo, PPAC_CLIENT_INFO * pacClientInfo, DWORD * pacClientInfoLength);
-NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LPCVOID key, DWORD keySize);
+NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD SignatureType, LPCVOID key, DWORD keySize);
 
 #ifdef KERBEROS_TOOLS
 typedef struct _RPCE_LAZY_ELEMENT_HEADER {

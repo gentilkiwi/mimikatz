@@ -1,7 +1,7 @@
 /*	Benjamin DELPY `gentilkiwi`
 	http://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
-	Licence : http://creativecommons.org/licenses/by/3.0/fr/
+	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kull_m_kernel.h"
 
@@ -25,7 +25,8 @@ BOOL kull_m_kernel_ioctl_handle(HANDLE hDriver, DWORD ioctlCode, PVOID bufferIn,
 			else
 			{
 				lStatus = GetLastError();
-				LocalFree(*pBufferOut);
+				if(lStatus == ERROR_MORE_DATA)
+					LocalFree(*pBufferOut);
 			}
 		}
 	}
