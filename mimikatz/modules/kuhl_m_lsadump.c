@@ -1209,7 +1209,7 @@ void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRI
 	}
 }
 
-PCWCHAR KUHL_M_LSADUMP_SAMRPC_SUPPCRED_TYPE[] = {L"Primary", L"CLEARTEXT", L"WDigest", L"Kerberos", L"Kerberos-Newer-Keys",};
+PCWCHAR KUHL_M_LSADUMP_SAMRPC_SUPPCRED_TYPE[] = {L"Primary", L"CLEARTEXT", L"WDigest", L"Kerberos", L"Kerberos-Newer-Keys", L"NTLM-Strong-NTOWF"};
 void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize)
 {
 	DWORD i;
@@ -1260,6 +1260,11 @@ void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize)
 		pKeyDataNew = kuhl_m_lsadump_lsa_keyDataNewInfo(pKerbNew, pKeyDataNew, pKerbNew->ServiceCredentialCount, L"ServiceCredentials");
 		pKeyDataNew = kuhl_m_lsadump_lsa_keyDataNewInfo(pKerbNew, pKeyDataNew, pKerbNew->OldCredentialCount, L"OldCredentials");
 		kuhl_m_lsadump_lsa_keyDataNewInfo(pKerbNew, pKeyDataNew, pKerbNew->OlderCredentialCount, L"OlderCredentials");
+		break;
+	case 5:
+		kprintf(L"    Random Value : ");
+		kull_m_string_wprintf_hex(Buffer, BufferSize, 0);
+		kprintf(L"\n");
 		break;
 	default:
 		kull_m_string_wprintf_hex(Buffer, BufferSize, 1);
@@ -1983,6 +1988,7 @@ DECLARE_UNICODE_STRING(PrimaryCleartext, L"Primary:CLEARTEXT");
 DECLARE_UNICODE_STRING(PrimaryWDigest, L"Primary:WDigest");
 DECLARE_UNICODE_STRING(PrimaryKerberos, L"Primary:Kerberos");
 DECLARE_UNICODE_STRING(PrimaryKerberosNew, L"Primary:Kerberos-Newer-Keys");
+DECLARE_UNICODE_STRING(PrimaryNtlmStrongNTOWF, L"Primary:NTLM-Strong-NTOWF");
 DECLARE_UNICODE_STRING(Packages, L"Packages");
 void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties)
 {
@@ -2047,7 +2053,18 @@ void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties)
 				pKeyDataNew = kuhl_m_lsadump_lsa_keyDataNewInfo(pKerbNew, pKeyDataNew, pKerbNew->OldCredentialCount, L"OldCredentials");
 				kuhl_m_lsadump_lsa_keyDataNewInfo(pKerbNew, pKeyDataNew, pKerbNew->OlderCredentialCount, L"OlderCredentials");
 			}
-			else kull_m_string_wprintf_hex(data, szData, 1);
+			else if(RtlEqualUnicodeString(&PrimaryNtlmStrongNTOWF, &Name, TRUE))
+			{
+				kprintf(L"    Random Value : ");
+				kull_m_string_wprintf_hex(data, szData, 0);
+				kprintf(L"\n");
+			}
+			else
+			{
+				kprintf(L"    Unknown data : ");
+				kull_m_string_wprintf_hex(data, szData, 1);
+				kprintf(L"\n");
+			}
 			kprintf(L"\n");
 			LocalFree(data);
 		}

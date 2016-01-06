@@ -36,6 +36,8 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 {
 	BOOLEAN isShaOwPassword;
 	BYTE align0;
 	BYTE align1;
+	BYTE align2;
+	BYTE align3;
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];

@@ -10,6 +10,15 @@
 const KUHL_M kuhl_m_privilege;
 
 NTSTATUS kuhl_m_privilege_debug(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_privilege_driver(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_privilege_security(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_privilege_tcb(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_privilege_backup(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_privilege_restore(int argc, wchar_t * argv[]);
+
+NTSTATUS kuhl_m_privilege_id(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_privilege_name(int argc, wchar_t * argv[]);
+
 NTSTATUS kuhl_m_privilege_simple(ULONG privId);
 
 #define SE_CREATE_TOKEN				2

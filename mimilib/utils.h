@@ -24,7 +24,7 @@
 
 #define MIMIKATZ_A				"mimikatz"
 #define MIMIKATZ_VERSION_A		"2.0 alpha"
-#define MIMIKATZ_CODENAME_A		"Kiwi en C"
+#define MIMIKATZ_CODENAME_A		"A La Vie, A L\'Amour"
 #define MIMIKATZ_FULL_A			MIMIKATZ_A " " MIMIKATZ_VERSION_A " (" MIMIKATZ_ARCH_A ") release \"" MIMIKATZ_CODENAME_A "\" (" __DATE__ " " __TIME__ ")"
 
 #ifndef NT_SUCCESS
