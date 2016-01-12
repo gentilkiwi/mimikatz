@@ -32,7 +32,7 @@ VOID WDBGAPI WinDbgExtensionDllInit(PWINDBG_EXTENSION_APIS lpExtensionApis, USHO
 	
 	dprintf("\n"
 		"  .#####.   " MIMIKATZ_FULL_A "\n"
-		" .## ^ ##.  Windows build %hu\n"
+		" .## ^ ##.  " MIMIKATZ_SECOND_A " - Windows build %hu\n"
 		" ## / \\ ##  /* * *\n"
 		" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"

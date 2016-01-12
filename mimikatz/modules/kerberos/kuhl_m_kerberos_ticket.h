@@ -90,11 +90,11 @@ typedef struct _KIWI_KERBEROS_TICKET {
 	FILETIME	EndTime;
 	FILETIME	RenewUntil;
 
-	ULONG		KeyType;
+	LONG		KeyType;
 	KIWI_KERBEROS_BUFFER	Key;
 
 	ULONG		TicketFlags;
-	ULONG		TicketEncType;
+	LONG		TicketEncType;
 	ULONG		TicketKvno;
 	KIWI_KERBEROS_BUFFER	Ticket;
 } KIWI_KERBEROS_TICKET, *PKIWI_KERBEROS_TICKET;

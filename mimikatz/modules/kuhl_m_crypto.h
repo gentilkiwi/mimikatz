@@ -12,6 +12,7 @@
 #include "../modules/kull_m_patch.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_file.h"
+#include "../modules/kull_m_registry.h"
 
 typedef BOOL			(WINAPI * PCP_EXPORTKEY)					(IN HCRYPTPROV hProv, IN HCRYPTKEY hKey, IN HCRYPTKEY hPubKey, IN DWORD dwBlobType, IN DWORD dwFlags, OUT LPBYTE pbData, IN OUT LPDWORD pcbDataLen);
 
@@ -27,15 +28,32 @@ typedef SECURITY_STATUS	(WINAPI * PNCRYPT_FREE_OBJECT)				(__in NCRYPT_HANDLE hO
 typedef NTSTATUS		(WINAPI * PBCRYPT_ENUM_REGISTERED_PROVIDERS)(__inout ULONG* pcbBuffer, __deref_opt_inout_bcount_part_opt(*pcbBuffer, *pcbBuffer) PCRYPT_PROVIDERS *ppBuffer);
 typedef VOID			(WINAPI * PBCRYPT_FREE_BUFFER)				(__in PVOID pvBuffer);
 
-typedef struct _KUHL_M_CRYPTO_DWORD_TO_DWORD{
+typedef struct _KUHL_M_CRYPTO_DWORD_TO_DWORD {
 	PCWSTR	name;
 	DWORD	id;
 } KUHL_M_CRYPTO_DWORD_TO_DWORD, *PKUHL_M_CRYPTO_DWORD_TO_DWORD;
 
-typedef struct _KUHL_M_CRYPTO_NAME_TO_REALNAME{
+typedef struct _KUHL_M_CRYPTO_NAME_TO_REALNAME {
 	PCWSTR	name;
 	PCWSTR	realname;
 } KUHL_M_CRYPTO_NAME_TO_REALNAME, *PKUHL_M_CRYPTO_NAME_TO_REALNAME;
+
+typedef struct _KUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO {
+	DWORD offsetContainerName;
+	DWORD offsetProvName;
+	DWORD dwProvType;
+	DWORD dwFlags;
+	DWORD cProvParam;
+	DWORD offsetRgProvParam;
+	DWORD dwKeySpec;
+} KUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO, *PKUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO;
+
+typedef struct _KUHL_M_CRYPTO_CERT_PROP {
+	DWORD dwPropId;
+	DWORD flags; // ?
+	DWORD size;
+	BYTE data[ANYSIZE_ARRAY];
+} KUHL_M_CRYPTO_CERT_PROP, *PKUHL_M_CRYPTO_CERT_PROP;
 
 const KUHL_M kuhl_m_crypto;
 
@@ -47,6 +65,7 @@ NTSTATUS kuhl_m_crypto_l_stores(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[]);
@@ -60,3 +79,4 @@ void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, 
 BOOL kuhl_m_crypto_exportPfx(HCERTSTORE hStore, LPCWSTR filename);
 BOOL kuhl_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD keyLen, BOOL isPvk, LPCWSTR filename);
 wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * term1, const DWORD index, const wchar_t * name, const wchar_t * ext);
+void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport);

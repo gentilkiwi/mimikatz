@@ -13,15 +13,21 @@ PKULL_M_KEY_CAPI_BLOB kull_m_key_capi_create(PVOID data/*, DWORD size*/)
 		RtlCopyMemory(capiKey, data, FIELD_OFFSET(KULL_M_KEY_CAPI_BLOB, pName));
 		capiKey->pName = (PSTR) ((PBYTE) data + FIELD_OFFSET(KULL_M_KEY_CAPI_BLOB, pName));
 		capiKey->pHash = (PBYTE) capiKey->pName + capiKey->dwNameLen;
-		capiKey->pPublicKey = (PBYTE) capiKey->pHash + capiKey->dwHashLen;
-		capiKey->pPrivateKey = (PBYTE) capiKey->pPublicKey + capiKey->dwPublicKeyLen;
-		capiKey->pExportFlag = (PBYTE) capiKey->pPrivateKey + capiKey->dwPrivateKeyLen;
+		capiKey->pSiPublicKey = (PBYTE) capiKey->pHash + capiKey->dwHashLen;
+		capiKey->pSiPrivateKey = (PBYTE) capiKey->pSiPublicKey + capiKey->dwSiPublicKeyLen;
+		capiKey->pSiExportFlag = (PBYTE) capiKey->pSiPrivateKey + capiKey->dwSiPrivateKeyLen;
+		capiKey->pExPublicKey = (PBYTE) capiKey->pSiExportFlag + capiKey->dwSiExportFlagLen;
+		capiKey->pExPrivateKey = (PBYTE) capiKey->pExPublicKey + capiKey->dwExPublicKeyLen;
+		capiKey->pExExportFlag = (PBYTE) capiKey->pExPrivateKey + capiKey->dwExPrivateKeyLen;
 
 		kull_m_string_ptr_replace(&capiKey->pName, capiKey->dwNameLen);
 		kull_m_string_ptr_replace(&capiKey->pHash, capiKey->dwHashLen);
-		kull_m_string_ptr_replace(&capiKey->pPublicKey, capiKey->dwPublicKeyLen);
-		kull_m_string_ptr_replace(&capiKey->pPrivateKey, capiKey->dwPrivateKeyLen);
-		kull_m_string_ptr_replace(&capiKey->pExportFlag, capiKey->dwExportFlagLen);
+		kull_m_string_ptr_replace(&capiKey->pSiPublicKey, capiKey->dwSiPublicKeyLen);
+		kull_m_string_ptr_replace(&capiKey->pSiPrivateKey, capiKey->dwSiPrivateKeyLen);
+		kull_m_string_ptr_replace(&capiKey->pSiExportFlag, capiKey->dwSiExportFlagLen);
+		kull_m_string_ptr_replace(&capiKey->pExPublicKey, capiKey->dwExPublicKeyLen);
+		kull_m_string_ptr_replace(&capiKey->pExPrivateKey, capiKey->dwExPrivateKeyLen);
+		kull_m_string_ptr_replace(&capiKey->pExExportFlag, capiKey->dwExExportFlagLen);
 	}
 	return capiKey;
 }
@@ -34,12 +40,18 @@ void kull_m_key_capi_delete(PKULL_M_KEY_CAPI_BLOB capiKey)
 			LocalFree(capiKey->pName);
 		if(capiKey->pHash)
 			LocalFree(capiKey->pHash);
-		if(capiKey->pPublicKey)
-			LocalFree(capiKey->pPublicKey);
-		if(capiKey->pPrivateKey)
-			LocalFree(capiKey->pPrivateKey);
-		if(capiKey->pExportFlag)
-			LocalFree(capiKey->pExportFlag);
+		if(capiKey->pSiPublicKey)
+			LocalFree(capiKey->pSiPublicKey);
+		if(capiKey->pSiPrivateKey)
+			LocalFree(capiKey->pSiPrivateKey);
+		if(capiKey->pSiExportFlag)
+			LocalFree(capiKey->pSiExportFlag);
+		if(capiKey->pExPublicKey)
+			LocalFree(capiKey->pExPublicKey);
+		if(capiKey->pExPrivateKey)
+			LocalFree(capiKey->pExPrivateKey);
+		if(capiKey->pExExportFlag)
+			LocalFree(capiKey->pExExportFlag);
 		LocalFree(capiKey);
 	}
 }
@@ -51,20 +63,32 @@ void kull_m_key_capi_descr(DWORD level, PKULL_M_KEY_CAPI_BLOB capiKey)
 	{
 		kprintf(L"%*s" L"  dwVersion          : %08x - %u\n", level << 1, L"", capiKey->dwVersion, capiKey->dwVersion);
 		kprintf(L"%*s" L"  dwUniqueNameLen    : %08x - %u\n", level << 1, L"", capiKey->dwNameLen, capiKey->dwNameLen);
-		kprintf(L"%*s" L"  dwPublicKeyLen     : %08x - %u\n", level << 1, L"", capiKey->dwPublicKeyLen, capiKey->dwPublicKeyLen);
-		kprintf(L"%*s" L"  dwPrivateKeyLen    : %08x - %u\n", level << 1, L"", capiKey->dwPrivateKeyLen, capiKey->dwPrivateKeyLen);
+		kprintf(L"%*s" L"  dwSiPublicKeyLen   : %08x - %u\n", level << 1, L"", capiKey->dwSiPublicKeyLen, capiKey->dwSiPublicKeyLen);
+		kprintf(L"%*s" L"  dwSiPrivateKeyLen  : %08x - %u\n", level << 1, L"", capiKey->dwSiPrivateKeyLen, capiKey->dwSiPrivateKeyLen);
+		kprintf(L"%*s" L"  dwExPublicKeyLen   : %08x - %u\n", level << 1, L"", capiKey->dwExPublicKeyLen, capiKey->dwExPublicKeyLen);
+		kprintf(L"%*s" L"  dwExPrivateKeyLen  : %08x - %u\n", level << 1, L"", capiKey->dwExPrivateKeyLen, capiKey->dwExPrivateKeyLen);
 		kprintf(L"%*s" L"  dwHashLen          : %08x - %u\n", level << 1, L"", capiKey->dwHashLen, capiKey->dwHashLen);
-		kprintf(L"%*s" L"  dwExportFlagLen    : %08x - %u\n", level << 1, L"", capiKey->dwExportFlagLen, capiKey->dwExportFlagLen);
+		kprintf(L"%*s" L"  dwSiExportFlagLen  : %08x - %u\n", level << 1, L"", capiKey->dwSiExportFlagLen, capiKey->dwSiExportFlagLen);
+		kprintf(L"%*s" L"  dwExExportFlagLen  : %08x - %u\n", level << 1, L"", capiKey->dwExExportFlagLen, capiKey->dwExExportFlagLen);
+
 
 		kprintf(L"%*s" L"  pUniqueName        : ", level << 1, L""); kprintf(L"%S\n", capiKey->pName);
 		kprintf(L"%*s" L"  pHash              : ", level << 1, L""); kull_m_string_wprintf_hex(capiKey->pHash, capiKey->dwHashLen, 0); kprintf(L"\n");
-		kprintf(L"%*s" L"  pPublicKey         : ", level << 1, L""); kull_m_string_wprintf_hex(capiKey->pPublicKey, capiKey->dwPublicKeyLen, 0); kprintf(L"\n");
-		kprintf(L"%*s" L"  pPrivateKey        :\n", level << 1, L"");
-		if(capiKey->pPrivateKey && capiKey->dwPrivateKeyLen)
-			kull_m_dpapi_blob_quick_descr(level + 1, capiKey->pPrivateKey); /*kull_m_string_wprintf_hex(capiKey->pPrivateKey, capiKey->dwPrivateKeyLen, 0);*/
-		kprintf(L"%*s" L"  pExportFlag        :\n", level << 1, L"");
-		if(capiKey->pExportFlag && capiKey->dwExportFlagLen)
-			kull_m_dpapi_blob_quick_descr(level + 1, capiKey->pExportFlag); /*kull_m_string_wprintf_hex(capiKey->pExportFlag, capiKey->dwExportFlagLen, 0);*/
+		kprintf(L"%*s" L"  pSiPublicKey       : ", level << 1, L""); kull_m_string_wprintf_hex(capiKey->pSiPublicKey, capiKey->dwSiPublicKeyLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  pSiPrivateKey      :\n", level << 1, L"");
+		if(capiKey->pSiPrivateKey && capiKey->dwSiPrivateKeyLen)
+			kull_m_dpapi_blob_quick_descr(level + 1, capiKey->pSiPrivateKey); /*kull_m_string_wprintf_hex(capiKey->pPrivateKey, capiKey->dwPrivateKeyLen, 0);*/
+		kprintf(L"%*s" L"  pSiExportFlag      :\n", level << 1, L"");
+		if(capiKey->pSiExportFlag && capiKey->dwSiExportFlagLen)
+			kull_m_dpapi_blob_quick_descr(level + 1, capiKey->pSiExportFlag); /*kull_m_string_wprintf_hex(capiKey->pExportFlag, capiKey->dwExportFlagLen, 0);*/
+		kprintf(L"%*s" L"  pExPublicKey       : ", level << 1, L""); kull_m_string_wprintf_hex(capiKey->pExPublicKey, capiKey->dwExPublicKeyLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  pExPrivateKey      :\n", level << 1, L"");
+		if(capiKey->pExPrivateKey && capiKey->dwExPrivateKeyLen)
+			kull_m_dpapi_blob_quick_descr(level + 1, capiKey->pExPrivateKey); /*kull_m_string_wprintf_hex(capiKey->pPrivateKey, capiKey->dwPrivateKeyLen, 0);*/
+		kprintf(L"%*s" L"  pExExportFlag      :\n", level << 1, L"");
+		if(capiKey->pExExportFlag && capiKey->dwExExportFlagLen)
+			kull_m_dpapi_blob_quick_descr(level + 1, capiKey->pExExportFlag); /*kull_m_string_wprintf_hex(capiKey->pExportFlag, capiKey->dwExportFlagLen, 0);*/
+
 	}
 }
 
@@ -72,7 +96,7 @@ BOOL kull_m_key_capi_write(PKULL_M_KEY_CAPI_BLOB capiKey, PVOID *data, DWORD *si
 {
 	BOOL status = FALSE;
 	PBYTE ptr;
-	*size = FIELD_OFFSET(KULL_M_KEY_CAPI_BLOB, pName) + capiKey->dwNameLen + capiKey->dwHashLen + capiKey->dwPublicKeyLen + capiKey->dwPrivateKeyLen + capiKey->dwExportFlagLen;
+	*size = FIELD_OFFSET(KULL_M_KEY_CAPI_BLOB, pName) + capiKey->dwNameLen + capiKey->dwHashLen + capiKey->dwSiPublicKeyLen + capiKey->dwSiPrivateKeyLen + capiKey->dwSiExportFlagLen + capiKey->dwExPublicKeyLen + capiKey->dwExPrivateKeyLen + capiKey->dwExExportFlagLen;
 	if(*data = LocalAlloc(LPTR, *size))
 	{
 		ptr = (PBYTE) *data;
@@ -82,11 +106,17 @@ BOOL kull_m_key_capi_write(PKULL_M_KEY_CAPI_BLOB capiKey, PVOID *data, DWORD *si
 		ptr += capiKey->dwNameLen;
 		RtlCopyMemory(ptr, capiKey->pHash, capiKey->dwHashLen);
 		ptr += capiKey->dwHashLen;
-		RtlCopyMemory(ptr, capiKey->pPublicKey, capiKey->dwPublicKeyLen);
-		ptr += capiKey->dwPublicKeyLen;
-		RtlCopyMemory(ptr, capiKey->pPrivateKey, capiKey->dwPrivateKeyLen);
-		ptr += capiKey->dwPrivateKeyLen;
-		RtlCopyMemory(ptr, capiKey->pExportFlag, capiKey->dwExportFlagLen);
+		RtlCopyMemory(ptr, capiKey->pSiPublicKey, capiKey->dwSiPublicKeyLen);
+		ptr += capiKey->dwSiPublicKeyLen;
+		RtlCopyMemory(ptr, capiKey->pSiPrivateKey, capiKey->dwSiPrivateKeyLen);
+		ptr += capiKey->dwSiPrivateKeyLen;
+		RtlCopyMemory(ptr, capiKey->pSiExportFlag, capiKey->dwSiExportFlagLen);
+		ptr += capiKey->dwSiExportFlagLen;
+		RtlCopyMemory(ptr, capiKey->pExPublicKey, capiKey->dwExPublicKeyLen);
+		ptr += capiKey->dwExPublicKeyLen;
+		RtlCopyMemory(ptr, capiKey->pExPrivateKey, capiKey->dwExPrivateKeyLen);
+		ptr += capiKey->dwExPrivateKeyLen;
+		RtlCopyMemory(ptr, capiKey->pExExportFlag, capiKey->dwExExportFlagLen);
 		status = TRUE;
 	}
 	return status;

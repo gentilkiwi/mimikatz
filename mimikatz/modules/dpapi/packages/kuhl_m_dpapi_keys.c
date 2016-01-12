@@ -22,20 +22,39 @@ NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[])
 			{
 				kull_m_key_capi_descr(0, capiKey);
 
-				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pExportFlag, capiKey->dwExportFlagLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS, sizeof(KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS), &out, &outLen, L"Decrypting Export flags:\n"))
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pSiExportFlag, capiKey->dwSiExportFlagLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS, sizeof(KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS), &out, &outLen, L"Decrypting AT_SIGNATURE Export flags:\n"))
 				{
-					kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
+					kull_m_string_wprintf_hex(out, outLen, 0); kprintf(L"\n");
 					LocalFree(out);
 				}
-
-				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pPrivateKey, capiKey->dwPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting Private Key:\n"))
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pSiPrivateKey, capiKey->dwSiPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting AT_SIGNATURE Private Key:\n"))
 				{
-					kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
+					kull_m_string_wprintf_hex(out, outLen, 0); kprintf(L"\n");
 					if(kull_m_key_capi_decryptedkey_to_raw(out, outLen, &blob, &szBlob))
 					{
 						if(name = kull_m_string_qad_ansi_to_unicode(capiKey->pName))
 						{
-							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw", 0, name, TRUE, TRUE);
+							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw_signature", 0, name, TRUE, TRUE);
+							LocalFree(name);
+						}
+						LocalFree(blob);
+					}
+					LocalFree(out);
+				}
+
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pExExportFlag, capiKey->dwExExportFlagLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS, sizeof(KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS), &out, &outLen, L"Decrypting AT_EXCHANGE Export flags:\n"))
+				{
+					kull_m_string_wprintf_hex(out, outLen, 0); kprintf(L"\n");
+					LocalFree(out);
+				}
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pExPrivateKey, capiKey->dwExPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting AT_EXCHANGE Private Key:\n"))
+				{
+					kull_m_string_wprintf_hex(out, outLen, 0); kprintf(L"\n");
+					if(kull_m_key_capi_decryptedkey_to_raw(out, outLen, &blob, &szBlob))
+					{
+						if(name = kull_m_string_qad_ansi_to_unicode(capiKey->pName))
+						{
+							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw_exchange", 0, name, TRUE, TRUE);
 							LocalFree(name);
 						}
 						LocalFree(blob);

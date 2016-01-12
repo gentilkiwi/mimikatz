@@ -37,6 +37,7 @@ void kuhl_m_kerberos_ptt_file(PCWCHAR filename);
 NTSTATUS kuhl_m_kerberos_ptt_data(PVOID data, DWORD dataSize);
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_kerberos_ask(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_purge(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[]);
@@ -45,5 +46,6 @@ NTSTATUS kuhl_m_kerberos_test(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_kerberos_hash_data(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count);
 wchar_t * kuhl_m_kerberos_generateFileName(const DWORD index, PKERB_TICKET_CACHE_INFO_EX ticket, LPCWSTR ext);
+wchar_t * kuhl_m_kerberos_generateFileName_short(PKIWI_KERBEROS_TICKET ticket, LPCWSTR ext);
 struct _DIRTY_ASN1_SEQUENCE_EASY * kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc);
 NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD keySize, LPCVOID data, DWORD dataSize, LPVOID *output, DWORD *outputSize, BOOL encrypt);
