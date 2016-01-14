@@ -14,25 +14,27 @@
 
 //#define KIWI_DPAPI_ENTROPY_NGC_unk				0x62 6B ED CB CA 02 5E 41  84 7E 33 93 36 9C 2E 5E
 
-
 #pragma pack(push, 4) 
 typedef struct _KULL_M_KEY_CAPI_BLOB {
 	DWORD	dwVersion;
 	DWORD	unk0;	// maybe flags somewhere ?
 	DWORD	dwNameLen;
-	DWORD	unk1;
-	DWORD	unk2;
-	DWORD	dwPublicKeyLen;
-	DWORD	dwPrivateKeyLen;
+	DWORD	dwSiPublicKeyLen;
+	DWORD	dwSiPrivateKeyLen;
+	DWORD	dwExPublicKeyLen;
+	DWORD	dwExPrivateKeyLen;
 	DWORD	dwHashLen; // hmac ?
-	DWORD	unk3;
-	DWORD	dwExportFlagLen;
+	DWORD	dwSiExportFlagLen;
+	DWORD	dwExExportFlagLen;
 
 	PSTR	pName;
 	PVOID	pHash;
-	PVOID	pPublicKey;
-	PVOID	pPrivateKey;
-	PVOID	pExportFlag;
+	PVOID	pSiPublicKey;
+	PVOID	pSiPrivateKey;
+	PVOID	pSiExportFlag;
+	PVOID	pExPublicKey;
+	PVOID	pExPrivateKey;
+	PVOID	pExExportFlag;
 } KULL_M_KEY_CAPI_BLOB, *PKULL_M_KEY_CAPI_BLOB;
 
 typedef struct _KULL_M_KEY_CNG_PROPERTY {

@@ -27,9 +27,10 @@
 #endif
 
 #define MIMIKATZ				L"mimikatz"
-#define MIMIKATZ_VERSION		L"2.0 alpha"
-#define MIMIKATZ_CODENAME		L"Kiwi en C"
-#define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") release \"" MIMIKATZ_CODENAME L"\" (" TEXT(__DATE__) L" " TEXT(__TIME__) L")"
+#define MIMIKATZ_VERSION		L"2.1"
+#define MIMIKATZ_CODENAME		L"A La Vie, A L\'Amour"
+#define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") built on " TEXT(__DATE__) L" " TEXT(__TIME__)
+#define MIMIKATZ_SECOND			L"\"" MIMIKATZ_CODENAME L"\""
 #define MIMIKATZ_SPECIAL		L"                                "
 #define MIMIKATZ_DEFAULT_LOG	MIMIKATZ L".log"
 #define MIMIKATZ_DRIVER			L"mimidrv"

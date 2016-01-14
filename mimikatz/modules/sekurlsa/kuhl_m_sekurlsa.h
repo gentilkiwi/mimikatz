@@ -183,7 +183,8 @@ typedef struct _LSAISO_DATA_BLOB {
 	DWORD unk3;
 	DWORD unk4;
 	BYTE unkKeyData[3*16];
-	BYTE unkEmpty[20];
+	BYTE unkData2[16];
+	DWORD unk5;
 	DWORD origSize;
 	BYTE data[ANYSIZE_ARRAY];
 } LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;

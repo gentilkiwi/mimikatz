@@ -24,6 +24,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_net,
 #endif
 	&kuhl_m_dpapi,
+	&kuhl_m_busylight,
 };
 
 int wmain(int argc, wchar_t * argv[])
@@ -38,11 +39,11 @@ int wmain(int argc, wchar_t * argv[])
 #endif
 	kprintf(L"\n"
 		L"  .#####.   " MIMIKATZ_FULL L"\n"
-		L" .## ^ ##.  \n"
+		L" .## ^ ##.  " MIMIKATZ_SECOND L"\n"
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'    " MIMIKATZ_SPECIAL L" with %2u modules * * */\n\n", ARRAYSIZE(mimikatz_modules));
+		L"  '#####'    " MIMIKATZ_SPECIAL L" with %2u modules * * */\n", ARRAYSIZE(mimikatz_modules));
 	
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)
@@ -87,9 +88,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	{
 		RtlGetNtVersionNumbers(&MIMIKATZ_NT_MAJOR_VERSION, &MIMIKATZ_NT_MINOR_VERSION, &MIMIKATZ_NT_BUILD_NUMBER);
 		MIMIKATZ_NT_BUILD_NUMBER &= 0x00003fff;
-
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pInit);
-		kull_m_busylight_start();
 	}
 	else
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pClean);
@@ -105,10 +104,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	}
 
 	if(!Init)
-	{
-		kull_m_busylight_stop();
 		kull_m_output_file(NULL);
-	}
 	return STATUS_SUCCESS;
 }
 

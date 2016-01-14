@@ -220,23 +220,23 @@ const KERB_INFOS kerbHelper[] = {
 		},
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, SmartcardInfos),
 		sizeof(KIWI_KERBEROS_LOGON_SESSION_10),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, ServiceName),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TargetName),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, DomainName),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TargetDomainName),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, Description),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, AltTargetDomainName),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, ClientName),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketFlags),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, KeyType),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, Key),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, StartTime),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, EndTime),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, RenewUntil),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketEncType),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, Ticket),
-		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_6, TicketKvno),
-		sizeof(KIWI_KERBEROS_INTERNAL_TICKET_6),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, ServiceName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, TargetName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, DomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, TargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, Description),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, AltTargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, ClientName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, TicketFlags),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, KeyType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, Key),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, StartTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, EndTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, RenewUntil),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, TicketEncType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, Ticket),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10, TicketKvno),
+		sizeof(KIWI_KERBEROS_INTERNAL_TICKET_10),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, pKeyList),
 		sizeof(KIWI_KERBEROS_KEYS_LIST_6),
 		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
@@ -616,12 +616,12 @@ PKIWI_KERBEROS_TICKET kuhl_m_sekurlsa_kerberos_createTicket(PBYTE pTicket, PKULL
 		ticket->Description = *(PUNICODE_STRING) (pTicket + kerbHelper[KerbOffsetIndex].offsetDescription);
 		kull_m_string_getUnicodeString(&ticket->Description, hLSASS);
 
-		ticket->KeyType = *(PULONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetKeyType));
+		ticket->KeyType = *(PLONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetKeyType));
 		ticket->Key = *(PKIWI_KERBEROS_BUFFER) ((pTicket + kerbHelper[KerbOffsetIndex].offsetKey));;
 		kuhl_m_sekurlsa_kerberos_createKiwiKerberosBuffer(&ticket->Key, hLSASS);
 
 		ticket->TicketFlags = *(PULONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetTicketFlags));
-		ticket->TicketEncType = *(PULONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetTicketEncType));
+		ticket->TicketEncType = *(PLONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetTicketEncType));
 		ticket->TicketKvno = *(PULONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetTicketKvno));
 		ticket->Ticket = *(PKIWI_KERBEROS_BUFFER) ((pTicket + kerbHelper[KerbOffsetIndex].offsetTicket));;
 		kuhl_m_sekurlsa_kerberos_createKiwiKerberosBuffer(&ticket->Ticket, hLSASS);

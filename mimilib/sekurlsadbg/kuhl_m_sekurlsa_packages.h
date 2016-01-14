@@ -36,6 +36,8 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 {
 	BOOLEAN isShaOwPassword;
 	BYTE align0;
 	BYTE align1;
+	BYTE align2;
+	BYTE align3;
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
 	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];
@@ -470,7 +472,8 @@ typedef struct _LSAISO_DATA_BLOB {
 	DWORD unk3;
 	DWORD unk4;
 	BYTE unkKeyData[3*16];
-	BYTE unkEmpty[20];
+	BYTE unkData2[16];
+	DWORD unk5;
 	DWORD origSize;
 	BYTE data[ANYSIZE_ARRAY];
 } LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;

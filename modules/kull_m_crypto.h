@@ -76,8 +76,15 @@ typedef struct _KULL_M_CRYPTO_DUAL_STRING_STRING {
 	PCWSTR	realname;
 } KULL_M_CRYPTO_DUAL_STRING_STRING, *PKULL_M_CRYPTO_DUAL_STRING_STRING;
 
+#define CERT_cert_file_element	32
+#define CERT_crl_file_element	33
+#define CERT_ctl_file_element	34
+#define CERT_keyid_file_element	35
+
 DWORD kull_m_crypto_system_store_to_dword(PCWSTR name);
 DWORD kull_m_crypto_provider_type_to_dword(PCWSTR name);
+PCWSTR kull_m_crypto_provider_type_to_name(const DWORD dwProvType);
 PCWCHAR kull_m_crypto_provider_to_realname(PCWSTR name);
 PCWCHAR kull_m_crypto_keytype_to_str(const DWORD keyType);
 PCWCHAR kull_m_crypto_algid_to_name(ALG_ID algid);
+PCWCHAR kull_m_crypto_cert_prop_id_to_name(const DWORD propId);
