@@ -302,19 +302,22 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
 			if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
 			{
 				realLen = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData);
-				calcChecksum = kull_m_crypto_crc32(0, encrypted->EncryptedData, realLen);
-				if(calcChecksum == encrypted->CheckSum)
+				if(kull_m_crypto_hash(CALG_CRC32, encrypted->EncryptedData, realLen, &calcChecksum, sizeof(calcChecksum)))
 				{
-					toFree = val->pVal;
-					if(val->pVal = (UCHAR *) MIDL_user_allocate(realLen))
+					if(calcChecksum == encrypted->CheckSum)
 					{
-						RtlCopyMemory(val->pVal, encrypted->EncryptedData, realLen);
-						val->valLen = realLen;
-						status = TRUE;
-						MIDL_user_free(toFree);
+						toFree = val->pVal;
+						if(val->pVal = (UCHAR *) MIDL_user_allocate(realLen))
+						{
+							RtlCopyMemory(val->pVal, encrypted->EncryptedData, realLen);
+							val->valLen = realLen;
+							status = TRUE;
+							MIDL_user_free(toFree);
+						}
 					}
+					else PRINT_ERROR(L"Checksums don\'t match (C:0x%08x - R:0x%08x)\n", calcChecksum, encrypted->CheckSum);
 				}
-				else PRINT_ERROR(L"Checksums don\'t match (C:0x%08x - R:0x%08x)\n", calcChecksum, encrypted->CheckSum);
+				else PRINT_ERROR(L"Unable to calculate CRC32\n");
 			}
 			else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
 		}

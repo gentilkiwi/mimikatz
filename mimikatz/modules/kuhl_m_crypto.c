@@ -100,6 +100,7 @@ NTSTATUS kuhl_m_crypto_l_providers(int argc, wchar_t * argv[])
 {
 	DWORD provType,tailleRequise, index = 0;
 	wchar_t * monProvider;
+	PCWCHAR name;
 	PCRYPT_PROVIDERS pBuffer = NULL;
 
 	kprintf(L"\nCryptoAPI providers :\n");
@@ -108,13 +109,34 @@ NTSTATUS kuhl_m_crypto_l_providers(int argc, wchar_t * argv[])
 		if(monProvider = (wchar_t *) LocalAlloc(LPTR, tailleRequise))
 		{
 			if(CryptEnumProviders(index, NULL, 0, &provType, monProvider, &tailleRequise))
-				kprintf(L"%2u. %s\n", index, monProvider);
+			{
+				name = kull_m_crypto_provider_type_to_name(provType);
+				kprintf(L"%2u. %-13s (%2u) - %s\n", index, name ? name : L"?", provType, monProvider);
+			}
 			LocalFree(monProvider);
 		}
 		index++;
 	}
 	if(GetLastError() != ERROR_NO_MORE_ITEMS)
 		PRINT_ERROR_AUTO(L"CryptEnumProviders");
+
+	index = 0;
+	kprintf(L"\nCryptoAPI provider types:\n");
+	while(CryptEnumProviderTypes(index, NULL, 0, &provType, NULL, &tailleRequise))
+	{
+		if(monProvider = (wchar_t *) LocalAlloc(LPTR, tailleRequise))
+		{
+			if(CryptEnumProviderTypes(index, NULL, 0, &provType, monProvider, &tailleRequise))
+			{
+				name = kull_m_crypto_provider_type_to_name(provType);
+				kprintf(L"%2u. %-13s (%2u) - %s\n", index, name ? name : L"?", provType, monProvider);
+			}
+			LocalFree(monProvider);
+		}
+		index++;
+	}
+	if(GetLastError() != ERROR_NO_MORE_ITEMS)
+		PRINT_ERROR_AUTO(L"CryptEnumProviderTypes");
 
 	if(kuhl_m_crypto_hNCrypt)
 	{
@@ -162,7 +184,7 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 	HCRYPTKEY maCle;
 	BOOL keyToFree;
 
-	PCWCHAR szSystemStore, szStore;
+	PCWCHAR szSystemStore, szStore, name;
 	DWORD dwSystemStore = 0;
 
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
@@ -198,11 +220,14 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 								{
 									if(CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, pBuffer, &dwSizeNeeded))
 									{
+										name = kull_m_crypto_provider_type_to_name(pBuffer->dwProvType);
 										kprintf(
 											L"\tKey Container  : %s\n"
-											L"\tProvider       : %s\n",
+											L"\tProvider       : %s\n"
+											L"\tProvider type  : %s (%u)\n",
 											(pBuffer->pwszContainerName ? pBuffer->pwszContainerName : L"(null)"),
-											(pBuffer->pwszProvName ? pBuffer->pwszProvName : L"(null)"));
+											(pBuffer->pwszProvName ? pBuffer->pwszProvName : L"(null)"),
+											name ? name : L"?", pBuffer->dwProvType);
 										
 										if(CryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG /* CRYPT_ACQUIRE_SILENT_FLAG NULL */, NULL, &monProv, &keySpec, &keyToFree))
 										{
@@ -737,7 +762,6 @@ NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[])
 					case CERT_OCSP_CACHE_PREFIX_PROP_ID:
 						kprintf(L"%.*s", prop->size / sizeof(wchar_t), prop->data);
 						break;
-
 					case CERT_cert_file_element:
 					case CERT_crl_file_element:
 					case CERT_ctl_file_element:

@@ -17,8 +17,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 	DWORD modulo, offsetData = sizeof(PACTYPE) + 3 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
 
-	status = CDLocateCheckSum(SignatureType, &pCheckSum);
-	if(NT_SUCCESS(status))
+	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
 		if(kuhl_m_pac_validationInfo_to_LOGON_INFO(validationInfo, &pLogonInfo, &szLogonInfo))
 		{

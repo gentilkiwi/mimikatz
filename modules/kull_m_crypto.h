@@ -8,6 +8,8 @@
 #include "kull_m_string.h"
 #include "kull_m_crypto_system.h"
 
+#define CALG_CRC32	(ALG_CLASS_HASH | ALG_TYPE_ANY | 0)
+
 #define AES_256_KEY_SIZE	(256/8)
 #define AES_128_KEY_SIZE	(128/8)
 #define AES_BLOCK_SIZE		16
@@ -64,7 +66,6 @@ DWORD kull_m_crypto_hash_len(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_blocklen(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId);
 NTSTATUS kull_m_crypto_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations);
-DWORD kull_m_crypto_crc32(DWORD startCrc, LPCVOID data, DWORD size);
 
 typedef struct _KULL_M_CRYPTO_DUAL_STRING_DWORD {
 	PCWSTR	name;
