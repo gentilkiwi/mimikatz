@@ -58,57 +58,28 @@ NTSTATUS LsaCallKerberosPackage(PVOID ProtocolSubmitBuffer, ULONG SubmitBufferLe
 
 NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[])
 {
-	HANDLE hFind;
-	BOOL bFind = TRUE;
-	WIN32_FIND_DATA fData;
-	DWORD dwAttrib;
-	wchar_t fullpath[0xffff];
-	int i, j;
-
+	int i;
 	for(i = 0; i < argc; i++)
 	{
-		dwAttrib = GetFileAttributes(argv[i]);
-		if((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+		if(PathIsDirectory(argv[i]))
 		{
-			kprintf(L"%3u - Directory \'%s\' (*.kirbi)\n", i, argv[i]);
-			if(wcscpy_s(fullpath, ARRAYSIZE(fullpath), argv[i]) == 0)
-			{
-				if(wcscat_s(fullpath, ARRAYSIZE(fullpath), L"\\*.kirbi") == 0)
-				{
-					hFind = FindFirstFile(fullpath, &fData);
-					if(hFind != INVALID_HANDLE_VALUE)
-					{
-						j = 0;
-						do
-						{
-							if(!(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-							{
-								if(wcscpy_s(fullpath, ARRAYSIZE(fullpath), argv[i]) == 0)
-								{
-									if(wcscat_s(fullpath, ARRAYSIZE(fullpath), L"\\") == 0)
-									{
-										if(wcscat_s(fullpath, ARRAYSIZE(fullpath), fData.cFileName) == 0)
-										{
-											kprintf(L"   %3u - File \'%s\' : ", j, fData.cFileName);
-											kuhl_m_kerberos_ptt_file(fullpath);
-										}
-									}
-								}
-							}
-							j++;
-						} while(bFind = FindNextFile(hFind, &fData));
-						FindClose(hFind);
-					}
-				}
-			}
+			kprintf(L"* Directory: \'%s\'\n", argv[i]);
+			kull_m_file_Find(argv[i], L"*.kirbi", FALSE, 0, FALSE, kuhl_m_kerberos_ptt_directory, NULL);
 		}
 		else
-		{
-			kprintf(L"%3u - File \'%s\' : ", i, argv[i]);
-			kuhl_m_kerberos_ptt_file(argv[i]);
-		}
+			kuhl_m_kerberos_ptt_directory(0, argv[i], PathFindFileName(argv[i]), NULL);
 	}
 	return STATUS_SUCCESS;
+}
+
+BOOL CALLBACK kuhl_m_kerberos_ptt_directory(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg)
+{
+	if(fullpath)
+	{
+		kprintf(L"\n* File: \'%s\': ", fullpath);
+		kuhl_m_kerberos_ptt_file(fullpath);
+	}
+	return TRUE;
 }
 
 void kuhl_m_kerberos_ptt_file(PCWCHAR filename)

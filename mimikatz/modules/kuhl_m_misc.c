@@ -11,7 +11,6 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_taskmgr,	L"taskmgr",		L"Task Manager            (without DisableTaskMgr)"},
 	{kuhl_m_misc_ncroutemon,L"ncroutemon",	L"Juniper Network Connect (without route monitoring)"},
 	{kuhl_m_misc_detours,	L"detours",		L"[experimental] Try to enumerate all modules with Detours-like hooks"},
-	{kuhl_m_misc_wifi,		L"wifi",		NULL},
 #ifdef _M_X64
 	{kuhl_m_misc_addsid,	L"addsid",		NULL},
 #endif
@@ -20,60 +19,8 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
-	ARRAYSIZE(kuhl_m_c_misc), kuhl_m_c_misc, kuhl_m_misc_init, kuhl_m_misc_clean
+	ARRAYSIZE(kuhl_m_c_misc), kuhl_m_c_misc, NULL, NULL
 };
-
-HMODULE kuhl_m_misc_hWlanLib = NULL;
-HANDLE kuhl_m_misc_hWlan = NULL;
-
-PWLANOPENHANDLE WlanOpenHandle = NULL;
-PWLANCLOSEHANDLE WlanCloseHandle = NULL;
-PWLANENUMINTERFACES WlanEnumInterfaces = NULL;
-PWLANGETPROFILELIST WlanGetProfileList = NULL;
-PWLANGETPROFILE WlanGetProfile = NULL;
-PWLANFREEMEMORY WlanFreeMemory = NULL;
-
-NTSTATUS kuhl_m_misc_init()
-{
-	NTSTATUS status = STATUS_SUCCESS;
-	DWORD dwNegoatiatedVersion;
-
-	if(kuhl_m_misc_hWlanLib = LoadLibrary(L"wlanapi"))
-	{
-		WlanOpenHandle = (PWLANOPENHANDLE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanOpenHandle");
-		WlanCloseHandle = (PWLANCLOSEHANDLE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanCloseHandle");
-		WlanEnumInterfaces = (PWLANENUMINTERFACES) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanEnumInterfaces");
-		WlanGetProfileList = (PWLANGETPROFILELIST) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanGetProfileList");
-		WlanGetProfile = (PWLANGETPROFILE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanGetProfile");
-		WlanFreeMemory = (PWLANFREEMEMORY) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanFreeMemory");
-
-		if(!(WlanOpenHandle && WlanCloseHandle && WlanEnumInterfaces && WlanGetProfileList && WlanGetProfile && WlanFreeMemory))
-			status = STATUS_NOT_FOUND;
-		else if(WlanOpenHandle((MIMIKATZ_NT_MAJOR_VERSION < 6) ? 1 : 2, NULL, &dwNegoatiatedVersion, &kuhl_m_misc_hWlan) != ERROR_SUCCESS)
-			status = STATUS_INVALID_PARAMETER;
-
-		if(!NT_SUCCESS(status))
-		{
-			FreeLibrary(kuhl_m_misc_hWlanLib);
-			kuhl_m_misc_hWlanLib = NULL;
-		}
-	}
-	return STATUS_SUCCESS;
-}
-
-NTSTATUS kuhl_m_misc_clean()
-{
-	if(kuhl_m_misc_hWlanLib)
-	{
-		if(kuhl_m_misc_hWlan)
-		{
-			WlanCloseHandle(kuhl_m_misc_hWlan, NULL);
-			kuhl_m_misc_hWlan = NULL;
-		}
-		FreeLibrary(kuhl_m_misc_hWlanLib);
-	}
-	return STATUS_SUCCESS;
-}
 
 NTSTATUS kuhl_m_misc_cmd(int argc, wchar_t * argv[])
 {
@@ -278,55 +225,6 @@ BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SI
 	return status;
 }
 
-const wchar_t * KUHL_M_MISC_WIFI_STATE[] = {
-	L"not_ready",
-	L"connected",
-	L"ad_hoc_network_formed",
-	L"disconnecting",
-	L"disconnected",
-	L"associating",
-	L"discovering",
-	L"authenticating",
-};
-NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[])
-{
-	PWLAN_INTERFACE_INFO_LIST pInterfaceList;
-	PWLAN_PROFILE_INFO_LIST pProfileList;
-	LPWSTR pstrProfileXml;
-	DWORD pdwFlags;
-
-	if(kuhl_m_misc_hWlan)
-	{
-		if(WlanEnumInterfaces(kuhl_m_misc_hWlan, NULL, &pInterfaceList) == ERROR_SUCCESS)
-		{
-			for(pInterfaceList->dwIndex = 0; pInterfaceList->dwIndex < pInterfaceList->dwNumberOfItems; pInterfaceList->dwIndex++)
-			{
-				kprintf(L" * ");
-				kull_m_string_displayGUID(&pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].InterfaceGuid);
-				kprintf(L" / %s - %s\n", KUHL_M_MISC_WIFI_STATE[pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].isState], pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].strInterfaceDescription);
-
-				if(WlanGetProfileList(kuhl_m_misc_hWlan, &pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].InterfaceGuid, NULL, &pProfileList) == ERROR_SUCCESS)
-				{
-					for(pProfileList->dwIndex = 0; pProfileList->dwIndex < pProfileList->dwNumberOfItems; pProfileList->dwIndex++)
-					{
-						kprintf(L"\t| %s\n", pProfileList->ProfileInfo[pProfileList->dwIndex].strProfileName);
-						pdwFlags = WLAN_PROFILE_GET_PLAINTEXT_KEY;
-						//kprintf(L"%08x\n", pdwFlags);
-						if(WlanGetProfile(kuhl_m_misc_hWlan, &pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].InterfaceGuid, pProfileList->ProfileInfo[pProfileList->dwIndex].strProfileName, NULL, &pstrProfileXml, &pdwFlags, NULL) == ERROR_SUCCESS)
-						{
-							//kprintf(L"%08x\n", pdwFlags);
-							kprintf(L"%s\n", pstrProfileXml);
-							WlanFreeMemory(pstrProfileXml);
-						}
-					}
-					WlanFreeMemory(pProfileList);
-				}
-			}
-			WlanFreeMemory(pInterfaceList);
-		}
-	}
-	return STATUS_SUCCESS;
-}
 #ifdef _M_X64
 BYTE PTRN_JMP[]			= {0xeb};
 BYTE PTRN_6NOP[]		= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};

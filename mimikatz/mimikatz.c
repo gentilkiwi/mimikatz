@@ -44,7 +44,7 @@ int wmain(int argc, wchar_t * argv[])
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
 		L"  '#####'    " MIMIKATZ_SPECIAL L" with %2u modules * * */\n", ARRAYSIZE(mimikatz_modules));
-	
+
 	mimikatz_initOrClean(TRUE);
 	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)
 	{
@@ -66,6 +66,7 @@ int wmain(int argc, wchar_t * argv[])
 #endif
 	mimikatz_initOrClean(FALSE);
 #ifndef _WINDLL
+	SetConsoleCtrlHandler(HandlerRoutine, FALSE);
 	kull_m_output_clean();
 #endif
 	return STATUS_SUCCESS;
@@ -111,13 +112,18 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input)
 {
 	NTSTATUS status;
-	switch(input[0])
+	PWCHAR full;
+	if(full = kull_m_file_fullPath(input))
+	{
+	switch(full[0])
 	{
 	case L'!':
-		status = kuhl_m_kernel_do(input + 1);
+		status = kuhl_m_kernel_do(full + 1);
 		break;
 	default:
-		status = mimikatz_doLocal(input);
+		status = mimikatz_doLocal(full);
+	}
+	LocalFree(full);
 	}
 	return status;
 }

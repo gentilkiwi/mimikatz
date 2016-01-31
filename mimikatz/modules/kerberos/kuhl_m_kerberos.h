@@ -33,6 +33,7 @@ NTSTATUS kuhl_m_kerberos_clean();
 NTSTATUS LsaCallKerberosPackage(PVOID ProtocolSubmitBuffer, ULONG SubmitBufferLength, PVOID *ProtocolReturnBuffer, PULONG ReturnBufferLength, PNTSTATUS ProtocolStatus);
 
 NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[]);
+BOOL CALLBACK kuhl_m_kerberos_ptt_directory(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg);
 void kuhl_m_kerberos_ptt_file(PCWCHAR filename);
 NTSTATUS kuhl_m_kerberos_ptt_data(PVOID data, DWORD dataSize);
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[]);

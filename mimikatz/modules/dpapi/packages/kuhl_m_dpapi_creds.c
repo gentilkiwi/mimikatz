@@ -88,7 +88,6 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 															{
 																if(isAttr)
 																{
-
 																	kull_m_string_wprintf_hex(buffer, len, 0);
 																}
 																else

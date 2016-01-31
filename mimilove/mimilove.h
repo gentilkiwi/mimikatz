@@ -10,7 +10,8 @@
 #define MIMILOVE				L"mimilove"
 #define MIMILOVE_VERSION		L"1.0"
 #define MIMILOVE_CODENAME		L"Love edition <3"
-#define MIMILOVE_FULL			MIMILOVE L" " MIMILOVE_VERSION L" \"" MIMILOVE_CODENAME L"\" (" TEXT(__DATE__) L" " TEXT(__TIME__) L")"
+#define MIMILOVE_FULL			MIMILOVE L" " MIMILOVE_VERSION L" built on " TEXT(__DATE__) L" " TEXT(__TIME__)
+#define MIMILOVE_SECOND			L"\"" MIMIKATZ_CODENAME L"\""
 #define MIMILOVE_SPECIAL		L"Windows 2000 only!                               "
 
 #include "../modules/kull_m_output.h"

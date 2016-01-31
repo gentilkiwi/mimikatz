@@ -15,11 +15,11 @@ BOOL kull_m_crypto_hash(ALG_ID algid, LPCVOID data, DWORD dataLen, LPVOID hash, 
 	PKERB_CHECKSUM pCheckSum;
 	PVOID Context;
 
-	if((algid == CALG_CRC32) && (hashWanted == sizeof(DWORD)))
+	if(algid == CALG_CRC32)
 	{
-		if(NT_SUCCESS(CDLocateCheckSum(KERB_CHECKSUM_REAL_CRC32, &pCheckSum)))
+		if((hashWanted == sizeof(DWORD)) && NT_SUCCESS(CDLocateCheckSum(KERB_CHECKSUM_REAL_CRC32, &pCheckSum)))
 		{
-			if(NT_SUCCESS(pCheckSum->InitializeEx(NULL, 0, 0, &Context)))
+			if(NT_SUCCESS(pCheckSum->Initialize(0, &Context)))
 			{
 				pCheckSum->Sum(Context, dataLen, data);
 				status = NT_SUCCESS(pCheckSum->Finalize(Context, hash));

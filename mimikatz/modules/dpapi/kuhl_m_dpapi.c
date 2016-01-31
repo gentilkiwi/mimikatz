@@ -22,7 +22,7 @@ const KUHL_M kuhl_m_dpapi = {
 	L"dpapi",	L"DPAPI Module (by API or RAW access)", L"Data Protection application programming interface",
 	ARRAYSIZE(kuhl_m_c_dpapi), kuhl_m_c_dpapi, NULL, kuhl_m_dpapi_oe_clean
 };
-
+// to do: package WiFi (HKLM\SOFTWARE\Microsoft\WZCSVC\Parameters\Interfaces\* && %ProgramData%\Microsoft\Wlansvc\Profiles\Interfaces\*) with MSXML (https://msdn.microsoft.com/en-us/library/ms767609.aspx)
 NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[])
 {
 	DATA_BLOB dataIn, dataOut;

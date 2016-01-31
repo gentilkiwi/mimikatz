@@ -14,7 +14,7 @@ int wmain(int argc, wchar_t *argv[])
 
 	kprintf(L"\n"
 		L"  .#####.   " MIMILOVE_FULL L"\n"
-		L" .## ^ ##.  \n"
+		L" .## ^ ##.  " MIMILOVE_SECOND L"\n"
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"

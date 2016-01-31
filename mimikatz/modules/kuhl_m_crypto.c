@@ -212,7 +212,6 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 						if(CertGetNameString(pCertContext, nameSrc[j], 0, NULL, certName, dwSizeNeeded) == dwSizeNeeded)
 						{
 							kprintf(L"%2u. %s\n", i, certName);
-
 							dwSizeNeeded = 0;
 							if(CertGetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, NULL, &dwSizeNeeded))
 							{
@@ -255,8 +254,8 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 
 										} else PRINT_ERROR_AUTO(L"CryptAcquireCertificatePrivateKey");
 									} else PRINT_ERROR_AUTO(L"CertGetCertificateContextProperty");
+									LocalFree(pBuffer);
 								}
-								LocalFree(pBuffer);
 								if(!export)
 									kprintf(L"\n");
 							}
@@ -724,72 +723,98 @@ NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[])
+BOOL kuhl_m_crypto_system_data(PBYTE data, DWORD len, PCWCHAR originalName, BOOL isExport)
+{
+	BOOL status = FALSE;
+	PCWCHAR name;
+	PKUHL_M_CRYPTO_CERT_PROP prop;
+	PKUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO provInfo;
+
+	for(prop = (PKUHL_M_CRYPTO_CERT_PROP) data; (PBYTE) prop < (data + len); prop = (PKUHL_M_CRYPTO_CERT_PROP) ((PBYTE) prop + FIELD_OFFSET(KUHL_M_CRYPTO_CERT_PROP, data) + prop->size))
+	{
+		name = kull_m_crypto_cert_prop_id_to_name(prop->dwPropId);
+		kprintf(L"[%04x/%x] %s\n", prop->dwPropId, prop->flags, name ? name : L"?");
+		if(prop->size)
+		{
+			kprintf(L"  ");
+			switch(prop->dwPropId)
+			{
+			case CERT_KEY_PROV_INFO_PROP_ID:
+				kprintf(L"Provider info:\n");
+				provInfo = (PKUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO) prop->data;
+				if(provInfo->offsetContainerName)
+					kprintf(L"\tKey Container  : %s\n", prop->data + provInfo->offsetContainerName);
+				if(provInfo->offsetProvName)
+					kprintf(L"\tProvider       : %s\n", prop->data + provInfo->offsetProvName);
+				name = kull_m_crypto_provider_type_to_name(provInfo->dwProvType);
+				kprintf(L"\tProvider type  : %s (%u)\n", name ? name : L"?", provInfo->dwProvType);
+				kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(provInfo->dwKeySpec), provInfo->dwKeySpec);
+				kprintf(L"\tFlags          : %08x\n", provInfo->dwFlags);
+				kprintf(L"\tParam (todo)   : %08x / %08x\n", provInfo->cProvParam, provInfo->offsetRgProvParam);
+				break;
+			case CERT_FRIENDLY_NAME_PROP_ID:
+			case CERT_OCSP_CACHE_PREFIX_PROP_ID:
+			case 101: //CERT_SMART_CARD_READER_PROP_ID
+				kprintf(L"%.*s", prop->size / sizeof(wchar_t), prop->data);
+				break;
+			case CERT_cert_file_element:
+			case CERT_crl_file_element:
+			case CERT_ctl_file_element:
+			case CERT_keyid_file_element:
+				kuhl_m_crypto_file_rawData(prop, originalName, isExport);
+				break;
+			case CERT_SHA1_HASH_PROP_ID:
+			case CERT_MD5_HASH_PROP_ID :
+			case CERT_SIGNATURE_HASH_PROP_ID:
+			case CERT_ISSUER_PUBLIC_KEY_MD5_HASH_PROP_ID:
+			case CERT_SUBJECT_PUBLIC_KEY_MD5_HASH_PROP_ID:
+			case CERT_ISSUER_SERIAL_NUMBER_MD5_HASH_PROP_ID:
+			case CERT_SUBJECT_NAME_MD5_HASH_PROP_ID:
+			case CERT_KEY_IDENTIFIER_PROP_ID:
+				//
+			default:
+				kull_m_string_wprintf_hex(prop->data, prop->size, 0);
+				break;
+			}
+			kprintf(L"\n");
+		}
+	}
+
+	return status;
+}
+
+BOOL CALLBACK kuhl_m_crypto_system_directory(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg)
 {
 	PBYTE fileData;
 	DWORD fileLenght;
-	PKUHL_M_CRYPTO_CERT_PROP prop;
-	PKUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO provInfo;
-	PCWCHAR name, infile;
+	if(fullpath)
+	{
+		kprintf(L"\n* File: \'%s\'\n", fullpath);
+		if(kull_m_file_readData(fullpath, &fileData, &fileLenght))
+		{
+			kuhl_m_crypto_system_data(fileData, fileLenght, fullpath, *(PBOOL) pvArg);
+			LocalFree(fileData);
+		}
+	}
+	return TRUE;
+}
+
+NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[])
+{
+	BOOL isExport = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
+	PCWCHAR infile;
 
 	if(kull_m_string_args_byName(argc, argv, L"file", &infile, NULL)) // TODO: registry & hive
 	{
-		if(kull_m_file_readData(infile, &fileData, &fileLenght))
+		if(PathIsDirectory(infile))
 		{
-			for(prop = (PKUHL_M_CRYPTO_CERT_PROP) fileData; (PBYTE) prop < (fileData + fileLenght); prop = (PKUHL_M_CRYPTO_CERT_PROP) ((PBYTE) prop + FIELD_OFFSET(KUHL_M_CRYPTO_CERT_PROP, data) + prop->size))
-			{
-				name = kull_m_crypto_cert_prop_id_to_name(prop->dwPropId);
-				kprintf(L"[%04x/%x] %s\n", prop->dwPropId, prop->flags, name ? name : L"?");
-				if(prop->size)
-				{
-					kprintf(L"  ");
-					switch(prop->dwPropId)
-					{
-					case CERT_KEY_PROV_INFO_PROP_ID:
-						kprintf(L"Provider info:\n");
-						provInfo = (PKUHL_M_CRYPTO_CRYPT_KEY_PROV_INFO) prop->data;
-						if(provInfo->offsetContainerName)
-							kprintf(L"\tKey Container  : %s\n", prop->data + provInfo->offsetContainerName);
-						if(provInfo->offsetProvName)
-							kprintf(L"\tProvider       : %s\n", prop->data + provInfo->offsetProvName);
-						name = kull_m_crypto_provider_type_to_name(provInfo->dwProvType);
-						kprintf(L"\tProvider type  : %s (%u)\n", name ? name : L"?", provInfo->dwProvType);
-						kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(provInfo->dwKeySpec), provInfo->dwKeySpec);
-						kprintf(L"\tFlags          : %08x\n", provInfo->dwFlags);
-						kprintf(L"\tParam (todo)   : %08x / %08x\n", provInfo->cProvParam, provInfo->offsetRgProvParam);
-						break;
-					case CERT_FRIENDLY_NAME_PROP_ID:
-					case CERT_OCSP_CACHE_PREFIX_PROP_ID:
-						kprintf(L"%.*s", prop->size / sizeof(wchar_t), prop->data);
-						break;
-					case CERT_cert_file_element:
-					case CERT_crl_file_element:
-					case CERT_ctl_file_element:
-					case CERT_keyid_file_element:
-						kuhl_m_crypto_file_rawData(prop, infile, kull_m_string_args_byName(argc, argv, L"export", NULL, NULL));
-						break;
-					case CERT_SHA1_HASH_PROP_ID:
-					case CERT_MD5_HASH_PROP_ID :
-					case CERT_SIGNATURE_HASH_PROP_ID:
-					case CERT_ISSUER_PUBLIC_KEY_MD5_HASH_PROP_ID:
-					case CERT_SUBJECT_PUBLIC_KEY_MD5_HASH_PROP_ID:
-					case CERT_ISSUER_SERIAL_NUMBER_MD5_HASH_PROP_ID:
-					case CERT_SUBJECT_NAME_MD5_HASH_PROP_ID:
-					case CERT_KEY_IDENTIFIER_PROP_ID:
-						//
-					default:
-						kull_m_string_wprintf_hex(prop->data, prop->size, 0);
-						break;
-					}
-					kprintf(L"\n");
-				}
-
-			}
-			LocalFree(fileData);
+			kprintf(L"* Directory: \'%s\'\n", infile);
+			kull_m_file_Find(infile, NULL, FALSE, 0, FALSE, kuhl_m_crypto_system_directory, &isExport);
 		}
-		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
+		else
+			kuhl_m_crypto_system_directory(0, infile, PathFindFileName(infile), &isExport);
 	}
-	else PRINT_ERROR(L"Input Microsoft Crypto Certificate file needed (/in:file)\n");
+	else PRINT_ERROR(L"Input Microsoft Crypto Certificate file needed (/file:filename|directory)\n");
 	return STATUS_SUCCESS;
 }
 
