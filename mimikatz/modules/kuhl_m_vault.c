@@ -56,13 +56,13 @@ NTSTATUS kuhl_m_vault_clean()
 }
 
 const VAULT_SCHEMA_HELPER schemaHelper[] = {
-	{{{0x03e0e35be, 0x1b77, 0x43e7, {0xb8, 0x73, 0xae, 0xd9, 0x01, 0xb6, 0x27, 0x5b}}, L"Domain Password"},		NULL},
-	{{{0x0e69d7838, 0x91b5, 0x4fc9, {0x89, 0xd5, 0x23, 0x0d, 0x4d, 0x4c, 0xc2, 0xbc}}, L"Domain Certificate"},	NULL},
-	{{{0x03c886ff3, 0x2669, 0x4aa2, {0xa8, 0xfb, 0x3f, 0x67, 0x59, 0xa7, 0x75, 0x48}}, L"Domain Extended"},		NULL},
-	{{{0x0b2e033f5, 0x5fde, 0x450d, {0xa1, 0xbd, 0x37, 0x91, 0xf4, 0x65, 0x72, 0x0c}}, L"Pin Logon"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
-	{{{0x0b4b8a12b, 0x183d, 0x4908, {0x95, 0x59, 0xbd, 0x8b, 0xce, 0x72, 0xb5, 0x8a}}, L"Picture Password"},	kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
-	{{{0x0fec87291, 0x14f6, 0x40b6, {0xbd, 0x98, 0x7f, 0xf2, 0x45, 0x98, 0x6b, 0x26}}, L"Biometric"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
-	{{{0x01d4350a3, 0x330d, 0x4af9, {0xb3, 0xff, 0xa9, 0x27, 0xa4, 0x59, 0x98, 0xac}}, L"Next Generation Credential"},	NULL},
+	{{{0x3e0e35be, 0x1b77, 0x43e7, {0xb8, 0x73, 0xae, 0xd9, 0x01, 0xb6, 0x27, 0x5b}}, L"Domain Password"},		NULL},
+	{{{0xe69d7838, 0x91b5, 0x4fc9, {0x89, 0xd5, 0x23, 0x0d, 0x4d, 0x4c, 0xc2, 0xbc}}, L"Domain Certificate"},	NULL},
+	{{{0x3c886ff3, 0x2669, 0x4aa2, {0xa8, 0xfb, 0x3f, 0x67, 0x59, 0xa7, 0x75, 0x48}}, L"Domain Extended"},		NULL},
+	{{{0xb2e033f5, 0x5fde, 0x450d, {0xa1, 0xbd, 0x37, 0x91, 0xf4, 0x65, 0x72, 0x0c}}, L"Pin Logon"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
+	{{{0xb4b8a12b, 0x183d, 0x4908, {0x95, 0x59, 0xbd, 0x8b, 0xce, 0x72, 0xb5, 0x8a}}, L"Picture Password"},	kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
+	{{{0xfec87291, 0x14f6, 0x40b6, {0xbd, 0x98, 0x7f, 0xf2, 0x45, 0x98, 0x6b, 0x26}}, L"Biometric"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
+	{{{0x1d4350a3, 0x330d, 0x4af9, {0xb3, 0xff, 0xa9, 0x27, 0xa4, 0x59, 0x98, 0xac}}, L"Next Generation Credential"},	NULL},
 };
 
 NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
@@ -74,6 +74,7 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 	PVAULT_ITEM_7 items7, pItem7;
 	PVAULT_ITEM_8 items8, pItem8;
 	NTSTATUS status;
+	BOOL isAttr = kull_m_string_args_byName(argc, argv, L"attributes", NULL, NULL);
 
 	if(isVaultInit)
 	{
@@ -88,7 +89,7 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 				{
 					kuhl_m_vault_list_descVault(hVault);
 
-					if(NT_SUCCESS(VaultEnumerateItems(hVault, 0, &cbItems, &items)))
+					if(NT_SUCCESS(VaultEnumerateItems(hVault, 0x200, &cbItems, &items))) // for all :)
 					{
 						kprintf(L"\tItems (%u)\n", cbItems);
 						for(j = 0; j < cbItems; j++)
@@ -105,11 +106,13 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 								kprintf(L"\t\tIdentity        : "); kuhl_m_vault_list_descItemData(items7[j].Identity); kprintf(L"\n");
 								kprintf(L"\t\tAuthenticator   : "); kuhl_m_vault_list_descItemData(items7[j].Authenticator); kprintf(L"\n");
 
-								for(k = 0; k < items7[j].cbProperties; k++)
+								if(isAttr)
 								{
-									kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items7[j].Properties + k); kprintf(L"\n");
+									for(k = 0; k < items7[j].cbProperties; k++)
+									{
+										kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items7[j].Properties + k); kprintf(L"\n");
+									}
 								}
-								
 								pItem7 = NULL;
 								status = VaultGetItem7(hVault, &items7[j].SchemaId, items7[j].Ressource, items7[j].Identity, NULL, 0, &pItem7);
 
@@ -135,11 +138,13 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
 								kprintf(L"\t\tAuthenticator   : "); kuhl_m_vault_list_descItemData(items8[j].Authenticator); kprintf(L"\n");
 								kprintf(L"\t\tPackageSid      : "); kuhl_m_vault_list_descItemData(items8[j].PackageSid); kprintf(L"\n");
 
-								for(k = 0; k < items8[j].cbProperties; k++)
+								if(isAttr)
 								{
-									kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items8[j].Properties + k); kprintf(L"\n");
+									for(k = 0; k < items8[j].cbProperties; k++)
+									{
+										kprintf(L"\t\tProperty %2u     : ", k); kuhl_m_vault_list_descItemData(items8[j].Properties + k); kprintf(L"\n");
+									}
 								}
-
 								pItem8 = NULL;
 								status = VaultGetItem8(hVault, &items8[j].SchemaId, items8[j].Ressource, items8[j].Identity, items8[j].PackageSid, NULL, 0, &pItem8);
 
@@ -331,22 +336,36 @@ void kuhl_m_vault_list_descItemData(PVAULT_ITEM_DATA pData)
 {
 	if(pData)
 	{
+		
 		switch(pData->Type)
 		{
 		case ElementType_UnsignedShort:
-			kprintf(L"%hu", pData->data.UnsignedShort);
+			kprintf(L"[USHORT] %hu", pData->data.UnsignedShort);
 			break;
 		case ElementType_UnsignedInteger:
-			kprintf(L"%u", pData->data.UnsignedInt);
+			kprintf(L"[DWORD] %u", pData->data.UnsignedInt);
 			break;
 		case ElementType_String:
-			kprintf(L"%s", pData->data.String);
+			kprintf(L"[STRING] %s", pData->data.String);
 			break;
 		case ElementType_ByteArray:
+			kprintf(L"[BYTE*] ");
 			kull_m_string_wprintf_hex(pData->data.ByteArray.Value, pData->data.ByteArray.Length, 1);
 			break;
+		case ElementType_Sid:
+			kprintf(L"[SID] ");
+			kull_m_string_displaySID(pData->data.Sid);
+			break;
+		case ElementType_Attribute:
+			kprintf(L"[ATTRIBUTE]\n");
+			kprintf(L"\t\t  Flags   : %08x - %u\n", pData->data.Attribute->Flags, pData->data.Attribute->Flags);
+			kprintf(L"\t\t  Keyword : %s\n", pData->data.Attribute->Keyword);
+			kprintf(L"\t\t  Value   : ");
+			kull_m_string_printSuspectUnicodeString(pData->data.Attribute->Value, pData->data.Attribute->ValueSize);
+			break;
 		default:
-			kprintf(L"[Type %u] ", pData->Type); kull_m_string_wprintf_hex(&pData->data, 4, 1);
+			kprintf(L"[Type %2u] ", pData->Type);
+			kull_m_string_wprintf_hex(&pData->data, 4, 1);
 		}
 	}
 }
@@ -379,19 +398,12 @@ KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_10,	{sizeof(PTRN_WN64_CredpCloneCredential),	PTRN_WN64_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
 };
 #endif
-const PCWCHAR CredTypeToStrings[] = {
-	L"?", L"generic", L"domain_password", L"domain_certificate",
-	L"domain_visible_password", L"generic_certificate", L"domain_extended"
-};
-const PCWCHAR CredPersistToStrings[] = {L"none", L"session", L"local_machine", L"enterprise"};
 
 NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 {
-	DWORD credCount, i;
+	DWORD credCount, i, j;
 	PCREDENTIAL * pCredential = NULL;
 	DWORD flags = 0;
-	UNICODE_STRING creds;
-
 	SERVICE_STATUS_PROCESS ServiceStatusProcess;
 	PKULL_M_MEMORY_HANDLE hMemory;
 	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
@@ -442,27 +454,32 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 						L"Comment    : %s\n"
 						L"Type       : %u - %s\n"
 						L"Persist    : %u - %s\n"
-						L"Flags      : %08x\n"
-						L"Attributes :\n",
+						L"Flags      : %08x\n",
 						pCredential[i]->TargetName ? pCredential[i]->TargetName : L"<NULL>",  pCredential[i]->TargetAlias ? pCredential[i]->TargetAlias : L"<NULL>",
 						pCredential[i]->UserName ? pCredential[i]->UserName : L"<NULL>",
 						pCredential[i]->Comment ? pCredential[i]->Comment : L"<NULL>",
-						pCredential[i]->Type, (pCredential[i]->Type < CRED_TYPE_MAXIMUM) ? CredTypeToStrings[pCredential[i]->Type] : L"? (type > CRED_TYPE_MAXIMUM)",
-						pCredential[i]->Persist, (pCredential[i]->Persist < ARRAYSIZE(CredPersistToStrings) ) ? CredPersistToStrings[pCredential[i]->Persist] : L"? (Persist > maximum)",
+						pCredential[i]->Type, kull_m_cred_CredType(pCredential[i]->Type),
+						pCredential[i]->Persist, kull_m_cred_CredPersist(pCredential[i]->Persist),
 						pCredential[i]->Flags
 						);
-
-					// TODO deal with Properties
-
-					creds.Buffer = (PWSTR) pCredential[i]->CredentialBlob;
-					creds.Length = creds.MaximumLength = (USHORT) pCredential[i]->CredentialBlobSize;
-
 					kprintf(L"Credential : ");
-					if(kull_m_string_suspectUnicodeString(&creds))
-						kprintf(L"%s", pCredential[i]->CredentialBlob);
-					else
-						kull_m_string_wprintf_hex(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize, 1);
-					kprintf(L"\n\n");
+					kull_m_string_printSuspectUnicodeString(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize);
+					kprintf(L"\n"
+						L"Attributes : %u\n", pCredential[i]->AttributeCount
+						);
+					if(kull_m_string_args_byName(argc, argv, L"attributes", NULL, NULL))
+					{
+						for(j = 0; j < pCredential[i]->AttributeCount; j++)
+						{
+							kprintf(L" [%2u] Attribute\n", j);
+							kprintf(L"  Flags   : %08x - %u\n", pCredential[i]->Attributes[j].Flags, pCredential[i]->Attributes[j].Flags);
+							kprintf(L"  Keyword : %s\n", pCredential[i]->Attributes[j].Keyword);
+							kprintf(L"  Value   : ");
+							kull_m_string_printSuspectUnicodeString(pCredential[i]->Attributes[j].Value, pCredential[i]->Attributes[j].ValueSize);
+							kprintf(L"\n");
+						}
+					}
+					kprintf(L"\n");
 				}
 				CredFree(pCredential);
 			}

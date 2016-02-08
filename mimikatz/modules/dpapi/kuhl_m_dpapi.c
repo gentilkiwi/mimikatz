@@ -15,6 +15,8 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	{kuhl_m_dpapi_keys_cng,		L"cng",			L"CNG key test"},
 	{kuhl_m_dpapi_cred,			L"cred",		L"CRED test"},
 	{kuhl_m_dpapi_vault,		L"vault",		L"VAULT test"},
+	{kuhl_m_dpapi_wifi,			L"wifi",		L"WiFi test"},
+	{kuhl_m_dpapi_wwan,			L"wwan",		L"Wwan test"},
 
 	{kuhl_m_dpapi_oe_cache,		L"cache", NULL},
 };
@@ -22,14 +24,13 @@ const KUHL_M kuhl_m_dpapi = {
 	L"dpapi",	L"DPAPI Module (by API or RAW access)", L"Data Protection application programming interface",
 	ARRAYSIZE(kuhl_m_c_dpapi), kuhl_m_c_dpapi, NULL, kuhl_m_dpapi_oe_clean
 };
-// to do: package WiFi (HKLM\SOFTWARE\Microsoft\WZCSVC\Parameters\Interfaces\* && %ProgramData%\Microsoft\Wlansvc\Profiles\Interfaces\*) with MSXML (https://msdn.microsoft.com/en-us/library/ms767609.aspx)
+
 NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[])
 {
 	DATA_BLOB dataIn, dataOut;
 	PKULL_M_DPAPI_BLOB blob;
 	PCWSTR outfile, infile;
 	PWSTR description = NULL;
-	UNICODE_STRING uString;
 
 	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
@@ -54,16 +55,8 @@ NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[])
 					}
 					else
 					{
-						uString.Length = uString.MaximumLength = (USHORT) dataOut.cbData;
-						uString.Buffer = (PWSTR) dataOut.pbData;
-						kprintf(L"data - ");
-						if((uString.Length <= USHRT_MAX) && (kull_m_string_suspectUnicodeString(&uString)))
-							kprintf(L"text : %s", dataOut.pbData);
-						else
-						{
-							kprintf(L"hex  : ");
-							kull_m_string_wprintf_hex(dataOut.pbData, dataOut.cbData, 1 | (16 << 16));
-						}
+						kprintf(L"data: ");
+						kull_m_string_printSuspectUnicodeString(dataOut.pbData, dataOut.cbData);
 						kprintf(L"\n");
 					}
 					LocalFree(dataOut.pbData);
@@ -82,7 +75,7 @@ NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[]) // no support for prot
 	DATA_BLOB dataIn, dataOut, dataEntropy = {0, NULL};
 	PKULL_M_DPAPI_BLOB blob;
 	PCWSTR description = NULL, szEntropy, outfile;
-	CRYPTPROTECT_PROMPTSTRUCT promptStructure = {sizeof(CRYPTPROTECT_PROMPTSTRUCT), CRYPTPROTECT_PROMPT_ON_PROTECT | CRYPTPROTECT_PROMPT_ON_UNPROTECT | CRYPTPROTECT_PROMPT_STRONG, NULL, MIMIKATZ}, *pPrompt;
+	CRYPTPROTECT_PROMPTSTRUCT promptStructure = {sizeof(CRYPTPROTECT_PROMPTSTRUCT), CRYPTPROTECT_PROMPT_ON_PROTECT, NULL, MIMIKATZ}, *pPrompt;
 	DWORD flags = 0, outputMode = 1;
 
 	kull_m_string_args_byName(argc, argv, L"data", (PCWSTR *) &dataIn.pbData, MIMIKATZ);
@@ -91,6 +84,8 @@ NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[]) // no support for prot
 		kull_m_string_stringToHexBuffer(szEntropy, &dataEntropy.pbData, &dataEntropy.cbData);
 	if(kull_m_string_args_byName(argc, argv, L"machine", NULL, NULL))
 		flags |= CRYPTPROTECT_LOCAL_MACHINE;
+	if(kull_m_string_args_byName(argc, argv, L"system", NULL, NULL))
+		flags |= CRYPTPROTECT_SYSTEM;
 	pPrompt = kull_m_string_args_byName(argc, argv, L"prompt", NULL, NULL) ? &promptStructure : NULL;
 	
 	if(kull_m_string_args_byName(argc, argv, L"c", NULL, NULL))
@@ -421,7 +416,7 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 	CRYPTPROTECT_PROMPTSTRUCT promptStructure = {sizeof(CRYPTPROTECT_PROMPTSTRUCT), CRYPTPROTECT_PROMPT_ON_PROTECT | CRYPTPROTECT_PROMPT_ON_UNPROTECT | CRYPTPROTECT_PROMPT_STRONG, NULL, MIMIKATZ}, *pPrompt;
 
 	PBYTE masterkey = NULL, entropy = NULL;
-	DWORD masterkeyLen = 0, entropyLen = 0;
+	DWORD masterkeyLen = 0, entropyLen = 0, flags = 0;
 	PKULL_M_DPAPI_BLOB blob;
 	PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry = NULL;
 	BOOL isNormalAPI = kull_m_string_args_byName(argc, argv, L"unprotect", NULL, NULL);
@@ -432,6 +427,9 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 	if(kull_m_string_args_byName(argc, argv, L"entropy", &szEntropy, NULL))
 		kull_m_string_stringToHexBuffer(szEntropy, &entropy, &entropyLen);
 	pPrompt = kull_m_string_args_byName(argc, argv, L"prompt", NULL, NULL) ? &promptStructure : NULL;
+
+	if(kull_m_string_args_byName(argc, argv, L"machine", NULL, NULL))
+		flags |= CRYPTPROTECT_LOCAL_MACHINE;
 
 	if(blob = kull_m_dpapi_blob_create(pDataIn))
 	{
@@ -458,6 +456,7 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 				kull_m_dpapi_displayPromptFlags(pPrompt->dwPromptFlags);
 				kprintf(L"\n");
 			}
+			else flags |= CRYPTPROTECT_UI_FORBIDDEN;
 			if(entropy)
 			{
 				kprintf(L" > entropy       : ");
@@ -472,7 +471,7 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 
 			if(!status && ((masterkey && masterkeyLen) || isNormalAPI))
 			{
-				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, pPrompt, /*CRYPTPROTECT_SYSTEM |*/ (pPrompt ? 0 : CRYPTPROTECT_UI_FORBIDDEN), pDataOut, dwDataOutLen, masterkey, masterkeyLen, szPassword);
+				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, pPrompt, flags, pDataOut, dwDataOutLen, masterkey, masterkeyLen, szPassword);
 				if(status && masterkey && masterkeyLen)
 					kuhl_m_dpapi_oe_masterkey_add(&blob->guidMasterKey, masterkey, masterkeyLen);
 

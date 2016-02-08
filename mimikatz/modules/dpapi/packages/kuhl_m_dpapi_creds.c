@@ -10,18 +10,33 @@ NTSTATUS kuhl_m_dpapi_cred(int argc, wchar_t * argv[])
 	PCWSTR infile;
 	PVOID file, out;
 	DWORD szFile, szOut;
+	BOOL isNT5Cred;
 	PKULL_M_CRED_BLOB cred;
+	PKULL_M_CRED_LEGACY_CREDS_BLOB legacyCreds;
+
 	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
 		if(kull_m_file_readData(infile, (PBYTE *) &file, &szFile))
 		{
-			kull_m_dpapi_blob_quick_descr(0, ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob);
-			if(kuhl_m_dpapi_unprotect_raw_or_blob(((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob, ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blobSize, NULL, argc, argv, NULL, 0, &out, &szOut, L"Decrypting Credential:\n"))
+			isNT5Cred = RtlEqualGuid((PBYTE) file + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER);
+			kull_m_dpapi_blob_quick_descr(0, isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob);
+			if(kuhl_m_dpapi_unprotect_raw_or_blob(isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob, isNT5Cred ? szFile : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blobSize, NULL, argc, argv, NULL, 0, &out, &szOut, isNT5Cred ? L"Decrypting Legacy Credential(s):\n" : L"Decrypting Credential:\n"))
 			{
-				if(cred = kull_m_cred_create(out))
+				if(isNT5Cred)
 				{
-					kull_m_cred_descr(0, cred);
-					kull_m_cred_delete(cred);
+					if(legacyCreds = kull_m_cred_legacy_creds_create(out))
+					{
+						kull_m_cred_legacy_creds_descr(0, legacyCreds);
+						kull_m_cred_legacy_creds_delete(legacyCreds);
+					}
+				}
+				else 
+				{
+					if(cred = kull_m_cred_create(out))
+					{
+						kull_m_cred_descr(0, cred);
+						kull_m_cred_delete(cred);
+					}
 				}
 				LocalFree(out);
 			}

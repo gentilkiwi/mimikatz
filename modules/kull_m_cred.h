@@ -69,6 +69,45 @@ typedef struct _KULL_M_CRED_BLOB {
 
 } KULL_M_CRED_BLOB, *PKULL_M_CRED_BLOB;
 
+typedef struct _KULL_M_CRED_LEGACY_CRED_BLOB {
+	DWORD	credSize;
+	DWORD	Flags;
+	DWORD	Type;
+
+	FILETIME LastWritten;
+	DWORD	unkFlagsOrSize;
+	DWORD	Persist;
+	DWORD	AttributeCount;
+	DWORD	unk0;
+	DWORD	unk1;
+
+	DWORD	dwTargetName;
+	LPWSTR	TargetName;
+
+	DWORD	dwComment;
+	LPWSTR	Comment;
+
+	DWORD	dwTargetAlias;
+	LPWSTR	TargetAlias;
+
+	DWORD	dwUserName;
+	LPWSTR	UserName;
+
+	DWORD	CredentialBlobSize;
+	LPBYTE	CredentialBlob;
+
+	PKULL_M_CRED_ATTRIBUTE *Attributes;
+
+} KULL_M_CRED_LEGACY_CRED_BLOB, *PKULL_M_CRED_LEGACY_CRED_BLOB;
+
+typedef struct _KULL_M_CRED_LEGACY_CREDS_BLOB {
+	DWORD	dwVersion;
+	DWORD	structSize;
+
+	DWORD	__count;
+	PKULL_M_CRED_LEGACY_CRED_BLOB *Credentials;
+} KULL_M_CRED_LEGACY_CREDS_BLOB, *PKULL_M_CRED_LEGACY_CREDS_BLOB;
+
 typedef struct _KULL_M_CRED_VAULT_POLICY_KEY {
 	GUID unk0;
 	GUID unk1;
@@ -139,6 +178,17 @@ void kull_m_cred_attributes_descr(DWORD level, PKULL_M_CRED_ATTRIBUTE *Attribute
 PKULL_M_CRED_ATTRIBUTE kull_m_cred_attribute_create(PVOID data/*, DWORD size*/);
 void kull_m_cred_attribute_delete(PKULL_M_CRED_ATTRIBUTE Attribute);
 void kull_m_cred_attribute_descr(DWORD level, PKULL_M_CRED_ATTRIBUTE Attribute);
+
+PKULL_M_CRED_LEGACY_CREDS_BLOB kull_m_cred_legacy_creds_create(PVOID data/*, DWORD size*/);
+void kull_m_cred_legacy_creds_delete(PKULL_M_CRED_LEGACY_CREDS_BLOB creds);
+void kull_m_cred_legacy_creds_descr(DWORD level, PKULL_M_CRED_LEGACY_CREDS_BLOB creds);
+
+PKULL_M_CRED_LEGACY_CRED_BLOB kull_m_cred_legacy_cred_create(PVOID data/*, DWORD size*/);
+void kull_m_cred_legacy_cred_delete(PKULL_M_CRED_LEGACY_CRED_BLOB cred);
+void kull_m_cred_legacy_cred_descr(DWORD level, PKULL_M_CRED_LEGACY_CRED_BLOB cred);
+
+PCWCHAR kull_m_cred_CredType(DWORD type);
+PCWCHAR kull_m_cred_CredPersist(DWORD persist);
 
 PKULL_M_CRED_VAULT_POLICY kull_m_cred_vault_policy_create(PVOID data/*, DWORD size*/);
 void kull_m_cred_vault_policy_delete(PKULL_M_CRED_VAULT_POLICY policy);

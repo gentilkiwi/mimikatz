@@ -349,3 +349,43 @@ BOOL kull_m_memory_equal(IN PKULL_M_MEMORY_ADDRESS Address1, IN PKULL_M_MEMORY_A
 	}
 	return status;
 }
+
+BOOL kull_m_memory_quick_compress(IN PVOID data, IN DWORD size, IN OUT PVOID *compressedData, IN OUT PDWORD compressedSize)
+{
+	BOOL status = FALSE;
+	DWORD CompressBufferWorkSpaceSize, CompressFragmentWorkSpaceSize;
+	PVOID WorkSpace;
+	if(NT_SUCCESS(RtlGetCompressionWorkSpaceSize(COMPRESSION_FORMAT_LZNT1 | COMPRESSION_ENGINE_MAXIMUM, &CompressBufferWorkSpaceSize, &CompressFragmentWorkSpaceSize)))
+	{
+		if(WorkSpace = LocalAlloc(LPTR, CompressBufferWorkSpaceSize))
+		{
+			if((*compressedData) = LocalAlloc(LPTR, size))
+			{
+				status = NT_SUCCESS(RtlCompressBuffer(COMPRESSION_FORMAT_LZNT1 | COMPRESSION_ENGINE_MAXIMUM, (PUCHAR) data, size, (PUCHAR) (*compressedData), size, 4096, compressedSize, WorkSpace));
+				if(!status)
+					LocalFree(*compressedData);
+			}
+			LocalFree(WorkSpace);
+		}
+	}
+	return status;
+}
+
+BOOL kull_m_memory_quick_decompress(IN PVOID data, IN DWORD size, IN OPTIONAL DWORD originalSize, IN OUT PVOID *decompressedData, IN OUT PDWORD decompressedSize)
+{
+	BOOL status = FALSE;
+	NTSTATUS ntStatus = STATUS_BAD_COMPRESSION_BUFFER;
+	DWORD UncompressedBufferSize;
+	for(UncompressedBufferSize = (originalSize ? originalSize : (size << 2)); ntStatus == STATUS_BAD_COMPRESSION_BUFFER; UncompressedBufferSize <<= 2)
+	{
+		if((*decompressedData) = LocalAlloc(LPTR, UncompressedBufferSize))
+		{
+			ntStatus = RtlDecompressBuffer(COMPRESSION_FORMAT_LZNT1 | COMPRESSION_ENGINE_MAXIMUM, (PUCHAR) (*decompressedData), UncompressedBufferSize, (PUCHAR) data, size, decompressedSize);
+			status = NT_SUCCESS(ntStatus);
+			if(!status)
+				LocalFree(*decompressedData);
+		}
+		else break;
+	}
+	return status;
+}

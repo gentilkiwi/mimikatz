@@ -8,6 +8,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_token.h"
 #include "../modules/kull_m_patch.h"
+#include "../modules/kull_m_cred.h"
 
 const KUHL_M kuhl_m_vault;
 
@@ -110,6 +111,16 @@ typedef struct _VAULT_BYTE_BUFFER {
 	PBYTE Value;
 } VAULT_BYTE_BUFFER, *PVAULT_BYTE_BUFFER;
 
+typedef struct _VAULT_CREDENTIAL_ATTRIBUTEW {
+    LPWSTR  Keyword;
+    DWORD Flags;
+#ifdef _M_X64
+	DWORD badAlign;
+#endif
+    DWORD ValueSize;
+    LPBYTE Value;
+} VAULT_CREDENTIAL_ATTRIBUTEW, *PVAULT_CREDENTIAL_ATTRIBUTEW;
+
 typedef struct _VAULT_ITEM_DATA {
 	DWORD SchemaElementId;
 	DWORD unk0;
@@ -126,8 +137,8 @@ typedef struct _VAULT_ITEM_DATA {
 		LPWSTR String;
 		VAULT_BYTE_BUFFER ByteArray;
 		VAULT_BYTE_BUFFER ProtectedArray;
-		DWORD Attribute;
-		DWORD Sid;
+		PVAULT_CREDENTIAL_ATTRIBUTEW Attribute;
+		PSID Sid;
 	} data;
 } VAULT_ITEM_DATA, *PVAULT_ITEM_DATA;
 

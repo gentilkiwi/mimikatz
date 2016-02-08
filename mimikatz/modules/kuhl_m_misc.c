@@ -16,6 +16,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 #endif
 	{kuhl_m_misc_memssp,	L"memssp",		NULL},
 	{kuhl_m_misc_skeleton,	L"skeleton",	NULL},
+	{kuhl_m_misc_compressme,L"compressme",	NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -733,6 +734,32 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 			CloseHandle(hProcess);
 		}
 		else PRINT_ERROR_AUTO(L"OpenProcess");
+	}
+	return STATUS_SUCCESS;
+}
+
+#define MIMIKATZ_COMPRESSED_FILENAME	MIMIKATZ L"_" MIMIKATZ_ARCH L".compressed"
+NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[])
+{
+	PBYTE data, compressedData;
+	DWORD size, compressedSize;
+#pragma warning(push)
+#pragma warning(disable:4996)	
+	wchar_t *fileName = _wpgmptr;
+#pragma warning(pop)
+	kprintf(L"Using \'%s\' as input file\n", fileName);
+	if(kull_m_file_readData(fileName, &data, &size))
+	{
+		kprintf(L" * Original size  : %u\n", size);
+		if(kull_m_memory_quick_compress(data, size, (PVOID *) &compressedData, &compressedSize))
+		{
+			kprintf(L" * Compressed size: %u (%.2f%%)\nUsing \'%s\' as output file... ", compressedSize, 100 * ((float) compressedSize / (float) size), MIMIKATZ_COMPRESSED_FILENAME);
+			if(kull_m_file_writeData(MIMIKATZ_COMPRESSED_FILENAME, compressedData, compressedSize))
+				kprintf(L"OK!\n");
+			else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+			LocalFree(compressedData);
+		}
+		LocalFree(data);
 	}
 	return STATUS_SUCCESS;
 }

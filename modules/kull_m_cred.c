@@ -12,14 +12,14 @@ PKULL_M_CRED_BLOB kull_m_cred_create(PVOID data/*, DWORD size*/)
 	{
 		RtlCopyMemory(cred, data, FIELD_OFFSET(KULL_M_CRED_BLOB, TargetName));
 		cred->TargetName = (LPWSTR) ((PBYTE) data + FIELD_OFFSET(KULL_M_CRED_BLOB, TargetName));
-		cred->dwTargetAlias = *(PDWORD) ((PBYTE) cred->TargetName + cred->dwTargetName);
-		cred->TargetAlias = (LPWSTR) ((PBYTE) cred->TargetName + cred->dwTargetName + sizeof(DWORD));
-		cred->dwComment = *(PDWORD) ((PBYTE) cred->TargetAlias + cred->dwTargetAlias);
-		cred->Comment = (LPWSTR) ((PBYTE) cred->TargetAlias + cred->dwTargetAlias + sizeof(DWORD));
-		cred->dwUnkData = *(PDWORD) ((PBYTE) cred->Comment + cred->dwComment);
-		cred->UnkData = (LPWSTR) ((PBYTE) cred->Comment + cred->dwComment + sizeof(DWORD));
-		cred->dwUserName = *(PDWORD) ((PBYTE) cred->UnkData + cred->dwUnkData);
-		cred->UserName = (LPWSTR) ((PBYTE) cred->UnkData + cred->dwUnkData + sizeof(DWORD));
+		cred->dwUnkData = *(PDWORD) ((PBYTE) cred->TargetName + cred->dwTargetName);
+		cred->UnkData = (LPWSTR) ((PBYTE) cred->TargetName + cred->dwTargetName + sizeof(DWORD));
+		cred->dwComment = *(PDWORD) ((PBYTE) cred->UnkData + cred->dwUnkData);
+		cred->Comment = (LPWSTR) ((PBYTE) cred->UnkData + cred->dwUnkData + sizeof(DWORD));
+		cred->dwTargetAlias = *(PDWORD) ((PBYTE) cred->Comment + cred->dwComment);
+		cred->TargetAlias = (LPWSTR) ((PBYTE) cred->Comment + cred->dwComment + sizeof(DWORD));
+		cred->dwUserName = *(PDWORD) ((PBYTE) cred->TargetAlias + cred->dwTargetAlias);
+		cred->UserName = (LPWSTR) ((PBYTE) cred->TargetAlias + cred->dwTargetAlias + sizeof(DWORD));
 		cred->CredentialBlobSize = *(PDWORD) ((PBYTE) cred->UserName + cred->dwUserName);
 		cred->CredentialBlob = (PBYTE) cred->UserName + cred->dwUserName + sizeof(DWORD);
 		
@@ -42,56 +42,47 @@ void kull_m_cred_delete(PKULL_M_CRED_BLOB cred)
 	{
 		if(cred->TargetName)
 			LocalFree(cred->TargetName);
-		if(cred->TargetAlias)
-			LocalFree(cred->TargetAlias);
-		if(cred->Comment)
-			LocalFree(cred->Comment);
 		if(cred->UnkData)
 			LocalFree(cred->UnkData);
+		if(cred->Comment)
+			LocalFree(cred->Comment);
+		if(cred->TargetAlias)
+			LocalFree(cred->TargetAlias);
 		if(cred->UserName)
 			LocalFree(cred->UserName);
 		if(cred->CredentialBlob)
 			LocalFree(cred->CredentialBlob);
+		if(cred->Attributes)
+			kull_m_cred_attributes_delete(cred->Attributes, cred->AttributeCount);
 		LocalFree(cred);
 	}
 }
 
 void kull_m_cred_descr(DWORD level, PKULL_M_CRED_BLOB cred)
 {
-	UNICODE_STRING uString;
 	kprintf(L"%*s" L"**CREDENTIAL**\n", level << 1, L"");
 	if(cred)
 	{
 		kprintf(L"%*s" L"  credFlags      : %08x - %u\n", level << 1, L"", cred->credFlags, cred->credFlags);
 		kprintf(L"%*s" L"  credSize       : %08x - %u\n", level << 1, L"", cred->credSize, cred->credSize);
 		kprintf(L"%*s" L"  credUnk0       : %08x - %u\n\n", level << 1, L"", cred->credUnk0, cred->credUnk0);
-		
-		kprintf(L"%*s" L"  Type           : %08x - %u\n", level << 1, L"", cred->Type, cred->Type);
+		kprintf(L"%*s" L"  Type           : %08x - %u - %s\n", level << 1, L"", cred->Type, cred->Type, kull_m_cred_CredType(cred->Type));
 		kprintf(L"%*s" L"  Flags          : %08x - %u\n", level << 1, L"", cred->Flags, cred->Flags);
-
 		kprintf(L"%*s" L"  LastWritten    : ", level << 1, L""); kull_m_string_displayFileTime(&cred->LastWritten); kprintf(L"\n");
 		kprintf(L"%*s" L"  unkFlagsOrSize : %08x - %u\n", level << 1, L"", cred->unkFlagsOrSize, cred->unkFlagsOrSize);
-		kprintf(L"%*s" L"  Persist        : %08x - %u\n", level << 1, L"", cred->Persist, cred->Persist);
+		kprintf(L"%*s" L"  Persist        : %08x - %u - %s\n", level << 1, L"", cred->Persist, cred->Persist, kull_m_cred_CredPersist(cred->Persist));
 		kprintf(L"%*s" L"  AttributeCount : %08x - %u\n", level << 1, L"", cred->AttributeCount, cred->AttributeCount);
 		kprintf(L"%*s" L"  unk0           : %08x - %u\n", level << 1, L"", cred->unk0, cred->unk0);
 		kprintf(L"%*s" L"  unk1           : %08x - %u\n", level << 1, L"", cred->unk1, cred->unk1);
-
 		kprintf(L"%*s" L"  TargetName     : %s\n", level << 1, L"", cred->TargetName);
-		kprintf(L"%*s" L"  TargetAlias    : %s\n", level << 1, L"", cred->TargetAlias);
-		kprintf(L"%*s" L"  Comment        : %s\n", level << 1, L"", cred->Comment);
 		kprintf(L"%*s" L"  UnkData        : %s\n", level << 1, L"", cred->UnkData);
+		kprintf(L"%*s" L"  Comment        : %s\n", level << 1, L"", cred->Comment);
+		kprintf(L"%*s" L"  TargetAlias    : %s\n", level << 1, L"", cred->TargetAlias);
 		kprintf(L"%*s" L"  UserName       : %s\n", level << 1, L"", cred->UserName);
 		kprintf(L"%*s" L"  CredentialBlob : ", level << 1, L"");
-
-		uString.Length = uString.MaximumLength = (USHORT) cred->CredentialBlobSize;
-		uString.Buffer = (PWSTR) cred->CredentialBlob;
-		if(kull_m_string_suspectUnicodeString(&uString))
-			kprintf(L"%wZ", &uString);
-		else 
-			kull_m_string_wprintf_hex(uString.Buffer, uString.Length, 1);
+		kull_m_string_printSuspectUnicodeString(cred->CredentialBlob, cred->CredentialBlobSize);
 		kprintf(L"\n");
-
-		kprintf(L"%*s" L"  Attributes     : ", level << 1, L"", cred->AttributeCount);
+		kprintf(L"%*s" L"  Attributes     : %u\n", level << 1, L"", cred->AttributeCount);
 		kull_m_cred_attributes_descr(level + 1, cred->Attributes, cred->AttributeCount);
 	}
 }
@@ -133,11 +124,8 @@ void kull_m_cred_attributes_descr(DWORD level, PKULL_M_CRED_ATTRIBUTE *Attribute
 {
 	DWORD i;
 	if(count && Attributes)
-	{
-		kprintf(L"%u attributes(s)\n", count);
 		for(i = 0; i < count; i++)
 			kull_m_cred_attribute_descr(level, Attributes[i]);
-	}
 }
 
 PKULL_M_CRED_ATTRIBUTE kull_m_cred_attribute_create(PVOID data/*, DWORD size*/)
@@ -170,22 +158,156 @@ void kull_m_cred_attribute_delete(PKULL_M_CRED_ATTRIBUTE Attribute)
 
 void kull_m_cred_attribute_descr(DWORD level, PKULL_M_CRED_ATTRIBUTE Attribute)
 {
-	UNICODE_STRING uString;
 	kprintf(L"%*s" L"**ATTRIBUTE**\n", level << 1, L"");
 	if(Attribute)
 	{
 		kprintf(L"%*s" L"  Flags   : %08x - %u\n", level << 1, L"", Attribute->Flags, Attribute->Flags);
 		kprintf(L"%*s" L"  Keyword : %s\n", level << 1, L"", Attribute->Keyword);
-		kprintf(L"%*s" L"  Value : ", level << 1, L"");
-
-		uString.Length = uString.MaximumLength = (USHORT) Attribute->ValueSize;
-		uString.Buffer = (PWSTR) Attribute->Value;
-		if(kull_m_string_suspectUnicodeString(&uString))
-			kprintf(L"%wZ", &uString);
-		else
-			kull_m_string_wprintf_hex(uString.Buffer, uString.Length, 1);
+		kprintf(L"%*s" L"  Value   : ", level << 1, L"");
+		kull_m_string_printSuspectUnicodeString(Attribute->Value, Attribute->ValueSize);
 		kprintf(L"\n");
 	}
+}
+
+PKULL_M_CRED_LEGACY_CREDS_BLOB kull_m_cred_legacy_creds_create(PVOID data/*, DWORD size*/)
+{
+	PKULL_M_CRED_LEGACY_CREDS_BLOB creds = NULL;
+	DWORD i;
+	PBYTE curPtr;
+	if(creds = (PKULL_M_CRED_LEGACY_CREDS_BLOB) LocalAlloc(LPTR, sizeof(KULL_M_CRED_LEGACY_CREDS_BLOB)))
+	{
+		RtlCopyMemory(creds, data, FIELD_OFFSET(KULL_M_CRED_LEGACY_CREDS_BLOB, __count));
+		for(curPtr = (PBYTE) data + FIELD_OFFSET(KULL_M_CRED_LEGACY_CREDS_BLOB, __count); curPtr < ((PBYTE) data + creds->structSize); curPtr += *(PDWORD) curPtr, creds->__count++);
+		if(creds->__count)
+			if(creds->Credentials = (PKULL_M_CRED_LEGACY_CRED_BLOB *) LocalAlloc(LPTR, creds->__count * sizeof(PKULL_M_CRED_LEGACY_CRED_BLOB)))
+				for(i = 0, curPtr = (PBYTE) data + FIELD_OFFSET(KULL_M_CRED_LEGACY_CREDS_BLOB, __count); (i < creds->__count) && (curPtr < ((PBYTE) data + creds->structSize)); i++, curPtr += *(PDWORD) curPtr)
+					creds->Credentials[i] = kull_m_cred_legacy_cred_create(curPtr);
+	}
+	return creds;
+}
+
+void kull_m_cred_legacy_creds_delete(PKULL_M_CRED_LEGACY_CREDS_BLOB creds)
+{
+	DWORD i;
+	if(creds)
+	{
+		if(creds->Credentials)
+		{
+			for(i = 0; i < creds->__count; i++)
+				kull_m_cred_legacy_cred_delete(creds->Credentials[i]);
+			LocalFree(creds->Credentials);
+		}
+		LocalFree(creds);
+	}
+}
+
+void kull_m_cred_legacy_creds_descr(DWORD level, PKULL_M_CRED_LEGACY_CREDS_BLOB creds)
+{
+	DWORD i;
+	kprintf(L"%*s" L"**LEGACY CREDENTIALS GROUP**\n", level << 1, L"");
+	if(creds)
+	{
+		kprintf(L"%*s" L"  dwVersion      : %08x - %u\n", level << 1, L"", creds->dwVersion, creds->dwVersion);
+		kprintf(L"%*s" L"  structSize     : %08x - %u\n", level << 1, L"", creds->structSize, creds->structSize);
+		kprintf(L"%*s" L"  Credentials    : %u\n", level << 1, L"", creds->__count);
+		for(i = 0; i < creds->__count; i++)
+			kull_m_cred_legacy_cred_descr(level + 1, creds->Credentials[i]);
+	}
+}
+
+PKULL_M_CRED_LEGACY_CRED_BLOB kull_m_cred_legacy_cred_create(PVOID data/*, DWORD size*/)
+{
+	PKULL_M_CRED_LEGACY_CRED_BLOB cred = NULL;
+	
+	if(cred = (PKULL_M_CRED_LEGACY_CRED_BLOB) LocalAlloc(LPTR, sizeof(KULL_M_CRED_LEGACY_CRED_BLOB)))
+	{
+		RtlCopyMemory(cred, data, FIELD_OFFSET(KULL_M_CRED_LEGACY_CRED_BLOB, TargetName));
+		cred->TargetName = (LPWSTR) ((PBYTE) data + FIELD_OFFSET(KULL_M_CRED_LEGACY_CRED_BLOB, TargetName));
+
+		cred->dwComment = *(PDWORD) ((PBYTE) cred->TargetName + cred->dwTargetName);
+		cred->Comment = (LPWSTR) ((PBYTE) cred->TargetName + cred->dwTargetName + sizeof(DWORD));
+		cred->dwTargetAlias = *(PDWORD) ((PBYTE) cred->Comment + cred->dwComment);
+		cred->TargetAlias = (LPWSTR) ((PBYTE) cred->Comment + cred->dwComment + sizeof(DWORD));
+		cred->dwUserName = *(PDWORD) ((PBYTE) cred->TargetAlias + cred->dwTargetAlias);
+		cred->UserName = (LPWSTR) ((PBYTE) cred->TargetAlias + cred->dwTargetAlias + sizeof(DWORD));
+		cred->CredentialBlobSize = *(PDWORD) ((PBYTE) cred->UserName + cred->dwUserName);
+		cred->CredentialBlob = (PBYTE) cred->UserName + cred->dwUserName + sizeof(DWORD);
+		
+		if(cred->AttributeCount)
+			kull_m_cred_attributes_create(((PBYTE) cred->CredentialBlob + cred->CredentialBlobSize + (cred->CredentialBlobSize & 1)), &cred->Attributes, cred->AttributeCount);
+
+		kull_m_string_ptr_replace(&cred->TargetName, cred->dwTargetName);
+		kull_m_string_ptr_replace(&cred->Comment, cred->dwComment);
+		kull_m_string_ptr_replace(&cred->TargetAlias, cred->dwTargetAlias);
+		kull_m_string_ptr_replace(&cred->UserName, cred->dwUserName);
+		kull_m_string_ptr_replace(&cred->CredentialBlob, cred->CredentialBlobSize);
+	}
+	return cred;
+}
+
+void kull_m_cred_legacy_cred_delete(PKULL_M_CRED_LEGACY_CRED_BLOB cred)
+{
+	if(cred)
+	{
+		if(cred->TargetName)
+			LocalFree(cred->TargetName);
+		if(cred->Comment)
+			LocalFree(cred->Comment);
+		if(cred->TargetAlias)
+			LocalFree(cred->TargetAlias);
+		if(cred->UserName)
+			LocalFree(cred->UserName);
+		if(cred->CredentialBlob)
+			LocalFree(cred->CredentialBlob);
+		if(cred->Attributes)
+			kull_m_cred_attributes_delete(cred->Attributes, cred->AttributeCount);
+		LocalFree(cred);
+	}
+}
+
+void kull_m_cred_legacy_cred_descr(DWORD level, PKULL_M_CRED_LEGACY_CRED_BLOB cred)
+{
+	kprintf(L"%*s" L"**LEGACY CREDENTIAL**\n", level << 1, L"");
+	if(cred)
+	{
+		kprintf(L"%*s" L"  credSize       : %08x - %u\n\n", level << 1, L"", cred->credSize, cred->credSize);
+		kprintf(L"%*s" L"  Flags          : %08x - %u\n", level << 1, L"", cred->Flags, cred->Flags);
+		kprintf(L"%*s" L"  Type           : %08x - %u - %s\n", level << 1, L"", cred->Type, cred->Type, kull_m_cred_CredType(cred->Type));
+		kprintf(L"%*s" L"  LastWritten    : ", level << 1, L""); kull_m_string_displayFileTime(&cred->LastWritten); kprintf(L"\n");
+		kprintf(L"%*s" L"  unkFlagsOrSize : %08x - %u\n", level << 1, L"", cred->unkFlagsOrSize, cred->unkFlagsOrSize);
+		kprintf(L"%*s" L"  Persist        : %08x - %u - %s\n", level << 1, L"", cred->Persist, cred->Persist, kull_m_cred_CredPersist(cred->Persist));
+		kprintf(L"%*s" L"  AttributeCount : %08x - %u\n", level << 1, L"", cred->AttributeCount, cred->AttributeCount);
+		kprintf(L"%*s" L"  unk0           : %08x - %u\n", level << 1, L"", cred->unk0, cred->unk0);
+		kprintf(L"%*s" L"  unk1           : %08x - %u\n", level << 1, L"", cred->unk1, cred->unk1);
+		kprintf(L"%*s" L"  TargetName     : %s\n", level << 1, L"", cred->TargetName);
+		kprintf(L"%*s" L"  Comment        : %s\n", level << 1, L"", cred->Comment);
+		kprintf(L"%*s" L"  TargetAlias    : %s\n", level << 1, L"", cred->TargetAlias);
+		kprintf(L"%*s" L"  UserName       : %s\n", level << 1, L"", cred->UserName);
+		kprintf(L"%*s" L"  CredentialBlob : ", level << 1, L"");
+		kull_m_string_printSuspectUnicodeString(cred->CredentialBlob, cred->CredentialBlobSize);
+		kprintf(L"\n");
+		kprintf(L"%*s" L"  Attributes     : %u\n", level << 1, L"", cred->AttributeCount);
+		kull_m_cred_attributes_descr(level + 1, cred->Attributes, cred->AttributeCount);
+	}
+}
+
+const PCWCHAR kull_m_cred_CredTypeToStrings[] = {
+	L"?", L"generic", L"domain_password", L"domain_certificate",
+	L"domain_visible_password", L"generic_certificate", L"domain_extended"
+};
+PCWCHAR kull_m_cred_CredType(DWORD type)
+{
+	if(type >= ARRAYSIZE(kull_m_cred_CredTypeToStrings))
+		type = 0;
+	return kull_m_cred_CredTypeToStrings[type];
+}
+
+const PCWCHAR kull_m_cred_CredPersistToStrings[] = {L"none", L"session", L"local_machine", L"enterprise"};
+PCWCHAR kull_m_cred_CredPersist(DWORD persist)
+{
+	if(persist < ARRAYSIZE(kull_m_cred_CredPersistToStrings))
+		return kull_m_cred_CredPersistToStrings[persist];
+	else return L"?";
 }
 
 PKULL_M_CRED_VAULT_POLICY kull_m_cred_vault_policy_create(PVOID data/*, DWORD size*/)
@@ -499,14 +621,12 @@ void kull_m_cred_vault_clear_delete(PKULL_M_CRED_VAULT_CLEAR clear)
 void kull_m_cred_vault_clear_descr(DWORD level, PKULL_M_CRED_VAULT_CLEAR clear)
 {
 	DWORD i;
-	UNICODE_STRING creds;
 	kprintf(L"%*s" L"**VAULT CREDENTIAL CLEAR ATTRIBUTES**\n", level << 1, L"");
 	if(clear)
 	{
 		kprintf(L"%*s" L"  version: %08x - %u\n", level << 1, L"", clear->version, clear->version);
 		kprintf(L"%*s" L"  count  : %08x - %u\n", level << 1, L"", clear->count, clear->count);
 		kprintf(L"%*s" L"  unk    : %08x - %u\n", level << 1, L"", clear->unk, clear->unk);
-
 		if(clear->entries)
 		{
 			kprintf(L"\n");
@@ -528,12 +648,7 @@ void kull_m_cred_vault_clear_descr(DWORD level, PKULL_M_CRED_VAULT_CLEAR clear)
 					kprintf(L"property %3u  : ", clear->entries[i]->id);
 					break;
 				}
-				creds.Buffer = (PWSTR) clear->entries[i]->data;
-				creds.Length = creds.MaximumLength = (USHORT) clear->entries[i]->size;
-				if((clear->entries[i]->id < 100) && kull_m_string_suspectUnicodeString(&creds))
-					kprintf(L"%s", clear->entries[i]->data);
-				else
-					kull_m_string_wprintf_hex(clear->entries[i]->data, clear->entries[i]->size, 1);
+				kull_m_string_printSuspectUnicodeString(clear->entries[i]->data, clear->entries[i]->size);
 				kprintf(L"\n");
 			}
 		}

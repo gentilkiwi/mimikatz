@@ -5,22 +5,31 @@
 */
 #include "kull_m_string.h"
 
-BOOL kull_m_string_suspectUnicodeStringStructure(IN PUNICODE_STRING pUnicodeString)
-{
-	return (
-		pUnicodeString->Length &&
-		!((pUnicodeString->Length & 1) || (pUnicodeString->MaximumLength & 1)) &&
-		(pUnicodeString->Length < sizeof(wchar_t)*0xff) &&
-		(pUnicodeString->Length <= pUnicodeString->MaximumLength) &&
-		((pUnicodeString->MaximumLength - pUnicodeString->Length) < 4*sizeof(wchar_t)) &&
-		pUnicodeString->Buffer
-		);
-}
+//BOOL kull_m_string_suspectUnicodeStringStructure(IN PUNICODE_STRING pUnicodeString)
+//{
+//	return (
+//		pUnicodeString->Length &&
+//		!((pUnicodeString->Length & 1) || (pUnicodeString->MaximumLength & 1)) &&
+//		(pUnicodeString->Length < sizeof(wchar_t)*0xff) &&
+//		(pUnicodeString->Length <= pUnicodeString->MaximumLength) &&
+//		((pUnicodeString->MaximumLength - pUnicodeString->Length) < 4*sizeof(wchar_t)) &&
+//		pUnicodeString->Buffer
+//		);
+//}
 
 BOOL kull_m_string_suspectUnicodeString(IN PUNICODE_STRING pUnicodeString)
 {
 	int unicodeTestFlags = IS_TEXT_UNICODE_STATISTICS;
 	return ((pUnicodeString->Length == sizeof(wchar_t)) && IsCharAlphaNumeric(pUnicodeString->Buffer[0])) || IsTextUnicode(pUnicodeString->Buffer, pUnicodeString->Length, &unicodeTestFlags);
+}
+
+void kull_m_string_printSuspectUnicodeString(PVOID data, DWORD size)
+{
+	UNICODE_STRING uString = {(USHORT) size, (USHORT) size, (LPWSTR) data};
+	if(kull_m_string_suspectUnicodeString(&uString))
+		kprintf(L"%wZ", &uString);
+	else 
+		kull_m_string_wprintf_hex(uString.Buffer, uString.Length, 1);
 }
 
 BOOL kull_m_string_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY_HANDLE source)
@@ -309,6 +318,45 @@ BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src)
 			RtlCopyMemory(*dst, src, size);
 			status = TRUE;
 		}
+	}
+	return status;
+}
+
+BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst)
+{
+	BOOL status = FALSE;
+	DWORD lenNode, lenBegin, lenEnd;
+	LPWSTR begin, end, curBeg, curEnd;
+	lenNode = (DWORD) wcslen(node) * sizeof(wchar_t);
+	lenBegin = lenNode + 3 * sizeof(wchar_t);
+	lenEnd = lenNode + 4 * sizeof(wchar_t);
+	if(begin = (LPWSTR) LocalAlloc(LPTR, lenBegin))
+	{
+		if(end = (LPWSTR) LocalAlloc(LPTR, lenEnd))
+		{
+			begin[0] = end[0] = L'<';
+			end[1] = L'/';
+			begin[lenBegin / sizeof(wchar_t) - 2] = end[lenEnd / sizeof(wchar_t) - 2] = L'>';
+			RtlCopyMemory(begin + 1, node, lenNode);
+			RtlCopyMemory(end + 2, node, lenNode);
+			if(curBeg = wcsstr(xml, begin))
+			{
+				curBeg += lenBegin / sizeof(wchar_t) - 1;
+				if(curEnd = wcsstr(curBeg, end))
+				{
+					if(status = (curBeg <= curEnd))
+					{
+						lenNode = (DWORD) (curEnd - curBeg) * sizeof(wchar_t);
+						if((*dst) = (LPWSTR) LocalAlloc(LPTR, lenNode + sizeof(wchar_t)))
+						{
+							RtlCopyMemory(*dst, curBeg, lenNode);
+						}
+					}
+				}
+			}
+			LocalFree(end);
+		}
+		LocalFree(begin);
 	}
 	return status;
 }
