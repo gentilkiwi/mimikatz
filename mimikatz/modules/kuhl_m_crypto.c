@@ -177,17 +177,20 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 {
 	HCERTSTORE hCertificateStore;
 	PCCERT_CONTEXT pCertContext;
-	DWORD i, j, dwSizeNeeded, keySpec;
+	DWORD i, j, dwSizeNeeded, keySpec, flags = CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG;
 	wchar_t *certName;
 	PCRYPT_KEY_PROV_INFO pBuffer;
 	HCRYPTPROV_OR_NCRYPT_KEY_HANDLE monProv;
 	HCRYPTKEY maCle;
-	BOOL keyToFree;
+	BOOL noKey, keyToFree;
 
 	PCWCHAR szSystemStore, szStore, name;
 	DWORD dwSystemStore = 0;
 
 	BOOL export = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
+	if(kull_m_string_args_byName(argc, argv, L"silent", NULL, NULL))
+		flags |= CRYPT_ACQUIRE_SILENT_FLAG;
+	noKey = kull_m_string_args_byName(argc, argv, L"nokey", NULL, NULL);
 
 	kull_m_string_args_byName(argc, argv, L"systemstore", &szSystemStore, L"CURRENT_USER"/*kuhl_m_crypto_system_stores[0].name*/);
 	dwSystemStore = kull_m_crypto_system_store_to_dword(szSystemStore);
@@ -200,7 +203,7 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 
 	if(hCertificateStore = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, (HCRYPTPROV_LEGACY) NULL, dwSystemStore | CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG, szStore))
 	{
-		for (i = 0, pCertContext = CertEnumCertificatesInStore(hCertificateStore, NULL); pCertContext != NULL; pCertContext = CertEnumCertificatesInStore(hCertificateStore, pCertContext), i++)
+		for (i = 0, pCertContext = CertEnumCertificatesInStore(hCertificateStore, NULL); pCertContext != NULL; pCertContext = CertEnumCertificatesInStore(hCertificateStore, pCertContext), i++) // implicit CertFreeCertificateContext
 		{
 			for(j = 0; j < ARRAYSIZE(nameSrc); j++)
 			{
@@ -228,31 +231,34 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 											(pBuffer->pwszProvName ? pBuffer->pwszProvName : L"(null)"),
 											name ? name : L"?", pBuffer->dwProvType);
 										
-										if(CryptAcquireCertificatePrivateKey(pCertContext, CRYPT_ACQUIRE_ALLOW_NCRYPT_KEY_FLAG /* CRYPT_ACQUIRE_SILENT_FLAG NULL */, NULL, &monProv, &keySpec, &keyToFree))
+										if(!noKey)
 										{
-											kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(keySpec), keySpec);
-
-											if(keySpec != CERT_NCRYPT_KEY_SPEC)
+											if(CryptAcquireCertificatePrivateKey(pCertContext, flags, NULL, &monProv, &keySpec, &keyToFree))
 											{
-												if(CryptGetUserKey(monProv, keySpec, &maCle))
+												kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(keySpec), keySpec);
+
+												if(keySpec != CERT_NCRYPT_KEY_SPEC)
 												{
-													kuhl_m_crypto_printKeyInfos(0, maCle);
-													CryptDestroyKey(maCle);
+													if(CryptGetUserKey(monProv, keySpec, &maCle))
+													{
+														kuhl_m_crypto_printKeyInfos(0, maCle);
+														CryptDestroyKey(maCle);
+													}
+													else PRINT_ERROR_AUTO(L"CryptGetUserKey");
+
+													if(keyToFree)
+														CryptReleaseContext(monProv, 0);
 												}
-												else PRINT_ERROR_AUTO(L"CryptGetUserKey");
+												else if(kuhl_m_crypto_hNCrypt)
+												{
+													kuhl_m_crypto_printKeyInfos(monProv, 0);
+													if(keyToFree)
+														K_NCryptFreeObject(monProv);
+												}
+												else PRINT_ERROR(L"keySpec == CERT_NCRYPT_KEY_SPEC without CNG Handle ?\n");
 
-												if(keyToFree)
-													CryptReleaseContext(monProv, 0);
-											}
-											else if(kuhl_m_crypto_hNCrypt)
-											{
-												kuhl_m_crypto_printKeyInfos(monProv, 0);
-												if(keyToFree)
-													K_NCryptFreeObject(monProv);
-											}
-											else PRINT_ERROR(L"keySpec == CERT_NCRYPT_KEY_SPEC without CNG Handle ?\n");
-
-										} else PRINT_ERROR_AUTO(L"CryptAcquireCertificatePrivateKey");
+											} else PRINT_ERROR_AUTO(L"CryptAcquireCertificatePrivateKey");
+										}
 									} else PRINT_ERROR_AUTO(L"CertGetCertificateContextProperty");
 									LocalFree(pBuffer);
 								}
@@ -309,6 +315,9 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 		dwFlags = CRYPT_MACHINE_KEYSET; // same as NCRYPT_MACHINE_KEY_FLAG :)
 	szStore = dwFlags ? L"machine" : L"user";
 	
+	if(kull_m_string_args_byName(argc, argv, L"silent", NULL, NULL))
+		dwFlags |= CRYPT_SILENT;
+
 	kull_m_string_args_byName(argc, argv, L"cngprovider", &szCngProvider, MS_KEY_STORAGE_PROVIDER);
 
 	kprintf(L" * Store         : \'%s\'\n"	

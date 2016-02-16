@@ -31,15 +31,19 @@ const BUSYLIGHT_COMMAND_STEP kuhl_m_busylight_steps_KiwiHack[] = {
 	{0, 0, {0,   25,  0  }, 1, 0,  BUSYLIGHT_MEDIA_MUTE},
 },
 kuhl_m_busylight_steps_ReneCotyHack[] = {
-	{1, 0, {0,   0,   100}, 7, 0,  BUSYLIGHT_MEDIA_MUTE},
-	{2, 0, {100, 100, 100}, 7, 0,  BUSYLIGHT_MEDIA_MUTE},
-	{3, 0, {100, 0,   0  }, 7, 10, BUSYLIGHT_MEDIA_MUTE},
+	{1, 0, {0,   0,   100}, 10, 0,  BUSYLIGHT_MEDIA_MUTE},
+	{2, 0, {100, 100, 100}, 10, 0,  BUSYLIGHT_MEDIA_MUTE},
+	{3, 0, {100, 0,   0  }, 10, 10, BUSYLIGHT_MEDIA_MUTE},
+
+	{4, 0, {0,   0,   100}, 2, 0,  BUSYLIGHT_MEDIA_MUTE},
+	{5, 0, {100, 100, 100}, 2, 0,  BUSYLIGHT_MEDIA_MUTE},
+	{0, 0, {100, 0,   0  }, 2, 20, BUSYLIGHT_MEDIA_MUTE},
 };
 
 NTSTATUS kuhl_m_busylight_init()
 {
 	PBUSYLIGHT_DEVICE cur;
-	BOOL isKbFR = (PtrToUlong(GetKeyboardLayout(0)) >> 16) == 0x40c, isKiwi;
+	BOOL isKbFR = (PtrToUlong(GetKeyboardLayout(0)) >> 16) == 0x40c, isKiwi = FALSE;
 	if(isBusyLight = kull_m_busylight_devices_get(&kuhl_m_busylight_devices, NULL, BUSYLIGHT_CAP_LIGHT))
 	{
 		for(cur = kuhl_m_busylight_devices; cur; cur = cur->next)
@@ -122,8 +126,7 @@ NTSTATUS kuhl_m_busylight_list(int argc, wchar_t * argv[])
 	{
 		for(cur = kuhl_m_busylight_devices; cur; cur = cur->next)
 		{
-			kprintf(L"[%3u] %s ( "
-				, cur->id, cur->deviceId->Description);
+			kprintf(L"[%3u] %s ( ", cur->id, cur->deviceId->Description);
 			for(i = 0; i < ARRAYSIZE(kuhl_m_busylight_capabilities_to_String); i++)
 			{
 				if((cur->deviceId->Capabilities >> i) & 1)
@@ -145,7 +148,7 @@ NTSTATUS kuhl_m_busylight_single(int argc, wchar_t * argv[])
 	mdl.color = BUSYLIGHT_COLOR_CYAN;
 	if(isBusyLight)
 	{
-		mdl.AudioByte = BUSYLIGHT_MEDIA | BUSYLIGHT_MEDIA_VOLUME_4_MEDIUM | (kull_m_string_args_byName(argc, argv, L"sound", NULL, NULL) ? BUSYLIGHT_MEDIA_SOUND_OPENOFFICE : BUSYLIGHT_MEDIA_SOUND_FUNKY);
+		mdl.AudioByte = BUSYLIGHT_MEDIA | BUSYLIGHT_MEDIA_VOLUME_4_MEDIUM | (kull_m_string_args_byName(argc, argv, L"sound", NULL, NULL) ? BUSYLIGHT_MEDIA_SOUND_OPENOFFICE : BUSYLIGHT_MEDIA_JINGLE_IM2);
 		if(kull_m_string_args_byName(argc, argv, L"color", &szColor, NULL))
 		{
 			dwColor = wcstoul(szColor, NULL, 0);
@@ -180,7 +183,7 @@ DWORD WINAPI kuhl_m_busylight_gradientThread(LPVOID lpThreadParameter)
 	PBUSYLIGHT_DEVICE device = (PBUSYLIGHT_DEVICE) lpThreadParameter;
 	BUSYLIGHT_COMMAND_STEP mdl = {0, 1, {100, 0, 0}, 1, 0, BUSYLIGHT_MEDIA_MUTE};
 	PBYTE toInc = &mdl.color.green, toDec = NULL;
-	BYTE step = 5;
+	BYTE step = 10;
 	while(device && device->hWorkerThread && device->dWorkerThread && device->hBusy)
 	{
 		if(kull_m_busylight_request_send(device, &mdl, 1, FALSE))
