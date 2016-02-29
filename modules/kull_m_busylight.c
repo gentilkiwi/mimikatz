@@ -41,7 +41,7 @@ PCBUSYLIGHT_DEVICE_ID kull_m_busylight_devices_getIdFromAttributes(PHIDD_ATTRIBU
 	return NULL;
 }
 
-BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask)
+BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask, BOOL bAutoThread)
 {
 	PBUSYLIGHT_DEVICE *next = devices;
 	GUID guidHid;
@@ -104,17 +104,25 @@ BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWOR
 												
 												if((*next)->hBusy && ((*next)->hBusy != INVALID_HANDLE_VALUE))
 												{
-													(*next)->dKeepAliveThread = 5000;
-													if((*next)->hKeepAliveThread = CreateThread(NULL, 0, kull_m_busylight_keepAliveThread, *next, 0, NULL))
+													if(bAutoThread)
 													{
-														next = &(*next)->next;
-														id++;
+														(*next)->dKeepAliveThread = 5000;
+														if((*next)->hKeepAliveThread = CreateThread(NULL, 0, kull_m_busylight_keepAliveThread, *next, 0, NULL))
+														{
+															next = &(*next)->next;
+															id++;
+														}
+														else
+														{
+															PRINT_ERROR_AUTO(L"CreateThread (hKeepAliveThread)");
+															CloseHandle((*next)->hBusy);
+															LocalFree(*next);
+														}
 													}
 													else
 													{
-														PRINT_ERROR_AUTO(L"CreateThread (hKeepAliveThread)");
-														CloseHandle((*next)->hBusy);
-														LocalFree(*next);
+														next = &(*next)->next;
+														id++;
 													}
 												}
 												else
@@ -346,5 +354,11 @@ BOOL kull_m_busylight_request_send_off(PBUSYLIGHT_DEVICE device, BOOL all)
 			cur->hWorkerThread = NULL;
 		}
 	}
+	return kull_m_busylight_request_send(device, &mdl, 1, all);
+}
+
+BOOL kull_m_busylight_request_single_send(PBUSYLIGHT_DEVICE device, const BUSYLIGHT_COLOR * color, BYTE sound, BYTE volume, BOOL all)
+{
+	BUSYLIGHT_COMMAND_STEP mdl = {0, 0, {color->red, color->green, color->blue}, 0, 0, BUSYLIGHT_MEDIA(sound, volume)};
 	return kull_m_busylight_request_send(device, &mdl, 1, all);
 }

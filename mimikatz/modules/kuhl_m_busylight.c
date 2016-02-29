@@ -44,7 +44,7 @@ NTSTATUS kuhl_m_busylight_init()
 {
 	PBUSYLIGHT_DEVICE cur;
 	BOOL isKbFR = (PtrToUlong(GetKeyboardLayout(0)) >> 16) == 0x40c, isKiwi = FALSE;
-	if(isBusyLight = kull_m_busylight_devices_get(&kuhl_m_busylight_devices, NULL, BUSYLIGHT_CAP_LIGHT))
+	if(isBusyLight = kull_m_busylight_devices_get(&kuhl_m_busylight_devices, NULL, BUSYLIGHT_CAP_LIGHT, TRUE))
 	{
 		for(cur = kuhl_m_busylight_devices; cur; cur = cur->next)
 		{
@@ -148,7 +148,7 @@ NTSTATUS kuhl_m_busylight_single(int argc, wchar_t * argv[])
 	mdl.color = BUSYLIGHT_COLOR_CYAN;
 	if(isBusyLight)
 	{
-		mdl.AudioByte = BUSYLIGHT_MEDIA | BUSYLIGHT_MEDIA_VOLUME_4_MEDIUM | (kull_m_string_args_byName(argc, argv, L"sound", NULL, NULL) ? BUSYLIGHT_MEDIA_SOUND_OPENOFFICE : BUSYLIGHT_MEDIA_JINGLE_IM2);
+		mdl.AudioByte = BUSYLIGHT_MEDIA(kull_m_string_args_byName(argc, argv, L"sound", NULL, NULL) ? BUSYLIGHT_MEDIA_SOUND_OPENOFFICE : BUSYLIGHT_MEDIA_JINGLE_IM2, BUSYLIGHT_MEDIA_VOLUME_4_MEDIUM);
 		if(kull_m_string_args_byName(argc, argv, L"color", &szColor, NULL))
 		{
 			dwColor = wcstoul(szColor, NULL, 0);
@@ -232,35 +232,12 @@ DWORD WINAPI kuhl_m_busylight_gradientThread(LPVOID lpThreadParameter)
 
 NTSTATUS kuhl_m_busylight_test(int argc, wchar_t * argv[])
 {
-	kuhl_m_busylight_devices->dWorkerThread = 100;
-	kuhl_m_busylight_devices->hWorkerThread = CreateThread(NULL, 0, kuhl_m_busylight_gradientThread, kuhl_m_busylight_devices, 0, NULL); 
+	PBUSYLIGHT_DEVICE cur;
+	BOOL all = TRUE;
+	for(cur = kuhl_m_busylight_devices; cur; cur = all ? cur->next : NULL)
+	{
+		cur->dWorkerThread = 100;
+		cur->hWorkerThread = CreateThread(NULL, 0, kuhl_m_busylight_gradientThread, cur, 0, NULL); 
+	}
 	return STATUS_SUCCESS;
-
-
-	//BUSYLIGHT_COMMAND_STEP steps[8], mdl = {0, 1, {0, 0, 0}, 1, 0, BUSYLIGHT_MEDIA_MUTE};
-	//BUSYLIGHT_COLOR color = BUSYLIGHT_COLOR_ROSE;
-	//DWORD i;
-
-	//if(isBusyLight)
-	//{
-	//	for(i = 0; i < ARRAYSIZE(steps); i++)
-	//	{
-	//		steps[i] = mdl;
-	//		if(i < (ARRAYSIZE(steps) - 1))
-	//			steps[i].NextStep = (BYTE) i + 1;
-	//		else
-	//			steps[i].NextStep = 0;
-	//	}
-
-	//	steps[0].color = adaptColor(&color, 1);
-	//	steps[1].color = steps[7].color = adaptColor(&color, 5);
-	//	steps[2].color = steps[6].color = adaptColor(&color, 25);
-	//	steps[3].color = steps[5].color = adaptColor(&color, 50);
-	//	steps[4].color = color;//adaptColor(&color, 100);
-	//	steps[4].OnTimeSteps = 5;
-
-	//	kull_m_busylight_request_send(kuhl_m_busylight_devices, steps, ARRAYSIZE(steps), TRUE);
-	//}
-	//else PRINT_ERROR(L"No BusyLight\n");
-	//return STATUS_SUCCESS;
 }

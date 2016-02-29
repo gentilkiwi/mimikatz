@@ -47,6 +47,20 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT theDriverObject, IN PUNICODE_STRING theRe
 	return status;
 }
 
+typedef NTSTATUS	(NTAPI * PZWSETSYSTEMENVIRONMENTVALUEEX) (__in PUNICODE_STRING VariableName, __in LPGUID VendorGuid, __in_bcount_opt(ValueLength) PVOID Value, __in ULONG ValueLength, __in ULONG Attributes);
+NTSTATUS kkll_m_sysenvset(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER outBuffer)
+{
+	NTSTATUS status = STATUS_NOT_FOUND;
+	UNICODE_STRING uZwSetSystemEnvironmentVariableEx, uVar;
+	PZWSETSYSTEMENVIRONMENTVALUEEX ZwSetSystemEnvironmentValueEx;
+	PMIMIDRV_VARIABLE_NAME_AND_VALUE vnv = (PMIMIDRV_VARIABLE_NAME_AND_VALUE) bufferIn;
+	RtlInitUnicodeString(&uZwSetSystemEnvironmentVariableEx, L"ZwSetSystemEnvironmentValueEx");
+	RtlInitUnicodeString(&uVar, vnv->Name);
+	if(ZwSetSystemEnvironmentValueEx = (PZWSETSYSTEMENVIRONMENTVALUEEX) MmGetSystemRoutineAddress(&uZwSetSystemEnvironmentVariableEx))
+		status = ZwSetSystemEnvironmentValueEx(&uVar, &vnv->VendorGuid, (PUCHAR) vnv + vnv->ValueOffset, vnv->ValueLength, vnv->Attributes);
+	return status;
+}
+
 NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IRP *Irp)
 {
 	NTSTATUS status = STATUS_NOT_SUPPORTED;
@@ -78,6 +92,9 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 				break;
 			case IOCTL_MIMIDRV_DEBUG_BUFFER:
 				status = kprintf(&kOutputBuffer, L"in (0x%p - %u) ; out (0x%p - %u)\n", bufferIn, szBufferIn, bufferOut, szBufferOut);
+				break;
+			case IOCTL_MIMIDRV_SYSENVSET:
+				status = kkll_m_sysenvset(szBufferIn, bufferIn, &kOutputBuffer);
 				break;
 
 			case IOCTL_MIMIDRV_PROCESS_LIST:

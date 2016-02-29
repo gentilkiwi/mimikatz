@@ -134,6 +134,7 @@
     <ClCompile Include="modules\kuhl_m_service.c" />
     <ClCompile Include="modules\kuhl_m_service_remote.c" />
     <ClCompile Include="modules\kuhl_m_standard.c" />
+    <ClCompile Include="modules\kuhl_m_sysenvvalue.c" />
     <ClCompile Include="modules\kuhl_m_token.c" />
     <ClCompile Include="modules\kuhl_m_ts.c" />
     <ClCompile Include="modules\kuhl_m_vault.c" />
@@ -205,6 +206,7 @@
     <ClInclude Include="modules\kuhl_m_service.h" />
     <ClInclude Include="modules\kuhl_m_service_remote.h" />
     <ClInclude Include="modules\kuhl_m_standard.h" />
+    <ClInclude Include="modules\kuhl_m_sysenvvalue.h" />
     <ClInclude Include="modules\kuhl_m_token.h" />
     <ClInclude Include="modules\kuhl_m_ts.h" />
     <ClInclude Include="modules\kuhl_m_vault.h" />

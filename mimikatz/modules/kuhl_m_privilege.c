@@ -12,6 +12,7 @@ const KUHL_M_C kuhl_m_c_privilege[] = {
 	{kuhl_m_privilege_tcb,			L"tcb",			L"Ask tcb privilege"},
 	{kuhl_m_privilege_backup,		L"backup",		L"Ask backup privilege"},
 	{kuhl_m_privilege_restore,		L"restore",		L"Ask restore privilege"},
+	{kuhl_m_privilege_sysenv,		L"sysenv",		L"Ask system environment privilege"},
 
 	{kuhl_m_privilege_id,			L"id",			L"Ask a privilege by its id"},
 	{kuhl_m_privilege_name,			L"name",		L"Ask a privilege by its name"},
@@ -88,4 +89,9 @@ NTSTATUS kuhl_m_privilege_backup(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_privilege_restore(int argc, wchar_t * argv[])
 {
 	return kuhl_m_privilege_simple(SE_RESTORE);
+}
+
+NTSTATUS kuhl_m_privilege_sysenv(int argc, wchar_t * argv[])
+{
+	return kuhl_m_privilege_simple(SE_SYSTEM_ENVIRONMENT);
 }

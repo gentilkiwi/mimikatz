@@ -25,6 +25,7 @@ const KUHL_M * mimikatz_modules[] = {
 #endif
 	&kuhl_m_dpapi,
 	&kuhl_m_busylight,
+	&kuhl_m_sysenv,
 };
 
 int wmain(int argc, wchar_t * argv[])

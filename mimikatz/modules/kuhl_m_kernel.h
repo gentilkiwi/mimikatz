@@ -10,6 +10,7 @@
 #include "../modules/kull_m_service.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_string.h"
+#include "kuhl_m_sysenvvalue.h"
 #include <aclapi.h>
 #include <sddl.h>
 
@@ -32,3 +33,5 @@ NTSTATUS kuhl_m_kernel_processPrivilege(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kernel_notifyProcessRemove(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kernel_notifyObjectRemove(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kernel_notifyGenericRemove(int argc, wchar_t * argv[], DWORD code);
+NTSTATUS kuhl_m_kernel_sysenv_set(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_kernel_sysenv_del(int argc, wchar_t * argv[]);

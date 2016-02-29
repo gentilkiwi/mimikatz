@@ -15,7 +15,7 @@
 #define BUSYLIGHT_CAP_SOUND						0x04
 #define BUSYLIGHT_CAP_JINGLE_CLIPS				0x08
 
-#define BUSYLIGHT_MEDIA							0x80
+#define BUSYLIGHT_MEDIA_MASK					0x80
 typedef enum _BUSYLIGHT_MEDIA_VOLUME {
 	BUSYLIGHT_MEDIA_VOLUME_0_MUTE =				0,
 	BUSYLIGHT_MEDIA_VOLUME_1_MIN =				1,
@@ -42,7 +42,8 @@ typedef enum _BUSYLIGHT_MEDIA_SOUND_JINGLE {
 	BUSYLIGHT_MEDIA_JINGLE_IM2 =				(10 << 3),
 } BUSYLIGHT_MEDIA_SOUND_JINGLE, *PBUSYLIGHT_MEDIA_SOUND_JINGLE;
 typedef const BUSYLIGHT_MEDIA_SOUND_JINGLE *PCBUSYLIGHT_MEDIA_SOUND_JINGLE;
-#define BUSYLIGHT_MEDIA_MUTE (BUSYLIGHT_MEDIA | BUSYLIGHT_MEDIA_SOUND_MUTE | BUSYLIGHT_MEDIA_VOLUME_0_MUTE)
+#define BUSYLIGHT_MEDIA(sound, volume) (BUSYLIGHT_MEDIA_MASK | sound | volume)
+#define BUSYLIGHT_MEDIA_MUTE BUSYLIGHT_MEDIA(BUSYLIGHT_MEDIA_SOUND_MUTE, BUSYLIGHT_MEDIA_VOLUME_0_MUTE)
 
 typedef struct _BUSYLIGHT_DEVICE_ID {
 	USHORT	Vid;
@@ -120,7 +121,7 @@ const BUSYLIGHT_COLOR
 ;
 
 PCBUSYLIGHT_DEVICE_ID kull_m_busylight_devices_getIdFromAttributes(PHIDD_ATTRIBUTES attributes);
-BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask);
+BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWORD mask, BOOL bAutoThread);
 void kull_m_busylight_devices_free(PBUSYLIGHT_DEVICE devices, BOOL instantOff);
 
 //BOOL kull_m_busylight_request_create(PBUSYLIGHT_COMMAND_STEP commands, DWORD count, PCBUSYLIGHT_DPI dpi, PBYTE *data, DWORD *size);
@@ -134,3 +135,5 @@ BOOL kull_m_busylight_device_read_infos(PBUSYLIGHT_DEVICE device, BUSYLIGHT_INFO
 BOOL kull_m_busylight_request_send(PBUSYLIGHT_DEVICE device, PCBUSYLIGHT_COMMAND_STEP commands, DWORD count, BOOL all);
 BOOL kull_m_busylight_request_send_keepalive(PBUSYLIGHT_DEVICE device, BOOL all);
 BOOL kull_m_busylight_request_send_off(PBUSYLIGHT_DEVICE device, BOOL all);
+
+BOOL kull_m_busylight_request_single_send(PBUSYLIGHT_DEVICE device, const BUSYLIGHT_COLOR * color, BYTE sound, BYTE volume, BOOL all);

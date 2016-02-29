@@ -26,6 +26,7 @@
 #include "modules/dpapi/kuhl_m_dpapi.h"
 #include "modules/kuhl_m_kernel.h"
 #include "modules/kuhl_m_busylight.h"
+#include "modules/kuhl_m_sysenvvalue.h"
 
 #include <io.h>
 #include <fcntl.h>
