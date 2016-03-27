@@ -69,8 +69,7 @@ PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD 
 		{1, bufferJmpOff,	sizeof(bufferJmpOff),	sizeof(bufferJmpOff),	sizeof(LONG), !(machineOfProcess == IMAGE_FILE_MACHINE_I386), TRUE},
 		{0, bufferRetSS,	sizeof(bufferRetSS),	sizeof(bufferRetSS),	sizeof(PVOID), FALSE, FALSE},
 	};
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer}, dBuffer = {&dst, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, dBuffer = {&dst, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_ADDRESS pBuffer = *base;
 	DWORD i, sizeToRead;
 
@@ -193,8 +192,7 @@ BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SI
 	PEB Peb;
 	PROCESS_INFORMATION processInformation;
 	PIMAGE_NT_HEADERS pNtHeaders;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBaseAdress = {NULL, NULL}, aPattern = {disableString, &hLocalMemory}, aPatch = {enableString, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aBaseAdress = {NULL, NULL}, aPattern = {disableString, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aPatch = {enableString, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
 	
 	if(kull_m_process_create(KULL_M_PROCESS_CREATE_NORMAL, commandLine, CREATE_SUSPENDED, NULL, 0, NULL, NULL, NULL, &processInformation, FALSE))
@@ -315,8 +313,7 @@ NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iNtds;
 	DWORD i, err;
 
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS sAddress = {NULL, &hLocalMemory}, aProcess = {NULL, NULL};
+	KULL_M_MEMORY_ADDRESS sAddress = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {NULL, NULL};
 	KULL_M_MEMORY_SEARCH sSearch;
 	BOOL littleSuccess = TRUE;
 	PPOLICY_DNS_DOMAIN_INFO pDnsInfo;
@@ -367,7 +364,7 @@ NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
 									for(i = 0; (i < pOsSz) && littleSuccess; i++)
 									{
 										littleSuccess = FALSE;
-										pOs[i].LocalBackup.hMemory = &hLocalMemory;
+										pOs[i].LocalBackup.hMemory = &KULL_M_MEMORY_GLOBAL_OWN_HANDLE;
 										pOs[i].LocalBackup.address = NULL;
 										pOs[i].AdressOfPatch.hMemory = aProcess.hMemory;
 										pOs[i].AdressOfPatch.address = NULL;
@@ -502,8 +499,7 @@ NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[])
 {
 	HANDLE hProcess;
 	DWORD processId;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass, aLocal = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsass, aLocal = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sSearch;
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iMSV;
 	PKULL_M_PATCH_GENERIC pGeneric;
@@ -648,8 +644,7 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 	DWORD processId;
 	HANDLE hProcess;
 	PBYTE localAddr, ptrValue = NULL;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass, aLocal = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsass, aLocal = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION cryptInfos;
 	KULL_M_MEMORY_SEARCH sMemory;
 	LSA_UNICODE_STRING orig;

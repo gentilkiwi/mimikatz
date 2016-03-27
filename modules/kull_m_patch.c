@@ -8,9 +8,8 @@
 BOOL kull_m_patch(PKULL_M_MEMORY_SEARCH sMemory, PKULL_M_MEMORY_ADDRESS pPattern, SIZE_T szPattern, PKULL_M_MEMORY_ADDRESS pPatch, SIZE_T szPatch, LONG offsetOfPatch, PKULL_M_PATCH_CALLBACK pCallBackBeforeRestore, int argc, wchar_t * args[], NTSTATUS * pRetCallBack)
 {
 	BOOL result = FALSE, resultBackup = !pCallBackBeforeRestore, resultProtect = TRUE;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_MEMORY_ADDRESS destination = {NULL, sMemory->kull_m_memoryRange.kull_m_memoryAdress.hMemory};
-	KULL_M_MEMORY_ADDRESS backup = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS backup = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	MEMORY_BASIC_INFORMATION readInfos;
 	NTSTATUS status;
 	DWORD flags, oldProtect = 0, tempProtect = 0;
@@ -78,12 +77,11 @@ BOOL kull_m_patch_genericProcessOrServiceFromBuild(PKULL_M_PATCH_GENERIC generic
 	BOOL result = FALSE;
 	SERVICE_STATUS_PROCESS ServiceStatusProcess;
 	PKULL_M_MEMORY_HANDLE hMemory;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModule;
 	HANDLE hProcess;
 	KULL_M_MEMORY_ADDRESS
-		aPatternMemory = {NULL, &hLocalMemory},
-		aPatchMemory = {NULL, &hLocalMemory};
+		aPatternMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE},
+		aPatchMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
 
 	PKULL_M_PATCH_GENERIC currenReferences;

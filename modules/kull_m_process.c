@@ -70,8 +70,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 	PEB_F32 Peb32; PEB_LDR_DATA_F32 LdrData32; LDR_DATA_TABLE_ENTRY_F32 LdrEntry32;
 #endif
 	ULONG i;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_ADDRESS aProcess= {NULL, memory};
 	PBYTE aLire, fin;
 	PWCHAR moduleNameW;
@@ -346,8 +345,7 @@ BOOL kull_m_process_peb(PKULL_M_MEMORY_HANDLE memory, PPEB pPeb, BOOL isWOW)
 	BOOL status = FALSE;
 	PROCESS_BASIC_INFORMATION processInformations;
 	HANDLE hProcess = (memory->type == KULL_M_MEMORY_TYPE_PROCESS) ? memory->pHandleProcess->hProcess : GetCurrentProcess();
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {pPeb, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aBuffer = {pPeb, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_ADDRESS aProcess= {NULL, memory};
 	PROCESSINFOCLASS info;
 	ULONG szPeb, szBuffer, szInfos;
@@ -398,8 +396,7 @@ BOOL kull_m_process_ntheaders(PKULL_M_MEMORY_ADDRESS pBase, PIMAGE_NT_HEADERS * 
 {
 	BOOL status = FALSE;
 	IMAGE_DOS_HEADER headerImageDos;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {&headerImageDos, &hBuffer}, aRealNtHeaders = {NULL, &hBuffer}, aProcess= {NULL, pBase->hMemory};
+	KULL_M_MEMORY_ADDRESS aBuffer = {&headerImageDos, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aRealNtHeaders = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess= {NULL, pBase->hMemory};
 	DWORD size;
 
 	if(kull_m_memory_copy(&aBuffer, pBase, sizeof(IMAGE_DOS_HEADER)) && headerImageDos.e_magic == IMAGE_DOS_SIGNATURE)
@@ -429,8 +426,7 @@ BOOL kull_m_process_ntheaders(PKULL_M_MEMORY_ADDRESS pBase, PIMAGE_NT_HEADERS * 
 BOOL kull_m_process_datadirectory(PKULL_M_MEMORY_ADDRESS pBase, DWORD entry, PDWORD pRva, PDWORD pSize, PWORD pMachine, PVOID *pData)
 {
 	BOOL status = FALSE;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_ADDRESS aProcess= *pBase;
 	
 	DWORD rva, size;
@@ -566,8 +562,7 @@ PSTR kull_m_process_getImportNameWithoutEnd(PKULL_M_MEMORY_ADDRESS base)
 {
 	CHAR sEnd = '\0';
 	SIZE_T size;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aStringBuffer = {NULL, &hBuffer}, aNullBuffer = {&sEnd, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aStringBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aNullBuffer = {&sEnd, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{base->address, base->hMemory}, MAX_PATH}, NULL};
 
 	if(kull_m_memory_search(&aNullBuffer, sizeof(sEnd), &sMemory, FALSE))
@@ -582,12 +577,11 @@ PSTR kull_m_process_getImportNameWithoutEnd(PKULL_M_MEMORY_ADDRESS base)
 
 NTSTATUS kull_m_process_getImportedEntryInformations(PKULL_M_MEMORY_ADDRESS address, PKULL_M_IMPORTED_ENTRY_ENUM_CALLBACK callBack, PVOID pvArg)
 {
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	PVOID pLocalBuffer;
 	PIMAGE_IMPORT_DESCRIPTOR pImportDir;
 	ULONG sizeThunk;
 	ULONGLONG OriginalFirstThunk, FirstThunk, ordinalPattern;
-	KULL_M_MEMORY_ADDRESS aOriginalFirstThunk = {&OriginalFirstThunk, &hBuffer}, aFirstThunk = {&FirstThunk, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aOriginalFirstThunk = {&OriginalFirstThunk, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aFirstThunk = {&FirstThunk, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_ADDRESS aProcOriginalFirstThunk = {NULL, address->hMemory}, aProcName = {NULL, address->hMemory};
 	KULL_M_PROCESS_IMPORTED_ENTRY importedEntry;
 	BOOL continueCallback = TRUE;

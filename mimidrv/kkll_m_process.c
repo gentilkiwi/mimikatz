@@ -15,7 +15,8 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 7	*/	{0x00b8, 0x026c, 0x0040},
 /* 8	*/	{0x00b8, 0x00c0, 0x0040, 0x02d4},
 /* BLUE	*/	{0x00b8, 0x00c0, 0x0040, 0x02cc},
-/* 10	*/	{0x00b8, 0x00c0, 0x0040, 0x02d4},
+/* 10_1507*/{0x00b8, 0x00c0, 0x0040, 0x02dc},
+/* 10_1511*/{0x00b8, 0x00c0, 0x0040, 0x02dc},
 #else
 /* UNK	*/	{0},
 /* XP	*/	{0},
@@ -24,7 +25,8 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 7	*/	{0x0188, 0x043c, 0x0040},
 /* 8	*/	{0x02e8, 0x02f8, 0x0040, 0x0648},
 /* BLUE	*/	{0x02e8, 0x02f8, 0x0040, 0x0678},
-/* 10	*/	{0x02f0, 0x0300, 0x0040, 0x0698},//0x06a9},//0x0698},
+/* 10_1507*/{0x02f0, 0x0300, 0x0040, 0x06a8},
+/* 10_1511*/{0x02f0, 0x0300, 0x0040, 0x06b0},
 #endif
 };
 
@@ -34,8 +36,8 @@ NTSTATUS kkll_m_process_enum(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_BUFFER out
 	PEPROCESS pProcess = NULL;
 	for(
 		pProcess = PsInitialSystemProcess;
-		NT_SUCCESS(status) && (PEPROCESS) ((ULONG_PTR) (*(PVOID *) (((ULONG_PTR) pProcess) + EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext]))- EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext]) != PsInitialSystemProcess;
-		pProcess = (PEPROCESS) ((ULONG_PTR) (*(PVOID *) (((ULONG_PTR) pProcess) + EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext]))- EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext])
+		NT_SUCCESS(status) && (PEPROCESS) ((ULONG_PTR) (*(PVOID *) (((ULONG_PTR) pProcess) + EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext])) - EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext]) != PsInitialSystemProcess;
+		pProcess = (PEPROCESS) ((ULONG_PTR) (*(PVOID *) (((ULONG_PTR) pProcess) + EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext])) - EPROCESS_OffSetTable[KiwiOsIndex][EprocessNext])
 		)
 	{
 		status = callback(szBufferIn, bufferIn, outBuffer, pProcess, pvArg);

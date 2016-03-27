@@ -5,6 +5,8 @@
 */
 #include "kull_m_memory.h"
 
+KULL_M_MEMORY_HANDLE KULL_M_MEMORY_GLOBAL_OWN_HANDLE = {KULL_M_MEMORY_TYPE_OWN, NULL};
+
 BOOL kull_m_memory_open(IN KULL_M_MEMORY_TYPE Type, IN HANDLE hAny, OUT PKULL_M_MEMORY_HANDLE *hMemory)
 {
 	BOOL status = FALSE;
@@ -86,8 +88,7 @@ BOOL kull_m_memory_copy(OUT PKULL_M_MEMORY_ADDRESS Destination, IN PKULL_M_MEMOR
 {
 	BOOL status = FALSE;
 	BOOL bufferMeFirst = FALSE;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	DWORD nbReadWrite;
 
 	switch(Destination->hMemory->type)
@@ -169,8 +170,7 @@ BOOL kull_m_memory_copy(OUT PKULL_M_MEMORY_ADDRESS Destination, IN PKULL_M_MEMOR
 BOOL kull_m_memory_search(IN PKULL_M_MEMORY_ADDRESS Pattern, IN SIZE_T Length, IN PKULL_M_MEMORY_SEARCH Search, IN BOOL bufferMeFirst)
 {
 	BOOL status = FALSE;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_SEARCH  sBuffer = {{{NULL, &hBuffer}, Search->kull_m_memoryRange.size}, NULL};
+	KULL_M_MEMORY_SEARCH  sBuffer = {{{NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, Search->kull_m_memoryRange.size}, NULL};
 	PBYTE CurrentPtr;
 	PBYTE limite = (PBYTE) Search->kull_m_memoryRange.kull_m_memoryAdress.address + Search->kull_m_memoryRange.size;
 
@@ -323,8 +323,7 @@ BOOL kull_m_memory_protect(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T dwSize, 
 BOOL kull_m_memory_equal(IN PKULL_M_MEMORY_ADDRESS Address1, IN PKULL_M_MEMORY_ADDRESS Address2, IN SIZE_T Lenght)
 {
 	BOOL status = FALSE;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &hBuffer};
+	KULL_M_MEMORY_ADDRESS aBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	switch(Address1->hMemory->type)
 	{
 	case KULL_M_MEMORY_TYPE_OWN:

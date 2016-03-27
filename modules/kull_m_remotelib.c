@@ -26,8 +26,7 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INP
 	BOOL success = FALSE;
 	NTSTATUS status;
 	HANDLE hThread;
-	KULL_M_MEMORY_HANDLE  hLocalBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aRemoteData = {NULL, aRemoteFunc->hMemory}, aSuppData = {NULL, aRemoteFunc->hMemory}, aLocalAddr = {NULL, &hLocalBuffer};
+	KULL_M_MEMORY_ADDRESS aRemoteData = {NULL, aRemoteFunc->hMemory}, aSuppData = {NULL, aRemoteFunc->hMemory}, aLocalAddr = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PREMOTE_LIB_DATA data;
 	REMOTE_LIB_OUTPUT_DATA oData;
 	MIMIDRV_THREAD_INFO drvInfo = {(PTHREAD_START_ROUTINE) aRemoteFunc->address, NULL};
@@ -170,8 +169,7 @@ BOOL kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(PKULL_M_MEMORY_HANDLE 
 {
 	BOOL success = FALSE;
 	DWORD i, j;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalAddr = {(LPVOID) Buffer, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLocalAddr = {(LPVOID) Buffer, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	
 	DestAddress->hMemory = hProcess;
 	DestAddress->address = NULL;

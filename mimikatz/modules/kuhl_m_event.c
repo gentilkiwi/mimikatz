@@ -27,7 +27,7 @@ KULL_M_PATCH_GENERIC EventReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WNT5_PerformWriteRequest),			PTRN_WNT5_PerformWriteRequest},			{sizeof(PATC_WNT5_PerformWriteRequest),			PATC_WNT5_PerformWriteRequest},			{-10}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WN60_Channel__ActualProcessEvent),	PTRN_WN60_Channel__ActualProcessEvent},	{sizeof(PATC_WNT6_Channel__ActualProcessEvent), PATC_WNT6_Channel__ActualProcessEvent}, {  0}},
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WIN6_Channel__ActualProcessEvent),	PTRN_WIN6_Channel__ActualProcessEvent},	{sizeof(PATC_WNT6_Channel__ActualProcessEvent), PATC_WNT6_Channel__ActualProcessEvent}, {  0}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WI10_Channel__ActualProcessEvent),	PTRN_WI10_Channel__ActualProcessEvent},	{sizeof(PATC_WNT6_Channel__ActualProcessEvent), PATC_WNT6_Channel__ActualProcessEvent}, {  0}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WI10_Channel__ActualProcessEvent),	PTRN_WI10_Channel__ActualProcessEvent},	{sizeof(PATC_WNT6_Channel__ActualProcessEvent), PATC_WNT6_Channel__ActualProcessEvent}, {  0}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WNT5_PerformWriteRequest[]			= {0x89, 0x45, 0xe4, 0x8b, 0x7d, 0x08, 0x89, 0x7d};
@@ -47,7 +47,7 @@ KULL_M_PATCH_GENERIC EventReferences[] = {
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WN61_Channel__ActualProcessEvent),	PTRN_WN61_Channel__ActualProcessEvent},	{sizeof(PATC_WNO8_Channel__ActualProcessEvent), PATC_WNO8_Channel__ActualProcessEvent}, {-12}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WN62_Channel__ActualProcessEvent),	PTRN_WN62_Channel__ActualProcessEvent},	{sizeof(PATC_WIN8_Channel__ActualProcessEvent), PATC_WIN8_Channel__ActualProcessEvent}, {-33}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WN63_Channel__ActualProcessEvent),	PTRN_WN63_Channel__ActualProcessEvent},	{sizeof(PATC_WNO8_Channel__ActualProcessEvent), PATC_WNO8_Channel__ActualProcessEvent}, {-32}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WN64_Channel__ActualProcessEvent),	PTRN_WN64_Channel__ActualProcessEvent},	{sizeof(PATC_WNO8_Channel__ActualProcessEvent), PATC_WNO8_Channel__ActualProcessEvent}, {-30}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WN64_Channel__ActualProcessEvent),	PTRN_WN64_Channel__ActualProcessEvent},	{sizeof(PATC_WNO8_Channel__ActualProcessEvent), PATC_WNO8_Channel__ActualProcessEvent}, {-30}},
 };
 #endif
 

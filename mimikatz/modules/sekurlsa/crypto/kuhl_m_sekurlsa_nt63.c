@@ -66,8 +66,7 @@ NTSTATUS kuhl_m_sekurlsa_nt63_clean()
 NTSTATUS kuhl_m_sekurlsa_nt63_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION lsassLsaSrvModule)
 {
 	NTSTATUS status = STATUS_NOT_FOUND;
-	KULL_M_MEMORY_HANDLE  hLocalBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalAddr = {kuhl_m_sekurlsa_nt63_decryptorCode, &hLocalBuffer};
+	KULL_M_MEMORY_ADDRESS aLocalAddr = {kuhl_m_sekurlsa_nt63_decryptorCode, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	aProcessUnprotect.hMemory = cLsass->hLsassMem;
 	aProcessProtect.hMemory = cLsass->hLsassMem;
 	
@@ -99,8 +98,7 @@ VOID WINAPI kuhl_m_sekurlsa_nt63_LsaUnprotectMemory (IN PVOID Buffer, IN ULONG B
 
 NTSTATUS kuhl_m_sekurlsa_nt63_LsaEncryptMemory(IN PVOID Buffer, IN ULONG BufferSize, IN BOOL Encrypt)
 {
-	KULL_M_MEMORY_HANDLE  hLocalBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aMemoryAddr = {NULL, aProcessProtect.hMemory}, aLocalAddr = {NULL, &hLocalBuffer};
+	KULL_M_MEMORY_ADDRESS aMemoryAddr = {NULL, aProcessProtect.hMemory}, aLocalAddr = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	DWORD exitCode, totalSize = sizeof(ULONG) + BufferSize;
 	PKULL_M_MEMORY_ADDRESS pAddress = Encrypt ? &aProcessProtect : &aProcessUnprotect;
 	NTSTATUS status;

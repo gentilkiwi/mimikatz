@@ -32,8 +32,7 @@ NTSTATUS kuhl_m_minesweeper_infos(int argc, wchar_t * argv[])
 	STRUCT_MINESWEEPER_GAME Game;
 	STRUCT_MINESWEEPER_BOARD Board;
 	KULL_M_MEMORY_SEARCH sMemory = {{{NULL, NULL}, 0}, NULL};
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aRemote = {NULL, NULL}, aBuffer = {PTRN_WIN6_Game_SafeGetSingleton, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aRemote = {NULL, NULL}, aBuffer = {PTRN_WIN6_Game_SafeGetSingleton, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	BOOL bAlloc = FALSE;
 	LONG offsetTemp = 0;
 	CHAR ** field = NULL;
@@ -148,8 +147,7 @@ void kuhl_m_minesweeper_infos_parseField(PKULL_M_MEMORY_HANDLE hMemory, PSTRUCT_
 	PSTRUCT_MINESWEEPER_REF_ELEMENT * ref_columns_elements;
 	STRUCT_MINESWEEPER_REF_ELEMENT ref_column_element;	
 	DWORD c, r, szFinalElement = isVisible ? sizeof(DWORD) : sizeof(BYTE);
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aRemote = {base, hMemory}, aLocal = {&ref_first_element, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aRemote = {base, hMemory}, aLocal = {&ref_first_element, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 
 	if(kull_m_memory_copy(&aLocal, &aRemote, sizeof(STRUCT_MINESWEEPER_REF_ELEMENT)))
 	{

@@ -383,7 +383,7 @@ KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WN60_CredpCloneCredential),	PTRN_WN60_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WN62_CredpCloneCredential),	PTRN_WN62_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
-	{KULL_M_WIN_BUILD_10,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WN64_CredpCloneCredentialJmpShort),	PATC_WN64_CredpCloneCredentialJmpShort},	{6}},
+	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WN64_CredpCloneCredentialJmpShort),	PATC_WN64_CredpCloneCredentialJmpShort},	{6}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x43, 0x04, 0x83, 0xf8, 0x01, 0x74};
@@ -395,7 +395,7 @@ KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_XP,	{sizeof(PTRN_WNT5_CredpCloneCredential),	PTRN_WNT5_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
 	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WN60_CredpCloneCredential),	PTRN_WN60_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WN62_CredpCloneCredential),	PTRN_WN62_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
-	{KULL_M_WIN_BUILD_10,	{sizeof(PTRN_WN64_CredpCloneCredential),	PTRN_WN64_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
+	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN64_CredpCloneCredential),	PTRN_WN64_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
 };
 #endif
 
@@ -406,10 +406,9 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 	DWORD flags = 0;
 	SERVICE_STATUS_PROCESS ServiceStatusProcess;
 	PKULL_M_MEMORY_HANDLE hMemory;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModuleSamSrv;
 	HANDLE hSamSs;
-	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &hLocalMemory}, aPatchMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aPatchMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
 	PKULL_M_PATCH_GENERIC CredpCloneCredentialReference;
 	

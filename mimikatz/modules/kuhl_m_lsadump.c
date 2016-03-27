@@ -976,7 +976,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-8}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-12}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-8}},
-	{KULL_M_WIN_BUILD_10,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-8}},
+	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-8}},
 };
 #endif
 PCWCHAR szSamSrv = L"samsrv.dll", szLsaSrv = L"lsasrv.dll", szNtDll = L"ntdll.dll", szKernel32 = L"kernel32.dll", szAdvapi32 = L"advapi32.dll";
@@ -997,10 +997,9 @@ NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 	PDWORD pRid = NULL, pUse = NULL;
 
 	PKULL_M_MEMORY_HANDLE hMemory = NULL;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModuleSamSrv;
 	HANDLE hSamSs = NULL;
-	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &hLocalMemory}, aPatchMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aPatchMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
 	PKULL_M_PATCH_GENERIC currentSamSrvReference;
 	
@@ -1397,9 +1396,8 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 
 	PKULL_M_PATCH_GENERIC currentReference;
 	PKULL_M_MEMORY_HANDLE hMemory = NULL;
-	KULL_M_MEMORY_HANDLE hLocalMemory = {KULL_M_MEMORY_TYPE_OWN, NULL};
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModule;
-	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &hLocalMemory}, aPatchMemory = {NULL, &hLocalMemory};
+	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aPatchMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
 
 	static BOOL isPatching = FALSE;
