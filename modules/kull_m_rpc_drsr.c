@@ -93,25 +93,25 @@ BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding)
 }
 
 GUID DRSUAPI_DS_BIND_GUID_Standard	= {0xe24d201a, 0x4fd6, 0x11d1, {0xa3, 0xda, 0x00, 0x00, 0xf8, 0x75, 0xae, 0x0d}};
-BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid)
+BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID)
 {
 	BOOL DomainGUIDfound = FALSE, ObjectGUIDfound = FALSE;
 	DWORD i;
 	ULONG drsStatus;
 	DRS_HANDLE hDrs = NULL;
-	DRS_EXTENSIONS_INT DrsExtensionsInt = {0};
-	DRS_EXTENSIONS *pDrsExtensionsOutput = NULL;
 	DRS_MSG_DCINFOREQ dcInfoReq = {0};
 	DWORD dcOutVersion = 0;
 	DRS_MSG_DCINFOREPLY dcInfoRep = {0};
 	LPWSTR sGuid;
 	UNICODE_STRING uGuid;
 
-	RpcTryExcept
+	*dwReplEpoch = 0;
+	RtlZeroMemory(SiteObjGuid, sizeof(GUID));
+	RtlZeroMemory(ConfigObjGUID, sizeof(GUID));
+	
+	if(kull_m_rpc_drsr_getDCBind(hBinding, &DRSUAPI_DS_BIND_GUID_Standard, &hDrs, dwReplEpoch, SiteObjGuid, ConfigObjGUID))
 	{
-		DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
-		drsStatus = IDL_DRSBind(*hBinding, &DRSUAPI_DS_BIND_GUID_Standard, (DRS_EXTENSIONS *) &DrsExtensionsInt, &pDrsExtensionsOutput, &hDrs);
-		if(drsStatus == 0)
+		RpcTryExcept
 		{
 			dcInfoReq.V1.InfoLevel = 2;
 			dcInfoReq.V1.Domain = (LPWSTR) Domain;
@@ -135,7 +135,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 				kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(dcOutVersion, &dcInfoRep);
 			}
 			else PRINT_ERROR(L"DomainControllerInfo: 0x%08x (%u)\n", drsStatus, drsStatus);
-			
+
 			if(Guid)
 			{
 				RtlInitUnicodeString(&uGuid, Guid);
@@ -149,40 +149,57 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 					ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
 				}
 			}
-			drsStatus = IDL_DRSUnbind(&hDrs);
-			MIDL_user_free(pDrsExtensionsOutput);
 		}
+		RpcExcept(DRS_EXCEPTION)
+			PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+		RpcEndExcept
+
 	}
-	RpcExcept(DRS_EXCEPTION)
-		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
-	RpcEndExcept
 	return (DomainGUIDfound && (ObjectGUIDfound || !(Guid || User)));
 }
 
-BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs)
+BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID)
 {
 	BOOL status = FALSE;
 	ULONG drsStatus;
-	DRS_EXTENSIONS_INT DrsExtensionsInt;// = {0};
-	DRS_EXTENSIONS *pDrsExtensionsOutput = NULL;
+	DRS_EXTENSIONS_INT DrsExtensionsInt = {0};
+	DRS_EXTENSIONS_INT *pDrsExtensionsOutput = NULL;
 
 	DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
 	DrsExtensionsInt.dwFlags = DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION;
+	DrsExtensionsInt.SiteObjGuid = *SiteObjGuid;
+	DrsExtensionsInt.dwReplEpoch = *dwReplEpoch;
+	DrsExtensionsInt.ConfigObjGUID = *ConfigObjGUID;
 
 	RpcTryExcept
 	{
-		drsStatus = IDL_DRSBind(*hBinding, NtdsDsaObjectGuid, (DRS_EXTENSIONS *) &DrsExtensionsInt, &pDrsExtensionsOutput, hDrs); // to free ?
+		drsStatus = IDL_DRSBind(*hBinding, NtdsDsaObjectGuid, (DRS_EXTENSIONS *) &DrsExtensionsInt, (DRS_EXTENSIONS **) &pDrsExtensionsOutput, hDrs); // to free ?
 		if(drsStatus == 0)
 		{
 			if(pDrsExtensionsOutput)
 			{
-				if(((DRS_EXTENSIONS_INT *) pDrsExtensionsOutput)->dwFlags & (DRS_EXT_GETCHGREQ_V8 | DRS_EXT_STRONG_ENCRYPTION))
-					status = TRUE;
-				else PRINT_ERROR(L"Incorrect DRS Extensions Output (%08x)\n", ((DRS_EXTENSIONS_INT *) pDrsExtensionsOutput)->dwFlags);
+				if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, SiteObjGuid) - sizeof(DWORD))
+				{
+					if(pDrsExtensionsOutput->dwFlags & (DRS_EXT_GETCHGREQ_V8 | DRS_EXT_STRONG_ENCRYPTION))
+						status = TRUE;
+					else PRINT_ERROR(L"Incorrect DRS Extensions Output (%08x)\n", pDrsExtensionsOutput->dwFlags);
+
+					if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, Pid) - sizeof(DWORD))
+					{
+						*SiteObjGuid = pDrsExtensionsOutput->SiteObjGuid;
+						if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) - sizeof(DWORD))
+						{
+							*dwReplEpoch = pDrsExtensionsOutput->dwReplEpoch;
+							if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwExtCaps) - sizeof(DWORD))
+								*ConfigObjGUID = pDrsExtensionsOutput->ConfigObjGUID;
+						}
+					}
+				}
+				else PRINT_ERROR(L"Incorrect DRS Extensions Output Size (%u)\n", pDrsExtensionsOutput->cb);
 				MIDL_user_free(pDrsExtensionsOutput);
 			}
 			else PRINT_ERROR(L"No DRS Extensions Output\n");
-		
+
 			if(!status)
 				IDL_DRSUnbind(hDrs);
 		}
