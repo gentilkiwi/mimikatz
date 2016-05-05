@@ -188,6 +188,9 @@
     <ClCompile Include="modules\kuhl_m_sysenvvalue.c">
       <Filter>local modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\kuhl_m_sid.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -399,6 +402,9 @@
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_sysenvvalue.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_sid.h">
       <Filter>local modules</Filter>
     </ClInclude>
   </ItemGroup>

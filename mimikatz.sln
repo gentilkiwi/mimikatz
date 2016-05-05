@@ -16,8 +16,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF
 		inc\globals.h = inc\globals.h
 		inc\NTSecPKG.h = inc\NTSecPKG.h
 		inc\PshPack8.h = inc\PshPack8.h
+		inc\schannel.h = inc\schannel.h
+		inc\schnlsp.h = inc\schnlsp.h
 		inc\WDBGEXTS.H = inc\WDBGEXTS.H
+		inc\WinBer.h = inc\WinBer.h
 		inc\wincred.h = inc\wincred.h
+		inc\Winldap.h = inc\Winldap.h
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{294B51F3-90EF-4F0A-BB04-20321A513A4F}"

