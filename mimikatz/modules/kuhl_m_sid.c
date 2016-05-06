@@ -258,18 +258,18 @@ void kuhl_m_sid_displayMessage(PLDAP ld, PLDAPMessage pMessage)
 			if(pBerVal = ldap_get_values_len(ld, pEntry, pAttribute))
 			{
 				if(
-					(wcsicmp(pAttribute, L"name") == 0) ||
-					(wcsicmp(pAttribute, L"sAMAccountName") == 0)
+					(_wcsicmp(pAttribute, L"name") == 0) ||
+					(_wcsicmp(pAttribute, L"sAMAccountName") == 0)
 					)
 				{
 					kprintf(L"%*S\n", pBerVal[0]->bv_len, pBerVal[0]->bv_val);
 				}
-				else if((wcsicmp(pAttribute, L"objectSid") == 0))
+				else if((_wcsicmp(pAttribute, L"objectSid") == 0))
 				{
 					kull_m_string_displaySID(pBerVal[0]->bv_val);
 					kprintf(L"\n");
 				}
-				else if((wcsicmp(pAttribute, L"objectGUID") == 0))
+				else if((_wcsicmp(pAttribute, L"objectGUID") == 0))
 				{
 					kull_m_string_displayGUID((LPGUID) pBerVal[0]->bv_val);
 					kprintf(L"\n");
@@ -279,7 +279,7 @@ void kuhl_m_sid_displayMessage(PLDAP ld, PLDAPMessage pMessage)
 					for(i = 0; pBerVal[i]; i++)
 					{
 						kprintf(L"\n   [%u] ", i);
-						if((wcsicmp(pAttribute, L"sIDHistory") == 0))
+						if((_wcsicmp(pAttribute, L"sIDHistory") == 0))
 						{
 							kull_m_string_displaySID(pBerVal[i]->bv_val);
 							if(kull_m_token_getNameDomainFromSID(pBerVal[i]->bv_val, &name, &domain, &nameUse))
