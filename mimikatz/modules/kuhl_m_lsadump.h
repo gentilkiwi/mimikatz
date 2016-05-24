@@ -85,6 +85,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
 BOOL kuhl_m_lsadump_getComputerAndSyskey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase, OUT LPBYTE sysKey);
@@ -386,3 +387,39 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes);
 void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties);
 void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
 void kuhl_m_lsadump_dcsync_descrTrustAuthentication(ATTRBLOCK *attributes, ATTRTYP type, PCUNICODE_STRING domain, PCUNICODE_STRING partner);
+
+typedef wchar_t * LOGONSRV_HANDLE;
+typedef struct _NETLOGON_CREDENTIAL {
+	CHAR data[8]; 
+} NETLOGON_CREDENTIAL, *PNETLOGON_CREDENTIAL; 
+
+typedef struct _NETLOGON_AUTHENTICATOR {
+	NETLOGON_CREDENTIAL Credential;
+	DWORD Timestamp;
+} NETLOGON_AUTHENTICATOR, *PNETLOGON_AUTHENTICATOR;
+
+typedef  enum _NETLOGON_SECURE_CHANNEL_TYPE{
+	NullSecureChannel = 0,
+	MsvApSecureChannel = 1,
+	WorkstationSecureChannel = 2,
+	TrustedDnsDomainSecureChannel = 3,
+	TrustedDomainSecureChannel = 4,
+	UasServerSecureChannel = 5,
+	ServerSecureChannel = 6,
+	CdcServerSecureChannel = 7
+} NETLOGON_SECURE_CHANNEL_TYPE;
+
+typedef struct _CYPHER_BLOCK {
+	CHAR data[8];
+} CYPHER_BLOCK, *PCYPHER_BLOCK;
+
+typedef struct _NT_OWF_PASSWORD {
+	CYPHER_BLOCK data[2];
+} NT_OWF_PASSWORD, *PNT_OWF_PASSWORD, ENCRYPTED_NT_OWF_PASSWORD, *PENCRYPTED_NT_OWF_PASSWORD;
+
+extern NTSTATUS WINAPI I_NetServerReqChallenge(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * ComputerName, IN PNETLOGON_CREDENTIAL ClientChallenge, OUT PNETLOGON_CREDENTIAL ServerChallenge);
+extern NTSTATUS WINAPI I_NetServerAuthenticate2(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t * ComputerName, IN PNETLOGON_CREDENTIAL ClientCredential, OUT PNETLOGON_CREDENTIAL ServerCredential, IN OUT ULONG * NegotiateFlags);
+extern NTSTATUS WINAPI I_NetServerTrustPasswordsGet(IN LOGONSRV_HANDLE TrustedDcName, IN wchar_t* AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t* ComputerName, IN PNETLOGON_AUTHENTICATOR Authenticator, OUT PNETLOGON_AUTHENTICATOR ReturnAuthenticator, OUT PENCRYPTED_NT_OWF_PASSWORD EncryptedNewOwfPassword, OUT PENCRYPTED_NT_OWF_PASSWORD EncryptedOldOwfPassword);
+
+NTSTATUS kuhl_m_lsadump_netsync_NlComputeCredentials(PBYTE input, PBYTE output, PBYTE key);
+void kuhl_m_lsadump_netsync_AddTimeStampForAuthenticator(PNETLOGON_CREDENTIAL Credential, DWORD TimeStamp, PNETLOGON_AUTHENTICATOR Authenticator, BYTE sessionKey[MD5_DIGEST_LENGTH]);
