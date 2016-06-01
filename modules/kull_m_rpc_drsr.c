@@ -105,9 +105,9 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	LPWSTR sGuid;
 	UNICODE_STRING uGuid;
 
+	RtlZeroMemory(pDrsExtensionsInt, sizeof(DRS_EXTENSIONS_INT));
 	pDrsExtensionsInt->cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
 	pDrsExtensionsInt->dwFlags = DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION;
-	RtlZeroMemory(pDrsExtensionsInt, sizeof(DRS_EXTENSIONS_INT));
 	if(kull_m_rpc_drsr_getDCBind(hBinding, &DRSUAPI_DS_BIND_GUID_Standard, &hDrs, pDrsExtensionsInt))
 	{
 		RpcTryExcept
