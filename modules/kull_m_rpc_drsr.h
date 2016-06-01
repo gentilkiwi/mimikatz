@@ -62,6 +62,10 @@ void __RPC_USER midl_user_free(void __RPC_FAR * p);
 #define DRS_EXT_RESERVED_FOR_WIN2K_OR_DOTNET_PART2	0x40000000
 #define DRS_EXT_RESERVED_FOR_WIN2K_OR_DOTNET_PART3	0x80000000
 
+#define	DRS_EXT_ADAM								0x00000001
+#define	DRS_EXT_LH_BETA2							0x00000002
+#define	DRS_EXT_RECYCLE_BIN							0x00000004
+
 #define DRS_ASYNC_OP								0x00000001
 #define DRS_GETCHG_CHECK							0x00000002
 #define DRS_UPDATE_NOTIFICATION						0x00000002
@@ -193,8 +197,8 @@ void RPC_ENTRY  kull_m_rpc_drsr_RpcSecurityCallback(void *Context);
 BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding);
 BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding);
 
-BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID);
-BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID);
+BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
+BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
 BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val);

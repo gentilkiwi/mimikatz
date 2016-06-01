@@ -93,7 +93,7 @@ BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding)
 }
 
 GUID DRSUAPI_DS_BIND_GUID_Standard	= {0xe24d201a, 0x4fd6, 0x11d1, {0xa3, 0xda, 0x00, 0x00, 0xf8, 0x75, 0xae, 0x0d}};
-BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID)
+BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DRS_EXTENSIONS_INT *pDrsExtensionsInt)
 {
 	BOOL DomainGUIDfound = FALSE, ObjectGUIDfound = FALSE;
 	DWORD i;
@@ -105,11 +105,10 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	LPWSTR sGuid;
 	UNICODE_STRING uGuid;
 
-	*dwReplEpoch = 0;
-	RtlZeroMemory(SiteObjGuid, sizeof(GUID));
-	RtlZeroMemory(ConfigObjGUID, sizeof(GUID));
-	
-	if(kull_m_rpc_drsr_getDCBind(hBinding, &DRSUAPI_DS_BIND_GUID_Standard, &hDrs, dwReplEpoch, SiteObjGuid, ConfigObjGUID))
+	pDrsExtensionsInt->cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
+	pDrsExtensionsInt->dwFlags = DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION;
+	RtlZeroMemory(pDrsExtensionsInt, sizeof(DRS_EXTENSIONS_INT));
+	if(kull_m_rpc_drsr_getDCBind(hBinding, &DRSUAPI_DS_BIND_GUID_Standard, &hDrs, pDrsExtensionsInt))
 	{
 		RpcTryExcept
 		{
@@ -158,22 +157,14 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	return (DomainGUIDfound && (ObjectGUIDfound || !(Guid || User)));
 }
 
-BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DWORD *dwReplEpoch, GUID *SiteObjGuid, GUID *ConfigObjGUID)
+BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DRS_EXTENSIONS_INT *pDrsExtensionsInt)
 {
 	BOOL status = FALSE;
 	ULONG drsStatus;
-	DRS_EXTENSIONS_INT DrsExtensionsInt = {0};
 	DRS_EXTENSIONS_INT *pDrsExtensionsOutput = NULL;
-
-	DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
-	DrsExtensionsInt.dwFlags = DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION;
-	DrsExtensionsInt.SiteObjGuid = *SiteObjGuid;
-	DrsExtensionsInt.dwReplEpoch = *dwReplEpoch;
-	DrsExtensionsInt.ConfigObjGUID = *ConfigObjGUID;
-
 	RpcTryExcept
 	{
-		drsStatus = IDL_DRSBind(*hBinding, NtdsDsaObjectGuid, (DRS_EXTENSIONS *) &DrsExtensionsInt, (DRS_EXTENSIONS **) &pDrsExtensionsOutput, hDrs); // to free ?
+		drsStatus = IDL_DRSBind(*hBinding, NtdsDsaObjectGuid, (DRS_EXTENSIONS *) pDrsExtensionsInt, (DRS_EXTENSIONS **) &pDrsExtensionsOutput, hDrs); // to free ?
 		if(drsStatus == 0)
 		{
 			if(pDrsExtensionsOutput)
@@ -186,12 +177,16 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 
 					if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, Pid) - sizeof(DWORD))
 					{
-						*SiteObjGuid = pDrsExtensionsOutput->SiteObjGuid;
+						pDrsExtensionsInt->SiteObjGuid = pDrsExtensionsOutput->SiteObjGuid;
 						if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) - sizeof(DWORD))
 						{
-							*dwReplEpoch = pDrsExtensionsOutput->dwReplEpoch;
-							if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwExtCaps) - sizeof(DWORD))
-								*ConfigObjGUID = pDrsExtensionsOutput->ConfigObjGUID;
+							pDrsExtensionsInt->dwReplEpoch = pDrsExtensionsOutput->dwReplEpoch;
+							if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, ConfigObjGUID) - sizeof(DWORD))
+							{
+								pDrsExtensionsInt->dwFlagsExt = pDrsExtensionsInt->dwExtCaps = pDrsExtensionsOutput->dwFlagsExt & DRS_EXT_RECYCLE_BIN;
+								if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwExtCaps) - sizeof(DWORD))
+									pDrsExtensionsInt->ConfigObjGUID = pDrsExtensionsOutput->ConfigObjGUID;
+							}
 						}
 					}
 				}

