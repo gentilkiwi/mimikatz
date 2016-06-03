@@ -17,7 +17,7 @@ BOOL kull_m_token_getNameDomainFromToken(HANDLE hToken, PWSTR * pName, PWSTR * p
 		{
 			if(GetTokenInformation(hToken, TokenUser, pTokenUser, szNeeded, &szNeeded))
 			{
-				if((result = kull_m_token_getNameDomainFromSID(pTokenUser->User.Sid, pName, pDomain, pSidNameUse)) && pSid)
+				if((result = kull_m_token_getNameDomainFromSID(pTokenUser->User.Sid, pName, pDomain, pSidNameUse, NULL)) && pSid)
 					result = ConvertSidToStringSid(pTokenUser->User.Sid, pSid);
 			}
 			LocalFree(pTokenUser);
@@ -32,20 +32,20 @@ PCWCHAR kull_m_token_getSidNameUse(SID_NAME_USE SidNameUse)
 	return (SidNameUse > 0 && SidNameUse <= SidTypeLabel) ? SidNameUses[SidNameUse - 1] : L"unk!";
 }
 
-BOOL kull_m_token_getNameDomainFromSID(PSID pSid, PWSTR * pName, PWSTR * pDomain, PSID_NAME_USE pSidNameUse)
+BOOL kull_m_token_getNameDomainFromSID(PSID pSid, PWSTR * pName, PWSTR * pDomain, PSID_NAME_USE pSidNameUse, LPCWSTR system)
 {
 	BOOL result = FALSE;
 	SID_NAME_USE sidNameUse;
 	PSID_NAME_USE peUse = pSidNameUse ? pSidNameUse : &sidNameUse;
 	DWORD cchName = 0, cchReferencedDomainName = 0;
 	
-	if(!LookupAccountSid(NULL, pSid, NULL, &cchName, NULL, &cchReferencedDomainName, peUse) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
+	if(!LookupAccountSid(system, pSid, NULL, &cchName, NULL, &cchReferencedDomainName, peUse) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
 	{
 		if(*pName = (PWSTR) LocalAlloc(LPTR, cchName * sizeof(wchar_t)))
 		{
 			if(*pDomain = (PWSTR) LocalAlloc(LPTR, cchReferencedDomainName * sizeof(wchar_t)))
 			{
-				result = LookupAccountSid(NULL, pSid, *pName, &cchName, *pDomain, &cchReferencedDomainName, peUse);
+				result = LookupAccountSid(system, pSid, *pName, &cchName, *pDomain, &cchReferencedDomainName, peUse);
 				if(!result)
 					*pDomain = (PWSTR) LocalFree(*pDomain);
 			}
@@ -56,20 +56,20 @@ BOOL kull_m_token_getNameDomainFromSID(PSID pSid, PWSTR * pName, PWSTR * pDomain
 	return result;
 }
 
-BOOL kull_m_token_getSidDomainFromName(PCWSTR pName, PSID * pSid, PWSTR * pDomain, PSID_NAME_USE pSidNameUse)
+BOOL kull_m_token_getSidDomainFromName(PCWSTR pName, PSID * pSid, PWSTR * pDomain, PSID_NAME_USE pSidNameUse, LPCWSTR system)
 {
 	BOOL result = FALSE;
 	SID_NAME_USE sidNameUse;
 	PSID_NAME_USE peUse = pSidNameUse ? pSidNameUse : &sidNameUse;
 	DWORD cbSid = 0, cchReferencedDomainName = 0;
 	
-	if(!LookupAccountName(NULL, pName, NULL, &cbSid, NULL, &cchReferencedDomainName, peUse) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
+	if(!LookupAccountName(system, pName, NULL, &cbSid, NULL, &cchReferencedDomainName, peUse) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
 	{
 		if(*pSid = (PSID) LocalAlloc(LPTR, cbSid * sizeof(wchar_t)))
 		{
 			if(*pDomain = (PWSTR) LocalAlloc(LPTR, cchReferencedDomainName * sizeof(wchar_t)))
 			{
-				result = LookupAccountName(NULL, pName, *pSid, &cbSid, *pDomain, &cchReferencedDomainName, peUse);
+				result = LookupAccountName(system, pName, *pSid, &cbSid, *pDomain, &cchReferencedDomainName, peUse);
 				if(!result)
 					*pDomain = (PWSTR) LocalFree(*pDomain);
 			}

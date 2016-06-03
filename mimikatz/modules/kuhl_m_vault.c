@@ -197,7 +197,7 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 	if(enumItem8->Identity && (enumItem8->Identity->Type == ElementType_ByteArray))
 	{
 		kprintf(L"\t\tUser            : ");
-		if(kull_m_token_getNameDomainFromSID((PSID) enumItem8->Identity->data.ByteArray.Value, &name, &domain, NULL))
+		if(kull_m_token_getNameDomainFromSID((PSID) enumItem8->Identity->data.ByteArray.Value, &name, &domain, NULL, NULL))
 		{
 			kprintf(L"%s\\%s", domain, name);
 			LocalFree(name);

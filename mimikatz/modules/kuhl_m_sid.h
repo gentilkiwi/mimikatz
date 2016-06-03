@@ -21,7 +21,7 @@ NTSTATUS kuhl_m_sid_clear(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sid_patch(int argc, wchar_t * argv[]);
 
 void kuhl_m_sid_displayMessage(PLDAP ld, PLDAPMessage pMessage);
-BOOL kuhl_m_sid_quickSearch(int argc, wchar_t * argv[], BOOL needUnique, PLDAP *ld, PLDAPMessage *pMessage);
+BOOL kuhl_m_sid_quickSearch(int argc, wchar_t * argv[], BOOL needUnique, PCWCHAR system, PLDAP *ld, PLDAPMessage *pMessage);
 PWCHAR kuhl_m_sid_filterFromArgs(int argc, wchar_t * argv[]);
-BOOL kuhl_m_sid_getLdapAndRootDN(PLDAP *ld, PWCHAR *rootDn);
+BOOL kuhl_m_sid_getLdapAndRootDN(PCWCHAR system, PLDAP *ld, PWCHAR *rootDn);
 PWCHAR kuhl_m_sid_getRootDomainNamingContext(LDAP *ld);
