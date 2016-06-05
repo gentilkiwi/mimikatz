@@ -66,7 +66,7 @@ void __RPC_USER midl_user_free(void __RPC_FAR * p);
 #define	DRS_EXT_LH_BETA2							0x00000002
 #define	DRS_EXT_RECYCLE_BIN							0x00000004
 #define DRS_EXT_GETCHGREPLY_V9						0x00000100
-#define DRS_EXT_UNK_NEEDED_2016_TP5					0x00000200	// TO RENAME
+#define DRS_EXT_PAM									0x00000200
 
 #define DRS_ASYNC_OP								0x00000001
 #define DRS_GETCHG_CHECK							0x00000002
