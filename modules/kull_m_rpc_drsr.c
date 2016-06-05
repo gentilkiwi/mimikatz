@@ -183,7 +183,10 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 							pDrsExtensionsInt->dwReplEpoch = pDrsExtensionsOutput->dwReplEpoch;
 							if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, ConfigObjGUID) - sizeof(DWORD))
 							{
-								pDrsExtensionsInt->dwFlagsExt = pDrsExtensionsInt->dwExtCaps = pDrsExtensionsOutput->dwFlagsExt & DRS_EXT_RECYCLE_BIN;
+								pDrsExtensionsInt->dwFlagsExt = pDrsExtensionsOutput->dwFlagsExt & DRS_EXT_RECYCLE_BIN;
+								if(pDrsExtensionsOutput->dwFlagsExt & DRS_EXT_UNK_NEEDED_2016_TP5) // don't ask me why
+									pDrsExtensionsInt->dwFlagsExt |= DRS_EXT_UNK_NEEDED_2016_TP5 | DRS_EXT_GETCHGREPLY_V9;
+								pDrsExtensionsInt->dwExtCaps = pDrsExtensionsInt->dwFlagsExt;
 								if(pDrsExtensionsOutput->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwExtCaps) - sizeof(DWORD))
 									pDrsExtensionsInt->ConfigObjGUID = pDrsExtensionsOutput->ConfigObjGUID;
 							}
@@ -417,6 +420,7 @@ void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_G
 		switch(dwOutVersion)
 		{
 		case 6:
+		case 9: // yeah, I know, it's bad, but you know... '''UNION'''
 			if(reply->V6.pNC)
 				MIDL_user_free(reply->V6.pNC);
 			if(reply->V6.pUpToDateVecSrc)
@@ -469,9 +473,9 @@ void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_G
 		case 1:
 		case 2:
 		case 7:
-		case 9:
-			PRINT_ERROR(L"TODO (maybe?)\n");
-			break;
+		//case 9:
+		//	PRINT_ERROR(L"TODO (maybe?)\n");
+		//	break;
 		default:
 			PRINT_ERROR(L"dwOutVersion not valid (0x%08x - %u)\n", dwOutVersion, dwOutVersion);
 			break;
