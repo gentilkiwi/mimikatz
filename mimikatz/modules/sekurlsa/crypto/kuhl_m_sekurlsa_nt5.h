@@ -6,6 +6,8 @@
 #pragma once
 #include "../globals_sekurlsa.h"
 
+#define KUHL_M_SEKURLSA_NT5_SP2_MIN_TIMESTAMP	0x45d70a62
+
 NTSTATUS kuhl_m_sekurlsa_nt5_init();
 NTSTATUS kuhl_m_sekurlsa_nt5_clean();
 PLSA_PROTECT_MEMORY kuhl_m_sekurlsa_nt5_pLsaProtectMemory, kuhl_m_sekurlsa_nt5_pLsaUnprotectMemory;
