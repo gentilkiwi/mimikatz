@@ -122,6 +122,17 @@ wchar_t * kull_m_string_qad_ansi_c_to_unicode(const char * ansi, SIZE_T szStr)
 	return buffer;
 }
 
+char * kull_m_string_unicode_to_ansi(const wchar_t * unicode)
+{
+	int needed;
+	char * buffer = NULL;
+	if(needed = WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, unicode, -1, NULL, 0, NULL, NULL))
+		if(buffer = (char *) LocalAlloc(LPTR, needed))
+			if(needed != WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, unicode, -1, buffer, needed, NULL, NULL))
+				buffer = (char *) LocalFree(buffer);
+	return buffer;
+}
+
 BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size)
 {
 	DWORD i, j;

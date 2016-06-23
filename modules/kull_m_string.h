@@ -61,6 +61,7 @@ void kull_m_string_printSuspectUnicodeString(PVOID data, DWORD size);
 
 wchar_t * kull_m_string_qad_ansi_to_unicode(const char * ansi);
 wchar_t * kull_m_string_qad_ansi_c_to_unicode(const char * ansi, SIZE_T szStr);
+char * kull_m_string_unicode_to_ansi(const wchar_t * unicode);
 BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size);
 BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWORD *size);
 

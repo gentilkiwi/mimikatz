@@ -11,7 +11,6 @@ NTSTATUS kuhl_m_dpapi_wifi(int argc, wchar_t * argv[])
 	DWORD dwData, lenHex, lenDataOut;
 	LPWSTR dataU, dataSSID, dataF, dataAuth;
 	LPCWSTR infile;
-	PKULL_M_DPAPI_BLOB blob;
 
 	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
@@ -52,24 +51,20 @@ NTSTATUS kuhl_m_dpapi_wifi(int argc, wchar_t * argv[])
 					{
 						if(kull_m_string_stringToHexBuffer(dataF, &hex, &lenHex))
 						{
-							if(blob = kull_m_dpapi_blob_create(hex))
+							kprintf(L"\n");
+							kull_m_dpapi_blob_quick_descr(0, hex);
+							if(kuhl_m_dpapi_unprotect_raw_or_blob(hex, lenHex, NULL, argc, argv, NULL, 0, (LPVOID *) &dataOut, &lenDataOut, NULL))
 							{
-								kprintf(L"\n");
-								kull_m_dpapi_blob_descr(0, blob);
-								if(kuhl_m_dpapi_unprotect_raw_or_blob(hex, lenHex, NULL, argc, argv, NULL, 0, (LPVOID *) &dataOut, &lenDataOut, NULL))
+								kprintf(L" * Key Material  : ");
+								if(_wcsicmp(dataAuth, L"WEP") == 0)
 								{
-									kprintf(L" * Key Material  : ");
-									if(_wcsicmp(dataAuth, L"WEP") == 0)
-									{
-										kprintf(L"(hex) ");
-										kull_m_string_wprintf_hex(dataOut, lenDataOut, 0);
-									}
-									else
-										kprintf(L"%.*S", lenDataOut, dataOut);
-									kprintf(L"\n");
-									LocalFree(dataOut);
+									kprintf(L"(hex) ");
+									kull_m_string_wprintf_hex(dataOut, lenDataOut, 0);
 								}
-								kull_m_dpapi_blob_delete(blob);
+								else
+									kprintf(L"%.*S", lenDataOut, dataOut);
+								kprintf(L"\n");
+								LocalFree(dataOut);
 							}
 							LocalFree(hex);
 						}
@@ -93,7 +88,6 @@ NTSTATUS kuhl_m_dpapi_wwan(int argc, wchar_t * argv[])
 	DWORD dwData, lenHex, lenDataOut;
 	LPWSTR dataU, dataF;
 	LPCWSTR infile;
-	PKULL_M_DPAPI_BLOB blob;
 
 	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
@@ -115,19 +109,15 @@ NTSTATUS kuhl_m_dpapi_wwan(int argc, wchar_t * argv[])
 				{
 					if(kull_m_string_stringToHexBuffer(dataF, &hex, &lenHex))
 					{
-						if(blob = kull_m_dpapi_blob_create(hex))
+						kprintf(L"\n");
+						kull_m_dpapi_blob_quick_descr(0, hex);
+						if(kuhl_m_dpapi_unprotect_raw_or_blob(hex, lenHex, NULL, argc, argv, NULL, 0, (LPVOID *) &dataOut, &lenDataOut, NULL))
 						{
+							kprintf(L" * SubscriberID  : ");
+							kull_m_string_wprintf_hex(dataOut, lenDataOut, 0);
 							kprintf(L"\n");
-							kull_m_dpapi_blob_descr(0, blob);
-							if(kuhl_m_dpapi_unprotect_raw_or_blob(hex, lenHex, NULL, argc, argv, NULL, 0, (LPVOID *) &dataOut, &lenDataOut, NULL))
-							{
-								kprintf(L" * SubscriberID  : ");
-								kull_m_string_wprintf_hex(dataOut, lenDataOut, 0);
-								kprintf(L"\n");
-								kprintf(L"%.*s", lenDataOut / sizeof(wchar_t), dataOut);
-								LocalFree(dataOut);
-							}
-							kull_m_dpapi_blob_delete(blob);
+							kprintf(L"%.*s", lenDataOut / sizeof(wchar_t), dataOut);
+							LocalFree(dataOut);
 						}
 						LocalFree(hex);
 					}

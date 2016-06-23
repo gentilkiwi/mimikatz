@@ -20,6 +20,7 @@
 //#define LSASS_DECRYPT
 //#define LSARPDATA
 #define NET_MODULE
+#define SQLITE3_OMIT
 #ifdef _M_X64
 	#define MIMIKATZ_ARCH L"x64"
 #else ifdef _M_IX86

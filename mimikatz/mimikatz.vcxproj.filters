@@ -191,6 +191,12 @@
     <ClCompile Include="modules\kuhl_m_sid.c">
       <Filter>local modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\sqlite3_omit.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -406,6 +412,12 @@
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_sid.h">
       <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\sqlite3_omit.h">
+      <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -17,7 +17,9 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	{kuhl_m_dpapi_vault,		L"vault",		L"VAULT test"},
 	{kuhl_m_dpapi_wifi,			L"wifi",		L"WiFi test"},
 	{kuhl_m_dpapi_wwan,			L"wwan",		L"Wwan test"},
-
+#ifdef SQLITE3_OMIT
+	{kuhl_m_dpapi_chrome,		L"chrome",		L"Chrome test"},
+#endif
 	{kuhl_m_dpapi_oe_cache,		L"cache", NULL},
 };
 const KUHL_M kuhl_m_dpapi = {
@@ -439,6 +441,11 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 			if(pText)
 				kprintf(L"%s", pText);
 
+			if(isNormalAPI)
+			{
+				kprintf(L" * using CryptUnprotectData API\n");
+			}
+			
 			if(entry)
 			{
 				kprintf(L" * volatile cache: ");
@@ -478,7 +485,7 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 				if(!status && !masterkey)
 					PRINT_ERROR_AUTO(L"CryptUnprotectData");
 			}
-			kprintf(L"\n");
+			//kprintf(L"\n");
 		}
 		kull_m_dpapi_blob_delete(blob);
 	}
