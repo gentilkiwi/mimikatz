@@ -197,6 +197,15 @@
     <ClCompile Include="..\modules\sqlite3_omit.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc_ms-bkrp_c.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rpc_bkrp.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -417,6 +426,15 @@
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\sqlite3_omit.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_ms-bkrp.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rpc_bkrp.h">
       <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>

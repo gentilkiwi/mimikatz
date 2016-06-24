@@ -4,8 +4,8 @@
 */
 #pragma once
 #include "globals.h"
-#include "../modules/kull_m_crypto_system.h"
-#include "../modules/kull_m_crypto.h"
+#include "kull_m_crypto_system.h"
+#include "kull_m_crypto.h"
 #include "kull_m_rpc_ms-drsr.h"
 #include "kull_m_string.h"
 
@@ -25,9 +25,6 @@ typedef struct _ENCRYPTED_PAYLOAD {
 	ULONG CheckSum;
 	UCHAR EncryptedData[ANYSIZE_ARRAY];
 } ENCRYPTED_PAYLOAD, *PENCRYPTED_PAYLOAD;
-
-void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes);
-void __RPC_USER midl_user_free(void __RPC_FAR * p);
 
 #define DRS_EXT_BASE								0x00000001
 #define DRS_EXT_ASYNCREPL							0x00000002
@@ -195,26 +192,13 @@ typedef enum {
 #define ATT_TRUST_PARTNER				589957
 #define ATT_TRUST_TYPE					589960
 
-void RPC_ENTRY  kull_m_rpc_drsr_RpcSecurityCallback(void *Context);
-BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding);
-BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding);
+void RPC_ENTRY kull_m_rpc_drsr_RpcSecurityCallback(void *Context);
 
 BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
 BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
 BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val);
-
-#define DRS_EXCEPTION (RpcExceptionCode() != STATUS_ACCESS_VIOLATION) && \
-	(RpcExceptionCode() != STATUS_DATATYPE_MISALIGNMENT) && \
-	(RpcExceptionCode() != STATUS_PRIVILEGED_INSTRUCTION) && \
-	(RpcExceptionCode() != STATUS_ILLEGAL_INSTRUCTION) && \
-	(RpcExceptionCode() != STATUS_BREAKPOINT) && \
-	(RpcExceptionCode() != STATUS_STACK_OVERFLOW) && \
-	(RpcExceptionCode() != STATUS_IN_PAGE_ERROR) && \
-	(RpcExceptionCode() != STATUS_ASSERTION_FAILURE) && \
-	(RpcExceptionCode() != STATUS_STACK_BUFFER_OVERRUN) && \
-	(RpcExceptionCode() != STATUS_GUARD_PAGE_VIOLATION)
 
 void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_DCINFOREPLY * reply);
 void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply);

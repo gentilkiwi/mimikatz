@@ -136,8 +136,9 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 	PVOID output, derivedKey;
 	PPVK_FILE_HDR pvkBuffer;
 	DWORD szBuffer, szPvkBuffer, cbHash = 0, cbSystem = 0, cbSystemOffset = 0, cbOutput;
-	LPCWSTR szIn = NULL, szSid = NULL, szPassword = NULL, szHash = NULL, szSystem = NULL, szDomainpvk = NULL;
-	PWSTR convertedSid = NULL;
+	PPOLICY_DNS_DOMAIN_INFO pPolicyDnsDomainInfo = NULL;
+	LPCWSTR szIn = NULL, szSid = NULL, szPassword = NULL, szHash = NULL, szSystem = NULL, szDomainpvk = NULL, szDomain = NULL, szDc = NULL;
+	LPWSTR convertedSid = NULL, szTmpDc = NULL;
 	PSID pSid;
 	PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY pCredentialEntry = NULL;
 	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY pDomainKeyEntry = NULL;
@@ -311,6 +312,38 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 							else PRINT_ERROR(L"kull_m_dpapi_unprotect_domainkey_with_key\n");
 							LocalFree(pvkBuffer);
 						}
+					}
+
+					if(kull_m_string_args_byName(argc, argv, L"rpc", NULL, NULL))
+					{
+						kprintf(L"\n[domainkey] with RPC\n");
+
+						if(!(kull_m_string_args_byName(argc, argv, L"dc", &szDc, NULL) || kull_m_string_args_byName(argc, argv, L"system", &szDc, NULL)))
+						{
+							if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
+								if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
+									szDomain = pPolicyDnsDomainInfo->DnsDomainName.Buffer;
+							if(szDomain && wcschr(szDomain, L'.'))
+							{
+								kprintf(L"[DC] \'%s\' will be the domain\n", szDomain);
+								if(kull_m_net_getDC(szDomain, DS_WRITABLE_REQUIRED, &szTmpDc))
+									szDc = szTmpDc;
+							}
+							else PRINT_ERROR(L"Domain not present, or doesn\'t look like a FQDN\n");
+						}
+
+						if(szDc)
+						{
+							kprintf(L"[DC] \'%s\' will be the DC server\n", szDc);
+							if(kull_m_dpapi_unprotect_domainkey_with_rpc(masterkeys, buffer, szDc, &output, &cbOutput))
+								kuhl_m_dpapi_display_MasterkeyInfosAndFree(statusGuid ? &guid : NULL, output, cbOutput, NULL);
+						}
+						else PRINT_ERROR(L"Domain Controller not present\n");
+
+						if(szTmpDc)
+							LocalFree(szTmpDc);
+						if(pPolicyDnsDomainInfo)
+							LsaFreeMemory(pPolicyDnsDomainInfo);
 					}
 				}
 

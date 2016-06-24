@@ -106,7 +106,10 @@
     <ClCompile Include="..\modules\kull_m_process.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
     <ClCompile Include="..\modules\kull_m_remotelib.c" />
+    <ClCompile Include="..\modules\kull_m_rpc.c" />
+    <ClCompile Include="..\modules\kull_m_rpc_bkrp.c" />
     <ClCompile Include="..\modules\kull_m_rpc_drsr.c" />
+    <ClCompile Include="..\modules\kull_m_rpc_ms-bkrp_c.c" />
     <ClCompile Include="..\modules\kull_m_rpc_ms-drsr_c.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
@@ -181,10 +184,13 @@
     <ClInclude Include="..\modules\kull_m_registry.h" />
     <ClInclude Include="..\modules\kull_m_registry_structures.h" />
     <ClInclude Include="..\modules\kull_m_remotelib.h" />
+    <ClInclude Include="..\modules\kull_m_rpc.h" />
     <ClInclude Include="..\modules\kull_m_rpce.h" />
+    <ClInclude Include="..\modules\kull_m_rpc_bkrp.h" />
     <ClInclude Include="..\modules\kull_m_rpc_drsr.h" />
     <ClInclude Include="..\modules\kull_m_rpc_ms-drsr.h" />
     <ClInclude Include="..\modules\kull_m_rpc_ms-dtyp.h" />
+    <ClInclude Include="..\modules\kull_m_rpc_ms-bkrp.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
     <ClInclude Include="..\modules\kull_m_service.h" />
     <ClInclude Include="..\modules\kull_m_string.h" />

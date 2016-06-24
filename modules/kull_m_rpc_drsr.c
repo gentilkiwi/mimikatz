@@ -4,19 +4,6 @@
 */
 #include "kull_m_rpc_drsr.h"
 
-void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes)
-{
-	void __RPC_FAR * ptr = NULL;
-	if(ptr = malloc(cBytes))
-		RtlZeroMemory(ptr, cBytes);
-	return ptr;
-}
-
-void __RPC_USER midl_user_free(void __RPC_FAR * p)
-{
-	free(p);
-}
-
 SecPkgContext_SessionKey kull_m_rpc_drsr_g_sKey = {0, NULL};
 void RPC_ENTRY kull_m_rpc_drsr_RpcSecurityCallback(void *Context)
 {
@@ -38,58 +25,6 @@ void RPC_ENTRY kull_m_rpc_drsr_RpcSecurityCallback(void *Context)
 			PRINT_ERROR(L"QueryContextAttributes %08x\n", secStatus);
 	}
 	else PRINT_ERROR(L"I_RpcBindingInqSecurityContext %08x\n", rpcStatus);
-}
-
-const wchar_t PREFIX_LDAP[] = L"ldap/";
-BOOL kull_m_rpc_drsr_createBinding(LPCWSTR server, RPC_BINDING_HANDLE *hBinding)
-{
-	BOOL status = FALSE;
-	RPC_STATUS rpcStatus;
-	RPC_WSTR StringBinding = NULL;
-	RPC_SECURITY_QOS SecurityQOS = {RPC_C_SECURITY_QOS_VERSION, RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH, RPC_C_QOS_IDENTITY_STATIC, RPC_C_IMP_LEVEL_DEFAULT};
-	LPWSTR fullServer;
-	DWORD szServer = (DWORD) (wcslen(server) * sizeof(wchar_t)), szPrefix = sizeof(PREFIX_LDAP); // includes NULL;
-
-	*hBinding = NULL;
-	rpcStatus = RpcStringBindingCompose(NULL, (RPC_WSTR) L"ncacn_ip_tcp", (RPC_WSTR) server, NULL, NULL, &StringBinding);
-	if(rpcStatus == RPC_S_OK)
-	{
-		rpcStatus = RpcBindingFromStringBinding(StringBinding, hBinding);
-		if(rpcStatus == RPC_S_OK)
-		{
-			if(*hBinding)
-			{
-				if(fullServer = (LPWSTR) LocalAlloc(LPTR, szPrefix + szServer))
-				{
-					RtlCopyMemory(fullServer, PREFIX_LDAP, szPrefix);
-					RtlCopyMemory((PBYTE) fullServer + (szPrefix - sizeof(wchar_t)), server, szServer);
-					rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) fullServer, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_VISTA) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, 0, &SecurityQOS);
-					if(rpcStatus == RPC_S_OK)
-					{
-						rpcStatus = RpcBindingSetOption(*hBinding, RPC_C_OPT_SECURITY_CALLBACK, (ULONG_PTR) kull_m_rpc_drsr_RpcSecurityCallback);
-						status = (rpcStatus == RPC_S_OK);
-						if(!status)
-							PRINT_ERROR(L"RpcBindingSetOption: 0x%08x (%u)\n", rpcStatus, rpcStatus);
-					}
-					else PRINT_ERROR(L"RpcBindingSetAuthInfoEx: 0x%08x (%u)\n", rpcStatus, rpcStatus);
-					LocalFree(fullServer);
-				}
-			}
-			else PRINT_ERROR(L"No Binding!\n");
-		}
-		else PRINT_ERROR(L"RpcBindingFromStringBinding: 0x%08x (%u)\n", rpcStatus, rpcStatus);
-		RpcStringFree(&StringBinding);
-	}
-	else PRINT_ERROR(L"RpcStringBindingCompose: 0x%08x (%u)\n", rpcStatus, rpcStatus);
-	return status;
-}
-
-BOOL kull_m_rpc_drsr_deleteBinding(RPC_BINDING_HANDLE *hBinding)
-{
-	BOOL status = FALSE;
-	if(status = (RpcBindingFree(hBinding) == RPC_S_OK))
-		*hBinding = NULL;
-	return status;
 }
 
 GUID DRSUAPI_DS_BIND_GUID_Standard	= {0xe24d201a, 0x4fd6, 0x11d1, {0xa3, 0xda, 0x00, 0x00, 0xf8, 0x75, 0xae, 0x0d}};
@@ -149,7 +84,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 				}
 			}
 		}
-		RpcExcept(DRS_EXCEPTION)
+		RpcExcept(RPC_EXCEPTION)
 			PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 		RpcEndExcept
 
@@ -201,7 +136,7 @@ BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObject
 		}
 		else PRINT_ERROR(L"IDL_DRSBind: %u\n", drsStatus);
 	}
-	RpcExcept(DRS_EXCEPTION)
+	RpcExcept(RPC_EXCEPTION)
 		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 	RpcEndExcept
 		return status;
@@ -219,7 +154,6 @@ BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWS
 	nameCrackReq.V1.formatDesired = FormatWanted;
 	nameCrackReq.V1.cNames = 1;
 	nameCrackReq.V1.rpNames = (LPWSTR *) &Name;
-
 	RpcTryExcept
 	{
 		drsStatus = IDL_DRSCrackNames(hDrs, 1, &nameCrackReq, &nameCrackOutVersion, &nameCrackRep);
@@ -244,7 +178,7 @@ BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWS
 		}
 		else PRINT_ERROR(L"CrackNames: 0x%08x (%u)\n", drsStatus, drsStatus);
 	}
-	RpcExcept(DRS_EXCEPTION)
+	RpcExcept(RPC_EXCEPTION)
 		PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 	RpcEndExcept
 

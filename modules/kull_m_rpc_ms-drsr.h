@@ -1,17 +1,5 @@
 #pragma once
-
-#ifndef __REQUIRED_RPCNDR_H_VERSION__
-#define __REQUIRED_RPCNDR_H_VERSION__ 475
-#endif
-
-#include "rpc.h"
-#include "rpcndr.h"
-
-#ifndef __RPCNDR_H_VERSION__
-#error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
-
-#include "kull_m_rpc_ms-dtyp.h"
+#include "kull_m_rpc.h"
 
 typedef LONGLONG DSTIME;
 typedef LONGLONG USN;

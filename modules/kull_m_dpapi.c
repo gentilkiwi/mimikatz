@@ -764,6 +764,23 @@ BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY
 	return status;
 }
 
+BOOL kull_m_dpapi_unprotect_domainkey_with_rpc(PKULL_M_DPAPI_MASTERKEYS masterkeys, PVOID rawMasterkeys, LPCWSTR server, PVOID *output, DWORD *outputLen)
+{
+	BOOL status = FALSE;
+	PBYTE out;
+	DWORD dwOut;
+	*output = NULL;
+	*outputLen = 0;
+	if(status = kull_m_rpc_bkrp_Restore(server, (PBYTE) rawMasterkeys + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey) + masterkeys->dwMasterKeyLen + masterkeys->dwBackupKeyLen + masterkeys->dwCredHistLen, (DWORD) masterkeys->dwDomainKeyLen, (PVOID *) &out, &dwOut))
+	{
+		*outputLen = dwOut - sizeof(DWORD);
+		if(*output = LocalAlloc(LPTR, *outputLen))
+			RtlCopyMemory(*output, out + sizeof(DWORD), dwOut - sizeof(DWORD));
+		LocalFree(out);
+	}
+	return status;
+}
+
 BOOL kull_m_dpapi_unprotect_credhist_entry_with_shaDerivedkey(PKULL_M_DPAPI_CREDHIST_ENTRY entry, LPCVOID shaDerivedkey, DWORD shaDerivedkeyLen, PVOID md4hash, PVOID sha1hash)
 {
 	BOOL status = FALSE;
