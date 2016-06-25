@@ -18,7 +18,6 @@
 #include "../modules/kull_m_output.h"
 //#define KERBEROS_TOOLS
 //#define LSASS_DECRYPT
-//#define LSARPDATA
 #define NET_MODULE
 #define SQLITE3_OMIT
 #ifdef _M_X64

