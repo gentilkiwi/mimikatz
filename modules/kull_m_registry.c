@@ -560,3 +560,37 @@ BOOL kull_m_registry_RegCloseKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY h
 	}
 	return status;
 }
+
+BOOL kull_m_registry_OpenAndQueryWithAlloc(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hKey, IN OPTIONAL LPCWSTR lpSubKey, IN OPTIONAL LPCWSTR lpValueName, OUT OPTIONAL LPDWORD lpType, OUT OPTIONAL LPVOID *lpData, IN OUT OPTIONAL LPDWORD lpcbData)
+{
+	BOOL status = FALSE;
+	HKEY hResult;
+	DWORD szNeeded = 0;
+	if(kull_m_registry_RegOpenKeyEx(hRegistry, hKey, lpSubKey, 0, KEY_READ, &hResult))
+	{
+		if(kull_m_registry_RegQueryValueEx(hRegistry, hResult, lpValueName, NULL, lpType, NULL, &szNeeded))
+		{
+			if(szNeeded)
+			{
+				if(*lpData = LocalAlloc(LPTR, szNeeded))
+				{
+					status = kull_m_registry_RegQueryValueEx(hRegistry, hResult, lpValueName, NULL, lpType, (LPBYTE) *lpData, &szNeeded);
+					if(status)
+					{
+						if(lpcbData)
+							*lpcbData = szNeeded;
+					}
+					else
+					{
+						PRINT_ERROR(L"kull_m_registry_RegQueryValueEx KO\n");
+						*lpData = LocalFree(*lpData);
+					}
+				}
+			}
+		}
+		else PRINT_ERROR(L"pre - kull_m_registry_RegQueryValueEx KO\n");
+		kull_m_registry_RegCloseKey(hRegistry, hResult);
+	}
+	else PRINT_ERROR(L"kull_m_registry_RegOpenKeyEx KO\n");
+	return status;
+}
