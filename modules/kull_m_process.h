@@ -314,6 +314,13 @@ typedef struct _PEB_F32 {
 } PEB_F32, *PPEB_F32;
 #endif
 
+typedef struct _KERNEL_USER_TIMES {
+  LARGE_INTEGER CreateTime;
+  LARGE_INTEGER ExitTime;
+  LARGE_INTEGER KernelTime;
+  LARGE_INTEGER UserTime;
+} KERNEL_USER_TIMES, *PKERNEL_USER_TIMES;
+
 typedef struct _PROCESS_BASIC_INFORMATION {
 	NTSTATUS ExitStatus;
 	PPEB PebBaseAddress;
