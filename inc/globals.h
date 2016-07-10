@@ -7,6 +7,8 @@
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
 #define SECURITY_WIN32
+#define CINTERFACE
+#define COBJMACROS
 #include <windows.h>
 #include <sspi.h>
 #include <sddl.h>

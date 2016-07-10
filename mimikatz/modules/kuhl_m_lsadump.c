@@ -148,7 +148,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 						hDataSecurity = CreateFile(szSecurity, GENERIC_READ | (cacheData.username ? GENERIC_WRITE : 0), 0, NULL, OPEN_EXISTING, 0, NULL);
 						if(hDataSecurity != INVALID_HANDLE_VALUE)
 						{
-							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSecurity, (BOOL) cacheData.username, &hSecurity))
+							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSecurity, cacheData.username ? TRUE : FALSE, &hSecurity))
 							{
 								kuhl_m_lsadump_getLsaKeyAndSecrets(hSecurity, NULL, hSystem, NULL, sysKey, secretsOrCache, &cacheData);
 								kull_m_registry_close(hSecurity);

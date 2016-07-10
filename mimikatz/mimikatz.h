@@ -28,6 +28,7 @@
 #include "modules/kuhl_m_busylight.h"
 #include "modules/kuhl_m_sysenvvalue.h"
 #include "modules/kuhl_m_sid.h"
+#include "modules/kuhl_m_iis.h"
 
 #include <io.h>
 #include <fcntl.h>

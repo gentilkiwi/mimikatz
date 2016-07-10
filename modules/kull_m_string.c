@@ -371,3 +371,21 @@ BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst)
 	}
 	return status;
 }
+#ifndef MIMIKATZ_W2000_SUPPORT
+BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData)
+{
+	BOOL status = FALSE;
+	*data = NULL;
+	*szData = 0;
+	if(CryptStringToBinary(base64, 0, CRYPT_STRING_BASE64, NULL, szData, NULL, NULL))
+	{
+		if(*data = (PBYTE) LocalAlloc(LPTR, *szData))
+		{
+			status = CryptStringToBinary(base64, 0, CRYPT_STRING_BASE64, *data, szData, NULL, NULL);
+			if(!status)
+				*data = (PBYTE) LocalFree(*data);
+		}
+	}
+	return status;
+}
+#endif

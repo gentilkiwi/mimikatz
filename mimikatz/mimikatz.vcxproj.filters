@@ -206,6 +206,12 @@
     <ClCompile Include="..\modules\kull_m_rpc_bkrp.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_xml.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_iis.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -436,6 +442,12 @@
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_rpc_bkrp.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_xml.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_iis.h">
+      <Filter>local modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

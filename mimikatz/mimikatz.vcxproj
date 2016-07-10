@@ -78,7 +78,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;netapi32.lib;ntdsapi.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;hid.lib;setupapi.lib;wldap32.lib;advapi32.hash.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;msxml2.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;hid.lib;setupapi.lib;wldap32.lib;advapi32.hash.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
@@ -114,6 +114,7 @@
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
+    <ClCompile Include="..\modules\kull_m_xml.c" />
     <ClCompile Include="..\modules\sqlite3_omit.c">
       <PreprocessorDefinitions>SQLITE_TEMP_STORE=3;SQLITE_DISABLE_INTRINSIC;SQLITE_DISABLE_LFS;SQLITE_DISABLE_DIRSYNC;SQLITE_DISABLE_FTS3_UNICODE;SQLITE_DISABLE_FTS4_DEFERRED;SQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS;SQLITE_OMIT_TRIGGER;SQLITE_OMIT_WAL;SQLITE_OMIT_FLOATING_POINT;SQLITE_OMIT_VIRTUALTABLE;SQLITE_OMIT_PRAGMA;SQLITE_OMIT_FOREIGN_KEY;SQLITE_OMIT_AUTOVACUUM;SQLITE_OMIT_SUBQUERY;SQLITE_OMIT_COMPOUND_SELECT;SQLITE_OMIT_EXPLAIN;SQLITE_OMIT_DATETIME_FUNCS;SQLITE_OMIT_INTEGRITY_CHECK;SQLITE_OMIT_ATTACH;SQLITE_OMIT_ALTERTABLE;SQLITE_OMIT_UTF16;SQLITE_OMIT_SHARED_CACHE;SQLITE_OMIT_INCRBLOB;SQLITE_OMIT_ANALYZE;SQLITE_OMIT_AUTHORIZATION;SQLITE_OMIT_VACUUM;SQLITE_OMIT_PAGER_PRAGMAS;SQLITE_OMIT_OR_OPTIMIZATION;SQLITE_OMIT_VIEW;SQLITE_OMIT_BUILTIN_TEST;SQLITE_OMIT_XFER_OPT;SQLITE_OMIT_AUTOINCREMENT;SQLITE_OMIT_SCHEMA_PRAGMAS;SQLITE_OMIT_TRACE;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_OMIT_AUTOMATIC_INDEX;SQLITE_OMIT_LIKE_OPTIMIZATION;SQLITE_OMIT_REINDEX;SQLITE_OMIT_GET_TABLE;SQLITE_OMIT_COMPLETE;SQLITE_OMIT_TEMPDB;SQLITE_OMIT_BTREECOUNT;SQLITE_OMIT_LOCALTIME;SQLITE_OMIT_COMPILEOPTION_DIAGS;SQLITE_OMIT_FLAG_PRAGMAS;SQLITE_OMIT_QUICKBALANCE;SQLITE_OMIT_CAST;SQLITE_OMIT_CHECK;SQLITE_OMIT_MEMORYDB;SQLITE_OMIT_BLOB_LITERAL;SQLITE_OMIT_SCHEMA_VERSION_PRAGMAS;SQLITE_OMIT_LOOKASIDE;SQLITE_OMIT_AUTOINIT;SQLITE_OMIT_DECLTYPE;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_BETWEEN_OPTIMIZATION;SQLITE_OMIT_PROGRESS_CALLBACK;SQLITE_OMIT_TRUNCATE_OPTIMIZATION;SQLITE_OMIT_TCL_VARIABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>false</TreatWarningAsError>
@@ -133,6 +134,7 @@
     <ClCompile Include="modules\kuhl_m_busylight.c" />
     <ClCompile Include="modules\kuhl_m_crypto.c" />
     <ClCompile Include="modules\kuhl_m_event.c" />
+    <ClCompile Include="modules\kuhl_m_iis.c" />
     <ClCompile Include="modules\kuhl_m_kernel.c" />
     <ClCompile Include="modules\kuhl_m_lsadump.c" />
     <ClCompile Include="modules\kuhl_m_lsadump_remote.c" />
@@ -195,6 +197,7 @@
     <ClInclude Include="..\modules\kull_m_service.h" />
     <ClInclude Include="..\modules\kull_m_string.h" />
     <ClInclude Include="..\modules\kull_m_token.h" />
+    <ClInclude Include="..\modules\kull_m_xml.h" />
     <ClInclude Include="..\modules\sqlite3_omit.h" />
     <ClInclude Include="mimikatz.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
@@ -211,6 +214,7 @@
     <ClInclude Include="modules\kuhl_m_busylight.h" />
     <ClInclude Include="modules\kuhl_m_crypto.h" />
     <ClInclude Include="modules\kuhl_m_event.h" />
+    <ClInclude Include="modules\kuhl_m_iis.h" />
     <ClInclude Include="modules\kuhl_m_kernel.h" />
     <ClInclude Include="modules\kuhl_m_lsadump.h" />
     <ClInclude Include="modules\kuhl_m_lsadump_remote.h" />

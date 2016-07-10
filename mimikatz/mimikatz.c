@@ -27,6 +27,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_busylight,
 	&kuhl_m_sysenv,
 	&kuhl_m_sid,
+	&kuhl_m_iis,
 };
 
 int wmain(int argc, wchar_t * argv[])
@@ -86,12 +87,16 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	PKUHL_M_C_FUNC_INIT function;
 	long offsetToFunc;
 	NTSTATUS fStatus;
+	HRESULT hr;
 
 	if(Init)
 	{
 		RtlGetNtVersionNumbers(&MIMIKATZ_NT_MAJOR_VERSION, &MIMIKATZ_NT_MINOR_VERSION, &MIMIKATZ_NT_BUILD_NUMBER);
 		MIMIKATZ_NT_BUILD_NUMBER &= 0x00003fff;
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pInit);
+		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+		if(FAILED(hr))
+			PRINT_ERROR(L"CoInitializeEx: %08x\n", hr);
 	}
 	else
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pClean);
@@ -107,7 +112,10 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	}
 
 	if(!Init)
+	{
+		CoUninitialize();
 		kull_m_output_file(NULL);
+	}
 	return STATUS_SUCCESS;
 }
 
