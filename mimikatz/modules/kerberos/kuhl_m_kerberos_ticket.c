@@ -193,229 +193,123 @@ void kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(PKIWI_KERBEROS_BUFFER pBuffer
 		pBuffer->Value = (PUCHAR) LocalFree(pBuffer->Value);
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppTicket(PKIWI_KERBEROS_TICKET ticket)
+PBERVAL kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket, BOOL valueIsTicket)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY App_Ticket, Seq_Ticket;
-	UCHAR integer1 = KERBEROS_VERSION;
-	
-	if(App_Ticket = KULL_M_ASN1_CREATE_APP(ID_APP_TICKET))
+	BerElement *pBer, *pBerApp;
+	PBERVAL pBerVal = NULL, pBerVallApp = NULL;
+	if(pBer = ber_alloc_t(LBER_USE_DER))
 	{
-		if(Seq_Ticket = KULL_M_ASN1_CREATE_SEQ())
+		ber_printf(pBer, "t{{t{i}t{i}t{", MAKE_APP_TAG(ID_APP_KRB_CRED), MAKE_CTX_TAG(ID_CTX_KRB_CRED_PVNO), KERBEROS_VERSION, MAKE_CTX_TAG(ID_CTX_KRB_CRED_MSG_TYPE), ID_APP_KRB_CRED, MAKE_CTX_TAG(ID_CTX_KRB_CRED_TICKETS));
+		if(!valueIsTicket)
 		{
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_Ticket, ID_CTX_TICKET_TKT_VNO, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_Ticket, ID_CTX_TICKET_REALM, kull_m_asn1_GenString(&ticket->DomainName));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_Ticket, ID_CTX_TICKET_SNAME, kuhl_m_kerberos_ticket_createSequencePrimaryName(ticket->ServiceName));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_Ticket, ID_CTX_TICKET_ENC_PART, kuhl_m_kerberos_ticket_createSequenceEncryptedData((UCHAR) ticket->TicketEncType, ticket->TicketKvno, ticket->Ticket.Value, ticket->Ticket.Length));
-			kull_m_asn1_append(&App_Ticket, Seq_Ticket);
+			ber_printf(pBer, "{t{{t{i}t{", MAKE_APP_TAG(ID_APP_TICKET), MAKE_CTX_TAG(ID_CTX_TICKET_TKT_VNO), KERBEROS_VERSION, MAKE_CTX_TAG(ID_CTX_TICKET_REALM));
+			kull_m_asn1_GenString(pBer, &ticket->DomainName);
+			ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_TICKET_SNAME));
+			kuhl_m_kerberos_ticket_createSequencePrimaryName(pBer, ticket->ServiceName);
+			ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_TICKET_ENC_PART));
+			kuhl_m_kerberos_ticket_createSequenceEncryptedData(pBer, ticket->TicketEncType, ticket->TicketKvno, ticket->Ticket.Value, ticket->Ticket.Length);
+			ber_printf(pBer, "}}}}");
 		}
+		else ber_printf(pBer, "to", DIRTY_ASN1_ID_SEQUENCE, ticket->Ticket.Value, ticket->Ticket.Length);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_KRB_CRED_ENC_PART));
+		if(pBerApp = ber_alloc_t(LBER_USE_DER))
+		{
+			ber_printf(pBerApp, "t{{t{{{t{", MAKE_APP_TAG(ID_APP_ENCKRBCREDPART), MAKE_CTX_TAG(ID_CTX_ENCKRBCREDPART_TICKET_INFO), MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_KEY));
+			kuhl_m_kerberos_ticket_createSequenceEncryptionKey(pBerApp, ticket->KeyType, ticket->Key.Value, ticket->Key.Length);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_PREALM));
+			kull_m_asn1_GenString(pBerApp, &ticket->AltTargetDomainName);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_PNAME));
+			kuhl_m_kerberos_ticket_createSequencePrimaryName(pBerApp, ticket->ClientName);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_FLAGS));
+			kull_m_asn1_BitStringFromULONG(pBerApp, ticket->TicketFlags);	/* ID_CTX_KRBCREDINFO_AUTHTIME not present */
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_STARTTIME));
+			kull_m_asn1_GenTime(pBerApp, &ticket->StartTime);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_ENDTIME));
+			kull_m_asn1_GenTime(pBerApp, &ticket->EndTime);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_RENEW_TILL));
+			kull_m_asn1_GenTime(pBerApp, &ticket->RenewUntil);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_SREAL));
+			kull_m_asn1_GenString(pBerApp, &ticket->DomainName);
+			ber_printf(pBerApp, "}t{", MAKE_CTX_TAG(ID_CTX_KRBCREDINFO_SNAME));
+			kuhl_m_kerberos_ticket_createSequencePrimaryName(pBerApp, ticket->ServiceName);
+			ber_printf(pBerApp, "}}}}}}");
+
+			if(ber_flatten(pBerApp, &pBerVallApp) >= 0)
+				kuhl_m_kerberos_ticket_createSequenceEncryptedData(pBer, KERB_ETYPE_NULL, 0, pBerVallApp->bv_val, pBerVallApp->bv_len);
+			ber_free(pBerApp, 1);
+		}
+		ber_printf(pBer, "}}}");
+		ber_flatten(pBer, &pBerVal);
+		if(pBerVallApp)
+			ber_bvfree(pBerVallApp);
+		ber_free(pBer, 1);
 	}
-	return App_Ticket;
+	return pBerVal;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppKrbCred(PKIWI_KERBEROS_TICKET ticket, BOOL valueIsTicket)
+PBERVAL kuhl_m_kerberos_ticket_createAppEncTicketPart(PKIWI_KERBEROS_TICKET ticket, LPCVOID PacAuthData, DWORD PacAuthDataSize)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred, Seq_KrbCred, Seq_Root, App_EncKrbCredPart, App_Ticket;
-	UCHAR integer1;
-	
-	if(App_KrbCred = KULL_M_ASN1_CREATE_APP(ID_APP_KRB_CRED))
+	BerElement *pBer, *pBerPac;
+	PBERVAL pBerVal = NULL, pBerValPac = NULL;
+	if(pBer = ber_alloc_t(LBER_USE_DER))
 	{
-		if(Seq_KrbCred = KULL_M_ASN1_CREATE_SEQ())
+		ber_printf(pBer, "t{{t{", MAKE_APP_TAG(ID_APP_ENCTICKETPART), MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_FLAGS));
+		kull_m_asn1_BitStringFromULONG(pBer, ticket->TicketFlags);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_KEY));
+		kuhl_m_kerberos_ticket_createSequenceEncryptionKey(pBer, ticket->KeyType, ticket->Key.Value, ticket->Key.Length);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_CREALM));
+		kull_m_asn1_GenString(pBer, &ticket->AltTargetDomainName);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_CNAME));
+		kuhl_m_kerberos_ticket_createSequencePrimaryName(pBer, ticket->ClientName);
+		ber_printf(pBer, "}t{{t{i}t{o}}}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_TRANSITED), MAKE_CTX_TAG(ID_CTX_TRANSITEDENCODING_TR_TYPE), 0, MAKE_CTX_TAG(ID_CTX_TRANSITEDENCODING_CONTENTS), NULL, 0, MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_AUTHTIME));
+		kull_m_asn1_GenTime(pBer, &ticket->StartTime);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_STARTTIME));
+		kull_m_asn1_GenTime(pBer, &ticket->StartTime);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_ENDTIME));
+		kull_m_asn1_GenTime(pBer, &ticket->EndTime);
+		ber_printf(pBer, "}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_RENEW_TILL));
+		kull_m_asn1_GenTime(pBer, &ticket->RenewUntil);
+		ber_printf(pBer, "}"); /* ID_CTX_ENCTICKETPART_CADDR not present */
+		if(PacAuthData && PacAuthDataSize)
 		{
-			integer1 = KERBEROS_VERSION;
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCred, ID_CTX_KRB_CRED_PVNO, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-			integer1 = ID_APP_KRB_CRED;
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCred, ID_CTX_KRB_CRED_MSG_TYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-			if(Seq_Root = KULL_M_ASN1_CREATE_SEQ())
+			ber_printf(pBer, "t{{{t{i}t{", MAKE_CTX_TAG(ID_CTX_ENCTICKETPART_AUTHORIZATION_DATA), MAKE_CTX_TAG(ID_CTX_AUTHORIZATIONDATA_AD_TYPE), ID_AUTHDATA_AD_IF_RELEVANT, MAKE_CTX_TAG(ID_CTX_AUTHORIZATIONDATA_AD_DATA));
+			if(pBerPac = ber_alloc_t(LBER_USE_DER))
 			{
-				if(valueIsTicket)
-				{
-					if(App_Ticket = (PDIRTY_ASN1_SEQUENCE_EASY) LocalAlloc(LPTR, ticket->Ticket.Length))
-						RtlCopyMemory(App_Ticket, ticket->Ticket.Value, ticket->Ticket.Length);
-				}
-				else App_Ticket = kuhl_m_kerberos_ticket_createAppTicket(ticket);
-				kull_m_asn1_append(&Seq_Root, App_Ticket);
-				kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCred, ID_CTX_KRB_CRED_TICKETS, Seq_Root);
+				ber_printf(pBerPac, "{{t{i}t{o}}}", MAKE_CTX_TAG(ID_CTX_AUTHORIZATIONDATA_AD_TYPE), ID_AUTHDATA_AD_WIN2K_PAC, MAKE_CTX_TAG(ID_CTX_AUTHORIZATIONDATA_AD_DATA), PacAuthData, PacAuthDataSize);
+				if(ber_flatten(pBerPac, &pBerValPac) >= 0)
+					ber_printf(pBer, "o", pBerValPac->bv_val, pBerValPac->bv_len);
+				ber_free(pBerPac, 1);
 			}
-			if(App_EncKrbCredPart = kuhl_m_kerberos_ticket_createAppEncKrbCredPart(ticket))
-			{
-				kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCred, ID_CTX_KRB_CRED_ENC_PART, kuhl_m_kerberos_ticket_createSequenceEncryptedData(KERB_ETYPE_NULL, 0, App_EncKrbCredPart, kull_m_asn1_getSize(App_EncKrbCredPart)));
-				LocalFree(App_EncKrbCredPart);
-			}
-			kull_m_asn1_append(&App_KrbCred, Seq_KrbCred);
+			ber_printf(pBer, "}}}}");
 		}
+		ber_printf(pBer, "}}");
+		ber_flatten(pBer, &pBerVal);
+		if(pBerValPac)
+			ber_bvfree(pBerValPac);
+		ber_free(pBer, 1);
 	}
-	return App_KrbCred;
+	return pBerVal;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncKrbCredPart(PKIWI_KERBEROS_TICKET ticket)
+void kuhl_m_kerberos_ticket_createSequencePrimaryName(BerElement * pBer, PKERB_EXTERNAL_NAME name)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY App_EncKrbCredPart, Seq_EncKrbCredPart, Ctx_TicketInfo, Seq_TicketInfo, Seq_KrbCredInfo;
-	
-	if(App_EncKrbCredPart = KULL_M_ASN1_CREATE_APP(ID_APP_ENCKRBCREDPART))
-	{
-		if(Seq_EncKrbCredPart = KULL_M_ASN1_CREATE_SEQ())
-		{
-			if(Ctx_TicketInfo = KULL_M_ASN1_CREATE_CTX(ID_CTX_ENCKRBCREDPART_TICKET_INFO))
-			{
-				if(Seq_TicketInfo = KULL_M_ASN1_CREATE_SEQ())
-				{
-					if(Seq_KrbCredInfo = KULL_M_ASN1_CREATE_SEQ())
-					{
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_KEY, kuhl_m_kerberos_ticket_createSequenceEncryptionKey((UCHAR) ticket->KeyType, ticket->Key.Value, ticket->Key.Length));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_PREALM, kull_m_asn1_GenString(&ticket->AltTargetDomainName));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_PNAME, kuhl_m_kerberos_ticket_createSequencePrimaryName(ticket->ClientName));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_FLAGS, kull_m_asn1_BitStringFromULONG(ticket->TicketFlags));
-						/* ID_CTX_KRBCREDINFO_AUTHTIME not present */
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_STARTTIME, kull_m_asn1_GenTime(&ticket->StartTime));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_ENDTIME, kull_m_asn1_GenTime(&ticket->EndTime));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_RENEW_TILL, kull_m_asn1_GenTime(&ticket->RenewUntil));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_SREAL, kull_m_asn1_GenString(&ticket->DomainName));
-						kull_m_asn1_append_ctx_and_data_to_seq(&Seq_KrbCredInfo, ID_CTX_KRBCREDINFO_SNAME, kuhl_m_kerberos_ticket_createSequencePrimaryName(ticket->ServiceName));
-						kull_m_asn1_append(&Seq_TicketInfo, Seq_KrbCredInfo);
-					}
-					kull_m_asn1_append(&Ctx_TicketInfo, Seq_TicketInfo);
-				}
-				kull_m_asn1_append(&Seq_EncKrbCredPart, Ctx_TicketInfo);
-			}
-			kull_m_asn1_append(&App_EncKrbCredPart, Seq_EncKrbCredPart);
-		}
-	}
-	return App_EncKrbCredPart;
-}
-
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createAppEncTicketPart(PKIWI_KERBEROS_TICKET ticket, LPCVOID PacAuthData, DWORD PacAuthDataSize)
-{
-	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, Seq_EncTicketPart, Ctx_EncTicketPart, Ctx_Root, Seq_1, Seq_2, Seq_3, Seq_4, OctetString;
-	UCHAR integer1;	USHORT integer2;
-
-	if(App_EncTicketPart = KULL_M_ASN1_CREATE_APP(ID_APP_ENCTICKETPART))
-	{
-		if(Seq_EncTicketPart = KULL_M_ASN1_CREATE_SEQ())
-		{
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_FLAGS, kull_m_asn1_BitStringFromULONG(ticket->TicketFlags));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_KEY, kuhl_m_kerberos_ticket_createSequenceEncryptionKey((UCHAR) ticket->KeyType, ticket->Key.Value, ticket->Key.Length));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_CREALM, kull_m_asn1_GenString(&ticket->AltTargetDomainName));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_CNAME, kuhl_m_kerberos_ticket_createSequencePrimaryName(ticket->ClientName));
-			if(Ctx_EncTicketPart = KULL_M_ASN1_CREATE_CTX(ID_CTX_ENCTICKETPART_TRANSITED))
-			{
-				if(Seq_1 = KULL_M_ASN1_CREATE_SEQ())
-				{
-					integer1 = 0;
-					kull_m_asn1_append_ctx_and_data_to_seq(&Seq_1, ID_CTX_TRANSITEDENCODING_TR_TYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-					kull_m_asn1_append_ctx_and_data_to_seq(&Seq_1, ID_CTX_TRANSITEDENCODING_CONTENTS, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, NULL, 0, NULL));
-					kull_m_asn1_append(&Ctx_EncTicketPart, Seq_1);
-				}
-				kull_m_asn1_append(&Seq_EncTicketPart, Ctx_EncTicketPart);
-			}
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_AUTHTIME, kull_m_asn1_GenTime(&ticket->StartTime));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_STARTTIME, kull_m_asn1_GenTime(&ticket->StartTime));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_ENDTIME, kull_m_asn1_GenTime(&ticket->EndTime));
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncTicketPart, ID_CTX_ENCTICKETPART_RENEW_TILL, kull_m_asn1_GenTime(&ticket->RenewUntil));
-			/* ID_CTX_ENCTICKETPART_CADDR not present */
-			if(PacAuthData && PacAuthDataSize)
-			{
-				if(Ctx_EncTicketPart = KULL_M_ASN1_CREATE_CTX(ID_CTX_ENCTICKETPART_AUTHORIZATION_DATA))
-				{
-					if(Seq_1 = KULL_M_ASN1_CREATE_SEQ())
-					{
-						if(Seq_2 = KULL_M_ASN1_CREATE_SEQ())
-						{
-							integer1 = ID_AUTHDATA_AD_IF_RELEVANT;
-							kull_m_asn1_append_ctx_and_data_to_seq(&Seq_2, ID_CTX_AUTHORIZATIONDATA_AD_TYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-							if(Ctx_Root = KULL_M_ASN1_CREATE_CTX(ID_CTX_AUTHORIZATIONDATA_AD_DATA))
-							{
-								if(OctetString = kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, NULL, 0, NULL))
-								{
-									if(Seq_3 = KULL_M_ASN1_CREATE_SEQ())
-									{
-										if(Seq_4 = KULL_M_ASN1_CREATE_SEQ())
-										{
-											integer2 = _byteswap_ushort(ID_AUTHDATA_AD_WIN2K_PAC);
-											kull_m_asn1_append_ctx_and_data_to_seq(&Seq_4, ID_AUTHDATA_AD_WIN2K_PAC, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer2, sizeof(USHORT), NULL));
-											kull_m_asn1_append_ctx_and_data_to_seq(&Seq_4, ID_CTX_AUTHORIZATIONDATA_AD_DATA, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, PacAuthData, PacAuthDataSize, NULL));
-											kull_m_asn1_append(&Seq_3, Seq_4);
-										}
-										kull_m_asn1_append(&OctetString, Seq_3);
-									}
-									kull_m_asn1_append(&Ctx_Root, OctetString);
-								}
-								kull_m_asn1_append(&Seq_2, Ctx_Root);
-							}
-							kull_m_asn1_append(&Seq_1, Seq_2);
-						}
-						kull_m_asn1_append(&Ctx_EncTicketPart, Seq_1);
-					}
-					kull_m_asn1_append(&Seq_EncTicketPart, Ctx_EncTicketPart);
-				}
-			}
-			kull_m_asn1_append(&App_EncTicketPart, Seq_EncTicketPart);
-		}
-	}
-	return App_EncTicketPart;
-}
-
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequencePrimaryName(PKERB_EXTERNAL_NAME name)
-{
-	PDIRTY_ASN1_SEQUENCE_EASY Seq_ExternalName, Ctx_root, Seq_Names;
-	UCHAR integer1 = (UCHAR) name->NameType;
+	ber_int_t nameType = name->NameType;
 	USHORT i;
-	ANSI_STRING aString;
-
-	if(Seq_ExternalName = KULL_M_ASN1_CREATE_SEQ())
-	{
-		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_ExternalName, ID_CTX_PRINCIPALNAME_NAME_TYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &integer1, sizeof(UCHAR), NULL));
-		if(Ctx_root = KULL_M_ASN1_CREATE_CTX(ID_CTX_PRINCIPALNAME_NAME_STRING))
-		{
-			if(Seq_Names = KULL_M_ASN1_CREATE_SEQ())
-			{
-				for(i = 0; i < name->NameCount; i++)
-				{
-					if(NT_SUCCESS(RtlUnicodeStringToAnsiString(&aString, &name->Names[i], TRUE)))
-					{
-						kull_m_asn1_create(DIRTY_ASN1_ID_GENERAL_STRING, aString.Buffer, aString.Length, &Seq_Names);
-						RtlFreeAnsiString(&aString);
-					}
-				}
-				kull_m_asn1_append(&Ctx_root, Seq_Names);
-			}		
-			kull_m_asn1_append(&Seq_ExternalName, Ctx_root);
-		}
-	}
-	return Seq_ExternalName;
+	ber_printf(pBer, "{t{i}t{{", MAKE_CTX_TAG(ID_CTX_PRINCIPALNAME_NAME_TYPE), nameType, MAKE_CTX_TAG(ID_CTX_PRINCIPALNAME_NAME_STRING));
+	for(i = 0; i < name->NameCount; i++)
+		kull_m_asn1_GenString(pBer, &name->Names[i]);
+	ber_printf(pBer, "}}}");
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequenceEncryptedData(UCHAR eType, ULONG kvNo, LPCVOID data, DWORD size)
+void kuhl_m_kerberos_ticket_createSequenceEncryptedData(BerElement * pBer, LONG eType, ULONG kvNo, LPCVOID data, DWORD size)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY Seq_EncryptedData;
-	DWORD sz;
-	
-	if(kvNo < 0xff)
-	{
-		sz = 1;	
-	}
-	else
-	{
-		sz = sizeof(ULONG);
-		kvNo = _byteswap_ulong(kvNo);
-	}
-	if(Seq_EncryptedData = KULL_M_ASN1_CREATE_SEQ())
-	{
-		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_ETYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &eType, sizeof(UCHAR), NULL));
-		if(eType)
-			kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_KVNO, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &kvNo, sz, NULL));
-		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptedData, ID_CTX_ENCRYPTEDDATA_CIPHER, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, data, size, NULL));
-	}
-	return Seq_EncryptedData;
+	ber_printf(pBer, "{t{i}", MAKE_CTX_TAG(ID_CTX_ENCRYPTEDDATA_ETYPE), eType);
+	if(eType)
+		ber_printf(pBer, "t{i}", MAKE_CTX_TAG(ID_CTX_ENCRYPTEDDATA_KVNO), kvNo);
+	ber_printf(pBer, "t{o}}", MAKE_CTX_TAG(ID_CTX_ENCRYPTEDDATA_CIPHER), data, size);
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_ticket_createSequenceEncryptionKey(UCHAR eType, LPCVOID data, DWORD size)
+void kuhl_m_kerberos_ticket_createSequenceEncryptionKey(BerElement * pBer, LONG eType, LPCVOID data, DWORD size)
 {
-	PDIRTY_ASN1_SEQUENCE_EASY Seq_EncryptionKey;
-
-	if(Seq_EncryptionKey = KULL_M_ASN1_CREATE_SEQ())
-	{
-		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptionKey, ID_CTX_ENCRYPTIONKEY_KEYTYPE, kull_m_asn1_create(DIRTY_ASN1_ID_INTEGER, &eType, sizeof(UCHAR), NULL));
-		kull_m_asn1_append_ctx_and_data_to_seq(&Seq_EncryptionKey, ID_CTX_ENCRYPTIONKEY_KEYVALUE, kull_m_asn1_create(DIRTY_ASN1_ID_OCTET_STRING, data, size, NULL));
-	}
-	return Seq_EncryptionKey;
+	ber_printf(pBer, "{t{i}t{o}}", MAKE_CTX_TAG(ID_CTX_ENCRYPTIONKEY_KEYTYPE), eType, MAKE_CTX_TAG(ID_CTX_ENCRYPTIONKEY_KEYVALUE), data, size);
 }

