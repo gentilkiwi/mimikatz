@@ -182,12 +182,12 @@ static const RPC_CLIENT_INTERFACE BackupKey___RpcClientInterface = {sizeof(RPC_C
 static RPC_BINDING_HANDLE BackupKey__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC BackupKey_StubDesc = {(void *) &BackupKey___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &BackupKey__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Dbkrp__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 
-#pragma optimize("", off ) 
+#pragma optimize("", off) 
 NET_API_STATUS BackuprKey(handle_t h, GUID *pguidActionAgent, byte *pDataIn, DWORD cbDataIn, byte **ppDataOut, DWORD *pcbDataOut, DWORD dwParam)
 {
     return (NET_API_STATUS) NdrClientCall2((PMIDL_STUB_DESC) &BackupKey_StubDesc, (PFORMAT_STRING) &ms2Dbkrp__MIDL_ProcFormatString.Format[0], (unsigned char *) &h).Simple;
 }
-#pragma optimize("", on )
+#pragma optimize("", on)
 
 #if !defined(__RPC_WIN32__)
 #error  Invalid build platform for this stub.
