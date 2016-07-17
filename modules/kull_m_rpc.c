@@ -73,3 +73,20 @@ void __RPC_USER midl_user_free(void __RPC_FAR * p)
 {
 	free(p);
 }
+
+void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize)
+{
+	*pBuffer = (char *) ((PKULL_M_RPC_FCNSTRUCT) State)->addr;
+	((PKULL_M_RPC_FCNSTRUCT) State)->addr = *pBuffer + *pSize;
+	((PKULL_M_RPC_FCNSTRUCT) State)->size -= *pSize;
+}
+
+void __RPC_USER WriteFcn(void *State, char *Buffer, unsigned int Size)
+{
+	;	
+}
+
+void __RPC_USER AllocFcn (void *State, char **pBuffer, unsigned int *pSize)
+{
+	; // ???
+}

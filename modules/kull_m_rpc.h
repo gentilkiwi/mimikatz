@@ -16,14 +16,23 @@
 #error this stub requires an updated version of <rpcndr.h>
 #endif // __RPCNDR_H_VERSION__
 
+#include "midles.h"
 #include <string.h>
 #include "kull_m_rpc_ms-dtyp.h"
 
 BOOL kull_m_rpc_createBinding(LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *));
 BOOL kull_m_rpc_deleteBinding(RPC_BINDING_HANDLE *hBinding);
 
+typedef struct _KULL_M_RPC_FCNSTRUCT {
+	PVOID addr;
+	size_t size;
+} KULL_M_RPC_FCNSTRUCT, *PKULL_M_RPC_FCNSTRUCT;
+
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes);
 void __RPC_USER midl_user_free(void __RPC_FAR * p);
+void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize);
+void __RPC_USER WriteFcn(void *State, char *Buffer, unsigned int Size);
+void __RPC_USER AllocFcn (void *State, char **pBuffer, unsigned int *pSize);
 
 #define RPC_EXCEPTION (RpcExceptionCode() != STATUS_ACCESS_VIOLATION) && \
 	(RpcExceptionCode() != STATUS_DATATYPE_MISALIGNMENT) && \

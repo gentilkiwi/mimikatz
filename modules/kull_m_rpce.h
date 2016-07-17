@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "globals.h"
+#include "kull_m_rpc.h"
 
 typedef struct _RPCE_COMMON_TYPE_HEADER {
 	UCHAR Version;

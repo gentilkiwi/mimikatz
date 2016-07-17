@@ -8,7 +8,7 @@
 BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE * pacType, DWORD * pacLength)
 {
 	BOOL status = FALSE;
-	PRPCE_KERB_VALIDATION_INFO pLogonInfo = NULL;
+	PVOID pLogonInfo = NULL;
 	DWORD szLogonInfo = 0, szLogonInfoAligned = 0;
 	PPAC_CLIENT_INFO pClientInfo = NULL;
 	DWORD szClientInfo = 0, szClientInfoAligned = 0;
@@ -65,7 +65,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_CHECKSUM_KDC;
 				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szSignatureAligned;
 				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
-				
+
 				status = TRUE;
 			}
 		}
@@ -123,198 +123,35 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD Signature
 	return status;
 }
 
-BOOL kuhl_m_pac_marshall_unicodestring(PUNICODE_STRING pString, PMARSHALL_UNICODE_STRING pMarshall, RPCEID id, PVOID * current, DWORD * size)
+BOOL kuhl_m_pac_validationInfo_to_LOGON_INFO(PKERB_VALIDATION_INFO validationInfo, PVOID *rpceValidationInfo, DWORD *rpceValidationInfoLength)
 {
 	BOOL status = FALSE;
-	PVOID newbuffer;
-	DWORD modulo, actualsize = sizeof(MARSHALLED_UNICODE_STRING) + pString->Length;
+	RPC_STATUS rpcStatus;
+	KULL_M_RPC_FCNSTRUCT UserState;
+	handle_t pHandle;
 
-	if(modulo = actualsize % 4)
-		actualsize += 4 - modulo;
-
-	if(newbuffer = LocalAlloc(LPTR, *size + actualsize))
+	rpcStatus = MesEncodeIncrementalHandleCreate(&UserState, ReadFcn, WriteFcn, &pHandle);
+	if(NT_SUCCESS(rpcStatus))
 	{
-		pMarshall->Length = pString->Length;
-		pMarshall->MaximumLength = pString->MaximumLength;
-		pMarshall->ElementId = id;
-
-		RtlCopyMemory(newbuffer, *current, *size);
-		((PMARSHALLED_UNICODE_STRING) ((PBYTE) newbuffer + *size))->ReservedElements = pString->MaximumLength / sizeof(wchar_t);
-		((PMARSHALLED_UNICODE_STRING) ((PBYTE) newbuffer + *size))->Elements = pString->Length / sizeof(wchar_t);
-		RtlCopyMemory((PBYTE) newbuffer + *size + sizeof(MARSHALLED_UNICODE_STRING), pString->Buffer, pString->Length);
-
-		LocalFree(*current);
-		*current = newbuffer;
-		*size += actualsize;
-
-		status = TRUE;
-	}
-	return status;
-}
-
-BOOL kuhl_m_pac_marshall_groups(PGROUP_MEMBERSHIP pGroups, DWORD nbGroups, PVOID * current, DWORD * size)
-{
-	BOOL status = FALSE;
-	PVOID newbuffer;
-	DWORD i, actualsize = sizeof(ULONG32) + nbGroups * sizeof(GROUP_MEMBERSHIP);
-
-	if(newbuffer = LocalAlloc(LPTR, *size + actualsize))
-	{
-		RtlCopyMemory(newbuffer, *current, *size);
-		(*(PULONG32) ((PBYTE) newbuffer + *size)) = nbGroups;
-		for(i = 0 ; i < nbGroups; i++)
-			((PGROUP_MEMBERSHIP) ((PBYTE) newbuffer + *size + sizeof(ULONG32)))[i] = pGroups[i];
-
-		LocalFree(*current);
-		*current = newbuffer;
-		*size += actualsize;
-
-		status = TRUE;
-	}
-	return status;
-}
-
-BOOL kuhl_m_pac_marshall_sid(PISID pSid, PVOID * current, DWORD * size)
-{
-	BOOL status = FALSE;
-	PVOID newbuffer;
-	DWORD sidSize, actualsize;
-	sidSize = GetLengthSid(pSid);
-	actualsize = sizeof(ULONG32) + sidSize;
-	if(newbuffer = LocalAlloc(LPTR, *size + actualsize))
-	{
-		RtlCopyMemory(newbuffer, *current, *size);
-		(*(PULONG32) ((PBYTE) newbuffer + *size)) = pSid->SubAuthorityCount;
-		RtlCopyMemory((PBYTE) newbuffer + *size + sizeof(ULONG32), pSid, sidSize);
-
-		LocalFree(*current);
-		*current = newbuffer;
-		*size += actualsize;
-
-		status = TRUE;
-	}
-	return status;
-}
-
-BOOL kuhl_m_pac_marshall_extrasids(PKERB_VALIDATION_INFO validationInfo, RPCEID base, PVOID * current, DWORD * size)
-{
-	BOOL status = FALSE;
-	PVOID newbuffer;
-	PBYTE ptr;
-	DWORD i, actualsize = sizeof(DWORD) + validationInfo->SidCount * (sizeof(RPCEID) + sizeof(DWORD));
-
-	if(newbuffer = LocalAlloc(LPTR, *size + actualsize))
-	{
-		RtlCopyMemory(newbuffer, *current, *size);
-		ptr = (PBYTE) newbuffer + *size;
-		*(PDWORD) ptr = validationInfo->SidCount;
-		
-		for(
-			i = 0, base += 4, ptr += sizeof(DWORD);
-			i < validationInfo->SidCount;
-			i++, base += 4, ptr += sizeof(RPCEID) + sizeof(DWORD)
-			)
+		*rpceValidationInfoLength = (DWORD) PKERB_VALIDATION_INFO_AlignSize(pHandle, &validationInfo);
+		if(*rpceValidationInfo = LocalAlloc(LPTR, *rpceValidationInfoLength))
 		{
-			*(RPCEID *) ptr = base;
-			*(PDWORD) (ptr + sizeof(RPCEID)) = validationInfo->ExtraSids[i].Attributes;
+			rpcStatus = MesIncrementalHandleReset(pHandle, NULL, NULL, NULL, NULL, MES_ENCODE);
+			if(NT_SUCCESS(rpcStatus))
+			{
+				UserState.addr = *rpceValidationInfo;
+				UserState.size = *rpceValidationInfoLength;
+				PKERB_VALIDATION_INFO_Encode(pHandle, &validationInfo);
+				status = TRUE;
+			}
+			else PRINT_ERROR(L"MesIncrementalHandleReset: %08x\n", rpcStatus);
+			
+			if(!status)
+				*rpceValidationInfo = LocalFree(*rpceValidationInfo);
 		}
-		LocalFree(*current);
-		*current = newbuffer;
-		*size += actualsize;
-
-		status = TRUE;
-		for(i = 0; (i < validationInfo->SidCount) && status; i++)
-			status = kuhl_m_pac_marshall_sid(validationInfo->ExtraSids[i].Sid, current, size);
+		MesHandleFree(pHandle);
 	}
-	return status;
-}
-
-BOOL kuhl_m_pac_validationInfo_to_LOGON_INFO(PKERB_VALIDATION_INFO validationInfo, PRPCE_KERB_VALIDATION_INFO * rpceValidationInfo, DWORD *rpceValidationInfoLength)
-{
-	BOOL status = FALSE;
-	RPCE_KERB_VALIDATION_INFO rpce;
-	PVOID buffer = NULL;
-	DWORD szBuffer = 0;
-
-	rpce.typeHeader.Version = 0x01;
-	rpce.typeHeader.Endianness = 0x10;
-	rpce.typeHeader.CommonHeaderLength = 8;
-	rpce.typeHeader.Filler = 0xcccccccc;
-	rpce.privateHeader.Filler = 0x00000000;
-
-	rpce.RootElementId = PACINFO_ID_KERB_VALINFO;
-
-	rpce.infos.LogonTime = validationInfo->LogonTime;
-	rpce.infos.LogoffTime = validationInfo->LogoffTime;
-	rpce.infos.KickOffTime = validationInfo->KickOffTime;
-	rpce.infos.PasswordLastSet = validationInfo->PasswordLastSet;
-	rpce.infos.PasswordCanChange = validationInfo->PasswordCanChange;
-	rpce.infos.PasswordMustChange = validationInfo->PasswordMustChange;
-
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->EffectiveName,		&rpce.infos.EffectiveName,		PACINFO_ID_KERB_EFFECTIVENAME,		&buffer, &szBuffer);
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->FullName,			&rpce.infos.FullName,			PACINFO_ID_KERB_FULLNAME,			&buffer, &szBuffer);
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->LogonScript,			&rpce.infos.LogonScript,		PACINFO_ID_KERB_LOGONSCRIPT,		&buffer, &szBuffer);
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->ProfilePath,			&rpce.infos.ProfilePath,		PACINFO_ID_KERB_PROFILEPATH,		&buffer, &szBuffer);
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->HomeDirectory,		&rpce.infos.HomeDirectory,		PACINFO_ID_KERB_HOMEDIRECTORY,		&buffer, &szBuffer);
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->HomeDirectoryDrive,	&rpce.infos.HomeDirectoryDrive,	PACINFO_ID_KERB_HOMEDIRECTORYDRIVE,	&buffer, &szBuffer);
-
-	rpce.infos.LogonCount = validationInfo->LogonCount;
-	rpce.infos.BadPasswordCount = validationInfo->BadPasswordCount;
-
-	rpce.infos.UserId = validationInfo->UserId;
-	rpce.infos.PrimaryGroupId = validationInfo->PrimaryGroupId;
-
-	rpce.infos.GroupCount = validationInfo->GroupCount;
-	rpce.infos.GroupIds = PACINFO_ID_KERB_GROUPIDS;
-	kuhl_m_pac_marshall_groups(validationInfo->GroupIds, validationInfo->GroupCount, &buffer, &szBuffer);
-
-	rpce.infos.UserFlags = validationInfo->UserFlags;
-	RtlCopyMemory(rpce.infos.UserSessionKey.data, validationInfo->UserSessionKey.data, 16);
-
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->LogonServer,			&rpce.infos.LogonServer,		PACINFO_ID_KERB_LOGONSERVER,		&buffer, &szBuffer);
-	kuhl_m_pac_marshall_unicodestring(&validationInfo->LogonDomainName,		&rpce.infos.LogonDomainName,	PACINFO_ID_KERB_LOGONDOMAINNAME,	&buffer, &szBuffer);
-
-	rpce.infos.LogonDomainId = PACINFO_ID_KERB_LOGONDOMAINID;
-	kuhl_m_pac_marshall_sid(validationInfo->LogonDomainId, &buffer, &szBuffer);
-
-	rpce.infos.Reserved1[0] = validationInfo->Reserved1[0];
-	rpce.infos.Reserved1[1] = validationInfo->Reserved1[1];
-
-	rpce.infos.UserAccountControl = validationInfo->UserAccountControl;
-	rpce.infos.SubAuthStatus = validationInfo->SubAuthStatus;
-
-	rpce.infos.LastSuccessfulILogon = validationInfo->LastSuccessfulILogon;
-	rpce.infos.LastFailedILogon = validationInfo->LastFailedILogon;
-	rpce.infos.FailedILogonCount = validationInfo->FailedILogonCount;
-
-	rpce.infos.Reserved3 = validationInfo->Reserved3;
-
-	if(validationInfo->SidCount && validationInfo->ExtraSids)
-	{
-		rpce.infos.SidCount = validationInfo->SidCount;
-		rpce.infos.ExtraSids = PACINFO_ID_KERB_EXTRASIDS;
-		kuhl_m_pac_marshall_extrasids(validationInfo, PACINFO_ID_KERB_EXTRASIDS, &buffer, &szBuffer);
-	}
-	else
-	{
-		rpce.infos.SidCount = 0;
-		rpce.infos.ExtraSids = 0;
-	}
-	rpce.infos.ResourceGroupDomainSid = 0; //lazy
-	rpce.infos.ResourceGroupCount = 0; //validationInfo->ResourceGroupCount;
-	rpce.infos.ResourceGroupIds = 0; // lazy
-
-	rpce.privateHeader.ObjectBufferLength = sizeof(MARSHALL_KERB_VALIDATION_INFO) + sizeof(ULONG) + szBuffer;
-	*rpceValidationInfoLength = sizeof(RPCE_KERB_VALIDATION_INFO) + szBuffer;
-	if(*rpceValidationInfo = (PRPCE_KERB_VALIDATION_INFO) LocalAlloc(LPTR, *rpceValidationInfoLength))
-	{
-		RtlCopyMemory(*rpceValidationInfo, &rpce, sizeof(RPCE_KERB_VALIDATION_INFO));
-		RtlCopyMemory((PBYTE) *rpceValidationInfo + sizeof(RPCE_KERB_VALIDATION_INFO), buffer, szBuffer);
-		status = TRUE;
-	}
-	if(buffer)
-		LocalFree(buffer);
-
+	else PRINT_ERROR(L"MesEncodeIncrementalHandleCreate: %08x\n", rpcStatus);
 	return status;
 }
 

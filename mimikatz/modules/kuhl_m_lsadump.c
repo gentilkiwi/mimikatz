@@ -1332,8 +1332,13 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModule;
 	KULL_M_MEMORY_ADDRESS aPatternMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aPatchMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory;
+	LPCWSTR szSystem = NULL;
+	UNICODE_STRING uSystem;
 
 	static BOOL isPatching = FALSE;
+
+	if(kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL))
+		RtlInitUnicodeString(&uSystem, szSystem);
 
 	if(!isPatching && kull_m_string_args_byName(argc, argv, L"patch", NULL, NULL))
 	{
@@ -1359,7 +1364,7 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[])
 	}
 	else
 	{
-		if(NT_SUCCESS(LsaOpenPolicy(NULL, &oaLsa, POLICY_VIEW_LOCAL_INFORMATION, &hLSA)))
+		if(NT_SUCCESS(LsaOpenPolicy(szSystem ? &uSystem : NULL, &oaLsa, POLICY_VIEW_LOCAL_INFORMATION, &hLSA)))
 		{
 			status = LsaQueryInformationPolicy(hLSA, PolicyDnsDomainInformation, (PVOID *) &pDomainInfo);
 			if(NT_SUCCESS(status))

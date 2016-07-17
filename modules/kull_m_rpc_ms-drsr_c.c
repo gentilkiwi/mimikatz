@@ -1871,11 +1871,11 @@ typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING
 
 extern const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
 extern const ms2Ddrsr_MIDL_PROC_FORMAT_STRING ms2Ddrsr__MIDL_ProcFormatString;
-static const RPC_CLIENT_INTERFACE drsuapi___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xe3514235, 0x4b06, 0x11d1, {0xab, 0x04, 0x00, 0xc0, 0x4f, 0xc2, 0xdc, 0xd2}}, {4,0}}, {{0x8A885D04, 0x1CEB, 0x11C9, {0x9F, 0xE8, 0x08, 0x00, 0x2B, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
+static const RPC_CLIENT_INTERFACE drsuapi___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xe3514235, 0x4b06, 0x11d1, {0xab, 0x04, 0x00, 0xc0, 0x4f, 0xc2, 0xdc, 0xd2}}, {4, 0}}, {{0x8A885D04, 0x1CEB, 0x11C9, {0x9F, 0xE8, 0x08, 0x00, 0x2B, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static RPC_BINDING_HANDLE drsuapi__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC drsuapi_StubDesc = {(void *) &drsuapi___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &drsuapi__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Ddrsr__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 
-#pragma optimize("", off )
+#pragma optimize("", off)
 ULONG IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs)
 {
 	return NdrClientCall2((PMIDL_STUB_DESC) &drsuapi_StubDesc, (PFORMAT_STRING) &ms2Ddrsr__MIDL_ProcFormatString.Format[0], (unsigned char *) &rpc_handle).Simple;
@@ -1900,7 +1900,7 @@ ULONG IDL_DRSDomainControllerInfo(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_DC
 {
 	return NdrClientCall2((PMIDL_STUB_DESC) &drsuapi_StubDesc, (PFORMAT_STRING) &ms2Ddrsr__MIDL_ProcFormatString.Format[232], (unsigned char *) &hDrs).Simple;
 }
-#pragma optimize("", on )
+#pragma optimize("", on)
 
 #if !defined(__RPC_WIN32__)
 #error  Invalid build platform for this stub.
