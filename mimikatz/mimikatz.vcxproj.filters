@@ -170,12 +170,6 @@
     <ClCompile Include="..\modules\kull_m_cred.c">
       <Filter>common modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\modules\kull_m_rpc_ms-drsr_c.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\modules\kull_m_rpc_drsr.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
     <ClCompile Include="..\modules\kull_m_busylight.c">
       <Filter>common modules</Filter>
     </ClCompile>
@@ -197,23 +191,32 @@
     <ClCompile Include="..\modules\sqlite3_omit.c">
       <Filter>common modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\modules\kull_m_rpc_ms-bkrp_c.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\modules\kull_m_rpc.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
-    <ClCompile Include="..\modules\kull_m_rpc_bkrp.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
     <ClCompile Include="..\modules\kull_m_xml.c">
       <Filter>common modules</Filter>
     </ClCompile>
     <ClCompile Include="modules\kuhl_m_iis.c">
       <Filter>local modules</Filter>
     </ClCompile>
-    <ClCompile Include="..\modules\kull_m_rpc_ms-pac.c">
-      <Filter>common modules</Filter>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_bkrp.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_drsr.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-bkrp_c.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_pac.c">
+      <Filter>common modules\rpc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -356,9 +359,6 @@
     <ClInclude Include="modules\kuhl_m_vault.h">
       <Filter>local modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpce.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\kull_m_samlib.h">
       <Filter>common modules</Filter>
     </ClInclude>
@@ -404,15 +404,6 @@
     <ClInclude Include="..\modules\kull_m_cred.h">
       <Filter>common modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc_ms-drsr.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc_ms-dtyp.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc_drsr.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\kull_m_busylight.h">
       <Filter>common modules</Filter>
     </ClInclude>
@@ -437,23 +428,35 @@
     <ClInclude Include="..\modules\sqlite3_omit.h">
       <Filter>common modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc_ms-bkrp.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc_bkrp.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\kull_m_xml.h">
       <Filter>common modules</Filter>
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_iis.h">
       <Filter>local modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\kull_m_rpc_ms-pac.h">
-      <Filter>common modules</Filter>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_bkrp.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_drsr.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dtyp.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_pac.h">
+      <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -482,6 +485,9 @@
     </Filter>
     <Filter Include="local modules\dpapi\packages">
       <UniqueIdentifier>{0068506b-99c4-4d30-936a-d54598f49425}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common modules\rpc">
+      <UniqueIdentifier>{36857c96-00a6-4cb6-8ca9-591d0561662c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -1091,35 +1091,33 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase, LPCWSTR sid)
 {
 	PBYTE addr = (PBYTE) *dirtyBase + sizeof(ULONG);
-	if(key && key->unkId)
+	if(key)
 	{
-		switch(key->unkId)
+		switch(key->type)
 		{
-		case 0x00010002:
-		case 0x00010003:
+		case CREDENTIALS_KEY_TYPE_NTLM:
 			kprintf(L"\n\t * NTLM     : ");
 			if(sid)
 				kuhl_m_dpapi_oe_credential_add(sid, NULL, addr, NULL, NULL, NULL);
 			break;
-		case 0x00020002:
+		case CREDENTIALS_KEY_TYPE_SHA1:
 			kprintf(L"\n\t * SHA1     : ");
 			if(sid)
 				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, addr, NULL, NULL);
 			break;
-		case 0x00030002:
-		case 0x00030003:
+		case CREDENTIALS_KEY_TYPE_ROOTKEY:
 			kprintf(L"\n\t * RootKey  : ");
 			break;
-		case 0x00040002:
+		case CREDENTIALS_KEY_TYPE_DPAPI_PROTECTION:
 		case 0x00040003:
 			kprintf(L"\n\t * DPAPI    : ");
 			if(sid)
 				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, NULL, addr, NULL);
 			break;
 		default:
-			kprintf(L"\n\t * %08x : ", key->unkId);
+			kprintf(L"\n\t * %08x : ", key->type);
 		}
-		kull_m_string_wprintf_hex(addr, key->length, 0);
+		kull_m_string_wprintf_hex(addr, key->size, 0);
 		*dirtyBase = addr + *(PULONG) *dirtyBase;
 	}
 }

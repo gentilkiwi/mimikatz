@@ -15,7 +15,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
 #include "../modules/kull_m_net.h"
-#include "../modules/kull_m_rpc_drsr.h"
+#include "../modules/rpc/kull_m_rpc_drsr.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
 #include "dpapi/kuhl_m_dpapi_oe.h"

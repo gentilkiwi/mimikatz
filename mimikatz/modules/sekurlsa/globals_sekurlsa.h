@@ -7,7 +7,7 @@
 #include "globals.h"
 #include "../modules/kull_m_patch.h"
 #include "../modules/kull_m_process.h"
-#include "../modules/kull_m_rpce.h"
+#include "../modules/rpc/kull_m_rpc.h"
 #include "../dpapi/kuhl_m_dpapi_oe.h"
 
 typedef struct _RTL_BALANCED_LINKS {

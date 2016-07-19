@@ -398,27 +398,24 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 
 VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
 {
-	switch(key->unkId)
+	switch(key->type)
 	{
-	case 0x00010002:
-	case 0x00010003:
+	case CREDENTIALS_KEY_TYPE_NTLM:
 		dprintf("\n\t * NTLM     : ");
 		break;
-	case 0x00020002:
+	case CREDENTIALS_KEY_TYPE_SHA1:
 		dprintf("\n\t * SHA1     : ");
 		break;
-	case 0x00030002:
-	case 0x00030003:
+	case CREDENTIALS_KEY_TYPE_ROOTKEY:
 		dprintf("\n\t * RootKey  : ");
 		break;
-	case 0x00040002:
-	case 0x00040003:
+	case CREDENTIALS_KEY_TYPE_DPAPI_PROTECTION:
 		dprintf("\n\t * DPAPI    : ");
 		break;
 	default:
-		dprintf("\n\t * %08x : ", key->unkId);
+		dprintf("\n\t * %08x : ", key->type);
 	}
-	kull_m_string_dprintf_hex((PBYTE) *dirtyBase + sizeof(ULONG), key->length, 0);
+	kull_m_string_dprintf_hex((PBYTE) *dirtyBase + sizeof(ULONG), key->size, 0);
 	*dirtyBase = (PBYTE) *dirtyBase + sizeof(ULONG) + *(PULONG) *dirtyBase;
 }
 

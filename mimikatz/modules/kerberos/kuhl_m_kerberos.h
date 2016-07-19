@@ -43,7 +43,6 @@ NTSTATUS kuhl_m_kerberos_tgt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_purge(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_kerberos_test(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_kerberos_hash_data(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count);
 wchar_t * kuhl_m_kerberos_generateFileName(const DWORD index, PKERB_TICKET_CACHE_INFO_EX ticket, LPCWSTR ext);

@@ -9,7 +9,7 @@
 #include "kull_m_crypto_system.h"
 #include "kull_m_string.h"
 #include "kull_m_net.h"
-#include "kull_m_rpc_bkrp.h"
+#include "rpc/kull_m_rpc_bkrp.h"
 
 const GUID KULL_M_DPAPI_GUID_PROVIDER;
 
