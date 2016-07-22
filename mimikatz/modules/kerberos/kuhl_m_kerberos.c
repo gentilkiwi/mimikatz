@@ -846,7 +846,7 @@ NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
 	BYTE key[AES_256_KEY_LENGTH]; // max len
-	PCWCHAR szKey, szIn, szOut, szOffset, szSize;
+	PCWCHAR szKey = NULL, szIn, szOut, szOffset, szSize;
 	PBYTE encData, decData;
 	DWORD keyType, keyLen, encSize, decSize, offset = 0, size = 0;
 
