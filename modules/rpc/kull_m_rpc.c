@@ -90,3 +90,80 @@ void __RPC_USER AllocFcn (void *State, char **pBuffer, unsigned int *pSize)
 {
 	; // ???
 }
+
+BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE function)
+{
+	BOOL status = FALSE;
+	RPC_STATUS rpcStatus;
+	KULL_M_RPC_FCNSTRUCT UserState = {data, size};
+	handle_t pHandle;
+
+	rpcStatus = MesDecodeIncrementalHandleCreate(&UserState, ReadFcn, &pHandle);
+	if(NT_SUCCESS(rpcStatus))
+	{
+		rpcStatus = MesIncrementalHandleReset(pHandle, NULL, NULL, NULL, NULL, MES_DECODE);
+		if(NT_SUCCESS(rpcStatus))
+		{
+			RpcTryExcept
+				function(pHandle, pObject);
+				status = TRUE; //(*(PVOID *) pObject != NULL);
+			RpcExcept(RPC_EXCEPTION)
+				PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+			RpcEndExcept
+		}
+		else PRINT_ERROR(L"MesIncrementalHandleReset: %08x\n", rpcStatus);
+		MesHandleFree(pHandle);
+	}
+	else PRINT_ERROR(L"MesDecodeIncrementalHandleCreate: %08x\n", rpcStatus);
+	return status;
+}
+
+void kull_m_rpc_Generic_Free(PVOID pObject, PGENERIC_RPC_FREE function)
+{
+	RPC_STATUS rpcStatus;
+	KULL_M_RPC_FCNSTRUCT UserState = {NULL, 0};
+	handle_t pHandle;
+
+	rpcStatus = MesDecodeIncrementalHandleCreate(&UserState, ReadFcn, &pHandle); // for legacy
+	if(NT_SUCCESS(rpcStatus))
+	{
+		function(pHandle, pObject);
+		MesHandleFree(pHandle);
+	}
+	else PRINT_ERROR(L"MesDecodeIncrementalHandleCreate: %08x\n", rpcStatus);
+}
+
+BOOL kull_m_rpc_Generic_Encode(PVOID pObject, PVOID *data, DWORD *size, PGENERIC_RPC_ENCODE fEncode, PGENERIC_RPC_ALIGNSIZE fAlignSize)
+{
+	BOOL status = FALSE;
+	RPC_STATUS rpcStatus;
+	KULL_M_RPC_FCNSTRUCT UserState;
+	handle_t pHandle;
+
+	rpcStatus = MesEncodeIncrementalHandleCreate(&UserState, ReadFcn, WriteFcn, &pHandle);
+	if(NT_SUCCESS(rpcStatus))
+	{
+		*size = (DWORD) fAlignSize(pHandle, pObject);
+		if(*data = LocalAlloc(LPTR, *size))
+		{
+			rpcStatus = MesIncrementalHandleReset(pHandle, NULL, NULL, NULL, NULL, MES_ENCODE);
+			if(NT_SUCCESS(rpcStatus))
+			{
+				UserState.addr = *data;
+				UserState.size = *size;
+				fEncode(pHandle, pObject);
+				status = TRUE;
+			}
+			else PRINT_ERROR(L"MesIncrementalHandleReset: %08x\n", rpcStatus);
+
+			if(!status)
+			{
+				*data = LocalFree(*data);
+				*size = 0;
+			}
+		}
+		MesHandleFree(pHandle);
+	}
+	else PRINT_ERROR(L"MesEncodeIncrementalHandleCreate: %08x\n", rpcStatus);
+	return status;
+}

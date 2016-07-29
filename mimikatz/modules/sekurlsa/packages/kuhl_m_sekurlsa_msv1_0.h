@@ -7,6 +7,7 @@
 #include "../kuhl_m_sekurlsa.h"
 #include "../kuhl_m_sekurlsa_utils.h"
 #include "../modules/kull_m_crypto_system.h"
+#include "../modules/rpc/kull_m_rpc_ms-credentialkeys.h"
 
 typedef struct _MSV1_0_PRIMARY_CREDENTIAL { 
 	LSA_UNICODE_STRING LogonDomainName; 
@@ -64,30 +65,6 @@ typedef struct _MSV1_0_PRIMARY_HELPER {
 	LONG offsetToShaOwPassword;
 	LONG offsetToIso;
 } MSV1_0_PRIMARY_HELPER, *PMSV1_0_PRIMARY_HELPER;
-
-typedef enum _KIWI_CREDENTIALS_KEY_TYPE {
-	CREDENTIALS_KEY_TYPE_NTLM = 1,
-	CREDENTIALS_KEY_TYPE_SHA1 = 2,
-	CREDENTIALS_KEY_TYPE_ROOTKEY = 3,
-	CREDENTIALS_KEY_TYPE_DPAPI_PROTECTION = 4,
-} KIWI_CREDENTIALS_KEY_TYPE;
-
-typedef struct _MARSHALL_KEY {
-	WORD unk0;
-	WORD type;
-	WORD iterations;
-	WORD size;
-	RPCEID ElementId;
-} MARSHALL_KEY, *PMARSHALL_KEY;
-
-typedef struct _RPCE_CREDENTIAL_KEYCREDENTIAL {
-	RPCE_COMMON_TYPE_HEADER	typeHeader;
-	RPCE_PRIVATE_HEADER	privateHeader;
-	RPCEID RootElementId;
-	DWORD unk0;
-	DWORD unk1;
-	MARSHALL_KEY key[ANYSIZE_ARRAY];
-} RPCE_CREDENTIAL_KEYCREDENTIAL, *PRPCE_CREDENTIAL_KEYCREDENTIAL;
 
 typedef struct _MSV1_0_PTH_DATA_CRED { 
 	PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pSecData;

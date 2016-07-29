@@ -215,7 +215,7 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
-    <ClCompile Include="..\modules\rpc\kull_m_rpc_pac.c">
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
   </ItemGroup>
@@ -449,13 +449,10 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dtyp.h">
-      <Filter>common modules\rpc</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\rpc\kull_m_rpc_pac.h">
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>

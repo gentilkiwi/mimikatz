@@ -19,7 +19,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 		szSignature += pCheckSum->Size;
 		szSignatureAligned = SIZE_ALIGN(szSignature, 8);
 
-		if(kuhl_m_pac_EncodeValidationInformation(validationInfo, &pLogonInfo, &szLogonInfo))
+		if(kull_m_pac_EncodeValidationInformation(&validationInfo, &pLogonInfo, &szLogonInfo))
 			szLogonInfoAligned = SIZE_ALIGN(szLogonInfo, 8);
 		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(validationInfo, &pClientInfo, &szClientInfo))
 			szClientInfoAligned = SIZE_ALIGN(szClientInfo, 8);
@@ -129,7 +129,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 {
 	PPACTYPE pacType;
 	DWORD pacLenght, i, j;
-	PKERB_VALIDATION_INFO pValInfo;
+	PKERB_VALIDATION_INFO pValInfo = NULL;
 	PPAC_SIGNATURE_DATA pSignatureData;
 	PPAC_CLIENT_INFO pClientInfo;
 
@@ -145,7 +145,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 				{
 				case PACINFO_TYPE_LOGON_INFO:
 					kprintf(L"*** Validation Informations *** (%u)\n", pacType->Buffers[i].cbBufferSize);
-					if(kuhl_m_pac_DecodeValidationInformation((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, &pValInfo))
+					if(kull_m_pac_DecodeValidationInformation((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, &pValInfo))
 					{
 						kprintf(L"LogonTime              %016llx - ", pValInfo->LogonTime); kull_m_string_displayLocalFileTime(&pValInfo->LogonTime); kprintf(L"\n");
 						kprintf(L"LogoffTime             %016llx - ", pValInfo->LogoffTime); kull_m_string_displayLocalFileTime(&pValInfo->LogoffTime); kprintf(L"\n");

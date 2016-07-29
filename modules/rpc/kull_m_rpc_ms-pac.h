@@ -51,3 +51,7 @@ size_t PKERB_VALIDATION_INFO_AlignSize(handle_t _MidlEsHandle, PKERB_VALIDATION_
 void PKERB_VALIDATION_INFO_Encode(handle_t _MidlEsHandle, PKERB_VALIDATION_INFO * _pType);
 void PKERB_VALIDATION_INFO_Decode(handle_t _MidlEsHandle, PKERB_VALIDATION_INFO * _pType);
 void PKERB_VALIDATION_INFO_Free(handle_t _MidlEsHandle, PKERB_VALIDATION_INFO * _pType);
+
+#define kull_m_pac_DecodeValidationInformation(/*PVOID */data, /*DWORD */size, /*PKERB_VALIDATION_INFO **/pObject) kull_m_rpc_Generic_Decode(data, size, pObject, (PGENERIC_RPC_DECODE) PKERB_VALIDATION_INFO_Decode)
+#define kull_m_pac_FreeValidationInformation(/*PKERB_VALIDATION_INFO **/pObject) kull_m_rpc_Generic_Free(pObject, (PGENERIC_RPC_FREE) PKERB_VALIDATION_INFO_Free)
+#define kull_m_pac_EncodeValidationInformation(/*PKERB_VALIDATION_INFO **/pObject, /*PVOID **/data, /*DWORD **/size) kull_m_rpc_Generic_Encode(pObject, data, size, (PGENERIC_RPC_ENCODE) PKERB_VALIDATION_INFO_Encode, (PGENERIC_RPC_ALIGNSIZE) PKERB_VALIDATION_INFO_AlignSize)

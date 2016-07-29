@@ -110,9 +110,9 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_bkrp.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_drsr.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-bkrp_c.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c" />
-    <ClCompile Include="..\modules\rpc\kull_m_rpc_pac.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
@@ -191,11 +191,10 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_drsr.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h" />
-    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dtyp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h" />
-    <ClInclude Include="..\modules\rpc\kull_m_rpc_pac.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
     <ClInclude Include="..\modules\kull_m_service.h" />
     <ClInclude Include="..\modules\kull_m_string.h" />

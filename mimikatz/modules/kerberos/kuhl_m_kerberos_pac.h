@@ -7,7 +7,7 @@
 #include "../kuhl_m.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_crypto_system.h"
-#include "../modules/rpc/kull_m_rpc_pac.h"
+#include "../modules/rpc/kull_m_rpc_ms-pac.h"
 
 #define KERB_NON_KERB_SALT					16
 #define KERB_NON_KERB_CKSUM_SALT			17

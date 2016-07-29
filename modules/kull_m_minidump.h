@@ -7,8 +7,7 @@
 #include "globals.h"
 #include <dbghelp.h>
 
-typedef struct _KULL_M_MINIDUMP_HANDLE
-{
+typedef struct _KULL_M_MINIDUMP_HANDLE {
 	HANDLE hFileMapping;
 	LPVOID pMapViewOfFile;
 } KULL_M_MINIDUMP_HANDLE, *PKULL_M_MINIDUMP_HANDLE;

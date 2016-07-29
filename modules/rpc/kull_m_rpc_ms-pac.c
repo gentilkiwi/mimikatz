@@ -23,10 +23,10 @@ typedef struct _ms_pac_MIDL_TYPE_FORMAT_STRING
 } ms_pac_MIDL_TYPE_FORMAT_STRING;
 
 extern const ms_pac_MIDL_TYPE_FORMAT_STRING ms_pac__MIDL_TypeFormatString;
-static const RPC_CLIENT_INTERFACE msKrbPac___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x3dde7c30, 0x0000, 0x11d1, {0xab, 0x8f, 0x00, 0x80, 0x5f, 0x14, 0xdb, 0x40}}, {1, 0}}, {{0x8A885D04, 0x1CEB, 0x11C9, {0x9F, 0xE8, 0x08, 0x00, 0x2B, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
+static const RPC_CLIENT_INTERFACE msKrbPac___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x00000001, 0x0001, 0x0000, {0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x71}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static const MIDL_TYPE_PICKLING_INFO __MIDL_TypePicklingInfo = {0x33205054, 0x3, 0, 0, 0,};
 static RPC_BINDING_HANDLE msKrbPac__MIDL_AutoBindHandle;
-static const MIDL_STUB_DESC msKrbPac_StubDesc = {(void *)& msKrbPac___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &msKrbPac__MIDL_AutoBindHandle, 0, 0, 0, 0, ms_pac__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
+static const MIDL_STUB_DESC msKrbPac_StubDesc = {(void *) &msKrbPac___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &msKrbPac__MIDL_AutoBindHandle, 0, 0, 0, 0, ms_pac__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 
 size_t PKERB_VALIDATION_INFO_AlignSize(handle_t _MidlEsHandle, PKERB_VALIDATION_INFO * _pType)
 {

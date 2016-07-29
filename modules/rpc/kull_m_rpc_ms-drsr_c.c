@@ -9,21 +9,19 @@
 #pragma warning(disable: 4024)  /* array to pointer mapping*/
 
 #ifdef _M_X64
-typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING
-{
+typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING {
 	short          Pad;
 	unsigned char  Format[2071];
 } ms2Ddrsr_MIDL_TYPE_FORMAT_STRING;
 
-typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING
-{
+typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING {
 	short          Pad;
 	unsigned char  Format[621];
 } ms2Ddrsr_MIDL_PROC_FORMAT_STRING;
 
 extern const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
 extern const ms2Ddrsr_MIDL_PROC_FORMAT_STRING ms2Ddrsr__MIDL_ProcFormatString;
-static const RPC_CLIENT_INTERFACE drsuapi___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xe3514235, 0x4b06, 0x11d1, {0xab, 0x04, 0x00, 0xc0, 0x4f, 0xc2, 0xdc, 0xd2}}, {4,0}}, {{0x8A885D04, 0x1CEB, 0x11C9, {0x9F, 0xE8, 0x08, 0x00, 0x2B, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
+static const RPC_CLIENT_INTERFACE drsuapi___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xe3514235, 0x4b06, 0x11d1, {0xab, 0x04, 0x00, 0xc0, 0x4f, 0xc2, 0xdc, 0xd2}}, {4, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static RPC_BINDING_HANDLE drsuapi__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC drsuapi_StubDesc = {(void *) &drsuapi___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &drsuapi__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Ddrsr__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 
@@ -1857,21 +1855,19 @@ static const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString = 
     };
 
 #elif defined _M_IX86
-typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING
-{
+typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING {
 	short          Pad;
 	unsigned char  Format[2411];
 } ms2Ddrsr_MIDL_TYPE_FORMAT_STRING;
 
-typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING
-{
+typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING {
 	short          Pad;
 	unsigned char  Format[587];
 } ms2Ddrsr_MIDL_PROC_FORMAT_STRING;
 
 extern const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
 extern const ms2Ddrsr_MIDL_PROC_FORMAT_STRING ms2Ddrsr__MIDL_ProcFormatString;
-static const RPC_CLIENT_INTERFACE drsuapi___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xe3514235, 0x4b06, 0x11d1, {0xab, 0x04, 0x00, 0xc0, 0x4f, 0xc2, 0xdc, 0xd2}}, {4, 0}}, {{0x8A885D04, 0x1CEB, 0x11C9, {0x9F, 0xE8, 0x08, 0x00, 0x2B, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
+static const RPC_CLIENT_INTERFACE drsuapi___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xe3514235, 0x4b06, 0x11d1, {0xab, 0x04, 0x00, 0xc0, 0x4f, 0xc2, 0xdc, 0xd2}}, {4, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static RPC_BINDING_HANDLE drsuapi__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC drsuapi_StubDesc = {(void *) &drsuapi___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &drsuapi__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Ddrsr__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 
