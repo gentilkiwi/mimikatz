@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kwindbg.h"
+#include "kull_m_rpc_ms-credentialkeys.h"
 
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlobalLogonSessionTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData);
@@ -73,44 +74,6 @@ typedef struct _MSV1_0_PRIMARY_HELPER {
 } MSV1_0_PRIMARY_HELPER, *PMSV1_0_PRIMARY_HELPER;
 
 const MSV1_0_PRIMARY_HELPER * kuhl_m_sekurlsa_msv_helper();
-
-typedef struct _RPCE_COMMON_TYPE_HEADER {
-	UCHAR Version;
-	UCHAR Endianness;
-	USHORT CommonHeaderLength;
-	ULONG Filler;
-} RPCE_COMMON_TYPE_HEADER, *PRPCE_COMMON_TYPE_HEADER;
-
-typedef struct _RPCE_PRIVATE_HEADER {
-	ULONG ObjectBufferLength;
-	ULONG Filler;
-} RPCE_PRIVATE_HEADER, *PRPCE_PRIVATE_HEADER;
-
-typedef ULONG32 RPCEID;
-
-typedef enum _KIWI_CREDENTIALS_KEY_TYPE {
-	CREDENTIALS_KEY_TYPE_NTLM = 1,
-	CREDENTIALS_KEY_TYPE_SHA1 = 2,
-	CREDENTIALS_KEY_TYPE_ROOTKEY = 3,
-	CREDENTIALS_KEY_TYPE_DPAPI_PROTECTION = 4,
-} KIWI_CREDENTIALS_KEY_TYPE;
-
-typedef struct _MARSHALL_KEY {
-	WORD unk0;
-	WORD type;
-	WORD iterations;
-	WORD size;
-	RPCEID ElementId;
-} MARSHALL_KEY, *PMARSHALL_KEY;
-
-typedef struct _RPCE_CREDENTIAL_KEYCREDENTIAL {
-	RPCE_COMMON_TYPE_HEADER	typeHeader;
-	RPCE_PRIVATE_HEADER	privateHeader;
-	RPCEID RootElementId;
-	DWORD unk0;
-	DWORD unk1;
-	MARSHALL_KEY key[ANYSIZE_ARRAY];
-} RPCE_CREDENTIAL_KEYCREDENTIAL, *PRPCE_CREDENTIAL_KEYCREDENTIAL;
 
 typedef struct _KERB_HASHPASSWORD_6 {
 	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962

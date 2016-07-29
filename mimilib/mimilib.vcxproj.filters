@@ -23,6 +23,12 @@
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_packages.c">
       <Filter>sekurlsadbg</Filter>
     </ClCompile>
+    <ClCompile Include="sekurlsadbg\kull_m_rpc.c">
+      <Filter>sekurlsadbg</Filter>
+    </ClCompile>
+    <ClCompile Include="sekurlsadbg\kull_m_rpc_ms-credentialkeys.c">
+      <Filter>sekurlsadbg</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h" />
@@ -38,6 +44,12 @@
       <Filter>sekurlsadbg</Filter>
     </ClInclude>
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_packages.h">
+      <Filter>sekurlsadbg</Filter>
+    </ClInclude>
+    <ClInclude Include="sekurlsadbg\kull_m_rpc.h">
+      <Filter>sekurlsadbg</Filter>
+    </ClInclude>
+    <ClInclude Include="sekurlsadbg\kull_m_rpc_ms-credentialkeys.h">
       <Filter>sekurlsadbg</Filter>
     </ClInclude>
   </ItemGroup>

