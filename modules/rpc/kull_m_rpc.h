@@ -52,6 +52,6 @@ typedef void (* PGENERIC_RPC_ENCODE) (IN handle_t pHandle, IN PVOID pObject);
 typedef void (* PGENERIC_RPC_FREE) (IN handle_t pHandle, IN PVOID pObject);
 typedef size_t (* PGENERIC_RPC_ALIGNSIZE) (IN handle_t pHandle, IN PVOID pObject);
 
-BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE function);
-void kull_m_rpc_Generic_Free(PVOID data, PGENERIC_RPC_FREE function);
+BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE fDecode);
+void kull_m_rpc_Generic_Free(PVOID data, PGENERIC_RPC_FREE fFree);
 BOOL kull_m_rpc_Generic_Encode(PVOID pObject, PVOID *data, DWORD *size, PGENERIC_RPC_ENCODE fEncode, PGENERIC_RPC_ALIGNSIZE fAlignSize);

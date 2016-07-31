@@ -30,22 +30,9 @@ typedef struct _KULL_M_RPC_FCNSTRUCT {
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes);
 void __RPC_USER midl_user_free(void __RPC_FAR * p);
 void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize);
-void __RPC_USER WriteFcn(void *State, char *Buffer, unsigned int Size);
-void __RPC_USER AllocFcn(void *State, char **pBuffer, unsigned int *pSize);
-
-#define RPC_EXCEPTION (RpcExceptionCode() != STATUS_ACCESS_VIOLATION) && \
-	(RpcExceptionCode() != STATUS_DATATYPE_MISALIGNMENT) && \
-	(RpcExceptionCode() != STATUS_PRIVILEGED_INSTRUCTION) && \
-	(RpcExceptionCode() != STATUS_ILLEGAL_INSTRUCTION) && \
-	(RpcExceptionCode() != STATUS_BREAKPOINT) && \
-	(RpcExceptionCode() != STATUS_STACK_OVERFLOW) && \
-	(RpcExceptionCode() != STATUS_IN_PAGE_ERROR) && \
-	(RpcExceptionCode() != STATUS_ASSERTION_FAILURE) && \
-	(RpcExceptionCode() != STATUS_STACK_BUFFER_OVERRUN) && \
-	(RpcExceptionCode() != STATUS_GUARD_PAGE_VIOLATION)
 
 typedef void (* PGENERIC_RPC_DECODE) (IN handle_t pHandle, IN PVOID pObject);
 typedef void (* PGENERIC_RPC_FREE) (IN handle_t pHandle, IN PVOID pObject);
 
-BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE function);
-void kull_m_rpc_Generic_Free(PVOID data, PGENERIC_RPC_FREE function);
+BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE fDecode);
+void kull_m_rpc_Generic_Free(PVOID data, PGENERIC_RPC_FREE fFree);

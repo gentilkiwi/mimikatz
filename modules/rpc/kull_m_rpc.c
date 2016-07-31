@@ -63,15 +63,12 @@ BOOL kull_m_rpc_deleteBinding(RPC_BINDING_HANDLE *hBinding)
 
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes)
 {
-	void __RPC_FAR * ptr = NULL;
-	if(ptr = malloc(cBytes))
-		RtlZeroMemory(ptr, cBytes);
-	return ptr;
+	return LocalAlloc(LPTR, cBytes);
 }
 
 void __RPC_USER midl_user_free(void __RPC_FAR * p)
 {
-	free(p);
+	LocalFree(p);
 }
 
 void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize)
@@ -83,42 +80,49 @@ void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize)
 
 void __RPC_USER WriteFcn(void *State, char *Buffer, unsigned int Size)
 {
-	;	
 }
 
 void __RPC_USER AllocFcn (void *State, char **pBuffer, unsigned int *pSize)
 {
-	; // ???
 }
 
-BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE function)
+BOOL kull_m_rpc_Generic_Decode(PVOID data, DWORD size, PVOID pObject, PGENERIC_RPC_DECODE fDecode)
 {
 	BOOL status = FALSE;
 	RPC_STATUS rpcStatus;
-	KULL_M_RPC_FCNSTRUCT UserState = {data, size};
+	PVOID buffer;
+	KULL_M_RPC_FCNSTRUCT UserState ;
 	handle_t pHandle;
 
-	rpcStatus = MesDecodeIncrementalHandleCreate(&UserState, ReadFcn, &pHandle);
-	if(NT_SUCCESS(rpcStatus))
+	if(buffer = UserState.addr = LocalAlloc(LPTR, size))
 	{
-		rpcStatus = MesIncrementalHandleReset(pHandle, NULL, NULL, NULL, NULL, MES_DECODE);
+		UserState.size = size;
+		RtlCopyMemory(UserState.addr, data, size); // avoid data alteration
+		rpcStatus = MesDecodeIncrementalHandleCreate(&UserState, ReadFcn, &pHandle);
 		if(NT_SUCCESS(rpcStatus))
 		{
-			RpcTryExcept
-				function(pHandle, pObject);
-				status = TRUE; //(*(PVOID *) pObject != NULL);
-			RpcExcept(RPC_EXCEPTION)
-				PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
-			RpcEndExcept
+			rpcStatus = MesIncrementalHandleReset(pHandle, NULL, NULL, NULL, NULL, MES_DECODE);
+			if(NT_SUCCESS(rpcStatus))
+			{
+				RpcTryExcept
+				{
+					fDecode(pHandle, pObject);
+					status = TRUE;
+				}
+				RpcExcept(EXCEPTION_EXECUTE_HANDLER)
+					PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+				RpcEndExcept
+			}
+			else PRINT_ERROR(L"MesIncrementalHandleReset: %08x\n", rpcStatus);
+			MesHandleFree(pHandle);
 		}
-		else PRINT_ERROR(L"MesIncrementalHandleReset: %08x\n", rpcStatus);
-		MesHandleFree(pHandle);
+		else PRINT_ERROR(L"MesDecodeIncrementalHandleCreate: %08x\n", rpcStatus);
+		LocalFree(buffer);
 	}
-	else PRINT_ERROR(L"MesDecodeIncrementalHandleCreate: %08x\n", rpcStatus);
 	return status;
 }
 
-void kull_m_rpc_Generic_Free(PVOID pObject, PGENERIC_RPC_FREE function)
+void kull_m_rpc_Generic_Free(PVOID pObject, PGENERIC_RPC_FREE fFree)
 {
 	RPC_STATUS rpcStatus;
 	KULL_M_RPC_FCNSTRUCT UserState = {NULL, 0};
@@ -127,7 +131,11 @@ void kull_m_rpc_Generic_Free(PVOID pObject, PGENERIC_RPC_FREE function)
 	rpcStatus = MesDecodeIncrementalHandleCreate(&UserState, ReadFcn, &pHandle); // for legacy
 	if(NT_SUCCESS(rpcStatus))
 	{
-		function(pHandle, pObject);
+		RpcTryExcept
+			fFree(pHandle, pObject);
+		RpcExcept(EXCEPTION_EXECUTE_HANDLER)
+			PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+		RpcEndExcept
 		MesHandleFree(pHandle);
 	}
 	else PRINT_ERROR(L"MesDecodeIncrementalHandleCreate: %08x\n", rpcStatus);
@@ -151,8 +159,14 @@ BOOL kull_m_rpc_Generic_Encode(PVOID pObject, PVOID *data, DWORD *size, PGENERIC
 			{
 				UserState.addr = *data;
 				UserState.size = *size;
-				fEncode(pHandle, pObject);
-				status = TRUE;
+				RpcTryExcept
+				{
+					fEncode(pHandle, pObject);
+					status = TRUE;
+				}
+				RpcExcept(EXCEPTION_EXECUTE_HANDLER)
+					PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+				RpcEndExcept
 			}
 			else PRINT_ERROR(L"MesIncrementalHandleReset: %08x\n", rpcStatus);
 

@@ -364,7 +364,8 @@ void mimilove_kerberos(PKULL_M_MEMORY_HANDLE hMemory)
 							}
 							aLsassMemory.address = session.Entry.Flink;
 						}
-						else{
+						else
+						{
 							PRINT_ERROR_AUTO(L"kull_m_memory_copy / KIWI_KERBEROS_LOGON_SESSION_50");
 							break;
 						}

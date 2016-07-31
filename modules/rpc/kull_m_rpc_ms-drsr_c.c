@@ -16,7 +16,7 @@ typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING {
 
 typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING {
 	short          Pad;
-	unsigned char  Format[621];
+	unsigned char  Format[309];
 } ms2Ddrsr_MIDL_PROC_FORMAT_STRING;
 
 extern const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
@@ -1862,7 +1862,7 @@ typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING {
 
 typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING {
 	short          Pad;
-	unsigned char  Format[587];
+	unsigned char  Format[299];
 } ms2Ddrsr_MIDL_PROC_FORMAT_STRING;
 
 extern const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
