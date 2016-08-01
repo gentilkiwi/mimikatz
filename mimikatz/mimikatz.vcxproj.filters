@@ -218,6 +218,9 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_dpapi-entries.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -453,6 +456,9 @@
       <Filter>common modules\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_dpapi-entries.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>

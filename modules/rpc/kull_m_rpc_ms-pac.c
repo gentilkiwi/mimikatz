@@ -14,8 +14,7 @@
 #define _ms_pac_MIDL_TYPE_FORMAT_STRING_SIZE	549
 #endif
 
-typedef struct _ms_pac_MIDL_TYPE_FORMAT_STRING
-{
+typedef struct _ms_pac_MIDL_TYPE_FORMAT_STRING {
 	short          Pad;
 	unsigned char  Format[_ms_pac_MIDL_TYPE_FORMAT_STRING_SIZE];
 } ms_pac_MIDL_TYPE_FORMAT_STRING;

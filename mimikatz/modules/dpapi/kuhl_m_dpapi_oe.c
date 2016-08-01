@@ -15,7 +15,7 @@ PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY kuhl_m_dpapi_oe_masterkey_get(LPCGUID guid)
 {
 	PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry;
 	for(entry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Flink; entry != (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) &gDPAPI_Masterkeys; entry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) entry->navigator.Flink)
-		if(RtlEqualGuid(guid, &entry->guid))
+		if(RtlEqualGuid(guid, &entry->data.guid))
 			return entry;
 	return NULL;
 }
@@ -35,8 +35,8 @@ BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID keyHash, DWORD keyLen)
 
 			if(entry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_MASTERKEY_ENTRY)))
 			{
-				RtlCopyMemory(&entry->guid, guid, sizeof(GUID));
-				RtlCopyMemory(entry->keyHash, (keyLen == SHA_DIGEST_LENGTH) ? keyHash : digest, SHA_DIGEST_LENGTH);
+				RtlCopyMemory(&entry->data.guid, guid, sizeof(GUID));
+				RtlCopyMemory(entry->data.keyHash, (keyLen == SHA_DIGEST_LENGTH) ? keyHash : digest, SHA_DIGEST_LENGTH);
 				entry->navigator.Blink = gDPAPI_Masterkeys.Blink;
 				entry->navigator.Flink = &gDPAPI_Masterkeys;
 				((PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
@@ -64,11 +64,11 @@ void kuhl_m_dpapi_oe_masterkey_descr(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry)
 	if(entry)
 	{
 		kprintf(L"GUID:");
-		kull_m_string_displayGUID(&entry->guid);
+		kull_m_string_displayGUID(&entry->data.guid);
 		kprintf(L";");
 		
 		kprintf(L"KeyHash:");
-		kull_m_string_wprintf_hex(entry->keyHash, sizeof(entry->keyHash), 0);
+		kull_m_string_wprintf_hex(entry->data.keyHash, sizeof(entry->data.keyHash), 0);
 		kprintf(L"\n");
 	}
 }
@@ -96,8 +96,8 @@ PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY kuhl_m_dpapi_oe_credential_get(LPCWSTR sid, LP
 	BOOL cmpGuid, cmpSid;
 	for(entry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Flink; entry != (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) &gDPAPI_Credentials; entry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Flink)
 	{
-		cmpSid = sid && (_wcsicmp(sid, entry->sid) == 0);
-		cmpGuid = guid && (entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID) && RtlEqualGuid(guid, &entry->guid);
+		cmpSid = sid && (_wcsicmp(sid, entry->data.sid) == 0);
+		cmpGuid = guid && (entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID) && RtlEqualGuid(guid, &entry->data.guid);
 		
 		if(sid && guid)
 		{
@@ -106,7 +106,7 @@ PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY kuhl_m_dpapi_oe_credential_get(LPCWSTR sid, LP
 		}
 		else if (sid)
 		{
-			if(cmpSid && !(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID))
+			if(cmpSid && !(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID))
 				return entry;
 		}
 		else if(guid)
@@ -121,8 +121,8 @@ PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY kuhl_m_dpapi_oe_credential_get(LPCWSTR sid, LP
 BOOL kuhl_m_dpapi_oe_credential_copyEntryWithNewGuid(PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY entry, LPCGUID guid)
 {
 	BOOL status = FALSE;
-	if(entry && guid && !(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID))
-		status = kuhl_m_dpapi_oe_credential_add(entry->sid, guid, (entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4) ? entry->md4hash : NULL, (entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1) ? entry->sha1hash : NULL, (entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4p) ? entry->md4protectedhash : NULL, NULL);
+	if(entry && guid && !(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID))
+		status = kuhl_m_dpapi_oe_credential_add(entry->data.sid, guid, (entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4) ? entry->data.md4hash : NULL, (entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1) ? entry->data.sha1hash : NULL, (entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4p) ? entry->data.md4protectedhash : NULL, NULL);
 	return status;
 }
 
@@ -132,34 +132,34 @@ BOOL kuhl_m_dpapi_oe_credential_addtoEntry(PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY ent
 	DWORD SidLen, PasswordLen;
 	if(entry)
 	{
-		SidLen = (DWORD) wcslen(entry->sid) * sizeof(wchar_t);
-		if(!(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID) && guid)
+		SidLen = (DWORD) wcslen(entry->data.sid) * sizeof(wchar_t);
+		if(!(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID) && guid)
 		{
-			RtlCopyMemory(&entry->guid, guid, sizeof(GUID));
-			entry->flags |= KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID;
+			RtlCopyMemory(&entry->data.guid, guid, sizeof(GUID));
+			entry->data.flags |= KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID;
 		}
 		if(password)
 			PasswordLen = (DWORD) wcslen(password) * sizeof(wchar_t);
 
-		if(!(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4) && (md4hash || password))
+		if(!(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4) && (md4hash || password))
 		{
 			if(md4hash)
-				RtlCopyMemory(entry->md4hash, md4hash, LM_NTLM_HASH_LENGTH);
+				RtlCopyMemory(entry->data.md4hash, md4hash, LM_NTLM_HASH_LENGTH);
 			else
-				kull_m_crypto_hash(CALG_MD4, password, PasswordLen, entry->md4hash, LM_NTLM_HASH_LENGTH);
+				kull_m_crypto_hash(CALG_MD4, password, PasswordLen, entry->data.md4hash, LM_NTLM_HASH_LENGTH);
 
-			if(kull_m_crypto_hmac(CALG_SHA1, entry->md4hash, LM_NTLM_HASH_LENGTH, entry->sid, SidLen + sizeof(wchar_t), entry->md4hashDerived, SHA_DIGEST_LENGTH))
-				entry->flags |= KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4;
+			if(kull_m_crypto_hmac(CALG_SHA1, entry->data.md4hash, LM_NTLM_HASH_LENGTH, entry->data.sid, SidLen + sizeof(wchar_t), entry->data.md4hashDerived, SHA_DIGEST_LENGTH))
+				entry->data.flags |= KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4;
 		}
-		if(!(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1) && (sha1hash || password))
+		if(!(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1) && (sha1hash || password))
 		{
 			if(sha1hash)
-				RtlCopyMemory(entry->sha1hash, sha1hash, SHA_DIGEST_LENGTH);
+				RtlCopyMemory(entry->data.sha1hash, sha1hash, SHA_DIGEST_LENGTH);
 			else
-				kull_m_crypto_hash(CALG_SHA1, password, PasswordLen, entry->sha1hash, SHA_DIGEST_LENGTH);
+				kull_m_crypto_hash(CALG_SHA1, password, PasswordLen, entry->data.sha1hash, SHA_DIGEST_LENGTH);
 
-			kull_m_crypto_hmac(CALG_SHA1, entry->sha1hash, SHA_DIGEST_LENGTH, entry->sid, SidLen + sizeof(wchar_t), entry->sha1hashDerived, SHA_DIGEST_LENGTH);
-			entry->flags |= KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1;
+			kull_m_crypto_hmac(CALG_SHA1, entry->data.sha1hash, SHA_DIGEST_LENGTH, entry->data.sid, SidLen + sizeof(wchar_t), entry->data.sha1hashDerived, SHA_DIGEST_LENGTH);
+			entry->data.flags |= KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1;
 		}
 		//if(!entry->md4protectedhash && (md4protectedhash || entry->md4hash))
 		//{
@@ -186,7 +186,7 @@ BOOL kuhl_m_dpapi_oe_credential_add(LPCWSTR sid, LPCGUID guid, LPCVOID md4hash, 
 		{
 			if(entry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_CREDENTIAL_ENTRY)))
 			{
-				entry->sid = _wcsdup(sid);
+				entry->data.sid = _wcsdup(sid);
 				entry->navigator.Blink = gDPAPI_Credentials.Blink;
 				entry->navigator.Flink = &gDPAPI_Credentials;
 				((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
@@ -208,8 +208,8 @@ void kuhl_m_dpapi_oe_credential_delete(PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY entry)
 	{
 		((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Blink)->navigator.Flink = entry->navigator.Flink;
 		((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Flink)->navigator.Blink = entry->navigator.Blink;
-		if(entry->sid)
-			free(entry->sid);
+		if(entry->data.sid)
+			free(entry->data.sid);
 		LocalFree(entry);
 	}
 }
@@ -218,31 +218,31 @@ void kuhl_m_dpapi_oe_credential_descr(PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY entry)
 {
 	if(entry)
 	{
-		if(entry->sid)
-			kprintf(L"SID:%s", entry->sid);
+		if(entry->data.sid)
+			kprintf(L"SID:%s", entry->data.sid);
 		kprintf(L";");
-		if(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID)
+		if(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID)
 		{
 			kprintf(L"GUID:");
-			kull_m_string_displayGUID(&entry->guid);
+			kull_m_string_displayGUID(&entry->data.guid);
 		}
 		kprintf(L";");
-		if(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4)
+		if(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4)
 		{
 			kprintf(L"MD4:");
-			kull_m_string_wprintf_hex(entry->md4hash, LM_NTLM_HASH_LENGTH, 0);
+			kull_m_string_wprintf_hex(entry->data.md4hash, LM_NTLM_HASH_LENGTH, 0);
 		}
 		kprintf(L";");
-		if(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1)
+		if(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1)
 		{
 			kprintf(L"SHA1:");
-			kull_m_string_wprintf_hex(entry->sha1hash, SHA_DIGEST_LENGTH, 0);
+			kull_m_string_wprintf_hex(entry->data.sha1hash, SHA_DIGEST_LENGTH, 0);
 		}
 		kprintf(L";");
-		if(entry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4p)
+		if(entry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4p)
 		{
 			kprintf(L"MD4p:");
-			kull_m_string_wprintf_hex(entry->md4protectedhash, LM_NTLM_HASH_LENGTH, 0);
+			kull_m_string_wprintf_hex(entry->data.md4protectedhash, LM_NTLM_HASH_LENGTH, 0);
 		}
 		kprintf(L"\n");
 	}
@@ -269,7 +269,7 @@ PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY kuhl_m_dpapi_oe_domainkey_get(LPCGUID guid)
 {
 	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry;
 	for(entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Flink; entry != (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) &gDPAPI_Domainkeys; entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Flink)
-		if(RtlEqualGuid(guid, &entry->guid))
+		if(RtlEqualGuid(guid, &entry->data.guid))
 			return entry;
 	return NULL;
 }
@@ -284,12 +284,12 @@ BOOL kuhl_m_dpapi_oe_domainkey_add(LPCGUID guid, LPCVOID key, DWORD keyLen, BOOL
 		{
 			if(entry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_DOMAINKEY_ENTRY)))
 			{
-				RtlCopyMemory(&entry->guid, guid, sizeof(GUID));
-				entry->isNewKey = isNewKey;
-				if(entry->key = LocalAlloc(LPTR, keyLen))
+				RtlCopyMemory(&entry->data.guid, guid, sizeof(GUID));
+				entry->data.isNewKey = isNewKey;
+				if(entry->data.key = (BYTE *) LocalAlloc(LPTR, keyLen))
 				{
-					RtlCopyMemory(entry->key, key, keyLen);
-					entry->keyLen = keyLen;
+					RtlCopyMemory(entry->data.key, key, keyLen);
+					entry->data.keyLen = keyLen;
 					status = TRUE;
 				}
 				entry->navigator.Blink = gDPAPI_Domainkeys.Blink;
@@ -310,8 +310,8 @@ void kuhl_m_dpapi_oe_domainkey_delete(PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry)
 		((PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Blink)->navigator.Flink = entry->navigator.Flink;
 		((PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) entry->navigator.Flink)->navigator.Blink = entry->navigator.Blink;
 
-		if(entry->key)
-			LocalFree(entry->key);
+		if(entry->data.key)
+			LocalFree(entry->data.key);
 		LocalFree(entry);
 	}
 }
@@ -321,8 +321,8 @@ void kuhl_m_dpapi_oe_domainkey_descr(PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY entry)
 	if(entry)
 	{
 		kprintf(L"GUID:");
-		kull_m_string_displayGUID(&entry->guid);
-		kprintf(L";TYPE:%s\n", entry->isNewKey ? L"RSA" : L"LEGACY");
+		kull_m_string_displayGUID(&entry->data.guid);
+		kprintf(L";TYPE:%s\n", entry->data.isNewKey ? L"RSA" : L"LEGACY");
 	}
 }
 
@@ -353,6 +353,21 @@ NTSTATUS kuhl_m_dpapi_oe_clean()
 
 NTSTATUS kuhl_m_dpapi_oe_cache(int argc, wchar_t * argv[])
 {
+	LPCWSTR filename;
+	kull_m_string_args_byName(argc, argv, L"file", &filename, MIMIKATZ L"_dpapi_cache.ndr");
+	
+	if(kull_m_string_args_byName(argc, argv, L"flush", NULL, NULL))
+	{
+		kprintf(L"\n!!! FLUSH cache !!!\n");
+		kuhl_m_dpapi_oe_clean();
+	}
+
+	if(kull_m_string_args_byName(argc, argv, L"load", NULL, NULL))
+	{
+		kprintf(L"\nLOAD cache\n==========\n");
+		kuhl_m_dpapi_oe_LoadFromFile(filename);
+	}
+	
 	kprintf(L"\nCREDENTIALS cache\n=================\n");
 	kuhl_m_dpapi_oe_credentials_descr();
 
@@ -361,6 +376,12 @@ NTSTATUS kuhl_m_dpapi_oe_cache(int argc, wchar_t * argv[])
 
 	kprintf(L"\nDOMAINKEYS cache\n================\n");
 	kuhl_m_dpapi_oe_domainkeys_descr();
+
+	if(kull_m_string_args_byName(argc, argv, L"save", NULL, NULL))
+	{
+		kprintf(L"\nSAVE cache\n==========\n");
+		kuhl_m_dpapi_oe_SaveToFile(filename);
+	}
 
 	return STATUS_SUCCESS;
 }
@@ -389,5 +410,105 @@ BOOL kuhl_m_dpapi_oe_autosid(LPCWSTR filename, LPWSTR * pSid)
 		}
 		free(duplicate);
 	}
+	return status;
+}
+
+BOOL kuhl_m_dpapi_oe_SaveToFile(LPCWSTR filename)
+{
+	BOOL status = FALSE;
+	PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY mkEntry;
+	PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY crEntry;
+	PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY dkEntry;
+	KUHL_M_DPAPI_ENTRIES entries = {0};
+	PVOID pData;
+	DWORD i, dwData;
+
+	for(mkEntry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Flink; mkEntry != (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) &gDPAPI_Masterkeys; mkEntry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) mkEntry->navigator.Flink, entries.MasterKeyCount++);
+	for(crEntry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Flink; crEntry != (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) &gDPAPI_Credentials; crEntry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) crEntry->navigator.Flink, entries.CredentialCount++);
+	for(dkEntry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Flink; dkEntry != (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) &gDPAPI_Domainkeys; dkEntry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) dkEntry->navigator.Flink, entries.DomainKeyCount++);
+
+	if(entries.MasterKeyCount)
+		if(entries.MasterKeys = (PKUHL_M_DPAPI_MASTERKEY_ENTRY *) LocalAlloc(LPTR, entries.MasterKeyCount * sizeof(PKUHL_M_DPAPI_MASTERKEY_ENTRY)))
+			for(i = 0, mkEntry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Flink; i < entries.MasterKeyCount; mkEntry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) mkEntry->navigator.Flink, i++)
+				entries.MasterKeys[i] = &mkEntry->data;
+
+	if(entries.CredentialCount)
+		if(entries.Credentials = (PKUHL_M_DPAPI_CREDENTIAL_ENTRY *) LocalAlloc(LPTR, entries.CredentialCount * sizeof(PKUHL_M_DPAPI_CREDENTIAL_ENTRY)))
+			for(i = 0, crEntry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Flink; i < entries.CredentialCount; crEntry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) crEntry->navigator.Flink, i++)
+				entries.Credentials[i] = &crEntry->data;
+
+	if(entries.DomainKeyCount)
+		if(entries.DomainKeys = (PKUHL_M_DPAPI_DOMAINKEY_ENTRY *) LocalAlloc(LPTR, entries.DomainKeyCount * sizeof(PKUHL_M_DPAPI_DOMAINKEY_ENTRY)))
+			for(i = 0, dkEntry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) gDPAPI_Domainkeys.Flink; i < entries.DomainKeyCount; dkEntry = (PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY) dkEntry->navigator.Flink, i++)
+				entries.DomainKeys[i] = &dkEntry->data;
+
+	kprintf(L"Will encode:\n * %3u MasterKey(s)\n * %3u Credential(s)\n * %3u DomainKey(s)\n", entries.MasterKeyCount, entries.CredentialCount, entries.DomainKeyCount);
+	if(kull_m_dpapi_oe_EncodeDpapiEntries(&entries, &pData, &dwData))
+	{
+		kprintf(L"Encoded:\n * addr: 0x%p\n * size: %u\n", pData, dwData);
+		kprintf(L"Write file \'%s\': ", filename);
+		if(kull_m_file_writeData(filename, pData, dwData))
+			kprintf(L"OK\n");
+		else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
+		LocalFree(pData);
+	}
+
+	if(entries.MasterKeys)
+		LocalFree(entries.MasterKeys);
+	if(entries.Credentials)
+		LocalFree(entries.Credentials);
+	if(entries.DomainKeys)
+		LocalFree(entries.DomainKeys);
+
+	return status;
+}
+
+BOOL kuhl_m_dpapi_oe_LoadFromFile(LPCWSTR filename)
+{
+	BOOL status = FALSE;
+	PBYTE dataIn;
+	DWORD i, j, dwDataIn;
+	KUHL_M_DPAPI_ENTRIES entries = {0};
+	PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY crEntry;
+
+	kprintf(L"Read file \'%s\': ", filename);
+	if(kull_m_file_readData(filename, &dataIn, &dwDataIn))
+	{
+		kprintf(L"OK\n");
+		if(kull_m_dpapi_oe_DecodeDpapiEntries(dataIn, dwDataIn, &entries))
+		{
+			for(i = 0, j = 0; i < entries.MasterKeyCount; i++)
+				if(kuhl_m_dpapi_oe_masterkey_add(&entries.MasterKeys[i]->guid, entries.MasterKeys[i]->keyHash, sizeof(entries.MasterKeys[i]->keyHash)))
+					j++;
+			kprintf(L" * %3u/%3u MasterKey(s) imported\n", j, entries.MasterKeyCount);
+
+			for(i = 0, j = 0; i < entries.CredentialCount; i++)
+			{
+				if(!kuhl_m_dpapi_oe_credential_get(entries.Credentials[i]->sid, (entries.Credentials[i]->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID) ? &entries.Credentials[i]->guid : NULL))
+				{
+					if(crEntry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_CREDENTIAL_ENTRY)))
+					{
+						crEntry->data = *entries.Credentials[i];
+						crEntry->data.sid = _wcsdup(entries.Credentials[i]->sid);
+						crEntry->navigator.Blink = gDPAPI_Credentials.Blink;
+						crEntry->navigator.Flink = &gDPAPI_Credentials;
+						((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Blink)->navigator.Flink = (PLIST_ENTRY) crEntry;
+						gDPAPI_Credentials.Blink= (PLIST_ENTRY) crEntry;
+						j++;
+					}
+				}
+			}
+			kprintf(L" * %3u/%3u Credential(s) imported\n", j, entries.CredentialCount);
+
+			for(i = 0, j = 0; i < entries.DomainKeyCount; i++)
+				if(kuhl_m_dpapi_oe_domainkey_add(&entries.DomainKeys[i]->guid, entries.DomainKeys[i]->key, entries.DomainKeys[i]->keyLen, entries.DomainKeys[i]->isNewKey))
+					j++;
+			kprintf(L" * %3u/%3u DomainKey(s) imported\n", j, entries.DomainKeyCount);
+			kull_m_dpapi_oe_FreeDpapiEntries(&entries);
+		}
+		LocalFree(dataIn);
+	}
+	else PRINT_ERROR_AUTO(L"kull_m_file_readData");
+
 	return status;
 }

@@ -191,13 +191,13 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 						kprintf(L"\n[masterkey] with volatile cache: "); kuhl_m_dpapi_oe_credential_descr(pCredentialEntry);
 						if(masterkeys->dwFlags & 4)
 						{
-							if(pCredentialEntry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1)
-								derivedKey = pCredentialEntry->sha1hashDerived;
+							if(pCredentialEntry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1)
+								derivedKey = pCredentialEntry->data.sha1hashDerived;
 						}
 						else
 						{
-							if(pCredentialEntry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4)
-								derivedKey = pCredentialEntry->md4hashDerived;
+							if(pCredentialEntry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4)
+								derivedKey = pCredentialEntry->data.md4hashDerived;
 						}
 						if(derivedKey)
 						{
@@ -294,7 +294,7 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 					if(pDomainKeyEntry = kuhl_m_dpapi_oe_domainkey_get(&masterkeys->DomainKey->guidMasterKey))
 					{
 						kprintf(L"\n[domainkey] with volatile cache: "); kuhl_m_dpapi_oe_domainkey_descr(pDomainKeyEntry);
-						if(kull_m_dpapi_unprotect_domainkey_with_key(masterkeys->DomainKey, pDomainKeyEntry->key, pDomainKeyEntry->keyLen, &output, &cbOutput, &pSid))
+						if(kull_m_dpapi_unprotect_domainkey_with_key(masterkeys->DomainKey, pDomainKeyEntry->data.key, pDomainKeyEntry->data.keyLen, &output, &cbOutput, &pSid))
 							kuhl_m_dpapi_display_MasterkeyInfosAndFree(statusGuid ? &guid : NULL, output, cbOutput, pSid);
 						else PRINT_ERROR(L"kull_m_dpapi_unprotect_domainkey_with_key\n");
 					}
@@ -407,10 +407,10 @@ NTSTATUS kuhl_m_dpapi_credhist(int argc, wchar_t * argv[])
 						pCredentialEntry = kuhl_m_dpapi_oe_credential_get(NULL, prevGuid);
 						if(!pCredentialEntry)
 							pCredentialEntry = kuhl_m_dpapi_oe_credential_get(convertedSid, NULL);
-						if(pCredentialEntry && (pCredentialEntry->flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1))
+						if(pCredentialEntry && (pCredentialEntry->data.flags & KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_SHA1))
 						{
 							kprintf(L"\n  [entry %u] with volatile cache: ", i); kuhl_m_dpapi_oe_credential_descr(pCredentialEntry);
-							if(kull_m_dpapi_unprotect_credhist_entry_with_shaDerivedkey(credhist->entries[i], pCredentialEntry->sha1hashDerived, sizeof(pCredentialEntry->sha1hashDerived), ntlm, sha1))
+							if(kull_m_dpapi_unprotect_credhist_entry_with_shaDerivedkey(credhist->entries[i], pCredentialEntry->data.sha1hashDerived, sizeof(pCredentialEntry->data.sha1hashDerived), ntlm, sha1))
 							{
 								kuhl_m_dpapi_oe_credential_copyEntryWithNewGuid(pCredentialEntry, prevGuid);
 								kuhl_m_dpapi_display_CredHist(credhist->entries[i], ntlm, sha1);
@@ -507,7 +507,7 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 				kprintf(L" > password      : %s\n", szPassword);
 
 			if(entry)
-				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, NULL, 0, pDataOut, dwDataOutLen, entry->keyHash, sizeof(entry->keyHash), szPassword);
+				status = kull_m_dpapi_unprotect_raw_or_blob(pDataIn, dwDataInLen, ppszDataDescr, (pOptionalEntropy && dwOptionalEntropyLen) ? pOptionalEntropy : entropy, (pOptionalEntropy && dwOptionalEntropyLen) ? dwOptionalEntropyLen : entropyLen, NULL, 0, pDataOut, dwDataOutLen, entry->data.keyHash, sizeof(entry->data.keyHash), szPassword);
 
 			if(!status && ((masterkey && masterkeyLen) || isNormalAPI))
 			{

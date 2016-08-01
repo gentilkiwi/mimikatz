@@ -53,7 +53,6 @@ typedef struct _KULL_M_DPAPI_BLOB {
 	PBYTE	pbSign;
 } KULL_M_DPAPI_BLOB, *PKULL_M_DPAPI_BLOB;
 
-
 typedef struct _KULL_M_DPAPI_MASTERKEY {
 	DWORD	dwVersion;
 	BYTE	salt[16];

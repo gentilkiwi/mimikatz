@@ -6,11 +6,11 @@
 #pragma once
 #include "globals.h"
 #include "kuhl_m_dpapi.h"
+#include "../modules/rpc/kull_m_rpc_dpapi-entries.h"
 
 typedef struct _KUHL_M_DPAPI_OE_MASTERKEY_ENTRY {
 	LIST_ENTRY navigator;
-	GUID	guid;
-	BYTE	keyHash[SHA_DIGEST_LENGTH];
+	KUHL_M_DPAPI_MASTERKEY_ENTRY data;
 } KUHL_M_DPAPI_OE_MASTERKEY_ENTRY, *PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY;
 
 #define KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_MD4		0x00000001
@@ -19,19 +19,7 @@ typedef struct _KUHL_M_DPAPI_OE_MASTERKEY_ENTRY {
 #define KUHL_M_DPAPI_OE_CREDENTIAL_FLAG_GUID	0x80000000
 typedef struct _KUHL_M_DPAPI_OE_CREDENTIAL_ENTRY {
 	LIST_ENTRY navigator;
-	
-	DWORD	flags;
-	GUID	guid;
-	PWSTR	sid;
-
-	BYTE	md4hash[LM_NTLM_HASH_LENGTH];
-	BYTE	md4hashDerived[SHA_DIGEST_LENGTH];
-	
-	BYTE	sha1hash[SHA_DIGEST_LENGTH];
-	BYTE	sha1hashDerived[SHA_DIGEST_LENGTH];
-	
-	BYTE	md4protectedhash[LM_NTLM_HASH_LENGTH];
-	BYTE	md4protectedhashDerived[SHA_DIGEST_LENGTH];
+	KUHL_M_DPAPI_CREDENTIAL_ENTRY data;
 /*	
 	PVOID DPAPI_SYSTEM_machine;
 	PVOID DPAPI_SYSTEM_user;
@@ -40,10 +28,7 @@ typedef struct _KUHL_M_DPAPI_OE_CREDENTIAL_ENTRY {
 
 typedef struct _KUHL_M_DPAPI_OE_DOMAINKEY_ENTRY {
 	LIST_ENTRY navigator;
-	GUID	guid;
-	BOOL	isNewKey;
-	DWORD	keyLen;
-	PVOID	key;
+	KUHL_M_DPAPI_DOMAINKEY_ENTRY data;
 } KUHL_M_DPAPI_OE_DOMAINKEY_ENTRY, *PKUHL_M_DPAPI_OE_DOMAINKEY_ENTRY;
 
 NTSTATUS kuhl_m_dpapi_oe_clean();
@@ -77,3 +62,6 @@ void kuhl_m_dpapi_oe_domainkeys_descr();
 
 BOOL kuhl_m_dpapi_oe_credential_addtoEntry(PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY entry, LPCGUID guid, LPCVOID md4hash, LPCVOID sha1hash, LPCVOID md4protectedhash, LPCWSTR password);
 BOOL kuhl_m_dpapi_oe_credential_copyEntryWithNewGuid(PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY entry, LPCGUID guid);
+
+BOOL kuhl_m_dpapi_oe_SaveToFile(LPCWSTR filename);
+BOOL kuhl_m_dpapi_oe_LoadFromFile(LPCWSTR filename);

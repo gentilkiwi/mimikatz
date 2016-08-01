@@ -14,5 +14,8 @@ const KUHL_M kuhl_m_net;
 
 NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_group(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_net_localgroup(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_net_alias(int argc, wchar_t * argv[]);
+
+void kuhl_m_net_simpleLookup(SAMPR_HANDLE hDomainHandle, DWORD rid);
+
 NTSTATUS kuhl_m_net_autoda(int argc, wchar_t * argv[]);

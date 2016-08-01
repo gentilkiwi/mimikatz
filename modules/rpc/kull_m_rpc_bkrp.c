@@ -38,10 +38,10 @@ BOOL kull_m_rpc_bkrp_generic(LPCWSTR NetworkAddr, const GUID * pGuid, PVOID Data
 					RtlCopyMemory(*pDataOut, out, *pdwDataOut);
 				MIDL_user_free(out);
 			}
-			else PRINT_ERROR(L"BackuprKey 0x%08x (%u)\n", netStatus, netStatus);
+			else PRINT_ERROR(L"BackuprKey: 0x%08x (%u)\n", netStatus, netStatus);
 		}
 		RpcExcept(RPC_EXCEPTION)
-			PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+			PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 		RpcEndExcept
 			kull_m_rpc_deleteBinding(&hBinding);
 	}
