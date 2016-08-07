@@ -8,10 +8,10 @@
 #include <io.h>
 #include <fcntl.h>
 
-extern FILE * logfile;
+FILE * logfile;
 #ifdef _WINDLL
-extern wchar_t * outputBuffer;
-extern size_t outputBufferElements, outputBufferElementsPosition;
+wchar_t * outputBuffer;
+size_t outputBufferElements, outputBufferElementsPosition;
 #endif
 
 void kprintf(PCWCHAR format, ...);

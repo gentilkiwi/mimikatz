@@ -92,7 +92,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 #ifdef _WINDLL
 	static LONG initCount = 0;
 
-	if (Init)
+	if(Init)
 	{
 		InterlockedIncrement(&initCount);
 		if (initCount > 1)
@@ -101,18 +101,18 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	else
 	{
 		InterlockedDecrement(&initCount);
-		if (initCount > 0)
+		if(initCount > 0)
 			return STATUS_SUCCESS;
 	}
 #endif
 
-	if (Init)
+	if(Init)
 	{
 		RtlGetNtVersionNumbers(&MIMIKATZ_NT_MAJOR_VERSION, &MIMIKATZ_NT_MINOR_VERSION, &MIMIKATZ_NT_BUILD_NUMBER);
 		MIMIKATZ_NT_BUILD_NUMBER &= 0x00003fff;
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pInit);
 		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-		if (FAILED(hr))
+		if(FAILED(hr))
 			PRINT_ERROR(L"CoInitializeEx: %08x\n", hr);
 	}
 	else
