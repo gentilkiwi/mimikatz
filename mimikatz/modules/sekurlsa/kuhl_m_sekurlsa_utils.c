@@ -9,6 +9,7 @@
 BYTE PTRN_WIN5_LogonSessionList[]		= {0x4c, 0x8b, 0xdf, 0x49, 0xc1, 0xe3, 0x04, 0x48, 0x8b, 0xcb, 0x4c, 0x03, 0xd8};
 BYTE PTRN_WIN6_LogonSessionList[]		= {0x4c, 0x03, 0xd8, 0x49, 0x8b, 0x03, 0x48, 0x89};
 BYTE PTRN_WIN81_LogonSessionList[]		= {0x48, 0x03, 0xc1, 0x48, 0x8b, 0x08, 0x48, 0x89};
+BYTE PTRN_WIN10_1607_LogonSessionList[]	= {0x48, 0x03, 0xC1, 0x48, 0x8B, 0x08, 0x48, 0x39, 0x41, 0x08, 0x0F, 0x85}; // to test [0x39 ...]
 KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_LogonSessionList),	PTRN_WIN5_LogonSessionList},	{0, NULL}, {-4,   0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WIN5_LogonSessionList),	PTRN_WIN5_LogonSessionList},	{0, NULL}, {-4, -45}},
@@ -16,12 +17,14 @@ KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -59}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -0}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-4, -53}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WIN10_1607_LogonSessionList),	PTRN_WIN10_1607_LogonSessionList},	{0, NULL}, {-4, -87}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WN51_LogonSessionList[]		= {0xff, 0x50, 0x10, 0x85, 0xc0, 0x0f, 0x84};
 BYTE PTRN_WNO8_LogonSessionList[]		= {0x89, 0x71, 0x04, 0x89, 0x30, 0x8d, 0x04, 0xbd};
 BYTE PTRN_WIN8_LogonSessionList[]		= {0x89, 0x79, 0x04, 0x89, 0x38, 0x8d, 0x04, 0xb5};
 BYTE PTRN_WIN81_LogonSessionList[]		= {0x89, 0x79, 0x04, 0x89, 0x38, 0xff, 0x04, 0xb5};
+BYTE PTRN_WIN10_1607_LogonSessionList[]	= {0x8B, 0x08, 0x39, 0x41, 0x04, 0x74}; // to do "best"
 KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WN51_LogonSessionList),	PTRN_WN51_LogonSessionList},	{0, NULL}, { 24,   0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WNO8_LogonSessionList),	PTRN_WNO8_LogonSessionList},	{0, NULL}, {-11, -43}},
@@ -29,6 +32,7 @@ KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_LogonSessionList),	PTRN_WIN8_LogonSessionList},	{0, NULL}, {-20, -51}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-20, -49}},
 	{KULL_M_WIN_MIN_BUILD_10,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-16, -45}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WIN10_1607_LogonSessionList),	PTRN_WIN10_1607_LogonSessionList},	{0, NULL}, {-4, -34}},
 };
 #endif
 

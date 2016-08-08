@@ -53,6 +53,28 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10 {
 	/* buffer */
 } MSV1_0_PRIMARY_CREDENTIAL_10, *PMSV1_0_PRIMARY_CREDENTIAL_10;
 
+typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10_1607 { 
+	LSA_UNICODE_STRING LogonDomainName; 
+	LSA_UNICODE_STRING UserName;
+	PVOID pNtlmCredIsoInProc;
+	BOOLEAN isIso;
+	BOOLEAN isNtOwfPassword;
+	BOOLEAN isLmOwfPassword;
+	BOOLEAN isShaOwPassword;
+	BOOLEAN isDPAPIProtected;
+	BYTE align0;
+	BYTE align1;
+	BYTE align2;
+	#pragma pack(push, 2) 
+	BYTE DPAPIProtected[LM_NTLM_HASH_LENGTH + 6]; // 020000000000
+	DWORD align3; // 00000000
+	#pragma pack(pop) 
+	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
+	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
+	BYTE ShaOwPassword[SHA_DIGEST_LENGTH];
+	/* buffer */
+} MSV1_0_PRIMARY_CREDENTIAL_10_1607, *PMSV1_0_PRIMARY_CREDENTIAL_10_1607;
+
 typedef struct _MSV1_0_PRIMARY_HELPER {
 	LONG offsetToLogonDomain;
 	LONG offsetToUserName;
@@ -60,9 +82,11 @@ typedef struct _MSV1_0_PRIMARY_HELPER {
 	LONG offsetToisNtOwfPassword;
 	LONG offsetToisLmOwfPassword;
 	LONG offsetToisShaOwPassword;
+	LONG offsetToisDPAPIProtected;
 	LONG offsetToNtOwfPassword;
 	LONG offsetToLmOwfPassword;
 	LONG offsetToShaOwPassword;
+	LONG offsetToDPAPIProtected;
 	LONG offsetToIso;
 } MSV1_0_PRIMARY_HELPER, *PMSV1_0_PRIMARY_HELPER;
 

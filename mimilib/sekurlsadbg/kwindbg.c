@@ -229,7 +229,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 {
 	PUNICODE_STRING username = NULL, domain = NULL, password = NULL;
 	PKIWI_CREDENTIAL_KEYS pKeys = NULL;
-	PKERB_HASHPASSWORD_6 pHashPassword;
+	PKERB_HASHPASSWORD_GENERIC pHashPassword;
 	UNICODE_STRING buffer;
 	DWORD type, i;
 	BOOL isNull = FALSE;
@@ -269,6 +269,11 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						{
 							dprintf("\n\t * SHA1     : ");
 							kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToShaOwPassword, SHA_DIGEST_LENGTH, 0);
+						}
+						if(pMSVHelper->offsetToisDPAPIProtected && *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisDPAPIProtected))
+						{
+							dprintf("\n\t * DPAPI    : ");
+							kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToDPAPIProtected + 6, LM_NTLM_HASH_LENGTH, 0); // 020000000000
 						}
 					}
 					else kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
@@ -316,7 +321,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		}
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
 		{
-			pHashPassword = (PKERB_HASHPASSWORD_6) mesCreds;
+			pHashPassword = (PKERB_HASHPASSWORD_GENERIC) mesCreds;
 			dprintf("\t   %s ", kuhl_m_kerberos_ticket_etype(pHashPassword->Type));
 			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
 			{
@@ -343,6 +348,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		{
 			if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10)
 				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL) mesCreds)->Password;
+			else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607)
+				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->Password;
 
 			if(mesCreds->UserName.Buffer || mesCreds->Domaine.Buffer || mesCreds->Password.Buffer)
 			{
@@ -562,7 +569,7 @@ void kuhl_sekurlsa_dpapi_display_backupkey(ULONG_PTR pGuid, ULONG_PTR pPb, ULONG
 
 	if(pGuid && pPb && pCb)
 	{
-		dprintf("\n%s", text);
+		dprintf("%s", text);
 		if(ReadMemory(pGuid, &guid, sizeof(GUID), NULL))
 			kull_m_string_displayGUID(&guid);
 		dprintf("\n");
@@ -610,7 +617,10 @@ void kuhl_sekurlsa_dpapi_display_backupkey(ULONG_PTR pGuid, ULONG_PTR pPb, ULONG
 
 void kuhl_sekurlsa_dpapi_backupkeys()
 {
+	ULONG_PTR g_fSystemCredsInitialized, g_rgbSystemCredMachine, g_rgbSystemCredUser;
 	ULONG_PTR g_guidPreferredKey, g_pbPreferredKey, g_cbPreferredKey, g_guidW2KPreferredKey, g_pbW2KPreferredKey, g_cbW2KPreferredKey;
+	BOOL isSystemCredsInitialized;
+	BYTE rgbSystemCredMachine[SHA_DIGEST_LENGTH], rgbSystemCredUser[SHA_DIGEST_LENGTH];
 
 	if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_8)
 	{
@@ -620,6 +630,10 @@ void kuhl_sekurlsa_dpapi_backupkeys()
 		g_guidW2KPreferredKey = GetExpression("lsasrv!g_guidW2KPreferredKey");
 		g_pbW2KPreferredKey = GetExpression("lsasrv!g_pbW2KPreferredKey");
 		g_cbW2KPreferredKey = GetExpression("lsasrv!g_cbW2KPreferredKey");
+
+		g_fSystemCredsInitialized = GetExpression("lsasrv!g_fSystemCredsInitialized");
+		g_rgbSystemCredMachine = GetExpression("lsasrv!g_rgbSystemCredMachine");
+		g_rgbSystemCredUser = GetExpression("lsasrv!g_rgbSystemCredUser");
 	}
 	else
 	{
@@ -629,6 +643,10 @@ void kuhl_sekurlsa_dpapi_backupkeys()
 		g_guidW2KPreferredKey = GetExpression("dpapisrv!g_guidW2KPreferredKey");
 		g_pbW2KPreferredKey = GetExpression("dpapisrv!g_pbW2KPreferredKey");
 		g_cbW2KPreferredKey = GetExpression("dpapisrv!g_cbW2KPreferredKey");
+
+		g_fSystemCredsInitialized = GetExpression("dpapisrv!g_fSystemCredsInitialized");
+		g_rgbSystemCredMachine = GetExpression("dpapisrv!g_rgbSystemCredMachine");
+		g_rgbSystemCredUser = GetExpression("dpapisrv!g_rgbSystemCredUser");
 	}
 	
 	if((g_guidPreferredKey && g_pbPreferredKey && g_cbPreferredKey) || (g_guidW2KPreferredKey && g_pbW2KPreferredKey && g_cbW2KPreferredKey))
@@ -638,4 +656,28 @@ void kuhl_sekurlsa_dpapi_backupkeys()
 		kuhl_sekurlsa_dpapi_display_backupkey(g_guidW2KPreferredKey, g_pbW2KPreferredKey, g_cbW2KPreferredKey, "Compatibility prefered key: ");
 	}
 	
+	if(g_fSystemCredsInitialized && g_rgbSystemCredMachine && g_rgbSystemCredUser)
+	{
+		if(ReadMemory(g_fSystemCredsInitialized, &isSystemCredsInitialized, sizeof(BOOL), NULL))
+		{
+			dprintf("\nDPAPI System\n============\n");
+			if(isSystemCredsInitialized)
+			{
+				if(
+					ReadMemory(g_rgbSystemCredMachine, rgbSystemCredMachine, sizeof(rgbSystemCredMachine), NULL) &&
+					ReadMemory(g_rgbSystemCredUser, rgbSystemCredUser, sizeof(rgbSystemCredUser), NULL)
+					)
+				{
+					dprintf("full: ");
+					kull_m_string_dprintf_hex(rgbSystemCredMachine, sizeof(rgbSystemCredMachine), 0);
+					kull_m_string_dprintf_hex(rgbSystemCredUser, sizeof(rgbSystemCredUser), 0);
+					dprintf("\nm/u : ");
+					kull_m_string_dprintf_hex(rgbSystemCredMachine, sizeof(rgbSystemCredMachine), 0);
+					dprintf(" / ");
+					kull_m_string_dprintf_hex(rgbSystemCredUser, sizeof(rgbSystemCredUser), 0);
+					dprintf("\n");
+				}
+			}
+		}
+	}
 }

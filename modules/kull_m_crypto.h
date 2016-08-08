@@ -66,6 +66,7 @@ DWORD kull_m_crypto_hash_len(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_blocklen(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId);
 NTSTATUS kull_m_crypto_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations);
+BOOL kull_m_crypto_genericAES128Decrypt(LPCVOID pKey, LPCVOID pIV, LPCVOID pData, DWORD dwDataLen, LPVOID *pOut, DWORD *dwOutLen);
 
 typedef struct _KULL_M_CRYPTO_DUAL_STRING_DWORD {
 	PCWSTR	name;

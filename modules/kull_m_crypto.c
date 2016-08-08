@@ -481,6 +481,45 @@ NTSTATUS kull_m_crypto_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, 
 	return status;
 }
 
+BOOL kull_m_crypto_genericAES128Decrypt(LPCVOID pKey, LPCVOID pIV, LPCVOID pData, DWORD dwDataLen, LPVOID *pOut, DWORD *dwOutLen)
+{
+	BOOL status = FALSE;
+	HCRYPTPROV hProv;
+	HCRYPTKEY hKey;
+	DWORD mode = CRYPT_MODE_CBC;
+
+	if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
+	{
+		if(kull_m_crypto_hkey(hProv, CALG_AES_128, pKey, 16, 0, &hKey, NULL))
+		{
+			if(CryptSetKeyParam(hKey, KP_MODE, (LPCBYTE) &mode, 0))
+			{
+				if(CryptSetKeyParam(hKey, KP_IV, (LPCBYTE) pIV, 0))
+				{
+					if(*pOut = LocalAlloc(LPTR, dwDataLen))
+					{
+						*dwOutLen = dwDataLen;
+						RtlCopyMemory(*pOut, pData, dwDataLen);
+						if(!(status = CryptDecrypt(hKey, 0, TRUE, 0, (PBYTE) *pOut, dwOutLen)))
+						{
+							PRINT_ERROR_AUTO(L"CryptDecrypt");
+							*pOut = LocalFree(*pOut);
+							*dwOutLen = 0;
+						}
+					}
+				}
+				else PRINT_ERROR_AUTO(L"CryptSetKeyParam (IV)");
+			}
+			else PRINT_ERROR_AUTO(L"CryptSetKeyParam (MODE)");
+			CryptDestroyKey(hKey);
+		}
+		else PRINT_ERROR_AUTO(L"kull_m_crypto_hkey");
+		CryptReleaseContext(hProv, 0);
+	}
+	else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+	return status;
+}
+
 const KULL_M_CRYPTO_DUAL_STRING_DWORD kull_m_crypto_system_stores[] = {
 	{L"CERT_SYSTEM_STORE_CURRENT_USER",					CERT_SYSTEM_STORE_CURRENT_USER},
 	{L"CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY",	CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY},

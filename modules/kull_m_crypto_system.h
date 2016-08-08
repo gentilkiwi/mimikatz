@@ -151,23 +151,6 @@ typedef struct _KERB_CHECKSUM {
 	PVOID unk0_null;
 } KERB_CHECKSUM, *PKERB_CHECKSUM;
 
-typedef struct _KERB_HASHPASSWORD_GENERIC {
-	DWORD Type;
-	SIZE_T Size;
-	PBYTE Checksump;
-} KERB_HASHPASSWORD_GENERIC, *PKERB_HASHPASSWORD_GENERIC;
-
-typedef struct _KERB_HASHPASSWORD_5 {
-	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962
-	KERB_HASHPASSWORD_GENERIC generic;
-} KERB_HASHPASSWORD_5, *PKERB_HASHPASSWORD_5;
-
-typedef struct _KERB_HASHPASSWORD_6 {
-	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962
-	PVOID stringToKey; // AES Iterations (dword ?)
-	KERB_HASHPASSWORD_GENERIC generic;
-} KERB_HASHPASSWORD_6, *PKERB_HASHPASSWORD_6;
-
 typedef NTSTATUS (WINAPI * PKERB_ECRYPT_INITIALIZE) (LPCVOID Key, DWORD KeySize, DWORD KeyUsage, PVOID * pContext);
 typedef NTSTATUS (WINAPI * PKERB_ECRYPT_ENCRYPT) (PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize);
 typedef NTSTATUS (WINAPI * PKERB_ECRYPT_DECRYPT) (PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize);

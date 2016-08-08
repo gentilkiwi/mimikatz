@@ -12,6 +12,7 @@ BYTE PTRN_WI61_MasterKeyCacheList[]	= {0x33, 0xc0, 0xeb, 0x20, 0x48, 0x8d, 0x05}
 BYTE PTRN_WI62_MasterKeyCacheList[]	= {0x4c, 0x89, 0x1f, 0x48, 0x89, 0x47, 0x08, 0x49, 0x39, 0x43, 0x08, 0x0f, 0x85};
 BYTE PTRN_WI63_MasterKeyCacheList[]	= {0x08, 0x48, 0x39, 0x48, 0x08, 0x0f, 0x85};
 BYTE PTRN_WI64_MasterKeyCacheList[]	= {0x48, 0x89, 0x4e, 0x08, 0x48, 0x39, 0x48, 0x08};
+BYTE PTRN_WI64_1607_MasterKeyCacheList[]	= {0x48, 0x89, 0x4f, 0x08, 0x48, 0x89, 0x78, 0x08};
 										 
 KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_W2K3_MasterKeyCacheList),	PTRN_W2K3_MasterKeyCacheList},	{0, NULL}, {-4}},
@@ -19,7 +20,8 @@ KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WI61_MasterKeyCacheList),	PTRN_WI61_MasterKeyCacheList},	{0, NULL}, { 7}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WI62_MasterKeyCacheList),	PTRN_WI62_MasterKeyCacheList},	{0, NULL}, {-4}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI63_MasterKeyCacheList),	PTRN_WI63_MasterKeyCacheList},	{0, NULL}, {-10}},
-	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WI64_MasterKeyCacheList),	PTRN_WI64_MasterKeyCacheList},	{0, NULL}, {-7}},
+	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WI64_MasterKeyCacheList),	PTRN_WI64_MasterKeyCacheList},	{0, NULL}, {-7}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WI64_1607_MasterKeyCacheList),	PTRN_WI64_1607_MasterKeyCacheList},	{0, NULL}, {11}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_MasterKeyCacheList[]	= {0x33, 0xc0, 0x40, 0xa3};
