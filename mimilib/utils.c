@@ -29,3 +29,13 @@ void klog_password(FILE * logfile, PUNICODE_STRING pPassword)
 				klog(logfile, L"%02x ", ((LPCBYTE) pPassword->Buffer)[i]);
 	}
 }
+
+void klog_sid(FILE * logfile, PSID pSid)
+{
+	LPWSTR stringSid;
+	if(pSid && ConvertSidToStringSid(pSid, &stringSid))
+	{
+		klog(logfile, L"%s", stringSid);
+		LocalFree(stringSid);
+	}
+}

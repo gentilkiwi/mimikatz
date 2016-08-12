@@ -985,12 +985,21 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 							if(pMSVHelper->offsetToisDPAPIProtected && *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisDPAPIProtected))
 							{
 								kprintf(L"\n\t * DPAPI    : ");
-								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToDPAPIProtected + 6, LM_NTLM_HASH_LENGTH, 0); // 020000000000
+								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToDPAPIProtected, LM_NTLM_HASH_LENGTH, 0); // 020000000000
 							}
 							if(sid && (*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) || *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword)))
 								kuhl_m_dpapi_oe_credential_add(sid, NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) ? msvCredentials + pMSVHelper->offsetToNtOwfPassword : NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword) ? msvCredentials + pMSVHelper->offsetToShaOwPassword : NULL, NULL, NULL);
 						}
-						else kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
+						else
+						{
+							if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_10_1607)
+							{
+								kprintf(L"\n\t   * unkSHA1: ");
+								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT), SHA_DIGEST_LENGTH, 0);	
+								msvCredentials += SHA_DIGEST_LENGTH;
+							}
+							kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
+						}
 						break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
 					if(kull_m_rpc_DecodeCredentialKeys(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length, &pKeys))

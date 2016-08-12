@@ -36,6 +36,7 @@
 
 void klog(FILE * logfile, PCWCHAR format, ...);
 void klog_password(FILE * logfile, PUNICODE_STRING pPassword);
+void klog_sid(FILE * logfile, PSID pSid);
 
 typedef struct _REMOTE_LIB_FUNC {
 	DWORD	outputSize;

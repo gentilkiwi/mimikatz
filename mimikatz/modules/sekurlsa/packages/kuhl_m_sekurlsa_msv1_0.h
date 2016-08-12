@@ -65,8 +65,10 @@ typedef struct _MSV1_0_PRIMARY_CREDENTIAL_10_1607 {
 	BYTE align0;
 	BYTE align1;
 	BYTE align2;
-	#pragma pack(push, 2) 
-	BYTE DPAPIProtected[LM_NTLM_HASH_LENGTH + 6]; // 020000000000
+	DWORD unkD; // 1/2
+	#pragma pack(push, 2)
+	BYTE unk[2];  // 0000
+	BYTE DPAPIProtected[LM_NTLM_HASH_LENGTH];
 	DWORD align3; // 00000000
 	#pragma pack(pop) 
 	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
