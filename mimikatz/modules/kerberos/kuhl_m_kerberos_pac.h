@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "../kuhl_m.h"
+#include "kuhl_m_kerberos_claims.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_crypto_system.h"
 #include "../modules/rpc/kull_m_rpc_ms-pac.h"
@@ -16,6 +17,9 @@
 #define PACINFO_TYPE_CHECKSUM_SRV			0x00000006
 #define PACINFO_TYPE_CHECKSUM_KDC			0x00000007
 #define PACINFO_TYPE_CNAME_TINFO			0x0000000a
+#define PACINFO_TYPE_UPN_DNS				0x0000000c
+#define PACINFO_TYPE_CLIENT_CLAIMS			0x0000000d
+#define PACINFO_TYPE_DEVICE_CLAIMS			0x0000000f
 
 typedef struct _PAC_INFO_BUFFER {
 	ULONG ulType;
@@ -44,7 +48,15 @@ typedef struct _PAC_CLIENT_INFO {
 	WCHAR Name[ANYSIZE_ARRAY];
 } PAC_CLIENT_INFO, *PPAC_CLIENT_INFO;
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE *pacType, DWORD *pacLength);
+typedef struct _UPN_DNS_INFO {
+	USHORT UpnLength;
+	USHORT UpnOffset;
+	USHORT DnsDomainNameLength;
+	USHORT DnsDomainNameOffset;
+	ULONG Flags;
+} UPN_DNS_INFO, *PUPN_DNS_INFO;
+
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PCLAIMS_SET pClaimsSet, PPACTYPE *pacType, DWORD *pacLength);
 BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PKERB_VALIDATION_INFO validationInfo, PPAC_CLIENT_INFO *pacClientInfo, DWORD *pacClientInfoLength);
 NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD SignatureType, LPCVOID key, DWORD keySize);
 

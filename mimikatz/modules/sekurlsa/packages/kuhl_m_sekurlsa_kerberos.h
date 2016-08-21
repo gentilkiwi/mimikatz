@@ -532,9 +532,9 @@ typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_10_1607 {
 	ULONG		KeyType;
 	KIWI_KERBEROS_BUFFER	Key;
 	PVOID		unk14393_1;
-	PVOID		unk3;
-	PVOID		unk4;
-	PVOID		unk5;
+	PVOID		unk3; // ULONG		KeyType2;
+	PVOID		unk4; // KIWI_KERBEROS_BUFFER	Key2;
+	PVOID		unk5; // up
 	FILETIME	StartTime;
 	FILETIME	EndTime;
 	FILETIME	RenewUntil;

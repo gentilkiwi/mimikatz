@@ -66,6 +66,7 @@ VOID kuhl_m_sekurlsa_pth_luid(PSEKURLSA_PTH_DATA data);
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _KIWI_CREDENTIAL_KEY * key, LPCWSTR sid);
 VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
+VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
 void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport);
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
 void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
@@ -189,3 +190,9 @@ typedef struct _LSAISO_DATA_BLOB {
 	DWORD origSize;
 	BYTE data[ANYSIZE_ARRAY];
 } LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;
+
+typedef struct _ENC_LSAISO_DATA_BLOB {
+	BYTE unkData1[16];
+	BYTE unkData2[16];
+	BYTE data[ANYSIZE_ARRAY];
+} ENC_LSAISO_DATA_BLOB, *PENC_LSAISO_DATA_BLOB;

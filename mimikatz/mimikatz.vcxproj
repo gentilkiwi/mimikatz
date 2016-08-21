@@ -111,6 +111,7 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_dpapi-entries.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_drsr.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-bkrp_c.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-claims.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c" />
@@ -132,6 +133,7 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c" />
+    <ClCompile Include="modules\kerberos\kuhl_m_kerberos_claims.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_pac.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ticket.c" />
     <ClCompile Include="modules\kuhl_m_busylight.c" />
@@ -193,6 +195,7 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_dpapi-entries.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_drsr.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-claims.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h" />
@@ -212,6 +215,7 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h" />
+    <ClInclude Include="modules\kerberos\kuhl_m_kerberos_claims.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_pac.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ticket.h" />
     <ClInclude Include="modules\kuhl_m.h" />

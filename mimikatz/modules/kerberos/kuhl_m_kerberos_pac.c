@@ -5,13 +5,13 @@
 */
 #include "kuhl_m_kerberos_pac.h"
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PPACTYPE * pacType, DWORD * pacLength)
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PCLAIMS_SET pClaimsSet, PPACTYPE * pacType, DWORD * pacLength)
 {
 	BOOL status = FALSE;
-	PVOID pLogonInfo = NULL;
+	PVOID pLogonInfo = NULL, pClaims = NULL;
 	PPAC_CLIENT_INFO pClientInfo = NULL;
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
-	DWORD szLogonInfo = 0, szLogonInfoAligned, szClientInfo = 0, szClientInfoAligned, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 3 * sizeof(PAC_INFO_BUFFER);
+	DWORD n = 4, szLogonInfo = 0, szLogonInfoAligned, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 3 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
@@ -23,13 +23,20 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 			szLogonInfoAligned = SIZE_ALIGN(szLogonInfo, 8);
 		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(validationInfo, &pClientInfo, &szClientInfo))
 			szClientInfoAligned = SIZE_ALIGN(szClientInfo, 8);
+		if(pClaimsSet)
+			if(kuhl_m_kerberos_claims_encode_ClaimsSet(pClaimsSet, &pClaims, &szClaims))
+			{
+				szClaimsAligned = SIZE_ALIGN(szClaims, 8);
+				n++;
+				offsetData += sizeof(PAC_INFO_BUFFER);
+			}
 
 		if(pLogonInfo && pClientInfo)
 		{
-			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + 2 * szSignatureAligned;
+			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szClaimsAligned + 2 * szSignatureAligned;
 			if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
 			{
-				(*pacType)->cBuffers = 4;
+				(*pacType)->cBuffers = n;
 				(*pacType)->Version = 0;
 
 				(*pacType)->Buffers[0].cbBufferSize = szLogonInfo;
@@ -42,15 +49,23 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 				(*pacType)->Buffers[1].Offset = (*pacType)->Buffers[0].Offset + szLogonInfoAligned;
 				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[1].Offset, pClientInfo, (*pacType)->Buffers[1].cbBufferSize);
 
-				(*pacType)->Buffers[2].cbBufferSize = szSignature;
-				(*pacType)->Buffers[2].ulType = PACINFO_TYPE_CHECKSUM_SRV;
-				(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
-				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
+				if(szClaimsAligned)
+				{
+					(*pacType)->Buffers[2].cbBufferSize = szClaims;
+					(*pacType)->Buffers[2].ulType = PACINFO_TYPE_CLIENT_CLAIMS;
+					(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
+					RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, pClaims, (*pacType)->Buffers[2].cbBufferSize);
+				}
 
-				(*pacType)->Buffers[3].cbBufferSize = szSignature;
-				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_CHECKSUM_KDC;
-				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szSignatureAligned;
-				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[3].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
+				(*pacType)->Buffers[n - 2].cbBufferSize = szSignature;
+				(*pacType)->Buffers[n - 2].ulType = PACINFO_TYPE_CHECKSUM_SRV;
+				(*pacType)->Buffers[n - 2].Offset = (*pacType)->Buffers[n - 3].Offset + SIZE_ALIGN((*pacType)->Buffers[n - 3].cbBufferSize, 8);
+				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[n - 2].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
+
+				(*pacType)->Buffers[n - 1].cbBufferSize = szSignature;
+				(*pacType)->Buffers[n - 1].ulType = PACINFO_TYPE_CHECKSUM_KDC;
+				(*pacType)->Buffers[n - 1].Offset = (*pacType)->Buffers[n - 2].Offset + szSignatureAligned;
+				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[n - 1].Offset, &signature, FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature));
 
 				status = TRUE;
 			}
@@ -60,6 +75,8 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 			LocalFree(pLogonInfo);
 		if(pClientInfo)
 			LocalFree(pClientInfo);
+		if(pClaims)
+			LocalFree(pClaims);
 	}
 	return status;
 }
@@ -132,6 +149,9 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 	PKERB_VALIDATION_INFO pValInfo = NULL;
 	PPAC_SIGNATURE_DATA pSignatureData;
 	PPAC_CLIENT_INFO pClientInfo;
+	PUPN_DNS_INFO pUpnDnsInfo;
+	PCLAIMS_SET_METADATA pClaimsSetMetadata = NULL;
+	PCLAIMS_SET claimsSet = NULL;
 
 	if(argc)
 	{
@@ -191,8 +211,8 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 						kprintf(L"ResourceGroupIds       ");
 						for(j = 0; j < pValInfo->ResourceGroupCount; j++)
 							kprintf(L"%u, ", pValInfo->ResourceGroupIds[j].RelativeId); //, pGroup[j].Attributes);
-						kuhl_m_pac_FreeValidationInformation(&pValInfo);
 						kprintf(L"\n");
+						kull_m_pac_FreeValidationInformation(&pValInfo);
 					}
 					break;
 				case PACINFO_TYPE_CHECKSUM_SRV: // Server Signature
@@ -207,7 +227,36 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 					pClientInfo  = (PPAC_CLIENT_INFO) ((PBYTE) pacType + pacType->Buffers[i].Offset);
 					kprintf(L"*** Client name and ticket information ***\n");
 					kprintf(L"ClientId %016llx - ", pClientInfo->ClientId); kull_m_string_displayLocalFileTime(&pClientInfo->ClientId); kprintf(L"\n");
-					kprintf(L"Client   (%hu, %.*s)\n", pClientInfo->NameLength, pClientInfo->NameLength / sizeof(WCHAR), pClientInfo->Name);
+					kprintf(L"Client   %.*s\n", pClientInfo->NameLength / sizeof(WCHAR), pClientInfo->Name);
+					break;
+				case PACINFO_TYPE_UPN_DNS:
+					pUpnDnsInfo = (PUPN_DNS_INFO) ((PBYTE) pacType + pacType->Buffers[i].Offset);
+					kprintf(L"*** UPN and DNS information ***\n");
+					kull_m_string_wprintf_hex(pUpnDnsInfo, pacType->Buffers[i].cbBufferSize, 2);
+					kprintf(L"UPN            %.*s\n", pUpnDnsInfo->UpnLength / sizeof(WCHAR), (PBYTE) pUpnDnsInfo + pUpnDnsInfo->UpnOffset);
+					kprintf(L"DnsDomainName  %.*s\n", pUpnDnsInfo->DnsDomainNameLength / sizeof(WCHAR), (PBYTE) pUpnDnsInfo + pUpnDnsInfo->DnsDomainNameOffset);
+					kprintf(L"Flags          %08x (%u)\n", pUpnDnsInfo->Flags, pUpnDnsInfo->Flags);
+					break;
+				case PACINFO_TYPE_CLIENT_CLAIMS:
+				case PACINFO_TYPE_DEVICE_CLAIMS:
+					kprintf(L"*** %s claims Informations *** (%u)\n", (pacType->Buffers[i].ulType == PACINFO_TYPE_CLIENT_CLAIMS) ? L"Client" : L"Device", pacType->Buffers[i].cbBufferSize);
+					if(pacType->Buffers[i].cbBufferSize)
+					{
+						kull_m_string_wprintf_hex((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, 2);
+						if(kull_m_rpc_DecodeClaimsSetMetaData((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, &pClaimsSetMetadata))
+						{
+							if(pClaimsSetMetadata->usCompressionFormat == CLAIMS_COMPRESSION_FORMAT_NONE)
+							{
+								if(kull_m_rpc_DecodeClaimsSet(pClaimsSetMetadata->ClaimsSet, pClaimsSetMetadata->ulUncompressedClaimsSetSize, &claimsSet))
+								{
+									kuhl_m_kerberos_claims_displayClaimsSet(claimsSet);
+									kull_m_rpc_FreeClaimsSet(&claimsSet);
+								}
+							}
+							else PRINT_ERROR(L"Compression not supported (%hu)\n", pClaimsSetMetadata->usCompressionFormat);
+							kull_m_rpc_FreeClaimsSetMetaData(&pClaimsSetMetadata);
+						}
+					}
 					break;
 				default:
 					kull_m_string_wprintf_hex(&pacType->Buffers[i], sizeof(PAC_INFO_BUFFER), 1);

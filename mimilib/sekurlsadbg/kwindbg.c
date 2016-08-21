@@ -278,13 +278,18 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					}
 					else
 					{
+						i = *(PUSHORT) (msvCredentials + pMSVHelper->offsetToIso);
 						if(NtBuildNumber >= KULL_M_WIN_BUILD_10_1607)
 						{
-							dprintf("\n\t   * unkSHA1: ");
-							kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT), SHA_DIGEST_LENGTH, 0);	
+							//dprintf("\n\t   * unkSHA1: ");
+							//kull_m_string_dprintf_hex(msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT), SHA_DIGEST_LENGTH, 0);	
 							msvCredentials += SHA_DIGEST_LENGTH;
 						}
-						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
+						if((i == (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("NtlmHash") - 1) + 2*LM_NTLM_HASH_LENGTH + SHA_DIGEST_LENGTH)) ||
+							i == (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("NtlmHash") - 1) + 3*LM_NTLM_HASH_LENGTH + SHA_DIGEST_LENGTH))
+							kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
+						else
+							kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)), i);
 					}
 					break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
@@ -339,7 +344,10 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 				{
 					if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10) && (pHashPassword->Size > (DWORD) FIELD_OFFSET(LSAISO_DATA_BLOB, data)))
 					{
-						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) buffer.Buffer);
+						if(pHashPassword->Size <= (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("KerberosKey") - 1) + AES_256_KEY_LENGTH)) // usual ISO DATA BLOB for Kerberos AES 256 session key
+							kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) buffer.Buffer);
+						else
+							kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) buffer.Buffer, (DWORD) pHashPassword->Size);
 					}
 					else
 					{
@@ -442,11 +450,18 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PKIWI_CREDENTIAL_KEY key)
 VOID kuhl_m_sekurlsa_genericLsaIsoOutput(PLSAISO_DATA_BLOB blob)
 {
 	dprintf("\n\t   * LSA Isolated Data: %.*s", blob->typeSize, blob->data);
-	dprintf("\n\t     Unk-Key  : "); kull_m_string_dprintf_hex(blob->unkKeyData, 3*16, 0);
+	dprintf("\n\t     Unk-Key  : "); kull_m_string_dprintf_hex(blob->unkKeyData, sizeof(blob->unkKeyData), 0);
 	dprintf("\n\t     Encrypted: "); kull_m_string_dprintf_hex(blob->data + blob->typeSize, blob->origSize, 0);
 	dprintf("\n\t\t   SS:%u, TS:%u, DS:%u", blob->structSize, blob->typeSize, blob->origSize);
 	dprintf("\n\t\t   0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, E:", blob->unk0, blob->unk1, blob->unk2, blob->unk3, blob->unk4);
 	kull_m_string_dprintf_hex(blob->unkData2, sizeof(blob->unkData2), 0); dprintf(", 5:0x%x", blob->unk5);
+}
+
+VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(PENC_LSAISO_DATA_BLOB blob, DWORD size)
+{
+	dprintf("\n\t   * unkData1 : "); kull_m_string_dprintf_hex(blob->unkData1, sizeof(blob->unkData1), 0);
+	dprintf("\n\t     unkData2 : "); kull_m_string_dprintf_hex(blob->unkData2, sizeof(blob->unkData2), 0);
+	dprintf("\n\t     Encrypted: "); kull_m_string_dprintf_hex(blob->data, size - FIELD_OFFSET(ENC_LSAISO_DATA_BLOB, data), 0);
 }
 
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix)

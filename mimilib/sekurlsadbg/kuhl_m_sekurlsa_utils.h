@@ -272,6 +272,7 @@ extern NTSTATUS WINAPI RtlStringFromGUID(IN LPCGUID Guid, PUNICODE_STRING Unicod
 
 #define LM_NTLM_HASH_LENGTH	16
 #define SHA_DIGEST_LENGTH	20
+#define AES_256_KEY_LENGTH	32
 
 ULONG_PTR kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(ULONG_PTR pSecurityStruct, ULONG LUIDoffset, PLUID luidToFind);
 ULONG_PTR kuhl_m_sekurlsa_utils_pFromAVLByLuid(ULONG_PTR pTable, ULONG LUIDoffset, PLUID luidToFind);
