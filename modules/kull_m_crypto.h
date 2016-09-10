@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "kull_m_string.h"
 #include "kull_m_crypto_system.h"
+#include "kull_m_file.h"
 
 #define CALG_CRC32	(ALG_CLASS_HASH | ALG_TYPE_ANY | 0)
 
@@ -29,6 +30,10 @@ typedef struct _RSA_GENERICKEY_BLOB {
 #define PVK_NO_ENCRYPT					0
 #define PVK_RC4_PASSWORD_ENCRYPT		1
 #define PVK_RC2_CBC_PASSWORD_ENCRYPT	2
+
+#ifndef IPSEC_FLAG_CHECK
+#define IPSEC_FLAG_CHECK 0xf42a19b6
+#endif
 
 typedef struct _PVK_FILE_HDR {
 	DWORD	dwMagic;
@@ -67,6 +72,11 @@ DWORD kull_m_crypto_cipher_blocklen(ALG_ID hashId);
 DWORD kull_m_crypto_cipher_keylen(ALG_ID hashId);
 NTSTATUS kull_m_crypto_get_dcc(PBYTE dcc, PBYTE ntlm, PUNICODE_STRING Username, DWORD realIterations);
 BOOL kull_m_crypto_genericAES128Decrypt(LPCVOID pKey, LPCVOID pIV, LPCVOID pData, DWORD dwDataLen, LPVOID *pOut, DWORD *dwOutLen);
+
+BOOL kull_m_crypto_exportPfx(HCERTSTORE hStore, LPCWSTR filename);
+BOOL kull_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD keyLen, BOOL isPvk, LPCWSTR filename);
+BOOL kull_m_crypto_DerAndKeyInfoToPfx(LPCVOID der, DWORD derLen, PCRYPT_KEY_PROV_INFO pInfo, LPCWSTR filename);
+BOOL kull_m_crypto_DerAndKeyInfoToStore(LPCVOID der, DWORD derLen, PCRYPT_KEY_PROV_INFO pInfo, DWORD systemStore, LPCWSTR store, BOOL force);
 
 typedef struct _KULL_M_CRYPTO_DUAL_STRING_DWORD {
 	PCWSTR	name;

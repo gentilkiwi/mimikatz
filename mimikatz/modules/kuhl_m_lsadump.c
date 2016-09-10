@@ -1544,7 +1544,7 @@ void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size
 				len = secret->certLen;
 				if(filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"pfx"))
 				{
-					kprintf(L"\tPFX container  : %s - \'%s\'\n", kuhl_m_crypto_DerAndKeyToPfx(data, len, secret->data, secret->keyLen, FALSE, filename) ? L"OK" : L"KO", filename);
+					kprintf(L"\tPFX container  : %s - \'%s\'\n", kull_m_crypto_DerAndKeyToPfx(data, len, secret->data, secret->keyLen, FALSE, filename) ? L"OK" : L"KO", filename);
 					LocalFree(filename);
 				}
 				filename = kuhl_m_crypto_generateFileName(L"ntds", L"capi", 0, shortname, L"der");

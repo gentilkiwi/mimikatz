@@ -520,6 +520,89 @@ BOOL kull_m_crypto_genericAES128Decrypt(LPCVOID pKey, LPCVOID pIV, LPCVOID pData
 	return status;
 }
 
+BOOL kull_m_crypto_exportPfx(HCERTSTORE hStore, LPCWSTR filename)
+{
+	BOOL isExported = FALSE;
+	CRYPT_DATA_BLOB bDataBlob = {0, NULL};
+	if(PFXExportCertStoreEx(hStore, &bDataBlob, MIMIKATZ, NULL, EXPORT_PRIVATE_KEYS | REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+	{
+		if(bDataBlob.pbData = (BYTE *) LocalAlloc(LPTR, bDataBlob.cbData))
+		{
+			if(PFXExportCertStoreEx(hStore, &bDataBlob, MIMIKATZ, NULL, EXPORT_PRIVATE_KEYS | REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+				isExported = kull_m_file_writeData(filename, bDataBlob.pbData, bDataBlob.cbData);
+			LocalFree(bDataBlob.pbData);
+		}
+	}
+	if(!isExported)
+		PRINT_ERROR_AUTO(L"PFXExportCertStoreEx");
+	return isExported;
+}
+
+BOOL kull_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD keyLen, BOOL isPvk, LPCWSTR filename) // no PVK support at this time
+{
+	BOOL isExported = FALSE;
+	CRYPT_KEY_PROV_INFO infos = {NULL, MS_ENHANCED_PROV, PROV_RSA_FULL, 0, 0, NULL, AT_KEYEXCHANGE};
+	HCRYPTPROV hCryptProv;
+	HCRYPTKEY hCryptKey;
+	if(infos.pwszContainerName = kull_m_string_getRandomGUID())
+	{
+		if(CryptAcquireContext(&hCryptProv, infos.pwszContainerName, infos.pwszProvName, infos.dwProvType, CRYPT_NEWKEYSET))
+		{
+			if(CryptImportKey(hCryptProv, (LPCBYTE) key,  keyLen, 0, CRYPT_EXPORTABLE, &hCryptKey))
+			{
+				isExported = kull_m_crypto_DerAndKeyInfoToPfx(der, derLen, &infos, filename);
+				CryptDestroyKey(hCryptKey);
+			}
+			else PRINT_ERROR_AUTO(L"CryptImportKey");
+			CryptReleaseContext(hCryptProv, 0);
+			if(!CryptAcquireContext(&hCryptProv, infos.pwszContainerName, NULL, PROV_RSA_FULL, CRYPT_DELETEKEYSET))
+				PRINT_ERROR(L"Unable to delete temp keyset %s\n", infos.pwszContainerName);
+		}
+		else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+		LocalFree(infos.pwszContainerName);
+	}
+	return isExported;
+}
+
+BOOL kull_m_crypto_DerAndKeyInfoToPfx(LPCVOID der, DWORD derLen, PCRYPT_KEY_PROV_INFO pInfo, LPCWSTR filename)
+{
+	BOOL isExported = FALSE;
+	HCERTSTORE hTempStore;
+	PCCERT_CONTEXT pCertContext;
+	if(hTempStore = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, 0, CERT_STORE_CREATE_NEW_FLAG, NULL))
+	{
+		if(CertAddEncodedCertificateToStore(hTempStore, X509_ASN_ENCODING, (LPCBYTE) der, derLen, CERT_STORE_ADD_NEW, &pCertContext))
+		{
+			if(CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, (LPCVOID) pInfo))
+				isExported = kull_m_crypto_exportPfx(hTempStore, filename);
+			else PRINT_ERROR_AUTO(L"CertSetCertificateContextProperty(CERT_KEY_PROV_INFO_PROP_ID)");
+			CertFreeCertificateContext(pCertContext);
+		}
+		else PRINT_ERROR_AUTO(L"CertAddEncodedCertificateToStore");
+		CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
+	}
+	return isExported;
+}
+
+BOOL kull_m_crypto_DerAndKeyInfoToStore(LPCVOID der, DWORD derLen, PCRYPT_KEY_PROV_INFO pInfo, DWORD systemStore, LPCWSTR store, BOOL force)
+{
+	BOOL status = FALSE;
+	HCERTSTORE hTempStore;
+	PCCERT_CONTEXT pCertContext;
+	if(hTempStore = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, 0, CERT_STORE_OPEN_EXISTING_FLAG | systemStore, store))
+	{
+		if(CertAddEncodedCertificateToStore(hTempStore, X509_ASN_ENCODING, (LPCBYTE) der, derLen, force ? CERT_STORE_ADD_ALWAYS : CERT_STORE_ADD_NEW, &pCertContext))
+		{
+			if(!(status = CertSetCertificateContextProperty(pCertContext, CERT_KEY_PROV_INFO_PROP_ID, 0, (LPCVOID) pInfo)))
+				PRINT_ERROR_AUTO(L"CertSetCertificateContextProperty(CERT_KEY_PROV_INFO_PROP_ID)");
+			CertFreeCertificateContext(pCertContext);
+		}
+		else PRINT_ERROR_AUTO(L"CertAddEncodedCertificateToStore");
+		CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
+	}
+	return status;
+}
+
 const KULL_M_CRYPTO_DUAL_STRING_DWORD kull_m_crypto_system_stores[] = {
 	{L"CERT_SYSTEM_STORE_CURRENT_USER",					CERT_SYSTEM_STORE_CURRENT_USER},
 	{L"CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY",	CERT_SYSTEM_STORE_CURRENT_USER_GROUP_POLICY},

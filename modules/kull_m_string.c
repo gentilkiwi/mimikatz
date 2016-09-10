@@ -249,20 +249,15 @@ PWSTR kull_m_string_getRandomGUID()
 {
 	UNICODE_STRING uString;
 	GUID guid;
-	HCRYPTPROV hTmpCryptProv;
 	PWSTR buffer = NULL;
-	if(CryptAcquireContext(&hTmpCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+	if(NT_SUCCESS(UuidCreate(&guid)))
 	{
-		if(CryptGenRandom(hTmpCryptProv, sizeof(GUID), (PBYTE) &guid))
+		if(NT_SUCCESS(RtlStringFromGUID(&guid, &uString)))
 		{
-			if(NT_SUCCESS(RtlStringFromGUID(&guid, &uString)))
-			{
-				if(buffer = (PWSTR) LocalAlloc(LPTR, uString.MaximumLength))
-					RtlCopyMemory(buffer, uString.Buffer, uString.MaximumLength);
-				RtlFreeUnicodeString(&uString);
-			}
+			if(buffer = (PWSTR) LocalAlloc(LPTR, uString.MaximumLength))
+				RtlCopyMemory(buffer, uString.Buffer, uString.MaximumLength);
+			RtlFreeUnicodeString(&uString);
 		}
-		CryptReleaseContext(hTmpCryptProv, 0);
 	}
 	return buffer;
 }
