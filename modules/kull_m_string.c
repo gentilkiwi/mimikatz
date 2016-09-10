@@ -244,7 +244,7 @@ void kull_m_string_displaySID(IN PSID pSid)
 	}
 	else PRINT_ERROR_AUTO(L"ConvertSidToStringSid");
 }
-
+#ifndef MIMIKATZ_W2000_SUPPORT
 PWSTR kull_m_string_getRandomGUID()
 {
 	UNICODE_STRING uString;
@@ -261,7 +261,7 @@ PWSTR kull_m_string_getRandomGUID()
 	}
 	return buffer;
 }
-
+#endif
 void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size)
 {
 	PVOID tempPtr = NULL;
