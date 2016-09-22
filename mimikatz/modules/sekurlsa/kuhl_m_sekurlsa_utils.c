@@ -6,33 +6,33 @@
 #include "kuhl_m_sekurlsa_utils.h"
 
 #ifdef _M_X64
-BYTE PTRN_WIN5_LogonSessionList[]		= {0x4c, 0x8b, 0xdf, 0x49, 0xc1, 0xe3, 0x04, 0x48, 0x8b, 0xcb, 0x4c, 0x03, 0xd8};
-BYTE PTRN_WIN6_LogonSessionList[]		= {0x4c, 0x03, 0xd8, 0x49, 0x8b, 0x03, 0x48, 0x89};
-BYTE PTRN_WIN81_LogonSessionList[]		= {0x48, 0x03, 0xc1, 0x48, 0x8b, 0x08, 0x48, 0x89};
-BYTE PTRN_WIN10_1607_LogonSessionList[]	= {0x48, 0x03, 0xC1, 0x48, 0x8B, 0x08, 0x48, 0x39, 0x41, 0x08, 0x0F, 0x85}; // to test [0x39 ...]
+BYTE PTRN_WIN5_LogonSessionList[]	= {0x4c, 0x8b, 0xdf, 0x49, 0xc1, 0xe3, 0x04, 0x48, 0x8b, 0xcb, 0x4c, 0x03, 0xd8};
+BYTE PTRN_WN60_LogonSessionList[]	= {0x33, 0xff, 0x45, 0x85, 0xc0, 0x41, 0x89, 0x75, 0x00, 0x4c, 0x8b, 0xe3, 0x0f, 0x84};
+BYTE PTRN_WN61_LogonSessionList[]	= {0x33, 0xf6, 0x45, 0x89, 0x2f, 0x4c, 0x8b, 0xf3, 0x85, 0xff, 0x0f, 0x84};
+BYTE PTRN_WN63_LogonSessionList[]	= {0x33, 0xff, 0x45, 0x89, 0x34, 0x24, 0x4c, 0x8b, 0xfb, 0x45, 0x85, 0xc0, 0x74};
+BYTE PTRN_WN6x_LogonSessionList[]	= {0x33, 0xff, 0x41, 0x89, 0x37, 0x4c, 0x8b, 0xf3, 0x45, 0x85, 0xc0, 0x74};
 KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_LogonSessionList),	PTRN_WIN5_LogonSessionList},	{0, NULL}, {-4,   0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WIN5_LogonSessionList),	PTRN_WIN5_LogonSessionList},	{0, NULL}, {-4, -45}},
-	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -60}},
-	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -59}},
-	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN6_LogonSessionList),	PTRN_WIN6_LogonSessionList},	{0, NULL}, {-4, -0}},
-	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-4, -53}},
-	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WIN10_1607_LogonSessionList),	PTRN_WIN10_1607_LogonSessionList},	{0, NULL}, {-4, -87}},
+	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WN60_LogonSessionList),	PTRN_WN60_LogonSessionList},	{0, NULL}, {21,  -4}},
+	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WN61_LogonSessionList),	PTRN_WN61_LogonSessionList},	{0, NULL}, {19,  -4}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WN6x_LogonSessionList),	PTRN_WN6x_LogonSessionList},	{0, NULL}, {16,  -4}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WN63_LogonSessionList),	PTRN_WN63_LogonSessionList},	{0, NULL}, {24,  -4}},
+	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN6x_LogonSessionList),	PTRN_WN6x_LogonSessionList},	{0, NULL}, {16,  -4}},
 };
 #elif defined _M_IX86
-BYTE PTRN_WN51_LogonSessionList[]		= {0xff, 0x50, 0x10, 0x85, 0xc0, 0x0f, 0x84};
-BYTE PTRN_WNO8_LogonSessionList[]		= {0x89, 0x71, 0x04, 0x89, 0x30, 0x8d, 0x04, 0xbd};
-BYTE PTRN_WIN8_LogonSessionList[]		= {0x89, 0x79, 0x04, 0x89, 0x38, 0x8d, 0x04, 0xb5};
-BYTE PTRN_WIN81_LogonSessionList[]		= {0x89, 0x79, 0x04, 0x89, 0x38, 0xff, 0x04, 0xb5};
-BYTE PTRN_WIN10_1607_LogonSessionList[]	= {0x8B, 0x08, 0x39, 0x41, 0x04, 0x74}; // to do "best"
+BYTE PTRN_WN51_LogonSessionList[]	= {0xff, 0x50, 0x10, 0x85, 0xc0, 0x0f, 0x84};
+BYTE PTRN_WNO8_LogonSessionList[]	= {0x89, 0x71, 0x04, 0x89, 0x30, 0x8d, 0x04, 0xbd};
+BYTE PTRN_WN80_LogonSessionList[]	= {0x8b, 0x45, 0xf8, 0x8b, 0x55, 0x08, 0x8b, 0xde, 0x89, 0x02, 0x89, 0x5d, 0xf0, 0x85, 0xc9, 0x74};
+BYTE PTRN_WN81_LogonSessionList[]	= {0x8b, 0x4d, 0xe4, 0x8b, 0x45, 0xf4, 0x89, 0x75, 0xe8, 0x89, 0x01, 0x85, 0xff, 0x74};
+BYTE PTRN_WN6x_LogonSessionList[]	= {0x8b, 0x4d, 0xe8, 0x8b, 0x45, 0xf4, 0x89, 0x75, 0xec, 0x89, 0x01, 0x85, 0xff, 0x74};
 KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WN51_LogonSessionList),	PTRN_WN51_LogonSessionList},	{0, NULL}, { 24,   0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WNO8_LogonSessionList),	PTRN_WNO8_LogonSessionList},	{0, NULL}, {-11, -43}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WNO8_LogonSessionList),	PTRN_WNO8_LogonSessionList},	{0, NULL}, {-11, -42}},
-	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WIN8_LogonSessionList),	PTRN_WIN8_LogonSessionList},	{0, NULL}, {-20, -51}},
-	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-20, -49}},
-	{KULL_M_WIN_MIN_BUILD_10,	{sizeof(PTRN_WIN81_LogonSessionList),	PTRN_WIN81_LogonSessionList},	{0, NULL}, {-16, -45}},
-	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WIN10_1607_LogonSessionList),	PTRN_WIN10_1607_LogonSessionList},	{0, NULL}, {-4, -34}},
+	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WN80_LogonSessionList),	PTRN_WN80_LogonSessionList},	{0, NULL}, { 18,  -4}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WN81_LogonSessionList),	PTRN_WN81_LogonSessionList},	{0, NULL}, { 16,  -4}},
+	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN6x_LogonSessionList),	PTRN_WN6x_LogonSessionList},	{0, NULL}, { 16,  -4}},
 };
 #endif
 
@@ -42,9 +42,6 @@ PULONG LogonSessionListCount = NULL;
 BOOL kuhl_m_sekurlsa_utils_search(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib)
 {
 	PVOID *pLogonSessionListCount = (cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_2K3) ? NULL : ((PVOID *) &LogonSessionListCount);
-#ifdef _M_X64
-	LsaSrvReferences[4].Offsets.off1 = (pLib->Informations.TimeDateStamp > 0x53480000) ? -54 : -61; // 6.2 post or pre KB
-#endif
 	return kuhl_m_sekurlsa_utils_search_generic(cLsass, pLib, LsaSrvReferences,  ARRAYSIZE(LsaSrvReferences), (PVOID *) &LogonSessionList, pLogonSessionListCount, NULL, NULL);
 }
 

@@ -222,7 +222,6 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 							if(kuhl_m_sekurlsa_utils_search(&cLsass, &kuhl_m_sekurlsa_msv_package.Module))
 							{
 								status = lsassLocalHelper->AcquireKeys(&cLsass, &lsassPackages[0]->Module.Informations);
-
 								if(!NT_SUCCESS(status))
 									PRINT_ERROR(L"Key import\n");
 							}

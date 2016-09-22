@@ -64,6 +64,7 @@ NTSTATUS kuhl_m_crypto_l_providers(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_stores(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_crypto_l_sc(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[]);
@@ -79,3 +80,6 @@ void kuhl_m_crypto_exportKeyToFile(NCRYPT_KEY_HANDLE hCngKey, HCRYPTKEY hCapiKey
 void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, const wchar_t * systemStore, const wchar_t * store, const DWORD index, const wchar_t * name);
 wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * term1, const DWORD index, const wchar_t * name, const wchar_t * ext);
 void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport);
+void kuhl_m_crypto_l_keys_capi(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwProvType, DWORD dwFlags, BOOL export, LPCWSTR szStore);
+DWORD kuhl_m_crypto_l_sc_provtypefromname(LPCWSTR szProvider);
+PWSTR kuhl_m_crypto_l_sc_containerFromReader(LPCWSTR reader);

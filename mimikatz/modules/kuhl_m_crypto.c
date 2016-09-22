@@ -14,6 +14,7 @@ const KUHL_M_C kuhl_m_c_crypto[] = {
 	{kuhl_m_crypto_l_stores,		L"stores",			L"List cryptographic stores"},
 	{kuhl_m_crypto_l_certificates,	L"certificates",	L"List (or export) certificates"},
 	{kuhl_m_crypto_l_keys,			L"keys",			L"List (or export) keys containers"},
+	{kuhl_m_crypto_l_sc,			L"sc",				L"List smartcard readers"},
 	{kuhl_m_crypto_hash,			L"hash",			L"Hash a password with optional username"},
 	{kuhl_m_crypto_system,			L"system",			L"Describe a Windows System Certificate (file, TODO:registry or hive)"},
 	{kuhl_m_crypto_c_sc_auth,		L"scauth",			L"Create a authentication certitifate (smartcard like) from a CA"},
@@ -99,7 +100,7 @@ NTSTATUS kuhl_m_crypto_clean()
 
 NTSTATUS kuhl_m_crypto_l_providers(int argc, wchar_t * argv[])
 {
-	DWORD provType,tailleRequise, index = 0;
+	DWORD provType, tailleRequise, index = 0;
 	wchar_t * monProvider;
 	PCWCHAR name;
 	PCRYPT_PROVIDERS pBuffer = NULL;
@@ -283,21 +284,86 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
+void kuhl_m_crypto_l_keys_capi(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwProvType, DWORD dwFlags, BOOL export, LPCWSTR szStore)
 {
-	HCRYPTPROV hCryptProv;
-	DWORD i, dwSizeNeeded, dwUniqueSizeNeeded, ks, CRYPT_first_next = CRYPT_FIRST;
+	HCRYPTPROV hCryptProv, hCryptKeyProv;
+	HCRYPTKEY hCapiKey;
+	DWORD i, dwSizeNeeded, dwUniqueSizeNeeded, ks, CRYPT_first_next = CRYPT_FIRST, dwContainer = szContainer ? (DWORD) wcslen(szContainer) : 0, dwSubContainer;
 	BOOL success;
 	char *aContainerName, *aUniqueName;
-	wchar_t *containerName, *uUniqueName;
-	HCRYPTPROV hCryptKeyProv;
-	HCRYPTKEY hCapiKey;
+	wchar_t *containerName, *fullContainer;
 
+	if(CryptAcquireContext(&hCryptProv, szContainer, szProvider, dwProvType, CRYPT_VERIFYCONTEXT | dwFlags))
+	{
+		success = CryptGetProvParam(hCryptProv, PP_ENUMCONTAINERS, NULL, &dwSizeNeeded, CRYPT_first_next);
+		if(aContainerName = (char *) LocalAlloc(LPTR, dwSizeNeeded))
+		{
+			i = 0;
+			while(success)
+			{
+				if(success = (CryptGetProvParam(hCryptProv, PP_ENUMCONTAINERS, (BYTE *) aContainerName, &dwSizeNeeded, CRYPT_first_next)))
+				{
+					if(containerName = kull_m_string_qad_ansi_to_unicode(aContainerName))
+					{
+						kprintf(L"\n%2u. %s\n", i,  containerName);
+						dwSubContainer = (DWORD) wcslen(containerName);
+
+						if(fullContainer = (wchar_t *) LocalAlloc(LPTR, (dwContainer + dwSubContainer + 1) * sizeof(wchar_t)))
+						{
+							if(dwContainer)
+								RtlCopyMemory(fullContainer, szContainer, dwContainer * sizeof(wchar_t));
+							RtlCopyMemory(fullContainer + dwContainer, containerName, dwSubContainer * sizeof(wchar_t));
+
+							if(CryptAcquireContext(&hCryptKeyProv, fullContainer, szProvider, dwProvType, dwFlags))
+							{
+								if(CryptGetProvParam(hCryptKeyProv, PP_UNIQUE_CONTAINER, NULL, &dwUniqueSizeNeeded, 0))
+								{
+									if(aUniqueName = (char *) LocalAlloc(LPTR, dwUniqueSizeNeeded))
+									{
+										if(CryptGetProvParam(hCryptKeyProv, PP_UNIQUE_CONTAINER, (BYTE *) aUniqueName, &dwUniqueSizeNeeded, 0))
+											kprintf(L"    %S\n", aUniqueName);
+										LocalFree(aUniqueName);
+									}
+								}
+
+								for(ks = AT_KEYEXCHANGE, hCapiKey = 0; (ks <= AT_SIGNATURE) && !CryptGetUserKey(hCryptKeyProv, ks, &hCapiKey); ks++);
+								if(hCapiKey)
+								{
+									kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(ks), ks);
+									kuhl_m_crypto_printKeyInfos(0, hCapiKey);
+									if(export)
+										kuhl_m_crypto_exportKeyToFile(0, hCapiKey, ks, szStore, i, containerName);
+									CryptDestroyKey(hCapiKey);
+								}
+								else PRINT_ERROR_AUTO(L"CryptGetUserKey");
+							}
+							LocalFree(fullContainer);
+						}
+						LocalFree(containerName);
+					}
+				}
+				CRYPT_first_next = CRYPT_NEXT;
+				i++;
+			}
+			if(GetLastError() != ERROR_NO_MORE_ITEMS)
+				PRINT_ERROR_AUTO(L"CryptGetProvParam");
+
+			CryptReleaseContext(hCryptProv, 0);
+			LocalFree(aContainerName);
+		}
+	}
+	else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+}
+
+NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
+{
 	NCRYPT_PROV_HANDLE hProvider;
 	NCryptKeyName * pKeyName;
 	PVOID pEnumState = NULL;
 	SECURITY_STATUS retour;
 	NCRYPT_KEY_HANDLE hCngKey;
+	DWORD i, dwUniqueSizeNeeded;
+	wchar_t *uUniqueName;
 	
 	PCWCHAR szProvider, pProvider, szProviderType, szStore, szCngProvider/*, pCngProvider*/;
 	DWORD dwProviderType, dwFlags = 0;
@@ -331,55 +397,7 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 			szCngProvider);
 
 	kprintf(L"\nCryptoAPI keys :\n");
-	if(CryptAcquireContext(&hCryptProv, NULL, pProvider, dwProviderType, CRYPT_VERIFYCONTEXT | dwFlags))
-	{
-		success = CryptGetProvParam(hCryptProv, PP_ENUMCONTAINERS, NULL, &dwSizeNeeded, CRYPT_first_next);
-		if(aContainerName = (char *) LocalAlloc(LPTR, dwSizeNeeded))
-		{
-			i = 0;
-			while(success)
-			{
-				if(success = (CryptGetProvParam(hCryptProv, PP_ENUMCONTAINERS, (BYTE *) aContainerName, &dwSizeNeeded, CRYPT_first_next)))
-				{
-					if(containerName = kull_m_string_qad_ansi_to_unicode(aContainerName))
-					{
-						kprintf(L"\n%2u. %s\n", i,  containerName);
-						if(CryptAcquireContext(&hCryptKeyProv, containerName, pProvider, dwProviderType, dwFlags))
-						{
-							if(CryptGetProvParam(hCryptKeyProv, PP_UNIQUE_CONTAINER, NULL, &dwUniqueSizeNeeded, 0))
-							{
-								if(aUniqueName = (char *) LocalAlloc(LPTR, dwUniqueSizeNeeded))
-								{
-									if(CryptGetProvParam(hCryptKeyProv, PP_UNIQUE_CONTAINER, (BYTE *) aUniqueName, &dwUniqueSizeNeeded, 0))
-										kprintf(L"    %S\n", aUniqueName);
-									LocalFree(aUniqueName);
-								}
-							}
-
-							for(ks = AT_KEYEXCHANGE, hCapiKey = 0; (ks <= AT_SIGNATURE) && !CryptGetUserKey(hCryptKeyProv, ks, &hCapiKey); ks++);
-							if(hCapiKey)
-							{
-								kprintf(L"\tType           : %s (0x%08x)\n", kull_m_crypto_keytype_to_str(ks), ks);
-								kuhl_m_crypto_printKeyInfos(0, hCapiKey);
-								if(export)
-									kuhl_m_crypto_exportKeyToFile(0, hCapiKey, ks, szStore, i, containerName);
-								CryptDestroyKey(hCapiKey);
-							}
-							else PRINT_ERROR_AUTO(L"CryptGetUserKey");
-						}
-						LocalFree(containerName);
-					}
-				}
-				CRYPT_first_next = CRYPT_NEXT;
-				i++;
-			}
-			if(GetLastError() != ERROR_NO_MORE_ITEMS)
-				PRINT_ERROR_AUTO(L"CryptGetProvParam");
-
-			CryptReleaseContext(hCryptProv, 0);
-			LocalFree(aContainerName);
-		}
-	}
+	kuhl_m_crypto_l_keys_capi(NULL, pProvider, dwProviderType, dwFlags, export, szStore);
 
 	if(kuhl_m_crypto_hNCrypt)
 	{
@@ -623,6 +641,111 @@ wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * 
 			kull_m_file_cleanFilename(buffer);
 	}
 	return buffer;
+}
+
+DWORD kuhl_m_crypto_l_sc_provtypefromname(LPCWSTR szProvider)
+{
+	DWORD result = 0, provType, tailleRequise, index = 0;
+	wchar_t * monProvider;
+	for(index = 0, result = 0; !result && CryptEnumProviders(index, NULL, 0, &provType, NULL, &tailleRequise); index++)
+	{
+		if(monProvider = (wchar_t *) LocalAlloc(LPTR, tailleRequise))
+		{
+			if(CryptEnumProviders(index, NULL, 0, &provType, monProvider, &tailleRequise))
+				if(_wcsicmp(szProvider, monProvider) == 0)
+					result = provType;
+			LocalFree(monProvider);
+		}
+	}
+	if(!result && GetLastError() != ERROR_NO_MORE_ITEMS)
+		PRINT_ERROR_AUTO(L"CryptEnumProviders");
+	return provType;
+}
+
+PWSTR kuhl_m_crypto_l_sc_containerFromReader(LPCWSTR reader)
+{
+	PWSTR result = NULL;
+	DWORD szReader = (DWORD) wcslen(reader);
+	if(result = (PWSTR) LocalAlloc(LPTR, (szReader + 6) * sizeof(wchar_t)))
+	{
+		RtlCopyMemory(result, L"\\\\.\\", 4 * sizeof(wchar_t));
+		RtlCopyMemory(result + 4, reader, szReader * sizeof(wchar_t));
+		RtlCopyMemory(result + 4 + szReader, L"\\", 1 * sizeof(wchar_t));
+	}
+	return result;
+}
+
+NTSTATUS kuhl_m_crypto_l_sc(int argc, wchar_t * argv[])
+{
+	SCARDCONTEXT hContext;
+	SCARDHANDLE hCard;
+	BYTE atr[16];
+	LONG status;
+	LPWSTR mszReaders = NULL, pReader, mszCards = NULL, pCard, szProvider = NULL, szContainer;
+	DWORD dwLen = SCARD_AUTOALLOCATE, dwActiveProtocol, dwProvType;
+	
+	status = SCardEstablishContext(SCARD_SCOPE_SYSTEM, NULL, NULL, &hContext);
+	if(status == SCARD_S_SUCCESS)
+	{
+		status = SCardListReaders(hContext, SCARD_ALL_READERS, (LPWSTR) &mszReaders, &dwLen);
+		if(status == SCARD_S_SUCCESS)
+		{
+			kprintf(L"SmartCard readers:\n");
+			for(pReader = mszReaders; *pReader; pReader += wcslen(pReader) + 1)
+			{
+				kprintf(L"\n * %s\n", pReader);
+				status = SCardConnect(hContext, pReader, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &dwActiveProtocol);
+				if(status == SCARD_S_SUCCESS)
+				{
+					dwLen = sizeof(atr);
+					status = SCardGetAttrib(hCard, SCARD_ATTR_ATR_STRING, atr, &dwLen);
+					if(status == SCARD_S_SUCCESS)
+					{
+						kprintf(L"    ATR  : ");
+						kull_m_string_wprintf_hex(atr, sizeof(atr), 0);
+						kprintf(L"\n");
+
+						dwLen = SCARD_AUTOALLOCATE;
+						status = SCardListCards(hContext, atr, NULL, 0, (LPWSTR) &mszCards, &dwLen);
+						if(status == SCARD_S_SUCCESS)
+						{
+							for(pCard = mszCards; *pCard; pCard += wcslen(pCard) + 1)
+							{
+								kprintf(L"    Model: %s\n", pCard);
+								dwLen = SCARD_AUTOALLOCATE;
+								status = SCardGetCardTypeProviderName(hContext, pCard, SCARD_PROVIDER_CSP, (LPWSTR) &szProvider, &dwLen);
+								if(status == SCARD_S_SUCCESS)
+								{
+									kprintf(L"    CSP  : %s\n", szProvider);
+									if(dwProvType = kuhl_m_crypto_l_sc_provtypefromname(szProvider))
+									{
+										if(szContainer = kuhl_m_crypto_l_sc_containerFromReader(pReader))
+										{
+											kuhl_m_crypto_l_keys_capi(szContainer, szProvider, dwProvType, CRYPT_SILENT, FALSE, NULL);
+											LocalFree(szContainer);
+										}
+									}
+									SCardFreeMemory(hContext, szProvider);
+								}
+								else PRINT_ERROR(L"SCardGetCardTypeProviderName: 0x%08x\n", status);
+							}
+							SCardFreeMemory(hContext, mszCards);
+						}
+						else PRINT_ERROR(L"SCardListCards: 0x%08x\n", status);
+					}
+					else PRINT_ERROR(L"SCardGetAttrib: 0x%08x\n", status);
+					SCardDisconnect(hCard, SCARD_LEAVE_CARD);
+				}
+				else if(status != SCARD_W_REMOVED_CARD)
+					PRINT_ERROR(L"SCardConnect: 0x%08x\n", status);
+			}
+			SCardFreeMemory(hContext, mszReaders);
+		}
+		else PRINT_ERROR(L"SCardListReaders: 0x%08x\n", status);
+		SCardReleaseContext(hContext);
+	}
+	else PRINT_ERROR(L"SCardEstablishContext: 0x%08x\n", status);
+	return STATUS_SUCCESS;
 }
 
 NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[])

@@ -171,7 +171,8 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 					LocalFree(name);
 					LocalFree(domainName);
 				}
-			} else if(pData->tokenId)
+			}
+			else if(pData->tokenId)
 				isUserOK = (pData->tokenId == tokenStats.TokenId.LowPart);
 
 			if(isUserOK && DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE, NULL, (tokenStats.TokenType == TokenPrimary) ? SecurityDelegation : tokenStats.ImpersonationLevel, TokenImpersonation, &hNewToken))
