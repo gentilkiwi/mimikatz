@@ -22,7 +22,7 @@ const KUHL_M kuhl_m_process = {
 
 NTSTATUS kuhl_m_process_list(int argc, wchar_t * argv[])
 {
-	return kull_m_process_getProcessInformation(kuhl_m_process_list_callback_process, NULL);
+	return kull_m_process_getProcessInformation(kuhl_m_process_list_callback_process, &argc);
 }
 
 NTSTATUS kuhl_m_process_start(int argc, wchar_t * argv[])
@@ -113,7 +113,16 @@ NTSTATUS kuhl_m_process_genericOperation(int argc, wchar_t * argv[], KUHL_M_PROC
 
 BOOL CALLBACK kuhl_m_process_list_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
 {
-	kprintf(L"%u\t%wZ\n", pSystemProcessInformation->UniqueProcessId, &pSystemProcessInformation->ImageName);
+	DWORD i;
+	kprintf(L"%u\t%wZ", pSystemProcessInformation->UniqueProcessId, &pSystemProcessInformation->ImageName);
+	if(*(PBOOL) pvArg && pSystemProcessInformation->NumberOfThreads)
+	{
+		kprintf(L" (");
+		for(i = 0; i < pSystemProcessInformation->NumberOfThreads; i++)
+			kprintf(L"%u ", pSystemProcessInformation->Threads[i].ClientId.UniqueThread);
+		kprintf(L")");
+	}
+	kprintf(L"\n");
 	return TRUE;
 }
 

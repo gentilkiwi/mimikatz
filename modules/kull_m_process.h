@@ -186,7 +186,9 @@ typedef enum _KWAIT_REASON {
 } KWAIT_REASON;
 
 typedef struct _SYSTEM_THREAD {
+#ifndef _M_X64
 	LARGE_INTEGER KernelTime;
+#endif
 	LARGE_INTEGER UserTime;
 	LARGE_INTEGER CreateTime;
 	ULONG WaitTime;
@@ -197,6 +199,9 @@ typedef struct _SYSTEM_THREAD {
 	ULONG ContextSwitchCount;
 	ULONG State;
 	KWAIT_REASON WaitReason;
+#ifdef _M_X64
+	LARGE_INTEGER unk;
+#endif
 } SYSTEM_THREAD, *PSYSTEM_THREAD;
 
 typedef struct _SYSTEM_BASIC_INFORMATION {
