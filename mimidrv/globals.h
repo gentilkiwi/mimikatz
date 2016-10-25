@@ -36,8 +36,9 @@ typedef enum _KIWI_OS_INDEX {
 	KiwiOsIndex_BLUE	= 6,
 	KiwiOsIndex_10_1507	= 7,
 	KiwiOsIndex_10_1511	= 8,
+	KiwiOsIndex_10_1607	= 9,
 
-	KiwiOsIndex_MAX		= 9,
+	KiwiOsIndex_MAX		= 10,
 } KIWI_OS_INDEX, *PKIWI_OS_INDEX;
 
 #ifdef _M_IX86

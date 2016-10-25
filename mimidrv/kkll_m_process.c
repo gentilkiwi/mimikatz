@@ -17,6 +17,7 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* BLUE	*/	{0x00b8, 0x00c0, 0x0040, 0x02cc},
 /* 10_1507*/{0x00b8, 0x00c0, 0x0040, 0x02dc},
 /* 10_1511*/{0x00b8, 0x00c0, 0x0040, 0x02dc},
+/* 10_1607*/{0x00b8, 0x00c0, 0x0040, 0x02e4},
 #else
 /* UNK	*/	{0},
 /* XP	*/	{0},
@@ -27,6 +28,7 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* BLUE	*/	{0x02e8, 0x02f8, 0x0040, 0x0678},
 /* 10_1507*/{0x02f0, 0x0300, 0x0040, 0x06a8},
 /* 10_1511*/{0x02f0, 0x0300, 0x0040, 0x06b0},
+/* 10_1607*/{0x02f0, 0x0300, 0x0040, 0x06c0},
 #endif
 };
 
@@ -231,7 +233,7 @@ NTSTATUS kkll_m_process_fullprivileges(SIZE_T szBufferIn, PVOID bufferIn, PKIWI_
 
 	if(KiwiOsIndex >= KiwiOsIndex_VISTA)
 	{
-		if(pPid && (szBufferIn == sizeof(PULONG)))
+		if(pPid && (szBufferIn == sizeof(ULONG)))
 			status = PsLookupProcessByProcessId((HANDLE) *pPid, &pProcess);
 		else
 			pProcess = PsGetCurrentProcess();
