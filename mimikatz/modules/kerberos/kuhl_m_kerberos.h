@@ -11,9 +11,6 @@
 #include "kuhl_m_kerberos_pac.h"
 #include "kuhl_m_kerberos_ccache.h"
 
-#define USER_NORMAL_ACCOUNT				0x00000010
-#define USER_DONT_EXPIRE_PASSWORD		0x00000200
-
 #define KRB_KEY_USAGE_AS_REP_TGS_REP	2
 
 #define DEFAULT_GROUP_ATTRIBUTES	(SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED)

