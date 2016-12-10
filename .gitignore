@@ -1,0 +1,9 @@
+*.swp
+x64
+Win32
+Debug
+Release
+*.sdf
+*.suo
+*.log
+*.aps
