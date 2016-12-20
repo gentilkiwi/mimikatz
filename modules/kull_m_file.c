@@ -91,8 +91,21 @@ BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for 
 	DWORD dwBytesReaded;
 	LARGE_INTEGER filesize;
 	HANDLE hFile = NULL;
+	DWORD dwFlags = 0;
 
-	if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
+	if (isBase64Intercept)
+	{
+		dwBytesReaded = (DWORD)wcslen(fileName) * 3 / 4;
+		if (*data = (PBYTE)LocalAlloc(LPTR, dwBytesReaded))
+		{
+			if (!(reussite = CryptStringToBinary(fileName, 0, CRYPT_STRING_BASE64, *data, &dwBytesReaded, NULL, &dwFlags)))
+			{
+				LocalFree(*data);
+				*data = NULL;
+			}
+		}
+	}
+	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
 	{
 		if(GetFileSizeEx(hFile, &filesize) && !filesize.HighPart)
 		{
