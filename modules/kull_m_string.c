@@ -318,9 +318,9 @@ BOOL kull_m_string_args_bool_byName(int argc, wchar_t * argv[], LPCWSTR name, PB
 	LPCWSTR szData;
 	if(status = kull_m_string_args_byName(argc, argv, name, &szData, NULL))
 	{
-		if((wcsicmp(szData, L"on") == 0) || (wcsicmp(szData, L"true") == 0) || (wcsicmp(szData, L"1") == 0))
+		if((_wcsicmp(szData, L"on") == 0) || (_wcsicmp(szData, L"true") == 0) || (_wcsicmp(szData, L"1") == 0))
 			*value = TRUE;
-		else if((wcsicmp(szData, L"off") == 0) || (wcsicmp(szData, L"false") == 0) || (wcsicmp(szData, L"0") == 0))
+		else if((_wcsicmp(szData, L"off") == 0) || (_wcsicmp(szData, L"false") == 0) || (_wcsicmp(szData, L"0") == 0))
 			*value = FALSE;
 		else PRINT_ERROR(L"%s argument need on/true/1 or off/false/0\n", name);
 	}
