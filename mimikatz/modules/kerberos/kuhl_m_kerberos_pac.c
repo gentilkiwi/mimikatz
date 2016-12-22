@@ -232,7 +232,6 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 				case PACINFO_TYPE_UPN_DNS:
 					pUpnDnsInfo = (PUPN_DNS_INFO) ((PBYTE) pacType + pacType->Buffers[i].Offset);
 					kprintf(L"*** UPN and DNS information ***\n");
-					kull_m_string_wprintf_hex(pUpnDnsInfo, pacType->Buffers[i].cbBufferSize, 2);
 					kprintf(L"UPN            %.*s\n", pUpnDnsInfo->UpnLength / sizeof(WCHAR), (PBYTE) pUpnDnsInfo + pUpnDnsInfo->UpnOffset);
 					kprintf(L"DnsDomainName  %.*s\n", pUpnDnsInfo->DnsDomainNameLength / sizeof(WCHAR), (PBYTE) pUpnDnsInfo + pUpnDnsInfo->DnsDomainNameOffset);
 					kprintf(L"Flags          %08x (%u)\n", pUpnDnsInfo->Flags, pUpnDnsInfo->Flags);

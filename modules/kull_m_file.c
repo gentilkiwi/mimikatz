@@ -5,7 +5,7 @@
 */
 #include "kull_m_file.h"
 
-BOOL isBase64Intercept = FALSE;
+BOOL isBase64InterceptOutput = FALSE, isBase64InterceptInput = FALSE;
 
 BOOL kull_m_file_getCurrentDirectory(wchar_t ** ppDirName)
 {
@@ -59,7 +59,7 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, LPCVOID data, DWORD lenght)
 	HANDLE hFile = NULL;
 	LPWSTR base64;
 
-	if(isBase64Intercept)
+	if(isBase64InterceptOutput)
 	{
 		if(CryptBinaryToString((const BYTE *) data, lenght, CRYPT_STRING_BASE64, NULL, &dwBytesWritten))
 		{
@@ -92,7 +92,12 @@ BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for 
 	LARGE_INTEGER filesize;
 	HANDLE hFile = NULL;
 
-	if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
+	if(isBase64InterceptInput)
+	{
+		if(!(reussite = kull_m_string_quick_base64_to_Binary(fileName, data, lenght)))
+			PRINT_ERROR_AUTO(L"kull_m_string_quick_base64_to_Binary");
+	}
+	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
 	{
 		if(GetFileSizeEx(hFile, &filesize) && !filesize.HighPart)
 		{

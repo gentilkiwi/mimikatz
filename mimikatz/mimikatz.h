@@ -39,7 +39,7 @@ int wmain(int argc, wchar_t * argv[]);
 
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType);
 
-NTSTATUS mimikatz_initOrClean();
+NTSTATUS mimikatz_initOrClean(BOOL Init);
 
 NTSTATUS mimikatz_doLocal(wchar_t * input);
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input);
