@@ -85,6 +85,33 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, LPCVOID data, DWORD lenght)
 	return reussite;
 }
 
+BOOL kull_m_file_isStringBase64(PCWCHAR string)
+{
+	BOOL result = TRUE;
+
+	while (*string != L'\x00')
+	{
+		wchar_t c = *string;
+
+		if ((c >= L'a' && c <= L'z')
+			|| (c >= L'A' && c <= L'Z')
+			|| (c >= L'0' && c <= L'9')
+			|| c == L'/'
+			|| c == L'+'
+			|| c == L'=')
+		{
+			++string;
+		}
+		else
+		{
+			result = FALSE;
+			break;
+		}
+	}
+
+	return result;
+}
+
 BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for ""little"" files !
 {
 	BOOL reussite = FALSE;
@@ -93,12 +120,14 @@ BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for 
 	HANDLE hFile = NULL;
 	DWORD dwFlags = 0;
 
-	if (isBase64Intercept)
+	if (isBase64Intercept && kull_m_file_isStringBase64(fileName))
 	{
-		dwBytesReaded = (DWORD)wcslen(fileName) * 3 / 4;
-		if (*data = (PBYTE)LocalAlloc(LPTR, dwBytesReaded))
+		// Start with a buffer that's clearly big enough.
+		*lenght = (DWORD)wcslen(fileName);
+		if (*data = (PBYTE)LocalAlloc(LPTR, *lenght))
 		{
-			if (!(reussite = CryptStringToBinary(fileName, 0, CRYPT_STRING_BASE64, *data, &dwBytesReaded, NULL, &dwFlags)))
+			// "lenght" should be set to the actual size of the data that was written
+			if (!(reussite = CryptStringToBinary(fileName, 0, CRYPT_STRING_BASE64, *data, lenght, NULL, &dwFlags)))
 			{
 				LocalFree(*data);
 				*data = NULL;
