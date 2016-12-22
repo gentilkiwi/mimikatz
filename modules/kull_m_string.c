@@ -312,6 +312,21 @@ BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wch
 	return result;
 }
 
+BOOL kull_m_string_args_bool_byName(int argc, wchar_t * argv[], LPCWSTR name, PBOOL value) // TRUE when name exist (not value related)
+{
+	BOOL status = FALSE;
+	LPCWSTR szData;
+	if(status = kull_m_string_args_byName(argc, argv, name, &szData, NULL))
+	{
+		if((wcsicmp(szData, L"on") == 0) || (wcsicmp(szData, L"true") == 0) || (wcsicmp(szData, L"1") == 0))
+			*value = TRUE;
+		else if((wcsicmp(szData, L"off") == 0) || (wcsicmp(szData, L"false") == 0) || (wcsicmp(szData, L"0") == 0))
+			*value = FALSE;
+		else PRINT_ERROR(L"%s argument need on/true/1 or off/false/0\n", name);
+	}
+	return status;
+}
+
 BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src)
 {
 	BOOL status = FALSE;

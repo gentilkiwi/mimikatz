@@ -5,7 +5,7 @@
 */
 #include "kull_m_file.h"
 
-BOOL isBase64Intercept = FALSE;
+BOOL isBase64InterceptOutput = FALSE, isBase64InterceptInput = FALSE;
 
 BOOL kull_m_file_getCurrentDirectory(wchar_t ** ppDirName)
 {
@@ -59,7 +59,7 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, LPCVOID data, DWORD lenght)
 	HANDLE hFile = NULL;
 	LPWSTR base64;
 
-	if(isBase64Intercept)
+	if(isBase64InterceptOutput)
 	{
 		if(CryptBinaryToString((const BYTE *) data, lenght, CRYPT_STRING_BASE64, NULL, &dwBytesWritten))
 		{
@@ -85,33 +85,6 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, LPCVOID data, DWORD lenght)
 	return reussite;
 }
 
-BOOL kull_m_file_isStringBase64(PCWCHAR string)
-{
-	BOOL result = TRUE;
-
-	while (*string != L'\x00')
-	{
-		wchar_t c = *string;
-
-		if ((c >= L'a' && c <= L'z')
-			|| (c >= L'A' && c <= L'Z')
-			|| (c >= L'0' && c <= L'9')
-			|| c == L'/'
-			|| c == L'+'
-			|| c == L'=')
-		{
-			++string;
-		}
-		else
-		{
-			result = FALSE;
-			break;
-		}
-	}
-
-	return result;
-}
-
 BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for ""little"" files !
 {
 	BOOL reussite = FALSE;
@@ -120,19 +93,10 @@ BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for 
 	HANDLE hFile = NULL;
 	DWORD dwFlags = 0;
 
-	if (isBase64Intercept && kull_m_file_isStringBase64(fileName))
+	if(isBase64InterceptInput)
 	{
-		// Start with a buffer that's clearly big enough.
-		*lenght = (DWORD)wcslen(fileName);
-		if (*data = (PBYTE)LocalAlloc(LPTR, *lenght))
-		{
-			// "lenght" should be set to the actual size of the data that was written
-			if (!(reussite = CryptStringToBinary(fileName, 0, CRYPT_STRING_BASE64, *data, lenght, NULL, &dwFlags)))
-			{
-				LocalFree(*data);
-				*data = NULL;
-			}
-		}
+		if(!(reussite = kull_m_string_quick_base64_to_Binary(fileName, data, lenght)))
+			PRINT_ERROR_AUTO(L"kull_m_string_quick_base64_to_Binary");
 	}
 	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
 	{

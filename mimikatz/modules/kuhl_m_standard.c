@@ -13,11 +13,10 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_coffee,	L"coffee",		L"Please, make me a coffee!"},
 	{kuhl_m_standard_sleep,		L"sleep",		L"Sleep an amount of milliseconds"},
 	{kuhl_m_standard_log,		L"log",			L"Log mimikatz input/output to file"},
-	{kuhl_m_standard_base64,	L"base64",		L"Switch file output/base64 output"},
+	{kuhl_m_standard_base64,	L"base64",		L"Switch file input/output base64"},
 	{kuhl_m_standard_version,	L"version",		L"Display some version informations"},
 	{kuhl_m_standard_cd,		L"cd",			L"Change or display current directory"},
 	{kuhl_m_standard_localtime,	L"localtime",	L"Displays system local date and time (OJ command)"},
-
 };
 const KUHL_M kuhl_m_standard = {
 	L"standard",	L"Standard module",	L"Basic commands (does not require module name)",
@@ -78,9 +77,13 @@ NTSTATUS kuhl_m_standard_log(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[])
 {
-	kprintf(L"isBase64Intercept was    : %s\n", isBase64Intercept ? L"true" : L"false");
-	isBase64Intercept = !isBase64Intercept;
-	kprintf(L"isBase64Intercept is now : %s\n", isBase64Intercept ? L"true" : L"false");
+	if(!kull_m_string_args_bool_byName(argc, argv, L"in", &isBase64InterceptInput))
+		kull_m_string_args_bool_byName(argc, argv, L"input", &isBase64InterceptInput);
+
+	if(!kull_m_string_args_bool_byName(argc, argv, L"out", &isBase64InterceptOutput))
+		kull_m_string_args_bool_byName(argc, argv, L"output", &isBase64InterceptOutput);
+
+	kprintf(L"isBase64InterceptInput  is %s\nisBase64InterceptOutput is %s\n", isBase64InterceptInput ? L"true" : L"false", isBase64InterceptOutput ? L"true" : L"false");
 	return STATUS_SUCCESS;
 }
 
