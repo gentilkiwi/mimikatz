@@ -98,6 +98,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 		if(FAILED(hr))
 			PRINT_ERROR(L"CoInitializeEx: %08x\n", hr);
+		kull_m_asn1_init();
 	}
 	else
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pClean);
@@ -114,6 +115,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 
 	if(!Init)
 	{
+		kull_m_asn1_term();
 		CoUninitialize();
 		kull_m_output_file(NULL);
 	}

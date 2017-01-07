@@ -7,6 +7,7 @@
 #include "globals.h"
 #include <Winldap.h>
 #include <Winber.h>
+#include <msasn1.h>
 #include "kull_m_string.h"
 
 #define DIRTY_ASN1_ID_BOOLEAN			0x01
@@ -28,3 +29,18 @@
 void kull_m_asn1_BitStringFromULONG(BerElement * pBer, ULONG data);
 void kull_m_asn1_GenTime(BerElement * pBer, PFILETIME localtime);
 void kull_m_asn1_GenString(BerElement * pBer, PCUNICODE_STRING String);
+
+typedef struct {
+    unsigned short length;
+    unsigned char *value;
+} OssEncodedOID;
+
+extern ASN1_PUBLIC BOOL ASN1API ASN1BERDotVal2Eoid(__in ASN1encoding_t pEncoderInfo, __in const ASN1char_t *dotOID, __out OssEncodedOID *encodedOID);
+extern ASN1_PUBLIC BOOL ASN1API ASN1BEREoid2DotVal(__in ASN1decoding_t pDecoderInfo, __in const OssEncodedOID *encodedOID, __out ASN1char_t **dotOID);
+
+BOOL kull_m_asn1_init();
+void kull_m_asn1_term();
+BOOL kull_m_asn1_DotVal2Eoid(__in const ASN1char_t *dotOID, __out OssEncodedOID *encodedOID);
+void kull_m_asn1_freeEnc(void *pBuf);
+BOOL kull_m_asn1_Eoid2DotVal(__in const OssEncodedOID *encodedOID, __out ASN1char_t **dotOID);
+void kull_m_asn1_freeDec(void *pBuf);
