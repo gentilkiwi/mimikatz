@@ -16,6 +16,10 @@
 #define AES_128_KEY_LENGTH	16
 #define AES_256_KEY_LENGTH	32
 
+#ifndef IPSEC_FLAG_CHECK
+#define IPSEC_FLAG_CHECK 0xf42a19b6
+#endif
+
 typedef struct _MD4_CTX {
 	DWORD state[4];
 	DWORD count[2];
