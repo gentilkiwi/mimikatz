@@ -302,13 +302,15 @@ BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wch
 			}
 		}
 	}
-
-	if(!result && theArgs && defaultValue)
+	if(!result && theArgs)
 	{
-		*theArgs = defaultValue;
-		result = TRUE;
+		if(defaultValue)
+		{
+			*theArgs = defaultValue;
+			result = TRUE;
+		}
+		else *theArgs = NULL;
 	}
-
 	return result;
 }
 

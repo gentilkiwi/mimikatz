@@ -65,6 +65,12 @@ typedef struct _S4U_DELEGATION_INFO {
 	RPC_UNICODE_STRING S4UTransitedServices[ANYSIZE_ARRAY];
 } S4U_DELEGATION_INFO, *PS4U_DELEGATION_INFO;
 
+typedef struct _PAC_CREDENTIAL_INFO {
+	ULONG Version;
+	ULONG EncryptionType;
+	UCHAR SerializedData[ANYSIZE_ARRAY];
+} PAC_CREDENTIAL_INFO, *PPAC_CREDENTIAL_INFO;
+
 BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PCLAIMS_SET pClaimsSet, PPACTYPE *pacType, DWORD *pacLength);
 BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PKERB_VALIDATION_INFO validationInfo, PPAC_CLIENT_INFO *pacClientInfo, DWORD *pacClientInfoLength);
 NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD SignatureType, LPCVOID key, DWORD keySize);

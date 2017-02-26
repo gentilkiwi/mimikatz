@@ -152,6 +152,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 	PUPN_DNS_INFO pUpnDnsInfo;
 	PCLAIMS_SET_METADATA pClaimsSetMetadata = NULL;
 	PCLAIMS_SET claimsSet = NULL;
+	PPAC_CREDENTIAL_INFO pCredentialInfo;
 
 	if(argc)
 	{
@@ -256,6 +257,15 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 							kull_m_rpc_FreeClaimsSetMetaData(&pClaimsSetMetadata);
 						}
 					}
+					break;
+				case PACINFO_TYPE_CREDENTIALS_INFO:
+					kprintf(L"*** Credential information *** (%u)\n", pacType->Buffers[i].cbBufferSize);
+					pCredentialInfo = (PPAC_CREDENTIAL_INFO) ((PBYTE) pacType + pacType->Buffers[i].Offset);
+					j = pacType->Buffers[i].cbBufferSize - FIELD_OFFSET(PAC_CREDENTIAL_INFO, SerializedData);
+					kprintf(L"Version: %u\n", pCredentialInfo->Version);
+					kprintf(L"Encryption type: %08x (%u)\n", pCredentialInfo->EncryptionType, pCredentialInfo->EncryptionType);
+					kull_m_string_wprintf_hex(pCredentialInfo->SerializedData, j, 1 | (16 << 16));
+					kprintf(L"\n");
 					break;
 				default:
 					kull_m_string_wprintf_hex(&pacType->Buffers[i], sizeof(PAC_INFO_BUFFER), 1);
