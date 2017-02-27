@@ -137,6 +137,9 @@ extern NTSTATUS WINAPI RtlEncryptMemory(IN OUT LPBYTE data, DWORD length, DWORD 
 extern NTSTATUS WINAPI RtlDecryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
 #endif
 
+#define KERB_NON_KERB_SALT					16
+#define KERB_NON_KERB_CKSUM_SALT			17
+
 typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZE) (DWORD unk0, PVOID * pContext);
 typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_SUM) (PVOID pContext, DWORD Size, LPCVOID Buffer);
 typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_FINALIZE) (PVOID pContext, PVOID Buffer);

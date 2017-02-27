@@ -643,3 +643,46 @@ NTSTATUS kull_m_process_getImportedEntryInformations(PKULL_M_MEMORY_ADDRESS addr
 	}
 	return TRUE;
 }
+
+BOOL kull_m_process_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY_HANDLE source)
+{
+	BOOL status = FALSE;
+	KULL_M_MEMORY_HANDLE hOwn = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aDestin = {NULL, &hOwn};
+	KULL_M_MEMORY_ADDRESS aSource = {string->Buffer, source};
+	
+	string->Buffer = NULL;
+	if(aSource.address && string->MaximumLength)
+	{
+		if(aDestin.address = LocalAlloc(LPTR, string->MaximumLength))
+		{
+			string->Buffer = (PWSTR) aDestin.address;
+			status = kull_m_memory_copy(&aDestin, &aSource, string->MaximumLength);
+		}
+	}
+	return status;
+}
+
+BOOL kull_m_process_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source)
+{
+	BOOL status = FALSE;
+	BYTE nbAuth;
+	DWORD sizeSid;
+	KULL_M_MEMORY_HANDLE hOwn = {KULL_M_MEMORY_TYPE_OWN, NULL};
+	KULL_M_MEMORY_ADDRESS aDestin = {&nbAuth, &hOwn};
+	KULL_M_MEMORY_ADDRESS aSource = {(PBYTE) *pSid + 1, source};
+
+	*pSid = NULL;
+	if(kull_m_memory_copy(&aDestin, &aSource, sizeof(BYTE)))
+	{
+		aSource.address = (PBYTE) aSource.address - 1;
+		sizeSid =  4 * nbAuth + 6 + 1 + 1;
+
+		if(aDestin.address = LocalAlloc(LPTR, sizeSid))
+		{
+			*pSid = (PSID) aDestin.address;
+			status = kull_m_memory_copy(&aDestin, &aSource, sizeSid);
+		}
+	}
+	return status;
+}

