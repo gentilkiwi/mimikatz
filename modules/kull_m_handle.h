@@ -7,7 +7,8 @@
 #include "globals.h"
 #include "kull_m_process.h"
 
-typedef enum _OBJECT_INFORMATION_CLASS {
+typedef enum _OBJECT_INFORMATION_CLASS
+{
 	ObjectBasicInformation,
 	ObjectNameInformation,
 	ObjectTypeInformation,
@@ -35,10 +36,41 @@ typedef struct _OBJECT_TYPE_INFORMATION
 	ULONG ValidAccessMask;
 	BOOLEAN SecurityRequired;
 	BOOLEAN MaintainHandleCount;
+	// ...
 	ULONG PoolType;
 	ULONG DefaultPagedPoolCharge;
 	ULONG DefaultNonPagedPoolCharge;
 } OBJECT_TYPE_INFORMATION, *POBJECT_TYPE_INFORMATION;
+
+typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION
+{
+    UNICODE_STRING TypeName;
+    ULONG Reserved [22];    // reserved for internal use
+} PUBLIC_OBJECT_TYPE_INFORMATION, *PPUBLIC_OBJECT_TYPE_INFORMATION;
+
+typedef struct _OBJECT_BASIC_INFORMATION
+{
+	ULONG Attributes;
+	ACCESS_MASK GrantedAccess;
+	ULONG HandleCount;
+	ULONG PointerCount;
+	ULONG PagedPoolCharge;
+	ULONG NonPagedPoolCharge;
+	ULONG Reserved[3];
+	ULONG NameInfoSize;
+	ULONG TypeInfoSize;
+	ULONG SecurityDescriptorSize;
+	LARGE_INTEGER CreationTime;
+} OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;
+
+typedef struct _PUBLIC_OBJECT_BASIC_INFORMATION
+{
+    ULONG Attributes;
+    ACCESS_MASK GrantedAccess;
+    ULONG HandleCount;
+    ULONG PointerCount;
+    ULONG Reserved[10];    // reserved for internal use
+ } PUBLIC_OBJECT_BASIC_INFORMATION, *PPUBLIC_OBJECT_BASIC_INFORMATION;
 
 extern NTSTATUS WINAPI NtQueryObject(IN OPTIONAL HANDLE Handle, IN OBJECT_INFORMATION_CLASS ObjectInformationClass, OUT OPTIONAL PVOID ObjectInformation, IN ULONG ObjectInformationLength, OUT OPTIONAL PULONG ReturnLength);
 

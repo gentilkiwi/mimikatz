@@ -32,7 +32,8 @@ const KUHL_M * mimikatz_modules[] = {
 
 int wmain(int argc, wchar_t * argv[])
 {
-	int i, status = STATUS_SUCCESS;
+	NTSTATUS status = STATUS_SUCCESS;
+	int i;
 #ifndef _WINDLL
 	size_t len;
 	wchar_t input[0xffff];
@@ -97,6 +98,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 		if(FAILED(hr))
 			PRINT_ERROR(L"CoInitializeEx: %08x\n", hr);
+		kull_m_asn1_init();
 	}
 	else
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pClean);
@@ -113,6 +115,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 
 	if(!Init)
 	{
+		kull_m_asn1_term();
 		CoUninitialize();
 		kull_m_output_file(NULL);
 	}
@@ -125,15 +128,15 @@ NTSTATUS mimikatz_dispatchCommand(wchar_t * input)
 	PWCHAR full;
 	if(full = kull_m_file_fullPath(input))
 	{
-	switch(full[0])
-	{
-	case L'!':
-		status = kuhl_m_kernel_do(full + 1);
-		break;
-	default:
-		status = mimikatz_doLocal(full);
-	}
-	LocalFree(full);
+		switch(full[0])
+		{
+		case L'!':
+			status = kuhl_m_kernel_do(full + 1);
+			break;
+		default:
+			status = mimikatz_doLocal(full);
+		}
+		LocalFree(full);
 	}
 	return status;
 }

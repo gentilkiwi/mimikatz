@@ -68,6 +68,7 @@ NTSTATUS kuhl_m_crypto_l_sc(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_crypto_c_cert_to_hw(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[]);

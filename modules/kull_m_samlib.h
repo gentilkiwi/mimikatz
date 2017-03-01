@@ -185,6 +185,9 @@ extern NTSTATUS WINAPI SamFreeMemory(IN PVOID Buffer);
 #define USER_ALL_SECURITYDESCRIPTOR		0x10000000
 #define USER_ALL_UNDEFINED_MASK			0xc0000000
 
+#define USER_NORMAL_ACCOUNT				0x00000010
+#define USER_DONT_EXPIRE_PASSWORD		0x00000200
+
 //
 // Special Values and Constants - User
 //

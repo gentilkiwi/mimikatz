@@ -6,8 +6,9 @@
 #pragma once
 #include "globals.h"
 #include <shlwapi.h>
+#include "kull_m_string.h"
 
-BOOL isBase64Intercept;
+BOOL isBase64InterceptOutput, isBase64InterceptInput;
 
 typedef BOOL (CALLBACK * PKULL_M_FILE_FIND_CALLBACK) (DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg);
 

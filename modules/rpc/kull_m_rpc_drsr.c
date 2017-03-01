@@ -185,10 +185,26 @@ BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWS
 	return status;
 }
 
-BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects) // very partial, ofc
+LPCSTR kull_m_rpc_drsr_encrypted_oids[] = {
+	szOID_ANSI_unicodePwd, szOID_ANSI_ntPwdHistory, szOID_ANSI_dBCSPwd, szOID_ANSI_lmPwdHistory, szOID_ANSI_supplementalCredentials,
+	szOID_ANSI_trustAuthIncoming, szOID_ANSI_trustAuthOutgoing,
+	szOID_ANSI_currentValue,
+};
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(SCHEMA_PREFIX_TABLE *prefixTable, REPLENTINFLIST *objects) // very partial, ofc
 {
+	ATTRTYP attSensitive[ARRAYSIZE(kull_m_rpc_drsr_encrypted_oids)];
 	REPLENTINFLIST * pReplentinflist, *pNextReplentinflist = objects;
-	DWORD i, j;
+	DWORD i, j, k;
+
+	for(i = 0; i < ARRAYSIZE(attSensitive); i++)
+	{
+		if(!kull_m_rpc_drsr_MakeAttid(prefixTable, kull_m_rpc_drsr_encrypted_oids[i], &attSensitive[i], FALSE))
+		{
+			PRINT_ERROR(L"Unable to MakeAttid for %S\n", kull_m_rpc_drsr_encrypted_oids[i]);
+			return FALSE;
+		}
+	}
+	
 	while(pReplentinflist = pNextReplentinflist)
 	{
 		pNextReplentinflist = pReplentinflist->pNextEntInf;
@@ -196,26 +212,17 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects) // very p
 		{
 			for(i = 0; i < pReplentinflist->Entinf.AttrBlock.attrCount; i++)
 			{
-				switch(pReplentinflist->Entinf.AttrBlock.pAttr[i].attrTyp)
+				for(j = 0; j < ARRAYSIZE(attSensitive); j++)
 				{
-				case ATT_CURRENT_VALUE:
-				case ATT_UNICODE_PWD:
-				case ATT_NT_PWD_HISTORY:
-				case ATT_DBCS_PWD:
-				case ATT_LM_PWD_HISTORY:
-				case ATT_SUPPLEMENTAL_CREDENTIALS:
-				case ATT_TRUST_AUTH_INCOMING:
-				case ATT_TRUST_AUTH_OUTGOING:
-				// case another :
-				// case another :
-					if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal)
-						for(j = 0; j < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; j++)
-							if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j].pVal)
-								if(!kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(&pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j]))
+					if(attSensitive[j] == pReplentinflist->Entinf.AttrBlock.pAttr[i].attrTyp)
+					{
+						if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal)
+						for(k = 0; k < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; k++)
+							if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[k].pVal)
+								if(!kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(&pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[k]))
 									return FALSE;
-					break;
-				default:
-					break;
+						break;
+					}
 				}
 			}
 		}
@@ -356,13 +363,7 @@ void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_G
 				MIDL_user_free(reply->V6.pNC);
 			if(reply->V6.pUpToDateVecSrc)
 				MIDL_user_free(reply->V6.pUpToDateVecSrc);
-			if(reply->V6.PrefixTableSrc.pPrefixEntry)
-			{
-				for(i = 0; i < reply->V6.PrefixTableSrc.PrefixCount; i++)
-					if(reply->V6.PrefixTableSrc.pPrefixEntry[i].prefix.elements)
-						MIDL_user_free(reply->V6.PrefixTableSrc.pPrefixEntry[i].prefix.elements);
-				MIDL_user_free(reply->V6.PrefixTableSrc.pPrefixEntry);
-			}
+			kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(&reply->V6.PrefixTableSrc);
 			pNextReplentinflist = reply->V6.pObjects;
 			while(pReplentinflist = pNextReplentinflist)
 			{
@@ -412,4 +413,181 @@ void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_G
 			break;
 		}
 	}
+}
+
+void kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(SCHEMA_PREFIX_TABLE *prefixTable)
+{
+	DWORD i;
+	if(prefixTable)
+	{
+		if(prefixTable->pPrefixEntry)
+		{
+			for(i = 0; i < prefixTable->PrefixCount; i++)
+				if(prefixTable->pPrefixEntry[i].prefix.elements)
+					MIDL_user_free(prefixTable->pPrefixEntry[i].prefix.elements);
+			MIDL_user_free(prefixTable->pPrefixEntry);
+		}
+	}
+}
+
+LPSTR kull_m_rpc_drsr_OidFromAttid(SCHEMA_PREFIX_TABLE *prefixTable, ATTRTYP type)
+{
+	LPSTR szOid = NULL;
+	DWORD i;
+	USHORT low = (USHORT) type, idx = (USHORT) (type >> 16);
+	OID_t *pLittleOid = NULL;
+	OssEncodedOID encodedOid;
+
+	for(i = 0; i < prefixTable->PrefixCount; i++)
+	{
+		if(prefixTable->pPrefixEntry[i].ndx == idx)
+		{
+			pLittleOid = &prefixTable->pPrefixEntry[i].prefix;
+			break;
+		}
+	}
+	if(pLittleOid)
+	{
+		encodedOid.length = (USHORT) (pLittleOid->length + ((low < 0x80) ? 1 : 2));
+		if(encodedOid.value = (PBYTE) LocalAlloc(LPTR, encodedOid.length))
+		{
+			RtlCopyMemory(encodedOid.value, pLittleOid->elements, pLittleOid->length);
+			if(low < 0x80)
+				encodedOid.value[pLittleOid->length] = (BYTE) low;
+			else
+			{
+				if(low >= 0x8000)
+					low -= 0x8000;
+				encodedOid.value[pLittleOid->length] = (BYTE) (((low / 0x80) % 0x80) + 0x80);
+				encodedOid.value[pLittleOid->length + 1] = (BYTE) (low % 0x80);
+			}
+			if(!kull_m_asn1_Eoid2DotVal(&encodedOid, &szOid))
+				szOid = NULL;
+			LocalFree(encodedOid.value);
+		}
+	}
+	return szOid;
+}
+
+DWORD kull_m_rpc_drsr_MakeAttid_addPrefixToTable(SCHEMA_PREFIX_TABLE *prefixTable, OssEncodedOID *oidPrefix, DWORD *ndx, BOOL toAdd)
+{
+	BOOL status = FALSE;
+	DWORD i;
+	PrefixTableEntry *entries;
+
+	for(i = 0; i < prefixTable->PrefixCount; i++)
+	{
+		if(prefixTable->pPrefixEntry[i].prefix.length == oidPrefix->length)
+		{
+			if(RtlEqualMemory(prefixTable->pPrefixEntry[i].prefix.elements, oidPrefix->value, oidPrefix->length))
+			{
+				status = TRUE;
+				*ndx = prefixTable->pPrefixEntry[i].ndx;
+				break;
+			}
+		}
+	}
+	if(!status && toAdd)
+	{
+		*ndx = prefixTable->PrefixCount;
+		if(entries = (PrefixTableEntry *) MIDL_user_allocate(sizeof(PrefixTableEntry) * ((*ndx) + 1)))
+		{
+			RtlCopyMemory(entries, prefixTable->pPrefixEntry, sizeof(PrefixTableEntry) * (*ndx));
+			entries[*ndx].ndx = *ndx;
+			entries[*ndx].prefix.length = oidPrefix->length;
+			if(entries[*ndx].prefix.elements = (PBYTE) MIDL_user_allocate(oidPrefix->length))
+			{
+				RtlCopyMemory(entries[*ndx].prefix.elements, oidPrefix->value, oidPrefix->length);
+				if(prefixTable->pPrefixEntry)
+					MIDL_user_free(prefixTable->pPrefixEntry);
+				prefixTable->pPrefixEntry = entries;
+				prefixTable->PrefixCount++;
+				status = TRUE;
+			}
+		}
+	}
+	return status;
+}
+
+BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, ATTRTYP *att, BOOL toAdd)
+{
+	BOOL status = FALSE;
+	DWORD lastValue, ndx;
+	PSTR lastValueString;
+	OssEncodedOID oidPrefix;
+
+	if(lastValueString = strrchr(szOid, '.'))
+	{
+		if(*(lastValueString + 1))
+		{
+			lastValueString++;
+			lastValue = strtoul(lastValueString, NULL, 0);
+			*att = (WORD) lastValue % 0x4000;
+			if(*att >= 0x4000)
+				*att += 0x8000;
+			if(kull_m_asn1_DotVal2Eoid(szOid, &oidPrefix))
+			{
+				oidPrefix.length -= (lastValue < 0x80) ? 1 : 2;
+				if(status = kull_m_rpc_drsr_MakeAttid_addPrefixToTable(prefixTable, &oidPrefix, &ndx, toAdd))
+					*att |= ndx << 16;
+				else PRINT_ERROR(L"kull_m_rpc_drsr_MakeAttid_addPrefixToTable");
+				kull_m_asn1_freeEnc(oidPrefix.value);
+			}
+		}
+	}
+	return status;
+}
+
+ATTRVALBLOCK * kull_m_rpc_drsr_findAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid)
+{
+	ATTRVALBLOCK *ptr = NULL;
+	DWORD i;
+	ATTR *attribut;
+	ATTRTYP type;
+	if(kull_m_rpc_drsr_MakeAttid(prefixTable, szOid, &type, FALSE))
+	{
+		for(i = 0; i < attributes->attrCount; i++)
+		{
+			attribut = &attributes->pAttr[i];
+			if(attribut->attrTyp == type)
+			{
+				ptr = &attribut->AttrVal;
+				break;
+			}
+		}
+	}
+	else PRINT_ERROR(L"Unable to get an ATTRTYP for %S\n", szOid);
+	return ptr;
+}
+
+PVOID kull_m_rpc_drsr_findMonoAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, PVOID data, DWORD *size)
+{
+	PVOID ptr = NULL;
+	ATTRVALBLOCK *valblock;
+
+	if(data)
+		*(PVOID *)data = NULL;
+	if(size)
+		*size = 0;
+	
+	if(valblock = kull_m_rpc_drsr_findAttr(prefixTable, attributes, szOid))
+	{
+		if(valblock->valCount == 1)
+		{
+			ptr = valblock->pAVal[0].pVal;
+			if(data)
+				*(PVOID *)data = ptr;
+			if(size)
+				*size = valblock->pAVal[0].valLen;
+		}
+	}
+	return ptr;
+}
+
+void kull_m_rpc_drsr_findPrintMonoAttr(LPCWSTR prefix, SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, BOOL newLine)
+{
+	PVOID ptr;
+	DWORD sz;
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOid, &ptr, &sz))
+		kprintf(L"%s%.*s%s", prefix ? prefix : L"", sz / sizeof(wchar_t), (PWSTR) ptr, newLine ? L"\n" : L"");
 }
