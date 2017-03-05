@@ -21,3 +21,5 @@ void kuhl_m_net_simpleLookup(SAMPR_HANDLE hDomainHandle, DWORD rid);
 NTSTATUS kuhl_m_net_autoda(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_session(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_wsession(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_net_tod(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_net_stats(int argc, wchar_t * argv[]);

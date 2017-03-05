@@ -12,6 +12,8 @@ const KUHL_M_C kuhl_m_c_net[] = {
 	//{kuhl_m_net_autoda,		L"autoda",		L""},
 	{kuhl_m_net_session,	L"session",		L""},
 	{kuhl_m_net_wsession,	L"wsession",	L""},
+	{kuhl_m_net_tod,		L"tod",	L""},
+	{kuhl_m_net_stats,		L"stats", L""},
 };
 const KUHL_M kuhl_m_net = {
 	L"net",	L"", NULL,
@@ -423,5 +425,54 @@ NTSTATUS kuhl_m_net_wsession(int argc, wchar_t * argv[])
 		else PRINT_ERROR(L"NetWkstaUserEnum: %08x\n", nStatus);
 	}
 	while (nStatus == ERROR_MORE_DATA);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_net_tod(int argc, wchar_t * argv[])
+{
+	NET_API_STATUS nStatus;
+	PTIME_OF_DAY_INFO info = NULL;
+	SYSTEMTIME st;
+	FILETIME ft;
+
+	nStatus = NetRemoteTOD(argc ? argv[0] : NULL, &info);
+	if(nStatus == NERR_Success)
+	{
+		st.wYear = (WORD) info->tod_year;
+		st.wMonth = (WORD) info->tod_month;
+		st.wDayOfWeek = (WORD) info->tod_weekday;
+		st.wDay = (WORD) info->tod_day;
+		st.wHour = (WORD) info->tod_hours;
+		st.wMinute = (WORD) info->tod_mins;
+		st.wSecond = (WORD) info->tod_secs;
+		st.wMilliseconds = (WORD) info->tod_hunds * 10;
+		SystemTimeToFileTime(&st, &ft);
+
+		kprintf(L"Remote time (local): ");
+		kull_m_string_displayLocalFileTime(&ft);
+		kprintf(L"\n");
+		//*((PULONGLONG) &ft) -= info->tod_msecs * (ULONGLONG) 10000;
+		//kprintf(L"Last startup       : ");
+		//kull_m_string_displayLocalFileTime(&ft);
+		//kprintf(L"\n");
+		NetApiBufferFree(info);
+	}
+	else PRINT_ERROR(L"NetRemoteTOD: %08x\n", nStatus);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_net_stats(int argc, wchar_t * argv[])
+{
+	NET_API_STATUS nStatus;
+	PSTAT_WORKSTATION_0 pStats = NULL;
+	nStatus = NetStatisticsGet(argc ? argv[0] : NULL, SERVICE_WORKSTATION, 0, 0, (LPBYTE *) &pStats);
+	if(nStatus == NERR_Success)
+	{
+		kprintf(SERVICE_WORKSTATION L" StatisticsStartTime: ");
+		kull_m_string_displayLocalFileTime((PFILETIME) &pStats->StatisticsStartTime);
+		kprintf(L"\n");
+		NetApiBufferFree(pStats);
+	}
+	else PRINT_ERROR(L"NetStatisticsGet: %08x\n", nStatus);
 	return STATUS_SUCCESS;
 }
