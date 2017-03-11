@@ -90,6 +90,23 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 	NTSTATUS fStatus;
 	HRESULT hr;
 
+#ifdef _WINDLL
+	static LONG initCount = 0;
+
+	if(Init)
+	{
+		InterlockedIncrement(&initCount);
+		if (initCount > 1)
+			return STATUS_SUCCESS;
+	}
+	else
+	{
+		InterlockedDecrement(&initCount);
+		if(initCount > 0)
+			return STATUS_SUCCESS;
+	}
+#endif
+
 	if(Init)
 	{
 		RtlGetNtVersionNumbers(&MIMIKATZ_NT_MAJOR_VERSION, &MIMIKATZ_NT_MINOR_VERSION, &MIMIKATZ_NT_BUILD_NUMBER);
@@ -218,10 +235,13 @@ __declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
 	
 	if(argv = CommandLineToArgvW(input, &argc))
 	{
-		outputBufferElements = 0xff;
+		if (outputBuffer == NULL)
+		{
+			outputBufferElements = 0xff;
+			outputBuffer = (wchar_t *)LocalAlloc(LPTR, outputBufferElements);
+		}
 		outputBufferElementsPosition = 0;
-		if(outputBuffer = (wchar_t *) LocalAlloc(LPTR, outputBufferElements))
-			wmain(argc, argv);
+		wmain(argc, argv);
 		LocalFree(argv);
 	}
 	return outputBuffer;
