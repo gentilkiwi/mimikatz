@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "globals.h"
+#include <userenv.h>
 #include "kull_m_memory.h"
 #include "kull_m_string.h"
 

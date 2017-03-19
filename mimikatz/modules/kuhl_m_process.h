@@ -35,3 +35,6 @@ NTSTATUS kuhl_m_process_start(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_process_stop(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_process_suspend(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_process_resume(int argc, wchar_t * argv[]);
+
+BOOL kull_m_process_run_data(LPCWSTR commandLine, HANDLE hToken);
+NTSTATUS kuhl_m_process_run(int argc, wchar_t * argv[]);

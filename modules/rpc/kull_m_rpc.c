@@ -5,17 +5,41 @@
 */
 #include "kull_m_rpc.h"
 
-BOOL kull_m_rpc_createBinding(LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *))
+LPCWSTR KULL_M_RPC_AUTHNLEV[7] = {L"DEFAULT", L"NONCE", L"CONNECT", L"CALL", L"PKT", L"PKT_INTEGRITY", L"PKT_PRIVACY",};
+LPCWSTR KULL_M_RPC_AUTHNSVC(DWORD AuthnSvc)
+{
+	LPCWSTR szAuthnSvc;
+	switch(AuthnSvc)
+	{
+	case RPC_C_AUTHN_NONE:
+		szAuthnSvc = L"NONE";
+		break;
+	case RPC_C_AUTHN_GSS_NEGOTIATE:
+		szAuthnSvc = L"GSS_NEGOTIATE";
+		break;
+	case RPC_C_AUTHN_WINNT:
+		szAuthnSvc = L"WINNT";
+		break;
+	case RPC_C_AUTHN_GSS_KERBEROS:
+		szAuthnSvc = L"GSS_KERBEROS";
+		break;
+	default:
+		szAuthnSvc = L"?";
+	}
+	return szAuthnSvc;
+}
+
+BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, BOOL addServiceToNetworkAddr, DWORD AuthnSvc, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *))
 {
 	BOOL status = FALSE;
 	RPC_STATUS rpcStatus;
 	RPC_WSTR StringBinding = NULL;
 	RPC_SECURITY_QOS SecurityQOS = {RPC_C_SECURITY_QOS_VERSION, RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH, RPC_C_QOS_IDENTITY_STATIC, ImpersonationType};
-	LPWSTR fullServer;
-	DWORD szServer = (DWORD) (wcslen(NetworkAddr) * sizeof(wchar_t)), szPrefix = (DWORD) (wcslen(Service) * sizeof(wchar_t));
+	DWORD szServer, szPrefix;
+	LPWSTR fullServer = NULL;
 
 	*hBinding = NULL;
-	rpcStatus = RpcStringBindingCompose(NULL, (RPC_WSTR) ProtSeq, (RPC_WSTR) NetworkAddr, (RPC_WSTR) Endpoint, NULL, &StringBinding);
+	rpcStatus = RpcStringBindingCompose((RPC_WSTR) uuid, (RPC_WSTR) ProtSeq, (RPC_WSTR) NetworkAddr, (RPC_WSTR) Endpoint, NULL, &StringBinding);
 	if(rpcStatus == RPC_S_OK)
 	{
 		rpcStatus = RpcBindingFromStringBinding(StringBinding, hBinding);
@@ -23,25 +47,49 @@ BOOL kull_m_rpc_createBinding(LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endp
 		{
 			if(*hBinding)
 			{
-				if(fullServer = (LPWSTR) LocalAlloc(LPTR, szPrefix + sizeof(wchar_t) + szServer + sizeof(wchar_t)))
+				if(AuthnSvc != RPC_C_AUTHN_NONE)
 				{
-					RtlCopyMemory(fullServer, Service, szPrefix);
-					RtlCopyMemory((PBYTE) fullServer + szPrefix + sizeof(wchar_t), NetworkAddr, szServer);
-					((PBYTE) fullServer)[szPrefix] = L'/';
-					rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) fullServer, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, 0, &SecurityQOS);
-					if(rpcStatus == RPC_S_OK)
+					if(addServiceToNetworkAddr)
 					{
-						if(RpcSecurityCallback)
+						if(NetworkAddr && Service)
 						{
-							rpcStatus = RpcBindingSetOption(*hBinding, RPC_C_OPT_SECURITY_CALLBACK, (ULONG_PTR) RpcSecurityCallback);
-							status = (rpcStatus == RPC_S_OK);
-							if(!status)
-								PRINT_ERROR(L"RpcBindingSetOption: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+							szServer = lstrlen(NetworkAddr) * sizeof(wchar_t);
+							szPrefix = lstrlen(Service) * sizeof(wchar_t);
+							if(fullServer = (LPWSTR) LocalAlloc(LPTR, szPrefix + sizeof(wchar_t) + szServer + sizeof(wchar_t)))
+							{
+								RtlCopyMemory(fullServer, Service, szPrefix);
+								RtlCopyMemory((PBYTE) fullServer + szPrefix + sizeof(wchar_t), NetworkAddr, szServer);
+								((PBYTE) fullServer)[szPrefix] = L'/';
+							}
 						}
-						else status = TRUE;
+						else PRINT_ERROR(L"Cannot add NetworkAddr & Service if NULL\n");
 					}
-					else PRINT_ERROR(L"RpcBindingSetAuthInfoEx: 0x%08x (%u)\n", rpcStatus, rpcStatus);
-					LocalFree(fullServer);
+
+					if(!addServiceToNetworkAddr || fullServer)
+					{
+						rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) (fullServer ? fullServer : (Service ? Service : MIMIKATZ)), RPC_C_AUTHN_LEVEL_PKT_PRIVACY, AuthnSvc, NULL, 0, &SecurityQOS);
+						if(rpcStatus == RPC_S_OK)
+						{
+							if(RpcSecurityCallback)
+							{
+								rpcStatus = RpcBindingSetOption(*hBinding, RPC_C_OPT_SECURITY_CALLBACK, (ULONG_PTR) RpcSecurityCallback);
+								status = (rpcStatus == RPC_S_OK);
+								if(!status)
+									PRINT_ERROR(L"RpcBindingSetOption: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+							}
+							else status = TRUE;
+						}
+						else PRINT_ERROR(L"RpcBindingSetAuthInfoEx: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+					}
+				}
+				else status = TRUE;
+
+				if(!status)
+				{
+					rpcStatus = RpcBindingFree(hBinding);
+					if(rpcStatus == RPC_S_OK)
+						*hBinding = NULL;
+					else PRINT_ERROR(L"RpcBindingFree: 0x%08x (%u)\n", rpcStatus, rpcStatus);
 				}
 			}
 			else PRINT_ERROR(L"No Binding!\n");
@@ -59,6 +107,86 @@ BOOL kull_m_rpc_deleteBinding(RPC_BINDING_HANDLE *hBinding)
 	if(status = (RpcBindingFree(hBinding) == RPC_S_OK))
 		*hBinding = NULL;
 	return status;
+}
+
+RPC_STATUS CALLBACK kull_m_rpc_nice_SecurityCallback(RPC_IF_HANDLE hInterface, void *pBindingHandle)
+{
+    return RPC_S_OK;
+}
+
+RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterface, void *pBindingHandle)
+{
+	RPC_STATUS status;
+	RPC_AUTHZ_HANDLE hAuthz;
+	RPC_WSTR ServerPrincName;
+	DWORD AuthnLevel, AuthnSvc, AuthzSvc;
+	LPCWSTR szAuthnLevel, szAuthnSvc;
+
+	kprintf(L"** Security Callback! **\n");
+	status = RpcBindingInqAuthClient(pBindingHandle, &hAuthz, &ServerPrincName, &AuthnLevel, &AuthnSvc, &AuthzSvc);
+	if(status == RPC_S_OK)
+	{
+		szAuthnLevel = (AuthnLevel < ARRAYSIZE(KULL_M_RPC_AUTHNLEV)) ? KULL_M_RPC_AUTHNLEV[AuthnLevel] : L"?";
+		szAuthnSvc = KULL_M_RPC_AUTHNSVC(AuthnSvc);
+		kprintf(L" > ServerPrincName: %s\n"
+				L" > AuthnLevel     : %2u - %s\n"
+				L" > AuthnSvc       : %2u - %s\n"
+				L" > AuthzSvc       : %2u\n", ServerPrincName, AuthnLevel, szAuthnLevel, AuthnSvc, szAuthnSvc, AuthzSvc);
+		RpcStringFree(&ServerPrincName);
+		RpcImpersonateClient(pBindingHandle);
+		RpcRevertToSelf();
+	}
+	else if(status == RPC_S_BINDING_HAS_NO_AUTH)
+		kprintf(L" > No Authentication\n");
+	else PRINT_ERROR(L"RpcBindingInqAuthClient: %08x\n", status);
+    return RPC_S_OK;
+}
+
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL printIt)
+{
+	if(szRemote)
+	{
+		kull_m_string_args_byName(argc, argv, L"remote", szRemote, NULL);
+		if(!*szRemote)
+			kull_m_string_args_byName(argc, argv, L"server", szRemote, NULL);
+		if(printIt)
+			kprintf(L"Remote   : %s\n", *szRemote);
+	}
+
+	if(szProtSeq)
+	{
+		kull_m_string_args_byName(argc, argv, L"protseq", szProtSeq, L"ncacn_ip_tcp");
+		if(printIt)
+			kprintf(L"ProtSeq  : %s\n", *szProtSeq);
+
+	}
+	
+	if(szEndpoint)
+	{
+		kull_m_string_args_byName(argc, argv, L"endpoint", szEndpoint, NULL);
+		if(printIt)
+			kprintf(L"Endpoint : %s\n", *szEndpoint);
+	}
+	
+	if(szService)
+	{
+		kull_m_string_args_byName(argc, argv, L"service", szService, NULL);
+		if(printIt)
+			kprintf(L"Service  : %s\n", *szService);
+	}
+	
+	if(AuthnSvc)
+	{
+		*AuthnSvc = defAuthnSvc;
+		if(kull_m_string_args_byName(argc, argv, L"noauth", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_NONE;
+		if(kull_m_string_args_byName(argc, argv, L"ntlm", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_WINNT;;
+		if(kull_m_string_args_byName(argc, argv, L"kerberos", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_GSS_KERBEROS;
+		if(printIt)
+			kprintf(L"AuthnSvc : %s\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc));
+	}
 }
 
 void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes)

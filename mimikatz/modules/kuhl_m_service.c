@@ -14,12 +14,31 @@ const KUHL_M_C kuhl_m_c_service[] = {
 	{kuhl_m_service_preshutdown,L"preshutdown",	L"Preshutdown service"},
 	{kuhl_m_service_shutdown,	L"shutdown",	L"Shutdown service"},
 	{kuhl_m_service_list,		L"list",		L"List services"},
+	{kuhl_m_service_me,			L"me",			L"Me!"},
 };
 
 const KUHL_M kuhl_m_service = {
 	L"service", L"Service module", NULL,
-	ARRAYSIZE(kuhl_m_c_service), kuhl_m_c_service, NULL, NULL
+	ARRAYSIZE(kuhl_m_c_service), kuhl_m_c_service, kuhl_m_c_service_init, kuhl_m_c_service_clean
 };
+
+SERVICE_STATUS m_ServiceStatus = {SERVICE_WIN32_OWN_PROCESS, SERVICE_STOPPED, 0, NO_ERROR, 0, 0, 0};
+SERVICE_STATUS_HANDLE m_ServiceStatusHandle;
+HANDLE hKiwiEventRunning;
+
+NTSTATUS kuhl_m_c_service_init()
+{
+	m_ServiceStatusHandle = NULL;
+	hKiwiEventRunning = NULL;
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_c_service_clean()
+{
+	if(m_ServiceStatusHandle)
+		kuhl_m_service_CtrlHandler(SERVICE_STOP);
+	return STATUS_SUCCESS;
+}
 
 NTSTATUS genericFunction(KUHL_M_SERVICE_FUNC function, wchar_t * text, int argc, wchar_t * argv[], DWORD dwControl)
 {
@@ -81,5 +100,59 @@ NTSTATUS kuhl_m_service_shutdown(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_service_list(int argc, wchar_t * argv[])
 {
+	return STATUS_SUCCESS;
+}
+
+void WINAPI kuhl_m_service_CtrlHandler(DWORD Opcode)
+{
+	BOOL notCoded = FALSE;
+	switch(Opcode)
+	{
+		case SERVICE_CONTROL_PAUSE: 
+			m_ServiceStatus.dwCurrentState = SERVICE_PAUSED;
+			break;
+		case SERVICE_CONTROL_CONTINUE:
+			m_ServiceStatus.dwCurrentState = SERVICE_RUNNING;
+			break;
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN: 
+			m_ServiceStatus.dwCurrentState = SERVICE_STOP_PENDING;
+			break;
+		default:
+			notCoded = TRUE;
+	}
+	if(!notCoded)
+	{
+		SetServiceStatus(m_ServiceStatusHandle, &m_ServiceStatus);
+		if(m_ServiceStatus.dwCurrentState == SERVICE_STOP_PENDING)
+			SetEvent(hKiwiEventRunning);
+	}
+	return;
+}
+
+void WINAPI kuhl_m_service_Main(DWORD argc, LPTSTR *argv)
+{
+	if(m_ServiceStatusHandle = RegisterServiceCtrlHandler(MIMIKATZ_SERVICE, kuhl_m_service_CtrlHandler))
+	{
+		m_ServiceStatus.dwCurrentState = SERVICE_START_PENDING;
+		SetServiceStatus(m_ServiceStatusHandle, &m_ServiceStatus);
+		m_ServiceStatus.dwCurrentState = SERVICE_RUNNING;
+		m_ServiceStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
+		SetServiceStatus(m_ServiceStatusHandle, &m_ServiceStatus);
+		WaitForSingleObject(hKiwiEventRunning, INFINITE);
+		m_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
+		SetServiceStatus(m_ServiceStatusHandle, &m_ServiceStatus);
+		m_ServiceStatusHandle = NULL;
+	}
+}
+
+NTSTATUS kuhl_m_service_me(int argc, wchar_t * argv[])
+{
+	const SERVICE_TABLE_ENTRY DispatchTable[]= {{MIMIKATZ_SERVICE, kuhl_m_service_Main}, {NULL, NULL}};
+	if(hKiwiEventRunning = CreateEvent(NULL, TRUE, FALSE, NULL))
+	{
+		StartServiceCtrlDispatcher(DispatchTable);
+		CloseHandle(hKiwiEventRunning);
+	}
 	return STATUS_SUCCESS;
 }

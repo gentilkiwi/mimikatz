@@ -99,4 +99,25 @@ PCWSTR kull_m_crypto_provider_type_to_name(const DWORD dwProvType);
 PCWCHAR kull_m_crypto_provider_to_realname(PCWSTR name);
 PCWCHAR kull_m_crypto_keytype_to_str(const DWORD keyType);
 PCWCHAR kull_m_crypto_algid_to_name(ALG_ID algid);
+ALG_ID kull_m_crypto_name_to_algid(PCWSTR name);
 PCWCHAR kull_m_crypto_cert_prop_id_to_name(const DWORD propId);
+
+typedef struct _MIMI_PUBLICKEY
+{
+	ALG_ID sessionType;
+	DWORD cbPublicKey;
+	BYTE *pbPublicKey;
+} MIMI_PUBLICKEY, *PMIMI_PUBLICKEY;
+
+typedef struct _KIWI_DH {
+	HCRYPTPROV hProvParty;
+	HCRYPTKEY hPrivateKey;
+	MIMI_PUBLICKEY publicKey;
+	HCRYPTKEY hSessionKey;
+} KIWI_DH, *PKIWI_DH;
+
+PKIWI_DH kull_m_crypto_dh_Delete(PKIWI_DH dh);
+PKIWI_DH kull_m_crypto_dh_Create(ALG_ID targetSessionKeyType);
+BOOL kull_m_crypto_dh_CreateSessionKey(PKIWI_DH dh, PMIMI_PUBLICKEY publicKey);
+BOOL kull_m_crypto_dh_simpleEncrypt(HCRYPTKEY key, LPVOID data, DWORD dataLen, LPVOID *out, DWORD *outLen);
+BOOL kull_m_crypto_dh_simpleDecrypt(HCRYPTKEY key, LPVOID data, DWORD dataLen, LPVOID *out, DWORD *outLen);

@@ -18,7 +18,7 @@ const KUHL_M_C kuhl_m_c_crypto[] = {
 	{kuhl_m_crypto_hash,			L"hash",			L"Hash a password with optional username"},
 	{kuhl_m_crypto_system,			L"system",			L"Describe a Windows System Certificate (file, TODO:registry or hive)"},
 	{kuhl_m_crypto_c_sc_auth,		L"scauth",			L"Create a authentication certitifate (smartcard like) from a CA"},
-	{kuhl_m_crypto_c_cert_to_hw,	L"certtohw",			L"Try to export a software CA to a crypto (virtual)hardware"},
+	{kuhl_m_crypto_c_cert_to_hw,	L"certtohw",		L"Try to export a software CA to a crypto (virtual)hardware"},
 
 	{kuhl_m_crypto_p_capi,			L"capi",			L"[experimental] Patch CryptoAPI layer for easy export"},
 	{kuhl_m_crypto_p_cng,			L"cng",				L"[experimental] Patch CNG service for easy export"},

@@ -7,6 +7,8 @@
 
 const KUHL_M_C kuhl_m_c_ts[] = {
 	{kuhl_m_ts_multirdp,	L"multirdp",	L"[experimental] patch Terminal Server service to allow multiples users"},
+	{kuhl_m_ts_sessions,	L"sessions",	NULL},
+	{kuhl_m_ts_remote,		L"remote",		NULL},
 };
 const KUHL_M kuhl_m_ts = {
 	L"ts",	L"Terminal Server module", NULL,
@@ -39,5 +41,63 @@ KULL_M_PATCH_GENERIC TermSrvMultiRdpReferences[] = {
 NTSTATUS kuhl_m_ts_multirdp(int argc, wchar_t * argv[])
 {
 	kull_m_patch_genericProcessOrServiceFromBuild(TermSrvMultiRdpReferences, ARRAYSIZE(TermSrvMultiRdpReferences), L"TermService", L"termsrv.dll", TRUE);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_ts_sessions(int argc, wchar_t * argv[])
+{
+	PWTS_SESSION_INFO info;
+	DWORD i, count, ret, cur;
+	LPWSTR buff;
+	BOOL isCur = ProcessIdToSessionId(GetCurrentProcessId(), &cur);
+
+	if(WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, &info, &count))
+	{
+		for(i = 0; i < count; i++)
+		{
+			kprintf(L"%cid:%5u\tstate:%2u\tstation:%s", (isCur && (cur == info[i].SessionId)) ? L'*' : L' ', info[i].SessionId, info[i].State, info[i].pWinStationName);
+			if(WTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE, info[i].SessionId, WTSUserName, &buff, &ret))
+			{
+				kprintf(L"\tuser:%s", buff);
+				WTSFreeMemory(buff);
+			}
+			else PRINT_ERROR_AUTO(L"WTSQuerySessionInformation(WTSUserName)");
+			if(WTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE, info[i].SessionId, WTSDomainName, &buff, &ret))
+			{
+				kprintf(L"\tdomain:%s", buff);
+				WTSFreeMemory(buff);
+			}
+			else PRINT_ERROR_AUTO(L"WTSQuerySessionInformation(WTSDomainName)");
+			kprintf(L"\n");
+		}
+		WTSFreeMemory(info);
+	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_ts_remote(int argc, wchar_t * argv[])
+{
+	LPCWSTR szId;
+	DWORD id, target;
+	if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
+	{
+		id = wcstoul(szId, NULL, 0);
+		if(kull_m_string_args_byName(argc, argv, L"target", &szId, NULL))
+			target = wcstoul(szId, NULL, 0);
+		else target = WTS_CURRENT_SESSION;
+		
+		kprintf(L"Asking to connect from %u to ", id);
+		if(target == WTS_CURRENT_SESSION)
+			kprintf(L"current session");
+		else kprintf(L"%u", target);
+		
+		kprintf(L"\n\n> ");
+		if(WinStationConnectW(WTS_CURRENT_SERVER_HANDLE, id, target, L"", FALSE))
+			kprintf(L"Connected to %u\n", id);
+		else if(GetLastError() == ERROR_LOGON_FAILURE)
+			PRINT_ERROR(L"Bad password for this session (take care to not lock the account!)\n");
+		else PRINT_ERROR_AUTO(L"WinStationConnect");
+	}
+	else PRINT_ERROR(L"Argument id is needed\n");
 	return STATUS_SUCCESS;
 }

@@ -6,23 +6,17 @@
 #include "kull_m_output.h"
 
 FILE * logfile = NULL;
-#ifdef _WINDLL
 wchar_t * outputBuffer = NULL;
 size_t outputBufferElements = 0, outputBufferElementsPosition = 0;
-#endif
 
 void kprintf(PCWCHAR format, ...)
 {
-#ifdef _WINDLL
 	int varBuf;
 	size_t tempSize;
-#endif
+	wchar_t * tmpBuffer;
 	va_list args;
 	va_start(args, format);
-#ifndef _WINDLL
-	vwprintf(format, args);
-	fflush(stdout);
-#else
+
 	if(outputBuffer)
 	{
 		varBuf = _vscwprintf(format, args);
@@ -31,19 +25,36 @@ void kprintf(PCWCHAR format, ...)
 			if((size_t) varBuf > (outputBufferElements - outputBufferElementsPosition - 1)) // NULL character
 			{
 				tempSize = (outputBufferElements + varBuf + 1) * 2; // * 2, just to be cool
-				if(outputBuffer = (wchar_t *) LocalReAlloc(outputBuffer, tempSize * sizeof(wchar_t), LMEM_MOVEABLE))
+				if(tmpBuffer = (wchar_t *) LocalAlloc(LPTR, tempSize * sizeof(wchar_t)))
+				{
+					RtlCopyMemory(tmpBuffer, outputBuffer, outputBufferElementsPosition * sizeof(wchar_t));
+					LocalFree(outputBuffer);
+					outputBuffer = tmpBuffer;
 					outputBufferElements = tempSize;
+				}
+				else wprintf(L"Erreur LocalAlloc: %u\n", GetLastError());
+				//if(outputBuffer = (wchar_t *) LocalReAlloc(outputBuffer, tempSize * sizeof(wchar_t), LPTR))
+				//	outputBufferElements = tempSize;
+				//else wprintf(L"Erreur ReAlloc: %u\n", GetLastError());
 			}
 			varBuf = vswprintf_s(outputBuffer + outputBufferElementsPosition, outputBufferElements - outputBufferElementsPosition, format, args);
 			if(varBuf > 0)
 				outputBufferElementsPosition += varBuf;
 		}
 	}
+#ifndef _WINDLL
+	else
+	{
+		vwprintf(format, args);
+		fflush(stdout);
+	}
 #endif
 	if(logfile)
+	{
 		vfwprintf(logfile, format, args);
+		fflush(logfile);
+	}
 	va_end(args);
-	fflush(logfile);
 }
 
 void kprintf_inputline(PCWCHAR format, ...)
@@ -51,9 +62,11 @@ void kprintf_inputline(PCWCHAR format, ...)
 	va_list args;
 	va_start(args, format);
 	if(logfile)
+	{
 		vfwprintf(logfile, format, args);
+		fflush(logfile);
+	}
 	va_end(args);
-	fflush(logfile);
 }
 
 BOOL kull_m_output_file(PCWCHAR file)
@@ -79,15 +92,19 @@ int previousStdOut, previousStdErr;
 UINT previousConsoleOutput;
 void kull_m_output_init()
 {
+#ifndef _WINDLL
 	previousStdOut = _setmode(_fileno(stdout), _O_U8TEXT);
 	previousStdErr = _setmode(_fileno(stderr), _O_U8TEXT);
 	previousConsoleOutput = GetConsoleOutputCP();
 	SetConsoleOutputCP(CP_UTF8);
+#endif
 }
 
 void kull_m_output_clean()
 {
+#ifndef _WINDLL
 	_setmode(_fileno(stdout), previousStdOut);
 	_setmode(_fileno(stderr), previousStdErr);
 	SetConsoleOutputCP(previousConsoleOutput);
+#endif
 }

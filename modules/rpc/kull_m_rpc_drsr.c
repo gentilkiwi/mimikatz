@@ -312,31 +312,12 @@ void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS
 
 void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_DCINFOREPLY * reply)
 {
-	DWORD i;
 	if(reply)
 	{
 		switch (dcOutVersion)
 		{
 		case 2:
-			for(i = 0; i < reply->V2.cItems; i++)
-			{
-				if(reply->V2.rItems[i].NetbiosName)
-					MIDL_user_free(reply->V2.rItems[i].NetbiosName);
-				if(reply->V2.rItems[i].DnsHostName)
-					MIDL_user_free(reply->V2.rItems[i].DnsHostName);
-				if(reply->V2.rItems[i].SiteName)
-					MIDL_user_free(reply->V2.rItems[i].SiteName);
-				if(reply->V2.rItems[i].SiteObjectName)
-					MIDL_user_free(reply->V2.rItems[i].SiteObjectName);
-				if(reply->V2.rItems[i].ComputerObjectName)
-					MIDL_user_free(reply->V2.rItems[i].ComputerObjectName);
-				if(reply->V2.rItems[i].ServerObjectName)
-					MIDL_user_free(reply->V2.rItems[i].ServerObjectName);
-				if(reply->V2.rItems[i].NtdsDsaObjectName)
-					MIDL_user_free(reply->V2.rItems[i].NtdsDsaObjectName);
-			}
-			if(reply->V2.rItems)
-				MIDL_user_free(reply->V2.rItems);
+			kull_m_rpc_ms_drsr_FreeDRS_MSG_DCINFOREPLY_V2(&reply->V2);
 			break;
 		case 1:
 		case 3:
@@ -352,55 +333,12 @@ void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_D
 
 void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_GETCHGREPLY * reply)
 {
-	DWORD i, j;
-	REPLENTINFLIST *pReplentinflist, *pNextReplentinflist;
 	if(reply)
 	{
 		switch(dwOutVersion)
 		{
 		case 6:
-			if(reply->V6.pNC)
-				MIDL_user_free(reply->V6.pNC);
-			if(reply->V6.pUpToDateVecSrc)
-				MIDL_user_free(reply->V6.pUpToDateVecSrc);
-			kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(&reply->V6.PrefixTableSrc);
-			pNextReplentinflist = reply->V6.pObjects;
-			while(pReplentinflist = pNextReplentinflist)
-			{
-				pNextReplentinflist = pReplentinflist->pNextEntInf;
-				if(pReplentinflist->Entinf.pName)
-					MIDL_user_free(pReplentinflist->Entinf.pName);
-				if(pReplentinflist->Entinf.AttrBlock.pAttr)
-				{
-					for(i = 0; i < pReplentinflist->Entinf.AttrBlock.attrCount; i++)
-					{
-						if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal)
-						{
-							for(j = 0; j < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; j++)
-								if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j].pVal)
-									MIDL_user_free(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[j].pVal);
-							MIDL_user_free(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal);
-						}
-					}
-					MIDL_user_free(pReplentinflist->Entinf.AttrBlock.pAttr);
-				}
-				if(pReplentinflist->pParentGuid)
-					MIDL_user_free(pReplentinflist->pParentGuid);
-				if(pReplentinflist->pMetaDataExt)
-					MIDL_user_free(pReplentinflist->pMetaDataExt);
-				MIDL_user_free(pReplentinflist);
-			}
-			if(reply->V6.rgValues)
-			{
-				for(i = 0; i < reply->V6.cNumValues; i++)
-				{
-					if(reply->V6.rgValues[i].pObject)
-						MIDL_user_free(reply->V6.rgValues[i].pObject);
-					if(reply->V6.rgValues[i].Aval.pVal)
-						MIDL_user_free(reply->V6.rgValues[i].Aval.pVal);
-				}
-				MIDL_user_free(reply->V6.rgValues);
-			}
+			kull_m_rpc_ms_drsr_FreeDRS_MSG_GETCHGREPLY_V6(&reply->V6);
 			break;
 		case 1:
 		case 2:

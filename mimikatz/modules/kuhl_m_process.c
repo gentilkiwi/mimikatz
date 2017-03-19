@@ -13,6 +13,7 @@ const KUHL_M_C kuhl_m_c_process[] = {
 	{kuhl_m_process_stop,		L"stop",		L"Terminate a process"},
 	{kuhl_m_process_suspend,	L"suspend",		L"Suspend a process"},
 	{kuhl_m_process_resume,		L"resume",		L"Resume a process"},
+	{kuhl_m_process_run,		L"run",			L"Run!"},
 };
 
 const KUHL_M kuhl_m_process = {
@@ -212,4 +213,63 @@ BOOL CALLBACK kuhl_m_process_imports_callback_module_importedEntry(PKULL_M_PROCE
 	else
 		kprintf(L"#%u", pImportedEntryInformations->ordinal);
 	return TRUE;
+}
+
+BOOL kull_m_process_run_data(LPCWSTR commandLine, HANDLE hToken)
+{
+	BOOL status = FALSE;
+	SECURITY_ATTRIBUTES saAttr = {sizeof(SECURITY_ATTRIBUTES), NULL, TRUE};
+	STARTUPINFO si = {0};
+	PROCESS_INFORMATION pi = {0};
+	HANDLE hOut = NULL;
+	PWSTR dupCommandLine = NULL;
+	BYTE chBuf[4096];
+	DWORD dwRead, i;
+	LPVOID env = NULL;
+
+	if(dupCommandLine = _wcsdup(commandLine))
+	{
+		if(CreatePipe(&hOut, &si.hStdOutput, &saAttr, 0))
+		{
+			SetHandleInformation(hOut, HANDLE_FLAG_INHERIT, 0);
+			si.cb = sizeof(STARTUPINFO);
+			si.hStdError = si.hStdOutput;
+			si.dwFlags |= STARTF_USESTDHANDLES;
+			if(!hToken || CreateEnvironmentBlock(&env, hToken, FALSE))
+			{
+				if(status = CreateProcessAsUser(hToken, NULL, dupCommandLine, NULL, NULL, TRUE, CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT, env, NULL, &si, &pi))
+				{
+					CloseHandle(si.hStdOutput);
+					si.hStdOutput = si.hStdError = NULL;
+					while(ReadFile(hOut, chBuf, sizeof(chBuf), &dwRead, NULL) && dwRead)
+						for(i = 0; i < dwRead; i++)
+							kprintf(L"%c", chBuf[i]);
+					WaitForSingleObject(pi.hProcess, INFINITE);
+					CloseHandle(pi.hThread);
+					CloseHandle(pi.hProcess);
+				}
+				else PRINT_ERROR_AUTO(L"CreateProcessAsUser");
+				if(env)
+					DestroyEnvironmentBlock(env);
+			}
+			else PRINT_ERROR_AUTO(L"CreateEnvironmentBlock");
+			CloseHandle(hOut);
+			if(si.hStdOutput)
+				CloseHandle(si.hStdOutput);
+		}
+		free(dupCommandLine);
+	}
+	return status;
+}
+
+NTSTATUS kuhl_m_process_run(int argc, wchar_t * argv[])
+{
+	PCWCHAR commandLine;
+	if(argc)
+	{
+		commandLine = argv[argc - 1];
+		kprintf(L"Trying to start \"%s\"...\n", commandLine);
+		kull_m_process_run_data(commandLine, NULL);
+	}
+	return STATUS_SUCCESS;
 }

@@ -9,6 +9,7 @@ const KUHL_M_C kuhl_m_c_token[] = {
 	{kuhl_m_token_whoami,	L"whoami",	L"Display current identity"},
 	{kuhl_m_token_list,		L"list",	L"List all tokens of the system"},
 	{kuhl_m_token_elevate,	L"elevate",	L"Impersonate a token"},
+	{kuhl_m_token_run,		L"run",		L"Run!"},
 
 	{kuhl_m_token_revert,	L"revert",	L"Revert to proces token"},
 };
@@ -43,24 +44,32 @@ NTSTATUS kuhl_m_token_whoami(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_token_list(int argc, wchar_t * argv[])
 {
-	kuhl_m_token_list_or_elevate(argc, argv, FALSE);
+	kuhl_m_token_list_or_elevate(argc, argv, FALSE, FALSE);
 	return STATUS_SUCCESS;
 }
 
 NTSTATUS kuhl_m_token_elevate(int argc, wchar_t * argv[])
 {
-	kuhl_m_token_list_or_elevate(argc, argv, TRUE);
+	kuhl_m_token_list_or_elevate(argc, argv, TRUE, FALSE);
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate)
+NTSTATUS kuhl_m_token_run(int argc, wchar_t * argv[])
 {
-	KUHL_M_TOKEN_ELEVATE_DATA pData = {NULL, NULL, 0, elevate};
+	kuhl_m_token_list_or_elevate(argc, argv, FALSE, TRUE);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate, BOOL runIt)
+{
+	KUHL_M_TOKEN_ELEVATE_DATA pData = {NULL, NULL, 0, elevate, runIt, NULL};
 	WELL_KNOWN_SID_TYPE type = WinNullSid;
 	PWSTR name, domain;
 	PCWSTR strTokenId;
 	PPOLICY_DNS_DOMAIN_INFO pDomainInfo = NULL;
 
+	if(runIt)
+		kull_m_string_args_byName(argc, argv, L"process", &pData.pCommandLine, L"whoami.exe");
 	kull_m_string_args_byName(argc, argv, L"user", &pData.pUsername, NULL);
 
 	if(kull_m_string_args_byName(argc, argv, L"id", &strTokenId, NULL))
@@ -68,11 +77,9 @@ NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate)
 		pData.tokenId = wcstoul(strTokenId, NULL, 0);
 	}
 	else if(kull_m_string_args_byName(argc, argv, L"domainadmin", NULL, NULL))
-	{
 		type = WinAccountDomainAdminsSid;
-		if(!kull_m_net_getCurrentDomainInfo(&pDomainInfo))
-			PRINT_ERROR_AUTO(L"kull_m_local_domain_user_getCurrentDomainSID");
-	}
+	else if(kull_m_string_args_byName(argc, argv, L"enterpriseadmin", NULL, NULL))
+		type = WinAccountEnterpriseAdminsSid;
 	else if(kull_m_string_args_byName(argc, argv, L"admin", NULL, NULL))
 		type = WinBuiltinAdministratorsSid;
 	else if((elevate && !pData.pUsername) || kull_m_string_args_byName(argc, argv, L"system", NULL, NULL))
@@ -85,7 +92,11 @@ NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate)
 		}
 	}
 
-	if(!elevate || pData.tokenId || type || pData.pUsername)
+	if((type == WinAccountDomainAdminsSid) || (type == WinAccountEnterpriseAdminsSid))
+		if(!kull_m_net_getCurrentDomainInfo(&pDomainInfo))
+			PRINT_ERROR_AUTO(L"kull_m_local_domain_user_getCurrentDomainSID");
+
+	if(!elevate || !runIt || pData.tokenId || type || pData.pUsername)
 	{
 		kprintf(L"Token Id  : %u\nUser name : %s\nSID name  : ", pData.tokenId, pData.pUsername ? pData.pUsername : L"");
 		if(type)
@@ -104,12 +115,11 @@ NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate)
 		else kprintf(L"\n");
 		kprintf(L"\n");
 		
-		if(!elevate || pData.tokenId || pData.pSid || pData.pUsername)
+		if(!elevate || !runIt || pData.tokenId || pData.pSid || pData.pUsername)
 			kull_m_token_getTokens(kuhl_m_token_list_or_elevate_callback, &pData);
 		
 		if(pData.pSid)
 			LocalFree(pData.pSid);
-		
 		if(pDomainInfo)
 			LsaFreeMemory(pDomainInfo);
 	}
@@ -175,7 +185,7 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 			else if(pData->tokenId)
 				isUserOK = (pData->tokenId == tokenStats.TokenId.LowPart);
 
-			if(isUserOK && DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE, NULL, (tokenStats.TokenType == TokenPrimary) ? SecurityDelegation : tokenStats.ImpersonationLevel, TokenImpersonation, &hNewToken))
+			if(isUserOK && DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE | (pData->runIt ? TOKEN_ASSIGN_PRIMARY : 0), NULL, (tokenStats.TokenType == TokenPrimary) ? SecurityDelegation : tokenStats.ImpersonationLevel, TokenImpersonation, &hNewToken))
 			{
 				if(pData->pSid)
 				{
@@ -198,6 +208,8 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 						}
 						else PRINT_ERROR_AUTO(L"SetThreadToken");
 					}
+					else if(pData->runIt)
+						isUserOK = !kull_m_process_run_data(pData->pCommandLine, hNewToken);
 				}
 				else isUserOK = TRUE;
 				CloseHandle(hNewToken);

@@ -38,6 +38,7 @@
     <PlatformToolset Condition="'$(VCTargetsPath11)' != ''">v110_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath12)' != ''">v120_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VCTargetsPath14)' != ''">v140_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VCTargetsPath15)' != ''">v141_xp</PlatformToolset>
     <UseOfMfc>static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="Exists('$(VCTargetsPath)\Platforms\$(Platform)\PlatformToolsets\ddk2003') Or Exists('$(VCTargetsPath)\..\Platforms\$(Platform)\PlatformToolsets\ddk2003')">
@@ -78,7 +79,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;msxml2.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;hid.lib;setupapi.lib;winscard.lib;wldap32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;msxml2.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
@@ -110,6 +111,7 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_bkrp.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_dpapi-entries.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_drsr.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_mimicom.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-bkrp_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-claims.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c" />
@@ -147,6 +149,7 @@
     <ClCompile Include="modules\kuhl_m_net.c" />
     <ClCompile Include="modules\kuhl_m_privilege.c" />
     <ClCompile Include="modules\kuhl_m_process.c" />
+    <ClCompile Include="modules\kuhl_m_rpc.c" />
     <ClCompile Include="modules\kuhl_m_service.c" />
     <ClCompile Include="modules\kuhl_m_service_remote.c" />
     <ClCompile Include="modules\kuhl_m_sid.c" />
@@ -195,6 +198,7 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_dpapi-entries.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_drsr.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_mimicom.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-claims.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h" />
@@ -230,6 +234,7 @@
     <ClInclude Include="modules\kuhl_m_net.h" />
     <ClInclude Include="modules\kuhl_m_privilege.h" />
     <ClInclude Include="modules\kuhl_m_process.h" />
+    <ClInclude Include="modules\kuhl_m_rpc.h" />
     <ClInclude Include="modules\kuhl_m_service.h" />
     <ClInclude Include="modules\kuhl_m_service_remote.h" />
     <ClInclude Include="modules\kuhl_m_sid.h" />

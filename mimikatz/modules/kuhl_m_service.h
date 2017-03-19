@@ -10,6 +10,9 @@
 
 const KUHL_M kuhl_m_service;
 
+NTSTATUS kuhl_m_c_service_init();
+NTSTATUS kuhl_m_c_service_clean();
+
 typedef BOOL (* KUHL_M_SERVICE_FUNC) (PCWSTR serviceName);
 NTSTATUS genericFunction(KUHL_M_SERVICE_FUNC function, wchar_t * text, int argc, wchar_t * argv[], DWORD dwControl);
 
@@ -21,3 +24,7 @@ NTSTATUS kuhl_m_service_resume(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_preshutdown(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_shutdown(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_list(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_service_me(int argc, wchar_t * argv[]);
+
+void WINAPI kuhl_m_service_CtrlHandler(DWORD Opcode);
+void WINAPI kuhl_m_service_Main(DWORD argc, LPTSTR *argv);
