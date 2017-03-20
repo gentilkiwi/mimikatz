@@ -127,12 +127,12 @@ NTSTATUS kuhl_m_rpc_enum(int argc, wchar_t * argv[])
 	RPC_IF_ID IfId;
 	RPC_WSTR Annotation, bindString;
 	UUID prev = {0};
-	BOOL sameId, avoidMsBugWasHere = FALSE;
+	BOOL isNullSession, sameId, avoidMsBugWasHere = FALSE;
 	PCWSTR szRemote, szProtSeq;
 	DWORD AuthnSvc;
 	
-	kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, TRUE);
-	if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, NULL, FALSE, AuthnSvc, RPC_C_IMP_LEVEL_DEFAULT, &Binding, NULL))
+	kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, TRUE);
+	if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, NULL, FALSE, AuthnSvc, isNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &Binding, NULL))
 	{
 		status = RpcMgmtEpEltInqBegin(Binding, RPC_C_EP_ALL_ELTS, NULL, 0, NULL, &InquiryContext);
 		if(status == RPC_S_OK)
@@ -272,7 +272,7 @@ NTSTATUS kuhl_m_rpc_server(int argc, wchar_t * argv[])
 	{
 		if(inf = (PKUHL_M_RPC_SERVER_INF) LocalAlloc(LPTR, sizeof(KUHL_M_RPC_SERVER_INF)))
 		{
-			kull_m_rpc_getArgs(argc, argv, NULL, &szProtSeq, &szEndpoint, &szService, &inf->AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, TRUE);
+			kull_m_rpc_getArgs(argc, argv, NULL, &szProtSeq, &szEndpoint, &szService, &inf->AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, TRUE);
 			kull_m_string_copy(&inf->szProtSeq, szProtSeq);
 			if(szEndpoint)
 				kull_m_string_copy(&inf->szEndpoint, szEndpoint);
@@ -304,17 +304,18 @@ NTSTATUS kuhl_m_rpc_connect(int argc, wchar_t * argv[])
 	DWORD AuthnSvc, rpcExc;
 	ALG_ID alg;
 	MIMI_PUBLICKEY serverKey = {0};
+	BOOL isNullSession;
 
 	if(!hBinding)
 	{
-		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, &szEndpoint, &szService, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, TRUE);
+		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, &szEndpoint, &szService, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, TRUE);
 		kull_m_string_args_byName(argc, argv, L"alg", &szAlg, L"3DES");
 		alg = kull_m_crypto_name_to_algid(szAlg);
 		if(!(alg & ALG_CLASS_DATA_ENCRYPT))
 			alg = CALG_3DES;
 		kprintf(L"Algorithm: %s (%08x)\n", kull_m_crypto_algid_to_name(alg), alg);
 
-		if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, szEndpoint, szService, FALSE, AuthnSvc, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, NULL))
+		if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, szEndpoint, szService, FALSE, AuthnSvc, isNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, NULL))
 		{
 			status = RpcEpResolveBinding(hBinding, MimiCom_v1_0_c_ifspec);
 			if(status == RPC_S_OK)

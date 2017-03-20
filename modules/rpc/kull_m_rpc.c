@@ -28,8 +28,9 @@ LPCWSTR KULL_M_RPC_AUTHNSVC(DWORD AuthnSvc)
 	}
 	return szAuthnSvc;
 }
+const SEC_WINNT_AUTH_IDENTITY KULL_M_RPC_NULLSESSION = {(unsigned short __RPC_FAR *) L"", 0, (unsigned short __RPC_FAR *) L"", 0, (unsigned short __RPC_FAR *) L"", 0, SEC_WINNT_AUTH_IDENTITY_UNICODE};
 
-BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, BOOL addServiceToNetworkAddr, DWORD AuthnSvc, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *))
+BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, BOOL addServiceToNetworkAddr, DWORD AuthnSvc, RPC_AUTH_IDENTITY_HANDLE hAuth, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *))
 {
 	BOOL status = FALSE;
 	RPC_STATUS rpcStatus;
@@ -67,7 +68,7 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 
 					if(!addServiceToNetworkAddr || fullServer)
 					{
-						rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) (fullServer ? fullServer : (Service ? Service : MIMIKATZ)), RPC_C_AUTHN_LEVEL_PKT_PRIVACY, AuthnSvc, NULL, 0, &SecurityQOS);
+						rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) (fullServer ? fullServer : (Service ? Service : MIMIKATZ)), RPC_C_AUTHN_LEVEL_PKT_PRIVACY, AuthnSvc, hAuth, 0, &SecurityQOS);
 						if(rpcStatus == RPC_S_OK)
 						{
 							if(RpcSecurityCallback)
@@ -142,7 +143,7 @@ RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterfa
     return RPC_S_OK;
 }
 
-void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL printIt)
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, BOOL printIt)
 {
 	if(szRemote)
 	{
@@ -186,6 +187,13 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 			*AuthnSvc = RPC_C_AUTHN_GSS_KERBEROS;
 		if(printIt)
 			kprintf(L"AuthnSvc : %s\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc));
+	}
+
+	if(isNullSession)
+	{
+		*isNullSession = kull_m_string_args_byName(argc, argv, L"null", NULL, NULL);
+		if(printIt)
+			kprintf(L"NULL Sess: %s\n", (*isNullSession) ? L"yes" : L"no");
 	}
 }
 
