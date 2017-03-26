@@ -11,8 +11,6 @@
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_string.h"
 #include "kuhl_m_sysenvvalue.h"
-#include <aclapi.h>
-#include <sddl.h>
 
 typedef struct _KUHL_K_C {
 	const PKUHL_M_C_FUNC pCommand;
@@ -24,7 +22,6 @@ typedef struct _KUHL_K_C {
 NTSTATUS kuhl_m_kernel_do(wchar_t * input);
 
 NTSTATUS kuhl_m_kernel_add_mimidrv(int argc, wchar_t * argv[]);
-BOOL kuhl_m_kernel_addWorldToMimikatz(SC_HANDLE monHandle);
 NTSTATUS kuhl_m_kernel_remove_mimidrv(int argc, wchar_t * argv[]);
 
 NTSTATUS kuhl_m_kernel_processProtect(int argc, wchar_t * argv[]);

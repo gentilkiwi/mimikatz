@@ -26,6 +26,35 @@ BOOL kull_m_token_getNameDomainFromToken(HANDLE hToken, PWSTR * pName, PWSTR * p
 	return result;
 }
 
+BOOL kull_m_token_CheckTokenMembership(__in_opt HANDLE TokenHandle, __in PSID SidToCheck, __out PBOOL IsMember)
+{
+	BOOL status = FALSE, isDupp = FALSE;
+	TOKEN_TYPE type;
+	DWORD szNeeded;
+	HANDLE effHandle;
+	
+	if(GetTokenInformation(TokenHandle, TokenType, &type, sizeof(TOKEN_TYPE), &szNeeded))
+	{
+		if(type == TokenPrimary)
+		{
+			isDupp = DuplicateTokenEx(TokenHandle, TOKEN_QUERY, NULL, SecurityIdentification, TokenImpersonation, &effHandle);
+			if(!isDupp)
+				PRINT_ERROR_AUTO(L"DuplicateTokenEx");
+		}
+		else effHandle = TokenHandle;
+		
+		if(isDupp || (type != TokenPrimary))
+		{
+			if(!(status = CheckTokenMembership(effHandle, SidToCheck, IsMember)))
+				PRINT_ERROR_AUTO(L"CheckTokenMembership");
+			if(isDupp)
+				CloseHandle(effHandle);
+		}
+	}
+	else PRINT_ERROR_AUTO(L"GetTokenInformation");
+	return status;
+}
+
 PCWCHAR SidNameUses[] = {L"User", L"Group", L"Domain", L"Alias", L"WellKnownGroup", L"DeletedAccount", L"Invalid", L"Unknown", L"Computer", L"Label"};
 PCWCHAR kull_m_token_getSidNameUse(SID_NAME_USE SidNameUse)
 {

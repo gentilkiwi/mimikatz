@@ -86,7 +86,9 @@ void mimikatz_end()
 	SetConsoleCtrlHandler(HandlerRoutine, FALSE);
 #endif
 	kull_m_output_clean();
+#ifndef _WINDLL
 	ExitProcess(STATUS_SUCCESS);
+#endif
 }
 
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType)
@@ -110,7 +112,10 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 		offsetToFunc = FIELD_OFFSET(KUHL_M, pInit);
 		hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 		if(FAILED(hr))
-			PRINT_ERROR(L"CoInitializeEx: %08x\n", hr);
+#ifdef _WINDLL
+			if(hr != RPC_E_CHANGED_MODE)
+#endif
+				PRINT_ERROR(L"CoInitializeEx: %08x\n", hr);
 		kull_m_asn1_init();
 	}
 	else

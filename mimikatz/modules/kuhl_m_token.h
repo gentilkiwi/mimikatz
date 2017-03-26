@@ -11,6 +11,15 @@
 
 const KUHL_M kuhl_m_token;
 
+//typedef enum _KUHL_M_TOKEN_ELEVATE_DATA_TYPE_FILTER {
+//	TypeFree,
+//	TypeAnonymous,
+//	TypeIdentity,
+//	TypeDelegation,
+//	TypeImpersonate,
+//	TypePrimary,
+//} KUHL_M_TOKEN_ELEVATE_DATA_TYPE_FILTER, *PKUHL_M_TOKEN_ELEVATE_DATA_TYPE_FILTER;
+
 typedef struct _KUHL_M_TOKEN_ELEVATE_DATA {
 	PSID pSid;
 	PCWSTR pUsername;
@@ -18,6 +27,10 @@ typedef struct _KUHL_M_TOKEN_ELEVATE_DATA {
 	BOOL elevateIt;
 	BOOL runIt;
 	PCWSTR pCommandLine;
+
+	//KUHL_M_TOKEN_ELEVATE_DATA_TYPE_FILTER filter;
+	//BOOL isNeeded;
+	//BOOL isMinimal;
 } KUHL_M_TOKEN_ELEVATE_DATA, *PKUHL_M_TOKEN_ELEVATE_DATA;
 
 void kuhl_m_token_displayAccount(HANDLE hToken);

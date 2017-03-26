@@ -6,6 +6,7 @@
 #pragma once
 #include "kuhl_m.h"
 #include "../modules/kull_m_service.h"
+#include "../modules/kull_m_file.h"
 #include "kuhl_m_service_remote.h"
 
 const KUHL_M kuhl_m_service;
@@ -24,6 +25,8 @@ NTSTATUS kuhl_m_service_resume(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_preshutdown(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_shutdown(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_list(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_service_installme(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_service_uninstallme(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_service_me(int argc, wchar_t * argv[]);
 
 void WINAPI kuhl_m_service_CtrlHandler(DWORD Opcode);

@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kuhl_m_service.h"
+#ifdef SERVICE_INCONTROL
 #include "../modules/kull_m_remotelib.h"
 #include "../modules/kull_m_patch.h"
 
@@ -17,3 +18,4 @@ DWORD WINAPI kuhl_service_sendcontrol_fast_thread(PREMOTE_LIB_DATA lpParameter);
 DWORD kuhl_service_sendcontrol_fast_thread_end();
 
 BOOL kuhl_service_sendcontrol_inprocess(PWSTR ServiceName, DWORD dwControl);
+#endif
