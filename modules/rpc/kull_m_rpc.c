@@ -143,8 +143,11 @@ RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterfa
     return RPC_S_OK;
 }
 
-void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, BOOL printIt)
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, GUID *altGuid, BOOL printIt)
 {
+	PCWSTR data;
+	UNICODE_STRING us;
+
 	if(szRemote)
 	{
 		kull_m_string_args_byName(argc, argv, L"remote", szRemote, NULL);
@@ -194,6 +197,20 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 		*isNullSession = kull_m_string_args_byName(argc, argv, L"null", NULL, NULL);
 		if(printIt)
 			kprintf(L"NULL Sess: %s\n", (*isNullSession) ? L"yes" : L"no");
+	}
+
+	if(altGuid)
+	{
+		if(kull_m_string_args_byName(argc, argv, L"guid", &data, NULL))
+		{
+			RtlInitUnicodeString(&us, data);
+			if(NT_SUCCESS(RtlGUIDFromString(&us, altGuid)) && printIt)
+			{
+				kprintf(L"Alt GUID : ");
+				kull_m_string_displayGUID(altGuid);
+				kprintf(L"\n");
+			}
+		}
 	}
 }
 

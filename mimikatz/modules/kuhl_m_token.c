@@ -142,9 +142,7 @@ void kuhl_m_token_displayAccount_sids(UCHAR l, DWORD count, PSID_AND_ATTRIBUTES 
 	PWSTR name, domainName;
 	for(i = 0; i < count; i++)
 	{
-		if(kull_m_token_getNameDomainFromSID(sids[i].Sid, &name, &domainName, NULL, NULL))
-		{
-			kprintf(L"   %c:[%c%c%c%c%c%c%c] ", l,
+		kprintf(L"   %c:[%c%c%c%c%c%c%c] ", l,
 				(sids[i].Attributes & SE_GROUP_MANDATORY) ? L'M' : L' ',
 				(sids[i].Attributes & SE_GROUP_ENABLED_BY_DEFAULT) ? L'D' : L' ',
 				(sids[i].Attributes & SE_GROUP_ENABLED) ? L'E' : L' ',
@@ -153,14 +151,20 @@ void kuhl_m_token_displayAccount_sids(UCHAR l, DWORD count, PSID_AND_ATTRIBUTES 
 				(sids[i].Attributes & SE_GROUP_LOGON_ID) ? L'L' : L' ',
 				(sids[i].Attributes & SE_GROUP_RESOURCE) ? L'R' : L' '
 				);
+		if(kull_m_token_getNameDomainFromSID(sids[i].Sid, &name, &domainName, NULL, NULL))
+		{
 			if(lstrlen(domainName))
 				kprintf(L"%s\\", domainName);
 			kprintf(L"%s\n", name);
 			LocalFree(name);
 			LocalFree(domainName);
 		}
+		else
+		{
+			kull_m_string_displaySID(sids[i].Sid);
+			kprintf(L"\n");
+		}
 	}
-
 }
 const wchar_t * KUHL_M_TOKEN_IMPERSONATION_LEVEL[] = {L"Anonymous", L"Identification", L"Impersonation", L"Delegation",};
 const wchar_t * KUHL_M_TOKEN_TYPE[] = {L"Unknown", L"Primary", L"Impersonation",};

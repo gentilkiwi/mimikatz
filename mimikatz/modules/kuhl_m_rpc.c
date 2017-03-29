@@ -131,7 +131,7 @@ NTSTATUS kuhl_m_rpc_enum(int argc, wchar_t * argv[])
 	PCWSTR szRemote, szProtSeq;
 	DWORD AuthnSvc;
 	
-	kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, TRUE);
+	kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, NULL, TRUE);
 	if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, NULL, FALSE, AuthnSvc, isNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &Binding, NULL))
 	{
 		status = RpcMgmtEpEltInqBegin(Binding, RPC_C_EP_ALL_ELTS, NULL, 0, NULL, &InquiryContext);
@@ -272,7 +272,7 @@ NTSTATUS kuhl_m_rpc_server(int argc, wchar_t * argv[])
 	{
 		if(inf = (PKUHL_M_RPC_SERVER_INF) LocalAlloc(LPTR, sizeof(KUHL_M_RPC_SERVER_INF)))
 		{
-			kull_m_rpc_getArgs(argc, argv, NULL, &szProtSeq, &szEndpoint, &szService, &inf->AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, TRUE);
+			kull_m_rpc_getArgs(argc, argv, NULL, &szProtSeq, &szEndpoint, &szService, &inf->AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, &((PRPC_SERVER_INTERFACE) MimiCom_v1_0_s_ifspec)->InterfaceId.SyntaxGUID, TRUE);
 			kull_m_string_copy(&inf->szProtSeq, szProtSeq);
 			if(szEndpoint)
 				kull_m_string_copy(&inf->szEndpoint, szEndpoint);
@@ -308,7 +308,7 @@ NTSTATUS kuhl_m_rpc_connect(int argc, wchar_t * argv[])
 
 	if(!hBinding)
 	{
-		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, &szEndpoint, &szService, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, TRUE);
+		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, &szEndpoint, &szService, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, &((PRPC_CLIENT_INTERFACE) MimiCom_v1_0_c_ifspec)->InterfaceId.SyntaxGUID, TRUE);
 		kull_m_string_args_byName(argc, argv, L"alg", &szAlg, L"3DES");
 		alg = kull_m_crypto_name_to_algid(szAlg);
 		if(!(alg & ALG_CLASS_DATA_ENCRYPT))
@@ -450,6 +450,34 @@ NTSTATUS SRV_MimiCommand(MIMI_HANDLE phMimi, DWORD szEncCommand, BYTE *encComman
 		else status = ERROR_BAD_COMMAND;
 	}
 	else status = RPC_X_SS_CONTEXT_DAMAGED;
+	LeaveCriticalSection(&outputCritical);
+	if(status == STATUS_FATAL_APP_EXIT)
+	{
+		isFinish = TRUE;
+		RpcMgmtStopServerListening(NULL);
+	}
+	return status;
+}
+
+NTSTATUS SRV_MimiClear(handle_t rpc_handle, wchar_t *command, DWORD *size, wchar_t **result)
+{
+	NTSTATUS status;
+	EnterCriticalSection(&outputCritical);
+	kprintf(L"\n\n" MIMIKATZ L"(rpc): %s\n", command);
+	outputBufferElements = 0xffff;
+	outputBufferElementsPosition = 0;
+	if(outputBuffer = (wchar_t *) LocalAlloc(LPTR, outputBufferElements * sizeof(wchar_t)))
+	{
+		status = mimikatz_dispatchCommand(command);
+		if(*result = (wchar_t *) midl_user_allocate(((outputBufferElementsPosition + 1) * sizeof(wchar_t))))
+		{
+			RtlCopyMemory(*result, outputBuffer, (outputBufferElementsPosition + 1) * sizeof(wchar_t));
+			*size = (DWORD) (outputBufferElementsPosition + 1);
+			status = STATUS_SUCCESS;
+		}
+		outputBuffer = (wchar_t *) LocalFree(outputBuffer);
+		outputBufferElements = outputBufferElementsPosition = 0;
+	}
 	LeaveCriticalSection(&outputCritical);
 	if(status == STATUS_FATAL_APP_EXIT)
 	{

@@ -32,6 +32,13 @@ interface MimiCom
 		[out, ref] DWORD *szEncResult,
 		[out, size_is(, *szEncResult)] BYTE **encResult
 	);
+
+	NTSTATUS MimiClear(
+		[in] handle_t rpc_handle,
+		[in, string] wchar_t *command,
+		[out] DWORD *size,
+		[out, size_is(, *size)] wchar_t **result
+	);
 }
 
 // Privacy of RPC exchange can be ~guaranteed by protocol, *except when not using authentication*
