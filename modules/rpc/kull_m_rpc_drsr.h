@@ -164,6 +164,7 @@ typedef enum {
 } EXOP_REQ;
 
 #define szOID_ANSI_name						"1.2.840.113556.1.4.1"
+#define szOID_objectGUID					"1.2.840.113556.1.4.2"
 
 #define szOID_ANSI_sAMAccountName			"1.2.840.113556.1.4.221"
 #define szOID_ANSI_userPrincipalName		"1.2.840.113556.1.4.656"
