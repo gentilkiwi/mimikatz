@@ -26,6 +26,35 @@ BOOL kull_m_token_getNameDomainFromToken(HANDLE hToken, PWSTR * pName, PWSTR * p
 	return result;
 }
 
+BOOL kull_m_token_CheckTokenMembership(__in_opt HANDLE TokenHandle, __in PSID SidToCheck, __out PBOOL IsMember)
+{
+	BOOL status = FALSE, isDupp = FALSE;
+	TOKEN_TYPE type;
+	DWORD szNeeded;
+	HANDLE effHandle;
+	
+	if(GetTokenInformation(TokenHandle, TokenType, &type, sizeof(TOKEN_TYPE), &szNeeded))
+	{
+		if(type == TokenPrimary)
+		{
+			isDupp = DuplicateTokenEx(TokenHandle, TOKEN_QUERY, NULL, SecurityIdentification, TokenImpersonation, &effHandle);
+			if(!isDupp)
+				PRINT_ERROR_AUTO(L"DuplicateTokenEx");
+		}
+		else effHandle = TokenHandle;
+		
+		if(isDupp || (type != TokenPrimary))
+		{
+			if(!(status = CheckTokenMembership(effHandle, SidToCheck, IsMember)))
+				PRINT_ERROR_AUTO(L"CheckTokenMembership");
+			if(isDupp)
+				CloseHandle(effHandle);
+		}
+	}
+	else PRINT_ERROR_AUTO(L"GetTokenInformation");
+	return status;
+}
+
 PCWCHAR SidNameUses[] = {L"User", L"Group", L"Domain", L"Alias", L"WellKnownGroup", L"DeletedAccount", L"Invalid", L"Unknown", L"Computer", L"Label"};
 PCWCHAR kull_m_token_getSidNameUse(SID_NAME_USE SidNameUse)
 {
@@ -90,6 +119,53 @@ BOOL kull_m_token_getTokens(PKULL_M_TOKEN_ENUM_CALLBACK callBack, PVOID pvArg)
 	return status;
 }
 
+BOOL kull_m_token_getTokensUnique(PKULL_M_TOKEN_ENUM_CALLBACK callBack, PVOID pvArg)
+{
+	BOOL status = FALSE, mustContinue = TRUE;
+	KULL_M_TOKEN_LIST list = {0}, *cur, *tmp;
+	if(status = kull_m_token_getTokens(kull_m_token_getTokensUnique_callback, &list))
+	{
+		for(cur = &list; cur && mustContinue; cur = cur->next)
+			mustContinue = callBack(cur->hToken, cur->ptid, pvArg);
+
+		for(cur = &list; cur; cur = tmp)
+		{
+			if(cur->hToken)
+				CloseHandle(cur->hToken);
+			tmp = cur->next;
+			if(cur != &list)
+				LocalFree(cur);
+		}
+	}
+	return status;
+}
+
+BOOL CALLBACK kull_m_token_getTokensUnique_callback(HANDLE hToken, DWORD ptid, PVOID pvArg)
+{
+	PKULL_M_TOKEN_LIST list = (PKULL_M_TOKEN_LIST) pvArg, cur, old = NULL;
+	HANDLE my = GetCurrentProcess();
+	if(list->hToken)
+	{
+		for(cur = list; cur; old = cur, cur = cur->next)
+			if(kull_m_token_equal(hToken, cur->hToken))
+				break;
+		if(!cur && old)
+			if(old->next = (PKULL_M_TOKEN_LIST) LocalAlloc(LPTR, sizeof(KULL_M_TOKEN_LIST)))
+			{
+				old->next->ptid = ptid;
+				if(!DuplicateHandle(my, hToken, (HANDLE) my, &old->next->hToken, 0, FALSE, DUPLICATE_SAME_ACCESS))
+					PRINT_ERROR_AUTO(L"DuplicateHandle");
+			}
+	}
+	else
+	{
+		list->ptid = ptid;
+		if(!DuplicateHandle(my, hToken, my, &list->hToken, 0, FALSE, DUPLICATE_SAME_ACCESS))
+		PRINT_ERROR_AUTO(L"DuplicateHandle");
+	}
+	return TRUE;
+}
+
 BOOL CALLBACK kull_m_token_getTokens_process_callback(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
 {
 	BOOL status = TRUE;
@@ -110,4 +186,21 @@ BOOL CALLBACK kull_m_token_getTokens_process_callback(PSYSTEM_PROCESS_INFORMATIO
 BOOL CALLBACK kull_m_token_getTokens_handles_callback(HANDLE handle, PSYSTEM_HANDLE pSystemHandle, PVOID pvArg)
 {
 	return (((PKULL_M_TOKEN_ENUM_DATA) pvArg)->mustContinue = ((PKULL_M_TOKEN_ENUM_DATA) pvArg)->callback(handle, pSystemHandle->ProcessId, ((PKULL_M_TOKEN_ENUM_DATA) pvArg)->pvArg));
+}
+
+BOOL kull_m_token_equal(IN HANDLE First, IN HANDLE Second)
+{
+	BOOL status = FALSE;
+	BOOLEAN lit;
+	NTSTATUS ntStatus;
+	DWORD s1, s2, szRet;
+	ntStatus = NtCompareTokens(First, Second, &lit);
+	if(NT_SUCCESS(ntStatus))
+	{
+		if(status = lit)
+			if(GetTokenInformation(First, TokenSessionId, &s1, sizeof(DWORD), &szRet) && GetTokenInformation(Second, TokenSessionId, &s2, sizeof(DWORD), &szRet))
+				status = (s1 == s2);
+	}
+	else PRINT_ERROR(L"NtCompareTokens: %08x\n", ntStatus);
+	return status;
 }

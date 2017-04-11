@@ -17,6 +17,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_version,	L"version",		L"Display some version informations"},
 	{kuhl_m_standard_cd,		L"cd",			L"Change or display current directory"},
 	{kuhl_m_standard_localtime,	L"localtime",	L"Displays system local date and time (OJ command)"},
+	{kuhl_m_standard_hostname,	L"hostname",	L"Displays system local hostname"},
 };
 const KUHL_M kuhl_m_standard = {
 	L"standard",	L"Standard module",	L"Basic commands (does not require module name)",
@@ -145,5 +146,23 @@ NTSTATUS kuhl_m_standard_localtime(int argc, wchar_t * argv[])
 	if(dwTzi != TIME_ZONE_ID_INVALID && dwTzi != TIME_ZONE_ID_UNKNOWN)
 		kprintf(L"Zone : %.32s\n", (dwTzi == TIME_ZONE_ID_STANDARD) ? tzi.StandardName : tzi.DaylightName);
 	kprintf(L"UTC  : "); kull_m_string_displayFileTime(&ft); kprintf(L"\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_standard_hostname(int argc, wchar_t * argv[])
+{
+	wchar_t *buffer;
+	DWORD dwSize = 0;
+	if(!GetComputerNameEx(ComputerNamePhysicalDnsFullyQualified, NULL, &dwSize) && (GetLastError() == ERROR_MORE_DATA))
+	{
+		if(buffer = (wchar_t *) LocalAlloc(LPTR, dwSize * sizeof(wchar_t)))
+		{
+			if(GetComputerNameEx(ComputerNamePhysicalDnsFullyQualified, buffer, &dwSize))
+				kprintf(L"%s\n", buffer);
+			else PRINT_ERROR_AUTO(L"GetComputerNameEx(data)");
+			LocalFree(buffer);
+		}
+	}
+	else PRINT_ERROR_AUTO(L"GetComputerNameEx(init)");
 	return STATUS_SUCCESS;
 }

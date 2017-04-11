@@ -9,10 +9,10 @@
 #include <fcntl.h>
 
 FILE * logfile;
-#ifdef _WINDLL
+//#ifdef _WINDLL
 wchar_t * outputBuffer;
 size_t outputBufferElements, outputBufferElementsPosition;
-#endif
+//#endif
 
 void kprintf(PCWCHAR format, ...);
 void kprintf_inputline(PCWCHAR format, ...);

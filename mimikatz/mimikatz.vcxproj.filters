@@ -227,6 +227,12 @@
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_claims.c">
       <Filter>local modules\kerberos</Filter>
     </ClCompile>
+    <ClCompile Include="modules\kuhl_m_rpc.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_mimicom.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -472,6 +478,12 @@
     </ClInclude>
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_claims.h">
       <Filter>local modules\kerberos</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_rpc.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_mimicom.h">
+      <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

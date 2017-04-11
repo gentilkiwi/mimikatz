@@ -5,7 +5,6 @@
 */
 #pragma once
 #include "globals.h"
-#include "kull_m_memory.h"
 
 typedef CONST char *PCSZ;
 typedef STRING ANSI_STRING;
@@ -51,8 +50,6 @@ extern VOID NTAPI RtlRunDecodeUnicodeString(IN BYTE Hash, IN OUT PUNICODE_STRING
 extern VOID NTAPI RtlRunEncodeUnicodeString(IN OUT PBYTE Hash, IN OUT PUNICODE_STRING String);
 
 //BOOL kull_m_string_suspectUnicodeStringStructure(IN PUNICODE_STRING pUnicodeString);
-BOOL kull_m_string_getUnicodeString(IN PUNICODE_STRING string, IN PKULL_M_MEMORY_HANDLE source);
-BOOL kull_m_string_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source);
 void kull_m_string_MakeRelativeOrAbsoluteString(PVOID BaseAddress, PLSA_UNICODE_STRING String, BOOL relative);
 BOOL kull_m_string_copyUnicodeStringBuffer(PUNICODE_STRING pSource, PUNICODE_STRING pDestination);
 void kull_m_string_freeUnicodeStringBuffer(PUNICODE_STRING pString);
@@ -68,6 +65,7 @@ BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWOR
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags);
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime);
 void kull_m_string_displayLocalFileTime(IN PFILETIME pFileTime);
+BOOL kull_m_string_FileTimeToString(IN PFILETIME pFileTime, OUT WCHAR string[14 + 1]);
 void kull_m_string_displayGUID(IN LPCGUID pGuid);
 void kull_m_string_displaySID(IN PSID pSid);
 PWSTR kull_m_string_getRandomGUID();
@@ -76,6 +74,7 @@ void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size);
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue);
 BOOL kull_m_string_args_bool_byName(int argc, wchar_t * argv[], LPCWSTR name, PBOOL value);
 BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src);
+BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src);
 BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
 #ifndef MIMIKATZ_W2000_SUPPORT
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);

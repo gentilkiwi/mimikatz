@@ -6,6 +6,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global files", "{1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}"
 	ProjectSection(SolutionItems) = preProject
 		kiwi_passwords.yar = kiwi_passwords.yar
+		mimicom.idl = mimicom.idl
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -15,6 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF
 		inc\DsGetDC.h = inc\DsGetDC.h
 		inc\globals.h = inc\globals.h
 		inc\Midles.h = inc\Midles.h
+		inc\msasn1.h = inc\msasn1.h
 		inc\NTSecPKG.h = inc\NTSecPKG.h
 		inc\PshPack8.h = inc\PshPack8.h
 		inc\schannel.h = inc\schannel.h
@@ -32,9 +34,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Win32", "Win32", "{96078881
 		lib\Win32\advapi32.hash.lib = lib\Win32\advapi32.hash.lib
 		lib\Win32\cryptdll.lib = lib\Win32\cryptdll.lib
 		lib\Win32\hid.lib = lib\Win32\hid.lib
+		lib\Win32\msasn1.min.lib = lib\Win32\msasn1.min.lib
 		lib\Win32\netapi32.min.lib = lib\Win32\netapi32.min.lib
 		lib\Win32\ntdll.min.lib = lib\Win32\ntdll.min.lib
 		lib\Win32\samlib.lib = lib\Win32\samlib.lib
+		lib\Win32\winsta.lib = lib\Win32\winsta.lib
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x64", "x64", "{E9D1619F-D4A1-4AFA-B261-B01091EB8D56}"
@@ -42,9 +46,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x64", "x64", "{E9D1619F-D4A
 		lib\x64\advapi32.hash.lib = lib\x64\advapi32.hash.lib
 		lib\x64\cryptdll.lib = lib\x64\cryptdll.lib
 		lib\x64\hid.lib = lib\x64\hid.lib
+		lib\x64\msasn1.min.lib = lib\x64\msasn1.min.lib
 		lib\x64\netapi32.min.lib = lib\x64\netapi32.min.lib
 		lib\x64\ntdll.min.lib = lib\x64\ntdll.min.lib
 		lib\x64\samlib.lib = lib\x64\samlib.lib
+		lib\x64\winsta.lib = lib\x64\winsta.lib
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilib", "mimilib\mimilib.vcxproj", "{E049487C-C5BD-471E-99AE-C756E70B6520}"

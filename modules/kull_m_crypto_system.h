@@ -16,6 +16,10 @@
 #define AES_128_KEY_LENGTH	16
 #define AES_256_KEY_LENGTH	32
 
+#ifndef IPSEC_FLAG_CHECK
+#define IPSEC_FLAG_CHECK 0xf42a19b6
+#endif
+
 typedef struct _MD4_CTX {
 	DWORD state[4];
 	DWORD count[2];
@@ -132,6 +136,9 @@ extern NTSTATUS WINAPI RtlEncryptMemory(IN OUT LPBYTE data, DWORD length, DWORD 
 #define RtlDecryptMemory			SystemFunction041
 extern NTSTATUS WINAPI RtlDecryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
 #endif
+
+#define KERB_NON_KERB_SALT					16
+#define KERB_NON_KERB_CKSUM_SALT			17
 
 typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZE) (DWORD unk0, PVOID * pContext);
 typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_SUM) (PVOID pContext, DWORD Size, LPCVOID Buffer);

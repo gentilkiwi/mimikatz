@@ -7,6 +7,7 @@
 #include "../kull_m_crypto_system.h"
 #include "../kull_m_crypto.h"
 #include "../kull_m_string.h"
+#include "../kull_m_asn1.h"
 #include "kull_m_rpc_ms-drsr.h"
 
 typedef struct _DRS_EXTENSIONS_INT {
@@ -105,6 +106,10 @@ typedef struct _ENCRYPTED_PAYLOAD {
 #define DRS_SYNC_PAS								0x40000000
 #define DRS_GET_ALL_GROUP_MEMBERSHIP				0x80000000
 
+#define ENTINF_FROM_MASTER							0x00000001
+#define ENTINF_DYNAMIC_OBJECT						0x00000002
+#define ENTINF_REMOTE_MODIFY						0x00010000
+
 typedef enum {
 	DS_UNKNOWN_NAME = 0,
 	DS_FQDN_1779_NAME = 1,
@@ -158,48 +163,80 @@ typedef enum {
 	EXOP_REPL_SECRETS = 7
 } EXOP_REQ;
 
-#define ATT_RDN							589825
-#define ATT_OBJECT_SID					589970
-#define ATT_WHEN_CREATED				131074
-#define ATT_WHEN_CHANGED				131075
+#define szOID_ANSI_name						"1.2.840.113556.1.4.1"
+#define szOID_objectGUID					"1.2.840.113556.1.4.2"
 
-#define ATT_SAM_ACCOUNT_NAME			590045
-#define ATT_USER_PRINCIPAL_NAME			590480
-#define ATT_SERVICE_PRINCIPAL_NAME		590595
-#define ATT_SID_HISTORY					590433
-#define ATT_USER_ACCOUNT_CONTROL		589832
-#define ATT_SAM_ACCOUNT_TYPE			590126
-#define ATT_LOGON_HOURS					589888
-#define ATT_LOGON_WORKSTATION			589889
-#define ATT_LAST_LOGON					589876
-#define ATT_PWD_LAST_SET				589920
-#define ATT_ACCOUNT_EXPIRES				589983
-#define ATT_LOCKOUT_TIME				590486
+#define szOID_ANSI_sAMAccountName			"1.2.840.113556.1.4.221"
+#define szOID_ANSI_userPrincipalName		"1.2.840.113556.1.4.656"
+#define szOID_ANSI_servicePrincipalName		"1.2.840.113556.1.4.771"
+#define szOID_ANSI_sAMAccountType			"1.2.840.113556.1.4.302"
+#define szOID_ANSI_userAccountControl		"1.2.840.113556.1.4.8"
+#define szOID_ANSI_accountExpires			"1.2.840.113556.1.4.159"
+#define szOID_ANSI_pwdLastSet				"1.2.840.113556.1.4.96"
+#define szOID_ANSI_objectSid				"1.2.840.113556.1.4.146"
+#define szOID_ANSI_sIDHistory				"1.2.840.113556.1.4.609"
+#define szOID_ANSI_unicodePwd				"1.2.840.113556.1.4.90"
+#define szOID_ANSI_ntPwdHistory				"1.2.840.113556.1.4.94"
+#define szOID_ANSI_dBCSPwd					"1.2.840.113556.1.4.55"
+#define szOID_ANSI_lmPwdHistory				"1.2.840.113556.1.4.160"
+#define szOID_ANSI_supplementalCredentials	"1.2.840.113556.1.4.125"
 
-#define ATT_UNICODE_PWD					589914
-#define ATT_NT_PWD_HISTORY				589918
-#define ATT_DBCS_PWD					589879
-#define ATT_LM_PWD_HISTORY				589984
-#define ATT_SUPPLEMENTAL_CREDENTIALS	589949
+#define szOID_ANSI_trustPartner				"1.2.840.113556.1.4.133"
+#define szOID_ANSI_trustAuthIncoming		"1.2.840.113556.1.4.129"
+#define szOID_ANSI_trustAuthOutgoing		"1.2.840.113556.1.4.135"
 
-#define ATT_CURRENT_VALUE				589851
+#define szOID_ANSI_currentValue				"1.2.840.113556.1.4.27"
 
-#define ATT_TRUST_ATTRIBUTES			590294
-#define ATT_TRUST_AUTH_INCOMING			589953
-#define ATT_TRUST_AUTH_OUTGOING			589959
-#define ATT_TRUST_DIRECTION				589956
-#define ATT_TRUST_PARENT				590295
-#define ATT_TRUST_PARTNER				589957
-#define ATT_TRUST_TYPE					589960
+#define ATT_WHEN_CREATED				MAKELONG(  2, 2)
+#define ATT_WHEN_CHANGED				MAKELONG(  3, 2)
+
+#define ATT_RDN							MAKELONG(  1, 9)
+#define ATT_OBJECT_SID					MAKELONG(146, 9)
+#define ATT_SAM_ACCOUNT_NAME			MAKELONG(221, 9)
+#define ATT_USER_PRINCIPAL_NAME			MAKELONG(656, 9)
+#define ATT_SERVICE_PRINCIPAL_NAME		MAKELONG(771, 9)
+#define ATT_SID_HISTORY					MAKELONG(609, 9)
+#define ATT_USER_ACCOUNT_CONTROL		MAKELONG(  8, 9)
+#define ATT_SAM_ACCOUNT_TYPE			MAKELONG(302, 9)
+#define ATT_LOGON_HOURS					MAKELONG( 64, 9)
+#define ATT_LOGON_WORKSTATION			MAKELONG( 65, 9)
+#define ATT_LAST_LOGON					MAKELONG( 52, 9)
+#define ATT_PWD_LAST_SET				MAKELONG( 96, 9)
+#define ATT_ACCOUNT_EXPIRES				MAKELONG(159, 9)
+#define ATT_LOCKOUT_TIME				MAKELONG(662, 9)
+
+#define ATT_UNICODE_PWD					MAKELONG( 90, 9)
+#define ATT_NT_PWD_HISTORY				MAKELONG( 94, 9)
+#define ATT_DBCS_PWD					MAKELONG( 55, 9)
+#define ATT_LM_PWD_HISTORY				MAKELONG(160, 9)
+#define ATT_SUPPLEMENTAL_CREDENTIALS	MAKELONG(125, 9)
+
+#define ATT_CURRENT_VALUE				MAKELONG( 27, 9)
+
+#define ATT_TRUST_ATTRIBUTES			MAKELONG(470, 9)
+#define ATT_TRUST_AUTH_INCOMING			MAKELONG(129, 9)
+#define ATT_TRUST_AUTH_OUTGOING			MAKELONG(135, 9)
+#define ATT_TRUST_DIRECTION				MAKELONG(132, 9)
+#define ATT_TRUST_PARENT				MAKELONG(471, 9)
+#define ATT_TRUST_PARTNER				MAKELONG(133, 9)
+#define ATT_TRUST_TYPE					MAKELONG(136, 9)
 
 void RPC_ENTRY kull_m_rpc_drsr_RpcSecurityCallback(void *Context);
 
 BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR ServerName, LPCWSTR Domain, GUID *DomainGUID, LPCWSTR User, LPCWSTR Guid, GUID *UserGuid, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
 BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
 BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain);
-BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(REPLENTINFLIST *objects);
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(SCHEMA_PREFIX_TABLE *prefixTable, REPLENTINFLIST *objects);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val);
 
 void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_DCINFOREPLY * reply);
 void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply);
 void kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(DWORD dwOutVersion, DRS_MSG_GETCHGREPLY * reply);
+void kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(SCHEMA_PREFIX_TABLE *prefixTable);
+
+LPSTR kull_m_rpc_drsr_OidFromAttid(SCHEMA_PREFIX_TABLE *prefixTable, ATTRTYP type);
+BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, ATTRTYP *att, BOOL toAdd);
+
+ATTRVALBLOCK * kull_m_rpc_drsr_findAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid);
+PVOID kull_m_rpc_drsr_findMonoAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, PVOID data, DWORD *size);
+void kull_m_rpc_drsr_findPrintMonoAttr(LPCWSTR prefix, SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, BOOL newLine);

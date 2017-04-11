@@ -7,6 +7,8 @@
 
 const KUHL_M_C kuhl_m_c_ts[] = {
 	{kuhl_m_ts_multirdp,	L"multirdp",	L"[experimental] patch Terminal Server service to allow multiples users"},
+	{kuhl_m_ts_sessions,	L"sessions",	NULL},
+	{kuhl_m_ts_remote,		L"remote",		NULL},
 };
 const KUHL_M kuhl_m_ts = {
 	L"ts",	L"Terminal Server module", NULL,
@@ -39,5 +41,125 @@ KULL_M_PATCH_GENERIC TermSrvMultiRdpReferences[] = {
 NTSTATUS kuhl_m_ts_multirdp(int argc, wchar_t * argv[])
 {
 	kull_m_patch_genericProcessOrServiceFromBuild(TermSrvMultiRdpReferences, ARRAYSIZE(TermSrvMultiRdpReferences), L"TermService", L"termsrv.dll", TRUE);
+	return STATUS_SUCCESS;
+}
+
+const PCWCHAR states[] = {L"Active", L"Connected", L"ConnectQuery", L"Shadow", L"Disconnected", L"Idle", L"Listen", L"Reset", L"Down", L"Init",};
+NTSTATUS kuhl_m_ts_sessions(int argc, wchar_t * argv[])
+{
+	LPCWSTR szServer = NULL;
+	PSESSIONIDW sessions;
+	WINSTATIONINFORMATION info;
+	WINSTATIONREMOTEADDRESS addr;
+	BOOL locked;
+	DWORD i, count, cur, ret;
+	BOOL isCur = ProcessIdToSessionId(GetCurrentProcessId(), &cur);
+	HANDLE hServer = SERVERHANDLE_CURRENT;
+	wchar_t ip[46];
+
+	if(kull_m_string_args_byName(argc, argv, L"server", &szServer, NULL))
+	{
+		isCur = FALSE;
+		kprintf(L"Remote server: %s\n", szServer);
+		hServer = WinStationOpenServerW((PWSTR) szServer);
+		if(!hServer)
+			PRINT_ERROR_AUTO(L"WinStationOpenServerW");
+	}
+
+	if(hServer || !szServer)
+	{
+		if(WinStationEnumerateW(hServer, &sessions, &count))
+		{
+			for(i = 0; i < count; i++)
+			{
+				kprintf(L"\nSession: %s%u - %s\n  state: %s (%u)\n", (isCur && (cur == sessions[i].SessionId)) ? L"*" : L"", sessions[i].SessionId, sessions[i].WinStationName, (sessions[i].State < ARRAYSIZE(states)) ? states[sessions[i].State] : L"?", sessions[i].State);
+				if(WinStationQueryInformationW(hServer, sessions[i].SessionId, WinStationInformation, &info, sizeof(WINSTATIONINFORMATION), &ret))
+				{
+					kprintf(L"  user : %s @ %s\n", info.UserName, info.Domain);
+					if(*(PULONGLONG) &info.ConnectTime)
+					{
+						kprintf(L"  Conn : ");
+						kull_m_string_displayLocalFileTime((PFILETIME) &info.ConnectTime);
+						kprintf(L"\n");
+					}
+					if(*(PULONGLONG) &info.DisconnectTime)
+					{
+						kprintf(L"  disc : ");
+						kull_m_string_displayLocalFileTime((PFILETIME) &info.DisconnectTime);
+						kprintf(L"\n");
+					}
+					if(*(PULONGLONG) &info.LogonTime)
+					{
+						kprintf(L"  logon: ");
+						kull_m_string_displayLocalFileTime((PFILETIME) &info.LogonTime);
+						kprintf(L"\n");
+					}
+					if(*(PULONGLONG) &info.LastInputTime)
+					{
+						kprintf(L"  last : ");
+						kull_m_string_displayLocalFileTime((PFILETIME) &info.LastInputTime);
+						kprintf(L"\n");
+					}
+					if(*(PULONGLONG) &info.CurrentTime)
+					{
+						kprintf(L"  curr : ");
+						kull_m_string_displayLocalFileTime((PFILETIME) &info.CurrentTime);
+						kprintf(L"\n");
+					}
+				}
+				if(WinStationQueryInformationW(hServer, sessions[i].SessionId, WinStationLockedState, &locked, sizeof(BOOL), &ret))
+					kprintf(L"  lock : %s\n", locked ? L"yes" : L"no");
+				if(WinStationQueryInformationW(hServer, sessions[i].SessionId, WinStationRemoteAddress, &addr, sizeof(WINSTATIONREMOTEADDRESS), &ret))
+				{
+					if(addr.sin_family == AF_INET)
+					{
+						if(RtlIpv4AddressToStringW((const IN_ADDR *) &addr.ipv4.in_addr, ip))
+							kprintf(L"  addr4: %s\n", ip);
+					}
+					else if(addr.sin_family == 23) // AF_INET6
+					{
+						if(RtlIpv6AddressToStringW((const PVOID) &addr.ipv6.sin6_addr, ip))
+							kprintf(L"  addr6: %s\n", ip);
+					}
+				}
+			}
+			if(!count)
+				PRINT_ERROR(L"WinStationEnumerateW gave 0 result (maybe access problem?)\n");
+			WinStationFreeMemory(sessions);
+		}
+		else PRINT_ERROR_AUTO(L"WinStationEnumerateW");
+	}
+	else PRINT_ERROR(L"No server HANDLE\n");
+	if(hServer)
+		WinStationCloseServer(hServer);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_ts_remote(int argc, wchar_t * argv[])
+{
+	LPCWSTR szId, szPassword;
+	DWORD id, target;
+	if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
+	{
+		id = wcstoul(szId, NULL, 0);
+		if(kull_m_string_args_byName(argc, argv, L"target", &szId, NULL))
+			target = wcstoul(szId, NULL, 0);
+		else target = LOGONID_CURRENT;
+		
+		kull_m_string_args_byName(argc, argv, L"password", &szPassword, L"");
+
+		kprintf(L"Asking to connect from %u to ", id);
+		if(target == LOGONID_CURRENT)
+			kprintf(L"current session");
+		else kprintf(L"%u", target);
+		
+		kprintf(L"\n\n> ");
+		if(WinStationConnectW(SERVERHANDLE_CURRENT, id, target, (LPWSTR) szPassword, FALSE))
+			kprintf(L"Connected to %u\n", id);
+		else if(GetLastError() == ERROR_LOGON_FAILURE)
+			PRINT_ERROR(L"Bad password for this session (take care to not lock the account!)\n");
+		else PRINT_ERROR_AUTO(L"WinStationConnect");
+	}
+	else PRINT_ERROR(L"Argument id is needed\n");
 	return STATUS_SUCCESS;
 }

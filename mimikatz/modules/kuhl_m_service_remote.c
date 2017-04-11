@@ -4,6 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_service_remote.h"
+#ifdef SERVICE_INCONTROL
 
 PVOID pScSendControl = NULL;
 
@@ -126,3 +127,4 @@ BOOL kuhl_service_sendcontrol_inprocess(PWSTR ServiceName, DWORD dwControl)
 	}
 	return status;
 }
+#endif

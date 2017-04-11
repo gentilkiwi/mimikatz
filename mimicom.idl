@@ -1,0 +1,78 @@
+import "ms-dtyp.idl";
+[
+   uuid(17FC11E9-C258-4B8D-8D07-2F4125156244),
+   version(1.0)
+]
+interface MimiCom
+{
+	typedef [context_handle] void* MIMI_HANDLE;
+
+	typedef unsigned int ALG_ID;
+	typedef struct _MIMI_PUBLICKEY {
+		ALG_ID sessionType;
+		DWORD cbPublicKey;
+		[size_is(cbPublicKey)] BYTE *pbPublicKey;
+	} MIMI_PUBLICKEY, *PMIMI_PUBLICKEY;
+		
+	NTSTATUS MimiBind(
+		[in] handle_t rpc_handle,
+		[in, ref] PMIMI_PUBLICKEY clientPublicKey,
+		[out, ref] PMIMI_PUBLICKEY serverPublicKey,
+		[out, ref] MIMI_HANDLE *phMimi
+	);
+	
+	NTSTATUS MiniUnbind(
+		[in, out, ref] MIMI_HANDLE *phMimi
+	);
+
+	NTSTATUS MimiCommand(
+		[in, ref] MIMI_HANDLE phMimi,
+		[in] DWORD szEncCommand,
+		[in, size_is(szEncCommand), unique] BYTE *encCommand,
+		[out, ref] DWORD *szEncResult,
+		[out, size_is(, *szEncResult)] BYTE **encResult
+	);
+
+	NTSTATUS MimiClear(
+		[in] handle_t rpc_handle,
+		[in, string] wchar_t *command,
+		[out] DWORD *size,
+		[out, size_is(, *size)] wchar_t **result
+	);
+}
+
+// Privacy of RPC exchange can be ~guaranteed by protocol, *except when not using authentication*
+// mimikatz try to avoid clear credentials on the network by using basic encryption at application level.
+//
+// Diffie-Hellman key exchange
+// ===========================
+//
+// > Parameters used: Second Oakley Group ( https://tools.ietf.org/html/rfc2409#section-6.2 )
+// 
+// * ALG_ID sessionType
+//   session key type to use after DH exchange, it can be: CALG_CYLINK_MEK(0x660c), CALG_RC2(0x6602), CALG_RC4(0x6801), CALG_DES(0x6601), CALG_3DES_112(0x6609) or CALG_3DES(0x6603)
+//   see: https://msdn.microsoft.com/library/windows/desktop/bb394802.aspx and https://msdn.microsoft.com/library/windows/desktop/aa375549.aspx
+//
+// * DWORD cbPublicKey
+//   size of pbPublicKey: 144 (sizeof(PUBLICKEYSTRUC) + sizeof(DHPUBKEY) + sizeof(1024bits key)
+//
+// * BYTE *pbPublicKey
+//   PUBLICKEYBLOB structure of the DH key ( https://msdn.microsoft.com/en-us/library/windows/desktop/aa381970(v=vs.85).aspx#code-snippet-1 )
+//
+//   Example:
+//   --------
+//   06 02 00 00	PUBLICKEYBLOB (06), CUR_BLOB_VERSION (02), reserved (00 00)
+//   02 aa 00 00	ALG_ID: CALG_DH_EPHEM(0xaa02)
+//
+//   00 44 48 31	Magic : \0DH1
+//   00 04 00 00	1024bits (128bytes bellow)
+//   a9 90 e8 86 59 2d 88 a7 32 e1 05 35 26 24 d9 fd
+//   ae f5 53 46 ca a4 79 cc a9 a3 57 45 e8 54 e7 fd
+//   fe 99 24 df 71 6a 44 2c f7 0a 09 ac e4 e6 44 f8
+//   4c 51 63 c3 86 1e 14 4a 9a f0 e0 a9 e0 38 26 72
+//   75 27 cb 60 9f 0d 15 2c 37 39 a0 b0 72 b6 14 85
+//   5f 18 7f c0 0d 26 d1 3b 6f 14 c1 99 22 8f 74 ef
+//   68 0c 24 bb 77 ff b3 c5 9e ed ff 76 71 c1 ee ce
+//   eb 77 46 00 52 d8 4c 5c bc af fd 28 3d 76 83 b3
+//
+// > Don't forget you may need to reverse some key bytearrays from Windows point of view, and to reset session key state between calls ;)

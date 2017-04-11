@@ -5,7 +5,7 @@
 */
 #include "kuhl_m_kerberos_pac.h"
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWORD SignatureType, PCLAIMS_SET pClaimsSet, PPACTYPE * pacType, DWORD * pacLength)
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PPACTYPE * pacType, DWORD * pacLength)
 {
 	BOOL status = FALSE;
 	PVOID pLogonInfo = NULL, pClaims = NULL;
@@ -21,7 +21,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 
 		if(kull_m_pac_EncodeValidationInformation(&validationInfo, &pLogonInfo, &szLogonInfo))
 			szLogonInfoAligned = SIZE_ALIGN(szLogonInfo, 8);
-		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(validationInfo, &pClientInfo, &szClientInfo))
+		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(authtime ? authtime : &validationInfo->LogonTime, clientname ? clientname : validationInfo->EffectiveName.Buffer, &pClientInfo, &szClientInfo))
 			szClientInfoAligned = SIZE_ALIGN(szClientInfo, 8);
 		if(pClaimsSet)
 			if(kuhl_m_kerberos_claims_encode_ClaimsSet(pClaimsSet, &pClaims, &szClaims))
@@ -81,7 +81,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, DWOR
 	return status;
 }
 
-NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD SignatureType, LPCVOID key, DWORD keySize)
+NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LONG SignatureType, LPCVOID key, DWORD keySize)
 {
 	NTSTATUS status;
 	DWORD i;
@@ -127,18 +127,126 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, DWORD Signature
 	return status;
 }
 
-BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PKERB_VALIDATION_INFO validationInfo, PPAC_CLIENT_INFO * pacClientInfo, DWORD * pacClientInfoLength)
+BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PFILETIME authtime, LPCWSTR clientname, PPAC_CLIENT_INFO * pacClientInfo, DWORD * pacClientInfoLength)
 {
 	BOOL status = FALSE;
-	*pacClientInfoLength = sizeof(PAC_CLIENT_INFO) + validationInfo->EffectiveName.Length - sizeof(wchar_t);
+	DWORD len = lstrlen(clientname) * sizeof(wchar_t);
+
+	*pacClientInfoLength = sizeof(PAC_CLIENT_INFO) + len - sizeof(wchar_t);
 	if(*pacClientInfo = (PPAC_CLIENT_INFO) LocalAlloc(LPTR, *pacClientInfoLength))
 	{
-		(*pacClientInfo)->ClientId = validationInfo->LogonTime;
-		(*pacClientInfo)->NameLength = validationInfo->EffectiveName.Length;
-		RtlCopyMemory((*pacClientInfo)->Name, validationInfo->EffectiveName.Buffer, (*pacClientInfo)->NameLength);
+		(*pacClientInfo)->ClientId = *authtime;
+		(*pacClientInfo)->NameLength = (USHORT) len;
+		RtlCopyMemory((*pacClientInfo)->Name, clientname, len);
 		status = TRUE;
 	}
 	return status;
+}
+
+PKERB_VALIDATION_INFO kuhl_m_pac_infoToValidationInfo(PFILETIME authtime, LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, PISID sid, ULONG rid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids)
+{
+	PKERB_VALIDATION_INFO validationInfo = NULL;
+	if(validationInfo = (PKERB_VALIDATION_INFO) LocalAlloc(LPTR, sizeof(KERB_VALIDATION_INFO)))
+	{
+		validationInfo->LogonTime = *authtime;
+		KIWI_NEVERTIME(&validationInfo->LogoffTime);
+		KIWI_NEVERTIME(&validationInfo->KickOffTime);
+		KIWI_NEVERTIME(&validationInfo->PasswordLastSet);
+		KIWI_NEVERTIME(&validationInfo->PasswordCanChange);
+		KIWI_NEVERTIME(&validationInfo->PasswordMustChange);
+		RtlInitUnicodeString(&validationInfo->EffectiveName, username);
+		validationInfo->UserId = rid;
+		validationInfo->PrimaryGroupId = groups[0].RelativeId;
+		validationInfo->GroupCount = cbGroups;
+		validationInfo->GroupIds = groups;
+		if(LogonDomainName)
+			RtlInitUnicodeString(&validationInfo->LogonDomainName, LogonDomainName);
+		validationInfo->LogonDomainId = sid;
+		validationInfo->UserAccountControl = USER_DONT_EXPIRE_PASSWORD | USER_NORMAL_ACCOUNT;
+		validationInfo->SidCount = cbSids;
+		validationInfo->ExtraSids = sids;
+		//validationInfo->ResourceGroupDomainSid = NULL;
+		//validationInfo->ResourceGroupCount = 0;
+		//validationInfo->ResourceGroupIds = NULL;
+		if(validationInfo->ExtraSids && validationInfo->SidCount)
+			validationInfo->UserFlags |= 0x20;
+		//if(validationInfo->ResourceGroupDomainSid && validationInfo->ResourceGroupIds && validationInfo->ResourceGroupCount)
+		//	validationInfo->UserFlags |= 0x200;
+	}
+	return validationInfo;
+}
+
+GROUP_MEMBERSHIP kuhl_m_pac_stringTogroups_defaultGroups[] = {{513, DEFAULT_GROUP_ATTRIBUTES}, {512, DEFAULT_GROUP_ATTRIBUTES}, {520, DEFAULT_GROUP_ATTRIBUTES}, {518, DEFAULT_GROUP_ATTRIBUTES}, {519, DEFAULT_GROUP_ATTRIBUTES},};
+BOOL kuhl_m_pac_stringToGroups(PCWSTR szGroups, PGROUP_MEMBERSHIP *groups, DWORD *cbGroups)
+{
+	PWSTR dupGroup, nextSetToken, SetToken;
+	DWORD i;
+	*groups = NULL;
+	*cbGroups = 0;
+	if(szGroups)
+	{
+		if(dupGroup = _wcsdup(szGroups))
+		{
+			for(nextSetToken = NULL, SetToken = wcstok_s(dupGroup, L",", &nextSetToken); SetToken; SetToken = wcstok_s(NULL, L",", &nextSetToken))
+				if(wcstoul(SetToken, NULL, 0))
+					(*cbGroups)++;
+			free(dupGroup);
+		}
+		if(*cbGroups && (*groups = (PGROUP_MEMBERSHIP) LocalAlloc(LPTR, *cbGroups * sizeof(GROUP_MEMBERSHIP))))
+		{
+			if(dupGroup = _wcsdup(szGroups))
+			{
+				for(i = 0, nextSetToken = NULL, SetToken = wcstok_s(dupGroup, L",", &nextSetToken); (i < *cbGroups) && SetToken; SetToken = wcstok_s(NULL, L",", &nextSetToken))
+					if((*groups)[i].RelativeId = wcstoul(SetToken, NULL, 0))
+						(*groups)[i++].Attributes = DEFAULT_GROUP_ATTRIBUTES;
+				free(dupGroup);
+			}
+		}
+	}
+	if(!*groups)
+	{
+		if(*groups = (PGROUP_MEMBERSHIP) LocalAlloc(LPTR, sizeof(kuhl_m_pac_stringTogroups_defaultGroups)))
+		{
+			RtlCopyMemory(*groups, kuhl_m_pac_stringTogroups_defaultGroups, sizeof(kuhl_m_pac_stringTogroups_defaultGroups));
+			*cbGroups = ARRAYSIZE(kuhl_m_pac_stringTogroups_defaultGroups);
+		}
+	}
+	return (*groups && *cbGroups);
+}
+
+BOOL kuhl_m_pac_stringToSids(PCWSTR szSids, PKERB_SID_AND_ATTRIBUTES *sids, DWORD *cbSids)
+{
+	PWSTR dupSids, nextSetToken, SetToken;
+	DWORD i;
+	PSID tmp = NULL;
+	*sids = NULL;
+	*cbSids = 0;
+	if(szSids)
+	{
+		if(dupSids = _wcsdup(szSids))
+		{
+			for(nextSetToken = NULL, SetToken = wcstok_s(dupSids, L",", &nextSetToken); SetToken; SetToken = wcstok_s(NULL, L",", &nextSetToken))
+			{
+				if(ConvertStringSidToSid(SetToken, &tmp))
+				{
+					(*cbSids)++;
+					LocalFree(tmp);
+				}
+			}
+			free(dupSids);
+		}
+		if(*cbSids && (*sids = (PKERB_SID_AND_ATTRIBUTES) LocalAlloc(LPTR, *cbSids * sizeof(KERB_SID_AND_ATTRIBUTES))))
+		{
+			if(dupSids = _wcsdup(szSids))
+			{
+				for(i = 0, nextSetToken = NULL, SetToken = wcstok_s(dupSids, L",", &nextSetToken); (i < *cbSids) && SetToken; SetToken = wcstok_s(NULL, L",", &nextSetToken))
+					if(ConvertStringSidToSid(SetToken, (PSID *) &(*sids)[i].Sid))
+						(*sids)[i++].Attributes = DEFAULT_GROUP_ATTRIBUTES;
+				free(dupSids);
+			}
+		}
+	}
+	return (*sids && *cbSids);
 }
 
 #ifdef KERBEROS_TOOLS
@@ -152,6 +260,7 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 	PUPN_DNS_INFO pUpnDnsInfo;
 	PCLAIMS_SET_METADATA pClaimsSetMetadata = NULL;
 	PCLAIMS_SET claimsSet = NULL;
+	PPAC_CREDENTIAL_INFO pCredentialInfo;
 
 	if(argc)
 	{
@@ -256,6 +365,15 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 							kull_m_rpc_FreeClaimsSetMetaData(&pClaimsSetMetadata);
 						}
 					}
+					break;
+				case PACINFO_TYPE_CREDENTIALS_INFO:
+					kprintf(L"*** Credential information *** (%u)\n", pacType->Buffers[i].cbBufferSize);
+					pCredentialInfo = (PPAC_CREDENTIAL_INFO) ((PBYTE) pacType + pacType->Buffers[i].Offset);
+					j = pacType->Buffers[i].cbBufferSize - FIELD_OFFSET(PAC_CREDENTIAL_INFO, SerializedData);
+					kprintf(L"Version: %u\n", pCredentialInfo->Version);
+					kprintf(L"Encryption type: %08x (%u)\n", pCredentialInfo->EncryptionType, pCredentialInfo->EncryptionType);
+					kull_m_string_wprintf_hex(pCredentialInfo->SerializedData, j, 1 | (16 << 16));
+					kprintf(L"\n");
 					break;
 				default:
 					kull_m_string_wprintf_hex(&pacType->Buffers[i], sizeof(PAC_INFO_BUFFER), 1);

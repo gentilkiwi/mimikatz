@@ -13,7 +13,7 @@ BOOL kull_m_rpc_bkrp_createBinding(LPCWSTR NetworkAddr, RPC_BINDING_HANDLE *hBin
 		if(kull_m_net_getDC(NULL, DS_WRITABLE_REQUIRED, &szTmpDc))
 			NetworkAddr = szTmpDc;
 	if(NetworkAddr)
-		status = kull_m_rpc_createBinding(L"ncacn_np", NetworkAddr, L"\\pipe\\protected_storage", L"ProtectedStorage", RPC_C_IMP_LEVEL_IMPERSONATE, hBinding, NULL);
+		status = kull_m_rpc_createBinding(NULL, L"ncacn_np", NetworkAddr, L"\\pipe\\protected_storage", L"ProtectedStorage", TRUE, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_IMP_LEVEL_IMPERSONATE, hBinding, NULL);
 	if(szTmpDc)
 		LocalFree(szTmpDc);
 	return status;

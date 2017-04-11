@@ -18,12 +18,23 @@
 
 #include "midles.h"
 #include <string.h>
+#include "../kull_m_string.h"
+#include "../kull_m_crypto.h"
 
 typedef DWORD NET_API_STATUS;
 typedef UNICODE_STRING RPC_UNICODE_STRING;
 
-BOOL kull_m_rpc_createBinding(LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *));
+LPCWSTR KULL_M_RPC_AUTHNLEV[7];
+LPCWSTR KULL_M_RPC_AUTHNSVC(DWORD AuthnSvc);
+const SEC_WINNT_AUTH_IDENTITY KULL_M_RPC_NULLSESSION;
+
+#define KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION ((RPC_AUTH_IDENTITY_HANDLE) &KULL_M_RPC_NULLSESSION)
+
+BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr, LPCWSTR Endpoint, LPCWSTR Service, BOOL addServiceToNetworkAddr, DWORD AuthnSvc, RPC_AUTH_IDENTITY_HANDLE hAuth, DWORD ImpersonationType, RPC_BINDING_HANDLE *hBinding, void (RPC_ENTRY * RpcSecurityCallback)(void *));
 BOOL kull_m_rpc_deleteBinding(RPC_BINDING_HANDLE *hBinding);
+RPC_STATUS CALLBACK kull_m_rpc_nice_SecurityCallback(RPC_IF_HANDLE hInterface, void* pBindingHandle);
+RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterface, void* pBindingHandle);
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, GUID *altGuid, BOOL printIt);
 
 typedef struct _KULL_M_RPC_FCNSTRUCT {
 	PVOID addr;

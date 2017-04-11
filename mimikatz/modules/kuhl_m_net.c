@@ -10,6 +10,10 @@ const KUHL_M_C kuhl_m_c_net[] = {
 	{kuhl_m_net_group,		L"group",		L""},
 	{kuhl_m_net_alias,		L"alias",		L""},
 	//{kuhl_m_net_autoda,		L"autoda",		L""},
+	{kuhl_m_net_session,	L"session",		L""},
+	{kuhl_m_net_wsession,	L"wsession",	L""},
+	{kuhl_m_net_tod,		L"tod",	L""},
+	{kuhl_m_net_stats,		L"stats", L""},
 };
 const KUHL_M kuhl_m_net = {
 	L"net",	L"", NULL,
@@ -317,8 +321,8 @@ void kuhl_m_net_simpleLookup(SAMPR_HANDLE hDomainHandle, DWORD rid)
 		kprintf(L"%wZ\t(%s)", name, kull_m_token_getSidNameUse((SID_NAME_USE) *usage));
 		SamFreeMemory(name);
 		SamFreeMemory(usage);
-	} else PRINT_ERROR(L"SamLookupIdsInDomain %08x", status);
-
+	}
+	else PRINT_ERROR(L"SamLookupIdsInDomain %08x", status);
 }
 /*
 NTSTATUS kuhl_m_net_autoda(int argc, wchar_t * argv[])
@@ -364,3 +368,111 @@ NTSTATUS kuhl_m_net_autoda(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 */
+
+NTSTATUS kuhl_m_net_session(int argc, wchar_t * argv[])
+{
+	LPSESSION_INFO_10 pBuf;
+	DWORD dwEntriesRead;
+	DWORD dwTotalEntries;
+	DWORD dwResumeHandle = 0;
+	DWORD i;
+	NET_API_STATUS nStatus;
+	do
+	{
+		nStatus = NetSessionEnum(argc ? argv[0] : NULL, NULL, NULL, 10, (LPBYTE*) &pBuf, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle);
+		if((nStatus == 0) || (nStatus == ERROR_MORE_DATA))
+		{
+			for (i = 0; i < dwEntriesRead; i++)
+				kprintf(L"\n"
+					L"Client  : %s\n"
+					L"Username: %s\n"
+					L"Active  : %u\n"
+					L"Idle    : %u\n",
+					pBuf[i].sesi10_cname, pBuf[i].sesi10_username, pBuf[i].sesi10_time, pBuf[i].sesi10_idle_time);
+			NetApiBufferFree(pBuf);
+		}
+		else PRINT_ERROR(L"NetSessionEnum: %08x\n", nStatus);
+	}
+	while (nStatus == ERROR_MORE_DATA);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_net_wsession(int argc, wchar_t * argv[])
+{
+	LPWKSTA_USER_INFO_1 pBuf;
+	DWORD dwEntriesRead;
+	DWORD dwTotalEntries;
+	DWORD dwResumeHandle = 0;
+	DWORD i;
+	NET_API_STATUS nStatus;
+	do
+	{
+		nStatus = NetWkstaUserEnum (argc ? argv[0] : NULL, 1, (LPBYTE*) &pBuf, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle);
+		if((nStatus == 0) || (nStatus == ERROR_MORE_DATA))
+		{
+			for (i = 0; i < dwEntriesRead; i++)
+			{
+				kprintf(L"\n"
+					L"Username   : %s\n"
+					L"Domain     : %s\n"
+					L"LogonServer: %s\n",
+					pBuf[i].wkui1_username, pBuf[i].wkui1_logon_domain, pBuf[i].wkui1_logon_server);
+				if(pBuf[i].wkui1_oth_domains && wcslen(pBuf[i].wkui1_oth_domains))
+					kprintf(L"OthDomains : %s\n", pBuf[i].wkui1_oth_domains);
+			}
+			NetApiBufferFree(pBuf);
+		}
+		else PRINT_ERROR(L"NetWkstaUserEnum: %08x\n", nStatus);
+	}
+	while (nStatus == ERROR_MORE_DATA);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_net_tod(int argc, wchar_t * argv[])
+{
+	NET_API_STATUS nStatus;
+	PTIME_OF_DAY_INFO info = NULL;
+	SYSTEMTIME st;
+	FILETIME ft;
+
+	nStatus = NetRemoteTOD(argc ? argv[0] : NULL, &info);
+	if(nStatus == NERR_Success)
+	{
+		st.wYear = (WORD) info->tod_year;
+		st.wMonth = (WORD) info->tod_month;
+		st.wDayOfWeek = (WORD) info->tod_weekday;
+		st.wDay = (WORD) info->tod_day;
+		st.wHour = (WORD) info->tod_hours;
+		st.wMinute = (WORD) info->tod_mins;
+		st.wSecond = (WORD) info->tod_secs;
+		st.wMilliseconds = (WORD) info->tod_hunds * 10;
+		SystemTimeToFileTime(&st, &ft);
+
+		kprintf(L"Remote time (local): ");
+		kull_m_string_displayLocalFileTime(&ft);
+		kprintf(L"\n");
+		//*((PULONGLONG) &ft) -= info->tod_msecs * (ULONGLONG) 10000;
+		//kprintf(L"Last startup       : ");
+		//kull_m_string_displayLocalFileTime(&ft);
+		//kprintf(L"\n");
+		NetApiBufferFree(info);
+	}
+	else PRINT_ERROR(L"NetRemoteTOD: %08x\n", nStatus);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_net_stats(int argc, wchar_t * argv[])
+{
+	NET_API_STATUS nStatus;
+	PSTAT_WORKSTATION_0 pStats = NULL;
+	nStatus = NetStatisticsGet(argc ? argv[0] : NULL, SERVICE_WORKSTATION, 0, 0, (LPBYTE *) &pStats);
+	if(nStatus == NERR_Success)
+	{
+		kprintf(SERVICE_WORKSTATION L" StatisticsStartTime: ");
+		kull_m_string_displayLocalFileTime((PFILETIME) &pStats->StatisticsStartTime);
+		kprintf(L"\n");
+		NetApiBufferFree(pStats);
+	}
+	else PRINT_ERROR(L"NetStatisticsGet: %08x\n", nStatus);
+	return STATUS_SUCCESS;
+}
