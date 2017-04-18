@@ -123,6 +123,6 @@ CC BY 4.0 licence - https://creativecommons.org/licenses/by/4.0/
 
 ## Author
 * Benjamin DELPY `gentilkiwi`, you can contact me on Twitter ( @gentilkiwi ) or by mail ( benjamin [at] gentilkiwi.com )
-* DCSync function in `lsadump` module was co-writed with Vincent LE TOUX, you contact him by mail ( vincent.letoux [at] gmail.com ) or visit his website ( http://www.mysmartlogon.com )
+* DCSync function in `lsadump` module was co-written with Vincent LE TOUX, you contact him by mail ( vincent.letoux [at] gmail.com ) or visit his website ( http://www.mysmartlogon.com )
 
 This is a **personal** development, please respect its philosophy and don't use it for bad things!
