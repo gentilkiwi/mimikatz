@@ -131,6 +131,8 @@ BOOL kull_m_crypto_close_hprov_delete_container(HCRYPTPROV hProv)
 			}
 		}
 	}
+	if(!status)
+		PRINT_ERROR_AUTO(L"CryptGetProvParam/CryptAcquireContextA");
 	return status;
 }
 
@@ -554,9 +556,10 @@ BOOL kull_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD 
 				CryptDestroyKey(hCryptKey);
 			}
 			else PRINT_ERROR_AUTO(L"CryptImportKey");
-			CryptReleaseContext(hCryptProv, 0);
-			if(!CryptAcquireContext(&hCryptProv, infos.pwszContainerName, NULL, PROV_RSA_FULL, CRYPT_DELETEKEYSET))
-				PRINT_ERROR(L"Unable to delete temp keyset %s\n", infos.pwszContainerName);
+			kull_m_crypto_close_hprov_delete_container(hCryptProv);
+			//CryptReleaseContext(hCryptProv, 0);
+			//if(!CryptAcquireContext(&hCryptProv, infos.pwszContainerName, NULL, PROV_RSA_FULL, CRYPT_DELETEKEYSET))
+			//	PRINT_ERROR(L"Unable to delete temp keyset %s\n", infos.pwszContainerName);
 		}
 		else PRINT_ERROR_AUTO(L"CryptAcquireContext");
 		LocalFree(infos.pwszContainerName);
