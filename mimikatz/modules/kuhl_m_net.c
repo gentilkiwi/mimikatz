@@ -14,6 +14,8 @@ const KUHL_M_C kuhl_m_c_net[] = {
 	{kuhl_m_net_wsession,	L"wsession",	L""},
 	{kuhl_m_net_tod,		L"tod",	L""},
 	{kuhl_m_net_stats,		L"stats", L""},
+	{kuhl_m_net_share,		L"share", L""},
+	{kuhl_m_net_serverinfo,	L"serverinfo", L""},
 };
 const KUHL_M kuhl_m_net = {
 	L"net",	L"", NULL,
@@ -474,5 +476,97 @@ NTSTATUS kuhl_m_net_stats(int argc, wchar_t * argv[])
 		NetApiBufferFree(pStats);
 	}
 	else PRINT_ERROR(L"NetStatisticsGet: %08x\n", nStatus);
+	return STATUS_SUCCESS;
+}
+
+void kuhl_m_net_share_type(DWORD type)
+{
+	switch(type & STYPE_MASK)
+	{
+	case STYPE_DISKTREE:
+		kprintf(L"disktree ; ");
+		break;
+	case STYPE_PRINTQ:
+		kprintf(L"printq ; ");
+		break;
+	case STYPE_DEVICE:
+		kprintf(L"device ; ");
+		break;
+	case STYPE_IPC:
+		kprintf(L"ipc ; ");
+		break;
+	}
+
+	if(type & STYPE_TEMPORARY)
+		kprintf(L"temporary ; ");
+	if(type & STYPE_SPECIAL)
+		kprintf(L"special ; ");
+	if(type & STYPE_RESERVED_ALL)
+		kprintf(L"reserved flag(s) ; ");
+	kprintf(L"\n");
+}
+
+NTSTATUS kuhl_m_net_share(int argc, wchar_t * argv[])
+{
+	LPSHARE_INFO_502 pBuf;
+	DWORD dwEntriesRead;
+	DWORD dwTotalEntries;
+	DWORD dwResumeHandle = 0;
+	DWORD i;
+	NET_API_STATUS nStatus;
+	do
+	{
+		nStatus = NetShareEnum (argc ? argv[0] : NULL, 502, (LPBYTE*) &pBuf, MAX_PREFERRED_LENGTH, &dwEntriesRead, &dwTotalEntries, &dwResumeHandle);
+		if((nStatus == 0) || (nStatus == ERROR_MORE_DATA))
+		{
+			for (i = 0; i < dwEntriesRead; i++)
+			{
+				kprintf(L"\n"
+					L"Netname : %s\n"
+					L"Type    : %08x - ",
+					pBuf[i].shi502_netname, pBuf[i].shi502_type);
+				kuhl_m_net_share_type(pBuf[i].shi502_type);
+				kprintf(
+					L"Uses    : %u/%u\n"
+					L"Path    : %s\n",
+					pBuf[i].shi502_current_uses, pBuf[i].shi502_max_uses, pBuf[i].shi502_path);
+			}
+			NetApiBufferFree(pBuf);
+		}
+		else PRINT_ERROR(L"NetShareEnum: %08x\n", nStatus);
+	}
+	while (nStatus == ERROR_MORE_DATA);
+	return STATUS_SUCCESS;
+}
+
+const wchar_t * SV_TYPES[] = {
+	L"workstation", L"server", L"sqlserver", L"domain_ctrl", L"domain_bakctrl", L"time_source", L"afp", L"novelL",
+	L"domain_member", L"printq_server", L"dialin_server", L"server_unix", L"nt", L"wfw", L"server_mfpn", L"server_nt",
+	L"potential_browser", L"backup_browser", L"master_browser", L"domain_master", L"server_osf", L"server_vms", L"windows", L"dfs", 
+	L"cluster_nt", L"terminalserver", L"cluster_vs_nt", L"0x08000000 ?", L"dce", L"alternate_xport", L"local_list_only", L"domain_enum",
+};
+
+NTSTATUS kuhl_m_net_serverinfo(int argc, wchar_t * argv[])
+{
+	LPSERVER_INFO_102 pServerInfo;
+	NET_API_STATUS nStatus;
+	DWORD i;
+	nStatus = NetServerGetInfo(argc ? argv[0] : NULL, 102, (LPBYTE*) &pServerInfo);
+	if(nStatus == NERR_Success)
+	{
+		kprintf(L"platform_id: %u\n"
+				L"name       : %s\n"
+				L"version    : %u.%u\n"
+				L"comment    : %s\n"
+				L"type       : %08x - ",
+		pServerInfo->sv102_platform_id, pServerInfo->sv102_name, pServerInfo->sv102_version_major, pServerInfo->sv102_version_minor, pServerInfo->sv102_comment, pServerInfo->sv102_type);
+		
+		for(i = 0; i < ARRAYSIZE(SV_TYPES); i++)
+			if((1 << i) & pServerInfo->sv102_type)
+				kprintf(L"%s ; ", SV_TYPES[i]);
+		kprintf(L"\n");
+		NetApiBufferFree(pServerInfo);
+	}
+	else PRINT_ERROR(L"NetServerGetInfo: %08x\n", nStatus);
 	return STATUS_SUCCESS;
 }

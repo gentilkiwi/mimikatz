@@ -85,6 +85,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_setntlm(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
@@ -96,7 +97,7 @@ BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBY
 BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, LPCBYTE sysKey, LPBYTE samKey);
 BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm);
 
-void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
+void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, PSID DomainSid, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
 void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD count, PNTDS_LSA_AUTH_INFORMATION infoNtds, PCWSTR prefix, PCUNICODE_STRING from, PCUNICODE_STRING dest);
 
@@ -407,6 +408,27 @@ typedef struct _KUHL_LSADUMP_DCC_CACHE_DATA {
 	BYTE ntlm[LM_NTLM_HASH_LENGTH];
 } KUHL_LSADUMP_DCC_CACHE_DATA, *PKUHL_LSADUMP_DCC_CACHE_DATA;
 
+typedef struct _KIWI_LSA_PRIVATE_DATA {
+	DWORD DataType;
+	WORD LmLength;
+	WORD LmMaximumLength;
+	DWORD Unused1;
+	BYTE LmHash[LM_NTLM_HASH_LENGTH];
+	WORD NtLength;
+	WORD NtMaximumLength;
+	DWORD Unused2;
+	BYTE NtHash[LM_NTLM_HASH_LENGTH];
+	WORD LmHistoryLength;
+	WORD LmHistoryMaximumLength;
+	DWORD Unused3;
+	WORD NtHistoryLength;
+	WORD NtHistoryMaximumLength;
+	DWORD Unused4;
+	BYTE Data[ANYSIZE_ARRAY];
+	// NtHistoryArray
+	// LmHistoryArray
+} KIWI_LSA_PRIVATE_DATA, *PKIWI_LSA_PRIVATE_DATA;
+
 BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);
@@ -418,7 +440,7 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 
 PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
-void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, PVOID Buffer, DWORD BufferSize);
+void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, DWORD rid, PVOID Buffer, DWORD BufferSize);
 
 BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
 void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport);

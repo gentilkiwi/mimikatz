@@ -92,3 +92,5 @@ NTSYSAPI NTSTATUS NTAPI RtlDecompressBuffer (__in USHORT CompressionFormat, __ou
 
 BOOL kull_m_memory_quick_compress(IN PVOID data, IN DWORD size, IN OUT PVOID *compressedData, IN OUT PDWORD compressedSize);
 BOOL kull_m_memory_quick_decompress(IN PVOID data, IN DWORD size, IN OPTIONAL DWORD originalSize, IN OUT PVOID *decompressedData, IN OUT PDWORD decompressedSize);
+
+void kull_m_memory_reverseBytes(PVOID start, SIZE_T size);

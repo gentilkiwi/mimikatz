@@ -121,7 +121,6 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INP
 			}
 			kull_m_memory_free(&aRemoteData, 0);
 		}
-		
 		LocalFree(data);
 	}
 	return success;
