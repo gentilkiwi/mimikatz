@@ -108,6 +108,8 @@ extern NTSTATUS WINAPI SamOpenGroup(IN SAMPR_HANDLE DomainHandle, IN ACCESS_MASK
 extern NTSTATUS WINAPI SamOpenAlias(IN SAMPR_HANDLE DomainHandle, IN ACCESS_MASK DesiredAccess, IN DWORD AliasId, OUT SAMPR_HANDLE * AliasHandle);
 extern NTSTATUS WINAPI SamQueryInformationUser(IN SAMPR_HANDLE UserHandle, IN USER_INFORMATION_CLASS UserInformationClass, PSAMPR_USER_INFO_BUFFER* Buffer);
 extern NTSTATUS WINAPI SamSetInformationUser(IN SAMPR_HANDLE UserHandle, IN USER_INFORMATION_CLASS UserInformationClass, PSAMPR_USER_INFO_BUFFER Buffer);
+extern NTSTATUS WINAPI SamiChangePasswordUser(IN SAMPR_HANDLE UserHandle, IN BOOL isOldLM, IN const BYTE oldLM[LM_NTLM_HASH_LENGTH], IN const BYTE newLM[LM_NTLM_HASH_LENGTH], IN BOOL isNewNTLM, IN const BYTE oldNTLM[LM_NTLM_HASH_LENGTH], IN const BYTE newNTLM[LM_NTLM_HASH_LENGTH]);
+
 extern NTSTATUS WINAPI SamGetGroupsForUser(IN SAMPR_HANDLE UserHandle, OUT PGROUP_MEMBERSHIP * Groups, OUT DWORD * CountReturned);
 extern NTSTATUS WINAPI SamGetAliasMembership(IN SAMPR_HANDLE DomainHandle, IN DWORD Count, IN PSID * Sid, OUT DWORD * CountReturned, OUT PDWORD * RelativeIds);
 

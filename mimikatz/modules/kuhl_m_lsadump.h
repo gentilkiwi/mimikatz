@@ -86,6 +86,7 @@ NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_setntlm(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);

