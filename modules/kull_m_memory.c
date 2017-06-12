@@ -388,3 +388,15 @@ BOOL kull_m_memory_quick_decompress(IN PVOID data, IN DWORD size, IN OPTIONAL DW
 	}
 	return status;
 }
+
+void kull_m_memory_reverseBytes(PVOID start, SIZE_T size)
+{
+	PBYTE lo = (PBYTE) start, hi = lo + size - 1;
+	BYTE swap;
+	while (lo < hi)
+	{
+		swap = *lo;
+		*lo++ = *hi;
+		*hi-- = swap;
+	}
+}

@@ -23,3 +23,8 @@ NTSTATUS kuhl_m_net_session(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_wsession(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_tod(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_stats(int argc, wchar_t * argv[]);
+
+void kuhl_m_net_share_type(DWORD type);
+
+NTSTATUS kuhl_m_net_share(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_net_serverinfo(int argc, wchar_t * argv[]);

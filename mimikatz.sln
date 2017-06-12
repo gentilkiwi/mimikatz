@@ -12,7 +12,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global file
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF6-4DCA-9A60-6F4036929AEE}"
 	ProjectSection(SolutionItems) = preProject
+		inc\cardmod.h = inc\cardmod.h
 		inc\DbgHelp.h = inc\DbgHelp.h
+		inc\DhcpSSdk.h = inc\DhcpSSdk.h
 		inc\DsGetDC.h = inc\DsGetDC.h
 		inc\globals.h = inc\globals.h
 		inc\Midles.h = inc\Midles.h

@@ -88,6 +88,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="kappfree.c" />
+    <ClCompile Include="kdhcp.c" />
+    <ClCompile Include="kdns.c" />
     <ClCompile Include="kfilt.c" />
     <ClCompile Include="kssp.c" />
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.c" />
@@ -99,6 +101,8 @@
     <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="kdhcp.h" />
+    <ClInclude Include="kdns.h" />
     <ClInclude Include="kfilt.h" />
     <ClInclude Include="kssp.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.h" />

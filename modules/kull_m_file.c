@@ -138,7 +138,7 @@ PWCHAR kull_m_file_fullPath(PCWCHAR fileName)
 
 BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO*/, DWORD level, BOOL isPrintInfos, PKULL_M_FILE_FIND_CALLBACK callback, PVOID pvArg)
 {
-	BOOL status = FALSE, bFind = TRUE;
+	BOOL status = FALSE;
 	DWORD dwAttrib;
 	HANDLE hFind;
 	WIN32_FIND_DATA fData;
@@ -182,15 +182,15 @@ BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO
 												if(!(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 												{
 													if(callback)
-														callback(level, fullpath, fullpath + dwAttrib, pvArg);
+														status = callback(level, fullpath, fullpath + dwAttrib, pvArg);
 												}
 												else if(isRecursive && fData.cFileName)
-													kull_m_file_Find(fullpath, filter, TRUE, level + 1, isPrintInfos, callback, pvArg);
+													status = kull_m_file_Find(fullpath, filter, TRUE, level + 1, isPrintInfos, callback, pvArg);
 											}
 										}
 									}
 								}
-							} while(bFind = FindNextFile(hFind, &fData));
+							} while(!status && FindNextFile(hFind, &fData));
 							FindClose(hFind);
 						}
 					}

@@ -15,17 +15,12 @@ EXT_API_VERSION g_ExtApiVersion = {5 , 5 ,
 , 0};
 USHORT NtBuildNumber = 0;
 
-LPEXT_API_VERSION WDBGAPI ExtensionApiVersion (void)
+LPEXT_API_VERSION WDBGAPI kdbg_ExtensionApiVersion(void)
 {
 	return &g_ExtApiVersion;
 }
 
-VOID CheckVersion(void)
-{
-	return;
-}
-
-VOID WDBGAPI WinDbgExtensionDllInit(PWINDBG_EXTENSION_APIS lpExtensionApis, USHORT usMajorVersion, USHORT usMinorVersion)
+VOID WDBGAPI kdbg_WinDbgExtensionDllInit(PWINDBG_EXTENSION_APIS lpExtensionApis, USHORT usMajorVersion, USHORT usMinorVersion)
 {
 	ExtensionApis = *lpExtensionApis;
 	NtBuildNumber = usMinorVersion;
@@ -80,7 +75,12 @@ const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
 	{sizeof(KIWI_MSV1_0_LIST_63), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LocallyUniqueIdentifier), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonType), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Session),	FIELD_OFFSET(KIWI_MSV1_0_LIST_63, UserName), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Domaine), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, Credentials), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, pSid), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, CredentialManager), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonTime), FIELD_OFFSET(KIWI_MSV1_0_LIST_63, LogonServer)},
 };
 
-DECLARE_API(mimikatz)
+DECLARE_API(kdbg_coffee)
+{
+	dprintf("\n    ( (\n     ) )\n  .______.\n  |      |]\n  \\      /\n   `----'\n");
+}
+
+DECLARE_API(kdbg_mimikatz)
 {
 	ULONG_PTR pInitializationVector = 0, phAesKey = 0, ph3DesKey = 0, pLogonSessionList = 0, pLogonSessionListCount = 0, pSecData = 0, pDomainList = 0;
 	PLIST_ENTRY LogonSessionList;

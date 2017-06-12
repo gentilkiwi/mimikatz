@@ -1,11 +1,20 @@
 LIBRARY
 EXPORTS
 	startW					=	kappfree_startW
+
 	SpLsaModeInitialize		=	kssp_SpLsaModeInitialize
+	
 	InitializeChangeNotify	=	kfilt_InitializeChangeNotify
 	PasswordChangeNotify	=	kfilt_PasswordChangeNotify
 
-	WinDbgExtensionDllInit	=	WinDbgExtensionDllInit
-	ExtensionApiVersion		=	ExtensionApiVersion
-	
-	mimikatz				=	mimikatz
+	WinDbgExtensionDllInit	=	kdbg_WinDbgExtensionDllInit
+	ExtensionApiVersion		=	kdbg_ExtensionApiVersion
+	coffee					=	kdbg_coffee
+	mimikatz				=	kdbg_mimikatz
+
+	DnsPluginInitialize		=	kdns_DnsPluginInitialize
+	DnsPluginCleanup		=	kdns_DnsPluginCleanup
+	DnsPluginQuery			=	kdns_DnsPluginQuery
+
+	DhcpServerCalloutEntry	=	kdhcp_DhcpServerCalloutEntry
+	DhcpNewPktHook			=	kdhcp_DhcpNewPktHook

