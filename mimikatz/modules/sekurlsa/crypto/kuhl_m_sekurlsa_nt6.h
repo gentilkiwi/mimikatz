@@ -51,12 +51,6 @@ typedef struct _KIWI_BCRYPT_GEN_KEY {
 	ULONG cbKey;
 } KIWI_BCRYPT_GEN_KEY, *PKIWI_BCRYPT_GEN_KEY;
 
-typedef NTSTATUS	(WINAPI * PBCRYPT_OPEN_ALGORITHM_PROVIDER)	(__out BCRYPT_ALG_HANDLE  *phAlgorithm, __in LPCWSTR pszAlgId, __in_opt LPCWSTR pszImplementation, __in ULONG dwFlags);
-typedef NTSTATUS	(WINAPI * PBCRYPT_SET_PROPERTY)				(__inout BCRYPT_HANDLE hObject, __in LPCWSTR pszProperty, __in_bcount(cbInput) PUCHAR pbInput, __in ULONG cbInput, __in ULONG dwFlags);
-typedef NTSTATUS	(WINAPI * PBCRYPT_GET_PROPERTY)				(__in BCRYPT_HANDLE hObject, __in LPCWSTR pszProperty, __out_bcount_part_opt(cbOutput, *pcbResult) PUCHAR pbOutput, __in ULONG cbOutput, __out ULONG *pcbResult, __in ULONG dwFlags);
-typedef NTSTATUS	(WINAPI * PBCRYPT_GENERATE_SYMMETRIC_KEY)	(__inout BCRYPT_ALG_HANDLE hAlgorithm, __out BCRYPT_KEY_HANDLE *phKey, __out_bcount_full_opt(cbKeyObject) PUCHAR pbKeyObject, __in ULONG cbKeyObject, __in_bcount(cbSecret) PUCHAR pbSecret, __in ULONG cbSecret, __in ULONG dwFlags);
-typedef NTSTATUS	(WINAPI * PBCRYPT_DESTROY_KEY)				(__inout BCRYPT_KEY_HANDLE hKey);
-typedef NTSTATUS	(WINAPI * PBCRYPT_CLOSE_ALGORITHM_PROVIDER)	(__inout BCRYPT_ALG_HANDLE hAlgorithm, __in ULONG dwFlags);
 typedef NTSTATUS	(WINAPI * PBCRYPT_ENCRYPT)					(__inout BCRYPT_KEY_HANDLE hKey, __in_bcount_opt(cbInput) PUCHAR pbInput, __in ULONG cbInput, __in_opt VOID *pPaddingInfo, __inout_bcount_opt(cbIV) PUCHAR pbIV, __in ULONG cbIV, __out_bcount_part_opt(cbOutput, *pcbResult) PUCHAR pbOutput, __in ULONG cbOutput, __out ULONG *pcbResult, __in ULONG dwFlags);
 
 NTSTATUS kuhl_m_sekurlsa_nt6_init();

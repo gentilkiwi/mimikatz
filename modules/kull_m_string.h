@@ -85,3 +85,4 @@ BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
 #ifndef MIMIKATZ_W2000_SUPPORT
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);
 #endif
+BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...);

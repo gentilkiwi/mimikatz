@@ -17,6 +17,14 @@
       <Configuration>Second_Release_PowerShell</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+	<ProjectConfiguration Include="Simple_DLL|Win32">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Simple_DLL|x64">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FB9B5E61-7C34-4280-A211-E979E1D6977F}</ProjectGuid>
@@ -29,8 +37,8 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType Condition="'$(Configuration)' != 'Second_Release_PowerShell'">Application</ConfigurationType>
-    <ConfigurationType Condition="'$(Configuration)' == 'Second_Release_PowerShell'">DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType Condition="('$(Configuration)' == 'Second_Release_PowerShell') Or ('$(Configuration)' == 'Simple_DLL')">DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -62,6 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+	  <PreprocessorDefinitions Condition="'$(Configuration)' == 'Second_Release_PowerShell'">_POWERKATZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -79,13 +88,14 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;msxml2.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <DelayLoadDLLs>bcrypt.dll;ncrypt.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -259,10 +269,10 @@
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' != 'Second_Release_PowerShell'">
+  <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <ResourceCompile Include="mimikatz.rc" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' != 'Second_Release_PowerShell'">
+  <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <None Include="mimikatz.ico" />
   </ItemGroup>
 </Project>

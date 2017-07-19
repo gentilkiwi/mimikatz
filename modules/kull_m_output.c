@@ -42,7 +42,7 @@ void kprintf(PCWCHAR format, ...)
 				outputBufferElementsPosition += varBuf;
 		}
 	}
-#ifndef _WINDLL
+#ifndef _POWERKATZ
 	else
 	{
 		vwprintf(format, args);
@@ -92,9 +92,11 @@ int previousStdOut, previousStdErr;
 UINT previousConsoleOutput;
 void kull_m_output_init()
 {
+#ifndef _POWERKATZ
 #ifndef _WINDLL
 	previousStdOut = _setmode(_fileno(stdout), _O_U8TEXT);
 	previousStdErr = _setmode(_fileno(stderr), _O_U8TEXT);
+#endif
 	previousConsoleOutput = GetConsoleOutputCP();
 	SetConsoleOutputCP(CP_UTF8);
 #endif
@@ -102,9 +104,11 @@ void kull_m_output_init()
 
 void kull_m_output_clean()
 {
+#ifndef _POWERKATZ
 #ifndef _WINDLL
 	_setmode(_fileno(stdout), previousStdOut);
 	_setmode(_fileno(stderr), previousStdErr);
+#endif
 	SetConsoleOutputCP(previousConsoleOutput);
 #endif
 }

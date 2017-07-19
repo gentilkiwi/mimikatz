@@ -42,9 +42,13 @@
 
 #ifdef _WINDLL
 	#define MIMIKATZ_AUTO_COMMAND_START		0
-	#define MIMIKATZ_AUTO_COMMAND_STRING	L"powershell"
 #else
 	#define MIMIKATZ_AUTO_COMMAND_START		1
+#endif
+
+#ifdef _POWERKATZ
+	#define MIMIKATZ_AUTO_COMMAND_STRING	L"powershell"
+#else
 	#define MIMIKATZ_AUTO_COMMAND_STRING	L"commandline"
 #endif
 

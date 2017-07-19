@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "kuhl_m.h"
+#include <cardmod.h>
 #include "../modules/kull_m_crypto.h"
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_service.h"
@@ -15,18 +16,6 @@
 #include "../modules/kull_m_registry.h"
 
 typedef BOOL			(WINAPI * PCP_EXPORTKEY)					(IN HCRYPTPROV hProv, IN HCRYPTKEY hKey, IN HCRYPTKEY hPubKey, IN DWORD dwBlobType, IN DWORD dwFlags, OUT LPBYTE pbData, IN OUT LPDWORD pcbDataLen);
-
-typedef SECURITY_STATUS	(WINAPI * PNCRYPT_OPEN_STORAGE_PROVIDER)	(__out NCRYPT_PROV_HANDLE *phProvider, __in_opt LPCWSTR pszProviderName, __in DWORD dwFlags);
-typedef SECURITY_STATUS	(WINAPI * PNCRYPT_ENUM_KEYS)				(__in NCRYPT_PROV_HANDLE hProvider, __in_opt LPCWSTR pszScope, __deref_out NCryptKeyName **ppKeyName, __inout PVOID * ppEnumState, __in DWORD dwFlags);
-typedef	SECURITY_STATUS	(WINAPI * PNCRYPT_OPEN_KEY)					(__in NCRYPT_PROV_HANDLE hProvider, __out NCRYPT_KEY_HANDLE *phKey, __in LPCWSTR pszKeyName, __in DWORD dwLegacyKeySpec, __in DWORD dwFlags);
-typedef SECURITY_STATUS (WINAPI * PNCRYPT_IMPORT_KEY)					(__in NCRYPT_PROV_HANDLE hProvider, __in_opt NCRYPT_KEY_HANDLE hImportKey, __in LPCWSTR pszBlobType, __in_opt NCryptBufferDesc *pParameterList, __out NCRYPT_KEY_HANDLE *phKey, __in_bcount(cbData) PBYTE pbData, __in DWORD cbData, __in DWORD dwFlags);
-typedef SECURITY_STATUS	(WINAPI * PNCRYPT_EXPORT_KEY)				(__in NCRYPT_KEY_HANDLE hKey, __in_opt NCRYPT_KEY_HANDLE hExportKey, __in LPCWSTR pszBlobType, __in_opt NCryptBufferDesc *pParameterList, __out_opt PBYTE pbOutput, __in DWORD cbOutput, __out DWORD *pcbResult, __in DWORD dwFlags);
-typedef SECURITY_STATUS	(WINAPI * PNCRYPT_GET_PROPERTY)				(__in NCRYPT_HANDLE hObject, __in LPCWSTR pszProperty, __out_bcount_part_opt(cbOutput, *pcbResult) PBYTE pbOutput, __in DWORD cbOutput, __out DWORD * pcbResult, __in DWORD dwFlags);
-typedef SECURITY_STATUS (WINAPI * PNCRYPT_SET_PROPERTY)				( __in    NCRYPT_HANDLE hObject, __in LPCWSTR pszProperty, __in_bcount(cbInput) PBYTE pbInput, __in DWORD cbInput, __in DWORD dwFlags);
-typedef SECURITY_STATUS	(WINAPI * PNCRYPT_FREE_BUFFER)				(__deref PVOID pvInput);
-typedef SECURITY_STATUS	(WINAPI * PNCRYPT_FREE_OBJECT)				(__in NCRYPT_HANDLE hObject);
-typedef NTSTATUS		(WINAPI * PBCRYPT_ENUM_REGISTERED_PROVIDERS)(__inout ULONG* pcbBuffer, __deref_opt_inout_bcount_part_opt(*pcbBuffer, *pcbBuffer) PCRYPT_PROVIDERS *ppBuffer);
-typedef VOID			(WINAPI * PBCRYPT_FREE_BUFFER)				(__in PVOID pvBuffer);
 
 typedef struct _KUHL_M_CRYPTO_DWORD_TO_DWORD {
 	PCWSTR	name;
@@ -82,5 +71,7 @@ void kuhl_m_crypto_exportCert(PCCERT_CONTEXT pCertificate, BOOL havePrivateKey, 
 wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * term1, const DWORD index, const wchar_t * name, const wchar_t * ext);
 void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport);
 void kuhl_m_crypto_l_keys_capi(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwProvType, DWORD dwFlags, BOOL export, LPCWSTR szStore);
+void kuhl_m_crypto_l_keys_cng(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwFlags, BOOL export, LPCWSTR szStore);
+void kuhl_m_crypto_l_mdr(LPCWSTR szMdr, SCARDCONTEXT ctxScard, SCARDHANDLE hScard, LPCWSTR szModel, LPCBYTE pbAtr, DWORD cbAtr);
 DWORD kuhl_m_crypto_l_sc_provtypefromname(LPCWSTR szProvider);
 PWSTR kuhl_m_crypto_l_sc_containerFromReader(LPCWSTR reader);

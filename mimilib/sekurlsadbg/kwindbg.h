@@ -7,6 +7,8 @@
 #include "kuhl_m_sekurlsa_utils.h"
 #include "kuhl_m_sekurlsa_nt6.h"
 #include "kuhl_m_sekurlsa_packages.h"
+#define DELAYIMP_INSECURE_WRITABLE_HOOKS
+#include <delayimp.h>
 
 USHORT NtBuildNumber;
 

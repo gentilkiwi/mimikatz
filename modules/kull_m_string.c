@@ -387,3 +387,24 @@ BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szD
 	return status;
 }
 #endif
+
+BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...)
+{
+	BOOL status = FALSE;
+	int varBuf;
+	va_list args;
+	va_start(args, format);
+	varBuf = _vscwprintf(format, args);
+	if(varBuf > 0)
+	{
+		varBuf++;
+		if(*outBuffer = (PWSTR) LocalAlloc(LPTR, varBuf * sizeof(wchar_t)))
+		{
+			varBuf = vswprintf_s(*outBuffer, varBuf, format, args);
+			if(varBuf > 0)
+				status = TRUE;
+			else *outBuffer = (PWSTR) LocalFree(outBuffer);
+		}
+	}
+	return status;
+}
