@@ -101,6 +101,8 @@ PCWCHAR kull_m_crypto_keytype_to_str(const DWORD keyType);
 PCWCHAR kull_m_crypto_algid_to_name(ALG_ID algid);
 ALG_ID kull_m_crypto_name_to_algid(PCWSTR name);
 PCWCHAR kull_m_crypto_cert_prop_id_to_name(const DWORD propId);
+void kull_m_crypto_kp_permissions_descr(const DWORD keyPermissions);
+PCWCHAR kull_m_crypto_kp_mode_to_str(const DWORD keyMode);
 
 typedef struct _MIMI_PUBLICKEY
 {

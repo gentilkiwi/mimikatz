@@ -17,7 +17,7 @@
       <Configuration>Second_Release_PowerShell</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-	<ProjectConfiguration Include="Simple_DLL|Win32">
+    <ProjectConfiguration Include="Simple_DLL|Win32">
       <Configuration>Simple_DLL</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
@@ -70,7 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <PreprocessorDefinitions Condition="'$(Configuration)' == 'Second_Release_PowerShell'">_POWERKATZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)' == 'Second_Release_PowerShell'">_POWERKATZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
