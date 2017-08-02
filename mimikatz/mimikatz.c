@@ -24,7 +24,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_net,
 #endif
 	&kuhl_m_dpapi,
-	&kuhl_m_busylight,
+	//&kuhl_m_busylight,
 	&kuhl_m_sysenv,
 	&kuhl_m_sid,
 	&kuhl_m_iis,
