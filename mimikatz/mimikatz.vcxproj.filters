@@ -233,6 +233,9 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_mimicom.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -485,6 +488,9 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_mimicom.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h">
+      <Filter>local modules\crypto</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -515,6 +521,9 @@
     </Filter>
     <Filter Include="common modules\rpc">
       <UniqueIdentifier>{36857c96-00a6-4cb6-8ca9-591d0561662c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\crypto">
+      <UniqueIdentifier>{de3bf270-ef33-4d83-bec2-77c4450b411a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

