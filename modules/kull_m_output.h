@@ -15,7 +15,6 @@ size_t outputBufferElements, outputBufferElementsPosition;
 //#endif
 
 void kprintf(PCWCHAR format, ...);
-void kprintf_inputline(PCWCHAR format, ...);
 
 BOOL kull_m_output_file(PCWCHAR file);
 

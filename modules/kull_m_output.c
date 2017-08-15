@@ -11,8 +11,7 @@ size_t outputBufferElements = 0, outputBufferElementsPosition = 0;
 
 void kprintf(PCWCHAR format, ...)
 {
-	// TODO: make ifdef
-	/*
+#ifdef _DEBUG
 	int varBuf;
 	size_t tempSize;
 	wchar_t * tmpBuffer;
@@ -44,33 +43,21 @@ void kprintf(PCWCHAR format, ...)
 				outputBufferElementsPosition += varBuf;
 		}
 	}
-#ifndef _POWERKATZ
 	else
 	{
 		vwprintf(format, args);
 		fflush(stdout);
 	}
-#endif
 	if(logfile)
 	{
 		vfwprintf(logfile, format, args);
 		fflush(logfile);
 	}
 	va_end(args);
-	*/
+#endif
+
 }
 
-void kprintf_inputline(PCWCHAR format, ...)
-{
-	va_list args;
-	va_start(args, format);
-	if(logfile)
-	{
-		vfwprintf(logfile, format, args);
-		fflush(logfile);
-	}
-	va_end(args);
-}
 
 BOOL kull_m_output_file(PCWCHAR file)
 {
