@@ -1,0 +1,10 @@
+*.opensdf
+*.sdf
+.vs/
+mimidrv/objfre_wnet_x86/
+mimikatz/Win32/
+mimikatz/x64/
+mimilib/Win32/
+mimilove/Win32/
+Win32/
+x64/
