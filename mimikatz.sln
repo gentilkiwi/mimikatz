@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimikatz", "mimikatz\mimikatz.vcxproj", "{FB9B5E61-7C34-4280-A211-E979E1D6977F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global files", "{1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}"
@@ -59,17 +61,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x64", "x64", "{E9D1619F-D4A
 		lib\x64\winsta.lib = lib\x64\winsta.lib
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilib", "mimilib\mimilib.vcxproj", "{E049487C-C5BD-471E-99AE-C756E70B6520}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimidrv", "mimidrv\mimidrv.vcxproj", "{86FF6D04-208C-442F-B27C-E4255DD39402}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilove", "mimilove\mimilove.vcxproj", "{60D02E32-1711-4D9E-9AC2-10627C52EB40}"
-EndProject
 Global
-	GlobalSection(SubversionScc) = preSolution
-		Svn-Managed = True
-		Manager = AnkhSVN - Subversion Support for Visual Studio
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
@@ -91,29 +83,6 @@ Global
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|Win32.Build.0 = Simple_DLL|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|x64.ActiveCfg = Simple_DLL|x64
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|x64.Build.0 = Simple_DLL|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.ActiveCfg = Release|Win32
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.Build.0 = Release|Win32
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.ActiveCfg = Release|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.Build.0 = Release|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Simple_DLL|Win32.ActiveCfg = Release|Win32
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Simple_DLL|x64.ActiveCfg = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.ActiveCfg = Release|Win32
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.Build.0 = Release|Win32
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.ActiveCfg = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.Build.0 = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Simple_DLL|Win32.ActiveCfg = Release|Win32
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Simple_DLL|x64.ActiveCfg = Release|x64
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|Win32.ActiveCfg = Release|Win32
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|Win32.Build.0 = Release|Win32
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|x64.ActiveCfg = Release|x64
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|Win32.ActiveCfg = Release|Win32
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -123,5 +92,9 @@ Global
 		{294B51F3-90EF-4F0A-BB04-20321A513A4F} = {1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}
 		{96078881-DEC1-4EF5-A24A-A81AC007809D} = {294B51F3-90EF-4F0A-BB04-20321A513A4F}
 		{E9D1619F-D4A1-4AFA-B261-B01091EB8D56} = {294B51F3-90EF-4F0A-BB04-20321A513A4F}
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
 	EndGlobalSection
 EndGlobal

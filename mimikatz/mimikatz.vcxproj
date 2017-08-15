@@ -183,6 +183,7 @@
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.c" />
+    <ClCompile Include="retval.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\kull_m_asn1.h" />
@@ -270,6 +271,7 @@
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h" />
+    <ClInclude Include="retval.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <ResourceCompile Include="mimikatz.rc" />
