@@ -236,6 +236,7 @@
     <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c">
       <Filter>local modules\crypto</Filter>
     </ClCompile>
+    <ClCompile Include="logon_data.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -491,6 +492,7 @@
     <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h">
       <Filter>local modules\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="logon_data.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -525,11 +527,5 @@
     <Filter Include="local modules\crypto">
       <UniqueIdentifier>{de3bf270-ef33-4d83-bec2-77c4450b411a}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="mimikatz.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="mimikatz.ico" />
   </ItemGroup>
 </Project>
