@@ -236,7 +236,7 @@
     <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c">
       <Filter>local modules\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="retval.c" />
+    <ClCompile Include="logon_data.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -492,7 +492,7 @@
     <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h">
       <Filter>local modules\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="retval.h" />
+    <ClInclude Include="logon_data.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">

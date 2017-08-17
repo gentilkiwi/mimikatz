@@ -4,7 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "mimikatz.h"
-#include "retval.h"
+#include "logon_data.h"
 
 const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_standard,
@@ -36,7 +36,6 @@ void mimikatz_begin()
 {
 	kull_m_output_init();
 #ifndef _POWERKATZ
-	SetConsoleTitle(MIMIKATZ L" " MIMIKATZ_VERSION L" " MIMIKATZ_ARCH L" (oe.eo)");
 	SetConsoleCtrlHandler(HandlerRoutine, TRUE);
 #endif
 	kprintf(L"\n"

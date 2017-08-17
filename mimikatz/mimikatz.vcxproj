@@ -47,11 +47,23 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup>
-    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)</OutDir>
-    <IntDir>$(Platform)\$(Configuration)</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)inc;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)lib\$(Platform);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>mk</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>mk</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>mk</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>mk</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -173,7 +185,7 @@
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.c" />
-    <ClCompile Include="retval.c" />
+    <ClCompile Include="logon_data.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\modules\kull_m_asn1.h" />
@@ -261,7 +273,7 @@
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_ssp.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h" />
-    <ClInclude Include="retval.h" />
+    <ClInclude Include="logon_data.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <ResourceCompile Include="mimikatz.rc" />

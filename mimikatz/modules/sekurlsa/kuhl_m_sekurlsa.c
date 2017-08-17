@@ -4,7 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa.h"
-#include "../../retval.h"
+#include "../../logon_data.h"
 
 const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_msv,				L"msv",				L"Lists LM & NTLM credentials"},
