@@ -38,6 +38,9 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	DWORD dcOutVersion = 0;
 	DRS_MSG_DCINFOREPLY dcInfoRep = {0};
 	LPWSTR sGuid;
+	LPWSTR sSid;
+	LPWSTR sTempDomain;
+	PSID pSid;
 	UNICODE_STRING uGuid;
 
 	RtlZeroMemory(pDrsExtensionsInt, sizeof(DRS_EXTENSIONS_INT));
@@ -81,6 +84,22 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 				{
 					RtlInitUnicodeString(&uGuid, sGuid);
 					ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+				}
+			}
+			else
+			{
+				if (kull_m_token_getSidDomainFromName(Domain, &pSid, &sTempDomain, NULL, ServerName))
+				{
+					if (ConvertSidToStringSid(pSid, &sSid))
+					{
+						if(kull_m_rpc_drsr_CrackName(hDrs, DS_SID_OR_SID_HISTORY_NAME, sSid,  DS_UNIQUE_ID_NAME, &sGuid, NULL))
+						{
+							RtlInitUnicodeString(&uGuid, sGuid);
+							ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+						}
+						LocalFree(pSid);
+					}
+					LocalFree(sTempDomain);
 				}
 			}
 		}

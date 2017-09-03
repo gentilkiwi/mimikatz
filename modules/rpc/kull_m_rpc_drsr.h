@@ -8,6 +8,7 @@
 #include "../kull_m_crypto.h"
 #include "../kull_m_string.h"
 #include "../kull_m_asn1.h"
+#include "../kull_m_token.h"
 #include "kull_m_rpc_ms-drsr.h"
 
 typedef struct _DRS_EXTENSIONS_INT {
