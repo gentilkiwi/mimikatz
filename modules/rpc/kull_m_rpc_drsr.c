@@ -302,25 +302,12 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
 
 void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply)
 {
-	DWORD i;
 	if(reply)
 	{
 		switch (nameCrackOutVersion)
 		{
 		case 1:
-			if(reply->V1.pResult)
-			{
-				for(i = 0; i < reply->V1.pResult->cItems; i++)
-				{
-					if(reply->V1.pResult->rItems[i].pDomain)
-						MIDL_user_free(reply->V1.pResult->rItems[i].pDomain);
-					if(reply->V1.pResult->rItems[i].pName)
-						MIDL_user_free(reply->V1.pResult->rItems[i].pName);
-				}
-				if(reply->V1.pResult->rItems)
-					MIDL_user_free(reply->V1.pResult->rItems);
-				MIDL_user_free(reply->V1.pResult);
-			}
+			kull_m_rpc_ms_drsr_FreeDRS_MSG_CRACKREPLY_V1(&reply->V1);
 			break;
 		default:
 			PRINT_ERROR(L"nameCrackOutVersion not valid (0x%08x - %u)\n", nameCrackOutVersion, nameCrackOutVersion);

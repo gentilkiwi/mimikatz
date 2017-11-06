@@ -427,6 +427,14 @@ typedef struct _KULL_M_PROCESS_EXPORTED_ENTRY {
 typedef BOOL (CALLBACK * PKULL_M_EXPORTED_ENTRY_ENUM_CALLBACK) (PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg);
 NTSTATUS kull_m_process_getExportedEntryInformations(PKULL_M_MEMORY_ADDRESS address, PKULL_M_EXPORTED_ENTRY_ENUM_CALLBACK callBack, PVOID pvArg);
 
+typedef struct _KULL_M_PROCESS_PROCADDRESS_FOR_NAME {
+	PCSTR name;
+	KULL_M_MEMORY_ADDRESS address;
+	BOOL				isFound;
+} KULL_M_PROCESS_PROCADDRESS_FOR_NAME, *PKULL_M_PROCESS_PROCADDRESS_FOR_NAME;
+BOOL CALLBACK kull_m_process_getProcAddress_callback(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg);
+BOOL kull_m_process_getProcAddress(PKULL_M_MEMORY_ADDRESS moduleAddress, PCSTR name, PKULL_M_MEMORY_ADDRESS functionAddress);
+
 typedef struct _KULL_M_PROCESS_IMPORTED_ENTRY {
 	WORD	machine;
 	PSTR	libname;

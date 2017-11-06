@@ -15,7 +15,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
 #include "../modules/kull_m_net.h"
-#include "../modules/rpc/kull_m_rpc_drsr.h"
+#include "lsadump/kuhl_m_lsadump_dc.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
 #include "dpapi/kuhl_m_dpapi_oe.h"
@@ -51,27 +51,6 @@ typedef struct _NTDS_LSA_AUTH_INFORMATIONS {
 	// ...
 } NTDS_LSA_AUTH_INFORMATIONS, *PNTDS_LSA_AUTH_INFORMATIONS;
 
-#pragma pack(push, 1) 
-typedef struct _USER_PROPERTY {
-	USHORT NameLength;
-	USHORT ValueLength;
-	USHORT Reserved;
-	wchar_t PropertyName[ANYSIZE_ARRAY];
-	// PropertyValue in HEX !
-} USER_PROPERTY, *PUSER_PROPERTY;
-
-typedef struct _USER_PROPERTIES {
-	DWORD Reserved1;
-	DWORD Length;
-	USHORT Reserved2;
-	USHORT Reserved3;
-	BYTE Reserved4[96];
-	wchar_t PropertySignature;
-	USHORT PropertyCount;
-	USER_PROPERTY UserProperties[ANYSIZE_ARRAY];
-} USER_PROPERTIES, *PUSER_PROPERTIES;
-#pragma pack(pop)
-
 const KUHL_M kuhl_m_lsadump;
 
 NTSTATUS kuhl_m_lsadump_init();
@@ -84,7 +63,6 @@ NTSTATUS kuhl_m_lsadump_trust(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsOrCache);
 NTSTATUS kuhl_m_lsadump_bkey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_rpdata(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_setntlm(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[]);
@@ -442,15 +420,6 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
 void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, DWORD rid, PVOID Buffer, DWORD BufferSize);
-
-BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
-void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport);
-void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes);
-void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties);
-void kuhl_m_lsadump_dcsync_descrTrust(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
-void kuhl_m_lsadump_dcsync_descrTrustAuthentication(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, PCUNICODE_STRING domain, PCUNICODE_STRING partner, BOOL isIn);
-void kuhl_m_lsadump_dcsync_descrSecret(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, BOOL someExport);
-void kuhl_m_lsadump_dcsync_descrObject_csv(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes);
 
 typedef wchar_t * LOGONSRV_HANDLE;
 typedef struct _NETLOGON_CREDENTIAL {

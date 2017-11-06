@@ -558,6 +558,22 @@ NTSTATUS kull_m_process_getExportedEntryInformations(PKULL_M_MEMORY_ADDRESS addr
 	return STATUS_SUCCESS;
 }
 
+BOOL CALLBACK kull_m_process_getProcAddress_callback(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg)
+{
+	if(((PKULL_M_PROCESS_PROCADDRESS_FOR_NAME) pvArg)->isFound = _stricmp(pExportedEntryInformations->name, ((PKULL_M_PROCESS_PROCADDRESS_FOR_NAME) pvArg)->name) == 0)
+		((PKULL_M_PROCESS_PROCADDRESS_FOR_NAME) pvArg)->address = pExportedEntryInformations->function;
+	return !((PKULL_M_PROCESS_PROCADDRESS_FOR_NAME) pvArg)->isFound;
+}
+
+BOOL kull_m_process_getProcAddress(PKULL_M_MEMORY_ADDRESS moduleAddress, PCSTR name, PKULL_M_MEMORY_ADDRESS functionAddress)
+{
+	KULL_M_PROCESS_PROCADDRESS_FOR_NAME s = {name, NULL, FALSE};
+	if(NT_SUCCESS(kull_m_process_getExportedEntryInformations(moduleAddress, kull_m_process_getProcAddress_callback, &s)))
+		if(s.isFound)
+			*functionAddress = s.address;
+	return s.isFound;
+}
+
 PSTR kull_m_process_getImportNameWithoutEnd(PKULL_M_MEMORY_ADDRESS base)
 {
 	CHAR sEnd = '\0';

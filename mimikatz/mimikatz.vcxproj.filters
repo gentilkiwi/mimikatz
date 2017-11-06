@@ -236,6 +236,9 @@
     <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c">
       <Filter>local modules\crypto</Filter>
     </ClCompile>
+    <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c">
+      <Filter>local modules\lsadump</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -491,6 +494,9 @@
     <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h">
       <Filter>local modules\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h">
+      <Filter>local modules\lsadump</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -524,6 +530,9 @@
     </Filter>
     <Filter Include="local modules\crypto">
       <UniqueIdentifier>{de3bf270-ef33-4d83-bec2-77c4450b411a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\lsadump">
+      <UniqueIdentifier>{3b2bcf11-3674-4ee4-949c-491c8c5efd34}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

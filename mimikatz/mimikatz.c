@@ -71,11 +71,11 @@ void mimikatz_begin()
 #endif
 	kprintf(L"\n"
 		L"  .#####.   " MIMIKATZ_FULL L"\n"
-		L" .## ^ ##.  " MIMIKATZ_SECOND L"\n"
-		L" ## / \\ ##  /* * *\n"
-		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
-		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
-		L"  '#####'    " MIMIKATZ_SPECIAL L" with %2u modules * * */\n", ARRAYSIZE(mimikatz_modules));
+		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo)\n"
+		L" ## / \\ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
+		L" ## \\ / ##       > http://blog.gentilkiwi.com/mimikatz\n"
+		L" '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )\n"
+		L"  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/\n");
 	mimikatz_initOrClean(TRUE);
 }
 
