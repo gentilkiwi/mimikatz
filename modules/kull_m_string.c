@@ -408,3 +408,123 @@ BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...)
 	}
 	return status;
 }
+
+const KIWI_DATETIME_FORMATS STRING_TO_FILETIME_FORMATS[] = {
+	{L"%hu/%hu/%hu %hu:%hu:%hu",	4,	1, 2, 3, 4, 5, 6}, // 2014/12/31 12(:34:56)
+	{L"%hu/%hu/%hu %hu:%hu:%hu",	4,	3, 2, 1, 4, 5, 6}, // 31/12/2014 12(:34:56)
+	{L"%hu-%hu-%hu %hu:%hu:%hu",	4,	1, 2, 3, 4, 5, 6}, // 2014-12-31 12(:34:56)
+
+	{L"%hu/%hu %hu:%hu:%hu",	3,	0, 2, 1, 3, 4, 5}, // 12/2014 12(:34:56)
+	{L"%hu-%hu %hu:%hu:%hu",	3,	0, 1, 2, 3, 4, 5}, // 12-31 12(:34:56)
+	{L"%hu %hu:%hu:%hu",	2,	0, 0, 1, 2, 3, 4}, // 31 12(:34:56)
+
+	{L"%hu:%hu:%hu",	2,	0, 0, 0, 1, 2, 3}, // 12:34(:56)
+	
+	{L"%hu/%hu/%hu",	2,	1, 2, 3, 0, 0, 0}, // 2014/12(/31)
+	{L"%hu/%hu/%hu",	2,	3, 2, 1, 0, 0, 0}, // 31/12(/2014)
+	{L"%hu-%hu-%hu",	2,	1, 2, 3, 0, 0, 0}, // 2014-12(-31)
+	
+	{L"%hu/%hu",	2,	2, 1, 0, 0, 0, 0}, // 12/2014
+	{L"%hu-%hu",	2,	0, 1, 2, 0, 0, 0}, // 12-31
+};
+
+BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime)
+{
+	BOOL status = FALSE;
+	const KIWI_DATETIME_FORMATS * cur;
+	SYSTEMTIME st;
+	FILETIME ft, lft;
+	LONGLONG diff;
+	WORD i, data[6] = {0};
+	int ret;
+	
+	for(i = 0; (i < ARRAYSIZE(STRING_TO_FILETIME_FORMATS)) && !status; i++)
+	{
+		cur = STRING_TO_FILETIME_FORMATS + i;
+		RtlZeroMemory(data, sizeof(data));
+		ret = swscanf(string,cur->format, data + 0, data + 1, data + 2, data + 3, data + 4, data + 5);
+
+		if(ret >=cur->minFields)
+		{
+			if(cur->idxYear && (cur->idxYear <= ret))
+			{
+				status = data[cur->idxYear - 1] >= 1900;
+				if(!status)
+					continue;
+			}
+			
+			if(cur->idxMonth && (cur->idxMonth <= ret))
+			{
+				status = data[cur->idxMonth - 1] <= 12;
+				if(!status)
+					continue;
+			}
+
+			if(cur->idxDay && (cur->idxDay <= ret))
+			{
+				status = data[cur->idxDay - 1] <= 31;
+				if(!status)
+					continue;
+			}
+
+			if(cur->idxHour && (cur->idxHour <= ret))
+			{
+				status = data[cur->idxHour - 1] <= 23;
+				if(!status)
+					continue;
+			}
+
+			if(cur->idxMinute && (cur->idxMinute <= ret))
+			{
+				status = data[cur->idxMinute - 1] <= 59;
+				if(!status)
+					continue;
+			}
+
+			if(cur->idxSecond && (cur->idxSecond <= ret))
+			{
+				status = data[cur->idxSecond - 1] <= 59;
+				if(!status)
+					continue;
+			}
+		}
+	}
+
+
+	if(status)
+	{
+		status = FALSE;
+		i--;
+		GetSystemTimeAsFileTime(&ft);
+		if(FileTimeToLocalFileTime(&ft, &lft))
+		{
+			diff = *((PULONGLONG) &lft) - *((PULONGLONG) &ft);
+			if(FileTimeToSystemTime(&lft, &st))
+			{
+				st.wDayOfWeek = 0;
+				st.wMilliseconds = 0;
+
+				if(cur->idxYear && (cur->idxYear <= ret))
+					st.wYear = data[cur->idxYear - 1];
+				if(cur->idxMonth && (cur->idxMonth <= ret))
+					st.wMonth = data[cur->idxMonth - 1];
+				if(cur->idxDay && (cur->idxDay <= ret))
+					st.wDay = data[cur->idxDay - 1];
+				if(cur->idxHour && (cur->idxHour <= ret))
+					st.wHour = data[cur->idxHour - 1];
+				if(cur->idxMinute && (cur->idxMinute <= ret))
+					st.wMinute = data[cur->idxMinute - 1];
+				if(cur->idxSecond && (cur->idxSecond <= ret))
+					st.wSecond = data[cur->idxSecond - 1];
+
+				if(status = SystemTimeToFileTime(&st, &ft))
+				{
+					*((PULONGLONG) &ft) -= diff;
+					*filetime = ft;
+				}
+			}
+		}
+
+	}
+	return status;
+}
