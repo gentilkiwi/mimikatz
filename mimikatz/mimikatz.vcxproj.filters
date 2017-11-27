@@ -239,6 +239,9 @@
     <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c">
       <Filter>local modules\lsadump</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_sr98.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -496,6 +499,9 @@
     </ClInclude>
     <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h">
       <Filter>local modules\lsadump</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_sr98.h">
+      <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

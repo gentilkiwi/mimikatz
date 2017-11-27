@@ -7,15 +7,15 @@ typedef ULONG ATTRTYP;
 typedef void *DRS_HANDLE;
 
 typedef struct _NT4SID {
-	unsigned char Data[28];
+	UCHAR Data[28];
 } NT4SID;
 
 typedef struct _DSNAME {
-	unsigned long structLen;
-	unsigned long SidLen;
+	ULONG structLen;
+	ULONG SidLen;
 	GUID Guid;
 	NT4SID Sid;
-	unsigned long NameLen;
+	ULONG NameLen;
 	WCHAR StringName[ANYSIZE_ARRAY];
 } DSNAME;
 
@@ -44,7 +44,7 @@ typedef struct _OID_t {
 } OID_t;
 
 typedef struct _PrefixTableEntry {
-	unsigned long ndx;
+	ULONG ndx;
 	OID_t prefix;
 } PrefixTableEntry;
 
@@ -82,7 +82,7 @@ typedef struct _ATTRBLOCK {
 
 typedef struct _ENTINF {
 	DSNAME *pName;
-	unsigned long ulFlags;
+	ULONG ulFlags;
 	ATTRBLOCK AttrBlock;
 } ENTINF;
 
@@ -133,6 +133,10 @@ typedef struct _REPLVALINF_V1 {
 	VALUE_META_DATA_EXT_V1 MetaData;
 } REPLVALINF_V1;
 
+typedef struct _REPLTIMES {
+	UCHAR rgTimes[84];
+} REPLTIMES;
+
 typedef struct _DS_NAME_RESULT_ITEMW {
 	DWORD status;
 	WCHAR *pDomain;
@@ -160,6 +164,11 @@ typedef struct _DS_DOMAIN_CONTROLLER_INFO_2W {
 	GUID ServerObjectGuid;
 	GUID NtdsDsaObjectGuid;
 } DS_DOMAIN_CONTROLLER_INFO_2W;
+
+typedef struct _ENTINFLIST {
+	struct _ENTINFLIST *pNextEntInf;
+	ENTINF Entinf;
+} ENTINFLIST;
 
 typedef struct _DRS_EXTENSIONS {
 	DWORD cb;
@@ -212,7 +221,7 @@ typedef union _DRS_MSG_GETCHGREQ {
 
 typedef struct _DRS_MSG_UPDREFS_V1 {
 	DSNAME *pNC;
-	unsigned char *pszDsaDest;
+	UCHAR *pszDsaDest;
 	UUID uuidDsaObjDest;
 	ULONG ulOptions;
 } DRS_MSG_UPDREFS_V1;
@@ -220,6 +229,27 @@ typedef struct _DRS_MSG_UPDREFS_V1 {
 typedef union _DRS_MSG_UPDREFS {
 	DRS_MSG_UPDREFS_V1 V1;
 } 	DRS_MSG_UPDREFS;
+
+typedef struct _DRS_MSG_REPADD_V1 {
+	DSNAME *pNC;
+	UCHAR *pszDsaSrc;
+	REPLTIMES rtSchedule;
+	ULONG ulOptions;
+} DRS_MSG_REPADD_V1;
+
+typedef union _DRS_MSG_REPADD {
+	DRS_MSG_REPADD_V1 V1;
+} DRS_MSG_REPADD;
+
+typedef struct _DRS_MSG_REPDEL_V1 {
+	DSNAME *pNC;
+	UCHAR *pszDsaSrc;
+	ULONG ulOptions;
+} DRS_MSG_REPDEL_V1;
+
+typedef union _DRS_MSG_REPDEL {
+	DRS_MSG_REPDEL_V1 V1;
+} DRS_MSG_REPDEL;
 
 typedef struct _DRS_MSG_CRACKREQ_V1 {
 	ULONG CodePage;
@@ -261,22 +291,55 @@ typedef union _DRS_MSG_DCINFOREPLY {
 	DRS_MSG_DCINFOREPLY_V2 V2;
 } DRS_MSG_DCINFOREPLY;
 
+typedef struct _DRS_MSG_ADDENTRYREQ_V2 {
+	ENTINFLIST EntInfList;
+} DRS_MSG_ADDENTRYREQ_V2;
+
+typedef union _DRS_MSG_ADDENTRYREQ {
+	DRS_MSG_ADDENTRYREQ_V2 V2;
+} DRS_MSG_ADDENTRYREQ;
+
+typedef struct _ADDENTRY_REPLY_INFO {
+	GUID objGuid;
+	NT4SID objSid;
+} ADDENTRY_REPLY_INFO;
+
+typedef struct _DRS_MSG_ADDENTRYREPLY_V2 {
+	DSNAME *pErrorObject;
+	DWORD errCode;
+	DWORD dsid;
+	DWORD extendedErr;
+	DWORD extendedData;
+	USHORT problem;
+	ULONG cObjectsAdded;
+	ADDENTRY_REPLY_INFO *infoList;
+} DRS_MSG_ADDENTRYREPLY_V2;
+
+typedef union _DRS_MSG_ADDENTRYREPLY {
+	DRS_MSG_ADDENTRYREPLY_V2 V2;
+} DRS_MSG_ADDENTRYREPLY;
+
 extern RPC_IF_HANDLE drsuapi_v4_0_c_ifspec;
 extern RPC_IF_HANDLE drsuapi_v4_0_s_ifspec;
 
 ULONG IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs);
 ULONG IDL_DRSUnbind(DRS_HANDLE *phDrs);
+ULONG IDL_DRSReplicaAdd(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_REPADD *pmsgAdd);
+ULONG IDL_DRSReplicaDel(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_REPDEL *pmsgDel);
 ULONG IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHGREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_GETCHGREPLY *pmsgOut);
 ULONG IDL_DRSCrackNames(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_CRACKREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_CRACKREPLY *pmsgOut);
 ULONG IDL_DRSDomainControllerInfo(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_DCINFOREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_DCINFOREPLY *pmsgOut);
+ULONG IDL_DRSAddEntry(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_ADDENTRYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_ADDENTRYREPLY *pmsgOut);
 
 void DRS_MSG_GETCHGREPLY_V6_Free(handle_t _MidlEsHandle, DRS_MSG_GETCHGREPLY_V6 * _pType);
 void DRS_MSG_CRACKREPLY_V1_Free(handle_t _MidlEsHandle, DRS_MSG_CRACKREPLY_V1 * _pType);
 void DRS_MSG_DCINFOREPLY_V2_Free(handle_t _MidlEsHandle, DRS_MSG_DCINFOREPLY_V2 * _pType);
+void DRS_MSG_ADDENTRYREPLY_V2_Free(handle_t _MidlEsHandle, DRS_MSG_ADDENTRYREPLY_V2 * _pType);
 
 #define kull_m_rpc_ms_drsr_FreeDRS_MSG_GETCHGREPLY_V6(pObject) kull_m_rpc_Generic_Free(pObject, (PGENERIC_RPC_FREE) DRS_MSG_GETCHGREPLY_V6_Free)
 #define kull_m_rpc_ms_drsr_FreeDRS_MSG_CRACKREPLY_V1(pObject) kull_m_rpc_Generic_Free(pObject, (PGENERIC_RPC_FREE) DRS_MSG_CRACKREPLY_V1_Free)
 #define kull_m_rpc_ms_drsr_FreeDRS_MSG_DCINFOREPLY_V2(pObject) kull_m_rpc_Generic_Free(pObject, (PGENERIC_RPC_FREE) DRS_MSG_DCINFOREPLY_V2_Free)
+#define kull_m_rpc_ms_drsr_FreeDRS_MSG_ADDENTRYREPLY_V2(pObject) kull_m_rpc_Generic_Free(pObject, (PGENERIC_RPC_FREE) DRS_MSG_ADDENTRYREPLY_V2_Free)
 
 void __RPC_USER SRV_DRS_HANDLE_rundown(DRS_HANDLE hDrs);
 ULONG SRV_IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs);
@@ -287,3 +350,4 @@ ULONG SRV_IDL_DRSUpdateRefs(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_UPDREFS *p
 void SRV_OpnumNotImplemented(handle_t IDL_handle);
 ULONG SRV_IDL_DRSCrackNamesNotImplemented(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_CRACKREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_CRACKREPLY *pmsgOut);
 ULONG SRV_IDL_DRSDomainControllerInfoNotImplemented(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_DCINFOREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_DCINFOREPLY *pmsgOut);
+ULONG SRV_IDL_DRSAddEntry(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_ADDENTRYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_ADDENTRYREPLY *pmsgOut);

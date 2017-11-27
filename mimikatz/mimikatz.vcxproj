@@ -117,6 +117,7 @@
     <ClCompile Include="..\modules\kull_m_process.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
     <ClCompile Include="..\modules\kull_m_remotelib.c" />
+    <ClCompile Include="..\modules\kull_m_sr98.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_bkrp.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_dpapi-entries.c" />
@@ -206,6 +207,7 @@
     <ClInclude Include="..\modules\kull_m_registry.h" />
     <ClInclude Include="..\modules\kull_m_registry_structures.h" />
     <ClInclude Include="..\modules\kull_m_remotelib.h" />
+    <ClInclude Include="..\modules\kull_m_sr98.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_dpapi-entries.h" />

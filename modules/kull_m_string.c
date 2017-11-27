@@ -442,7 +442,7 @@ BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime)
 	{
 		cur = STRING_TO_FILETIME_FORMATS + i;
 		RtlZeroMemory(data, sizeof(data));
-		ret = swscanf(string,cur->format, data + 0, data + 1, data + 2, data + 3, data + 4, data + 5);
+		ret = swscanf_s(string, cur->format, data + 0, data + 1, data + 2, data + 3, data + 4, data + 5);
 
 		if(ret >=cur->minFields)
 		{
