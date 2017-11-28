@@ -13,7 +13,11 @@ BOOL sr98_test_device(HANDLE hFile)
 	if(sr98_send_receive(hFile, SR98_IOCTL_TEST_DEVICE, &temoin, sizeof(temoin), &out, &szOut))
 	{
 		if(szOut == sizeof(USHORT))
-			status = *((PUSHORT) out) == (temoin | 0x0100);
+		{
+			if(!(status = *((PUSHORT) out) == (temoin | 0x0100)))
+				PRINT_ERROR(L"Received data is not origin+1 (0x%04x)\n", _byteswap_ushort(*((PUSHORT) out)));
+		}
+		else PRINT_ERROR(L"Received size is not 2 (0x%02x)\n", szOut);
 		LocalFree(out);
 	}
 	return status;
@@ -27,18 +31,22 @@ BOOL sr98_read_emid(HANDLE hFile, BYTE emid[5])
 	{
 		if(status = (szOut == 6))
 			RtlCopyMemory(emid, out + 1, 5);
+		else PRINT_ERROR(L"Received size is not 6 (0x%02x)\n", szOut);
 		LocalFree(out);
 	}
 	return status;
 }
 
-BOOL sr98_t5577_write_block(HANDLE hFile, BYTE page, BYTE block, DWORD data, BYTE isPassword, DWORD password)
+BOOL sr98_t5577_write_block(HANDLE hFile, BYTE page, BYTE block, DWORD data, BYTE isPassword, DWORD password/*, BYTE lockBit*/)
 {
 	BOOL status = FALSE;
 	BYTE blockContent[11], *out, szOut;
 
 	blockContent[0] = SR98_SUB_IOCTL_T5577_WRITE_BLOCK;
-	blockContent[1] = page & 1; // | SR98_T5577_LOCKBIT_MASK to put LockBit ?
+	blockContent[1] = page & 1;
+	//if(lockBit) // ????
+	//	blockContent[1] |= SR98_T5577_LOCKBIT_MASK
+
 	*(PDWORD) (blockContent + 2) =  data;
 	blockContent[6] = block & 7;
 
@@ -50,25 +58,43 @@ BOOL sr98_t5577_write_block(HANDLE hFile, BYTE page, BYTE block, DWORD data, BYT
 
 	if(sr98_send_receive(hFile, SR98_IOCTL_T5577, blockContent, isPassword ? sizeof(blockContent) : sizeof(blockContent) - sizeof(DWORD), &out, &szOut))
 	{
-		status = (szOut == 1) && (*out == sizeof(DWORD));
+		if(szOut == 1)
+		{
+			if(!(status = (*out == sizeof(DWORD))))
+				PRINT_ERROR(L"Received data size is not 4 (0x%02x)\n", *out);
+		}
+		else PRINT_ERROR(L"Received size is not 1 (0x%02x)\n", szOut);
 		LocalFree(out);
 	}
 	return status;
 }
 
-BOOL sr98_t5577_wipe(HANDLE hFile)
+BOOL sr98_t5577_reset(HANDLE hFile, BYTE DataRate)
 {
-	BOOL status = FALSE;
-	BYTE i;
-	kprintf(L"Block 0 (config): %s\n", sr98_t5577_write_block(hFile, 0, 0, 0x40800800, FALSE, 0) ? L"OK" : L"KO :(");
-	for(i = 1; i < 8; i++)
+	BYTE inBuffer[5] = {SR98_SUB_IOCTL_T5577_RESET, DataRate & 0x0b}, *out, szOut;
+	if(sr98_send_receive(hFile, SR98_IOCTL_T5577, inBuffer, sizeof(inBuffer), &out, &szOut))
 	{
-		Sleep(250);
-		kprintf(L"Block %1u ( data ): %s\n", i, sr98_t5577_write_block(hFile, 0, i, 0x42424242, FALSE, 0) ? L"OK" : L"KO :(");
+		if(szOut == 1)
+		{
+			if(*out)
+				PRINT_ERROR(L"Data size is not 0 (0x%02x)\n", *out);
+		}
+		else PRINT_ERROR(L"Received size is not 1 (0x%02x)\n", szOut);
 	}
-	return status;
+	return FALSE;
 }
 
+BOOL sr98_t5577_wipe(HANDLE hFile, BOOL resetAfter)
+{
+	BOOL status;
+	BYTE i;
+	status = sr98_t5577_write_block(hFile, 0, 0, 0x40800800, FALSE, 0);
+	for(i = 1; i < 8; i++)
+		sr98_t5577_write_block(hFile, 0, i, 0x00000000, FALSE, 0);
+	if(status && resetAfter)
+		sr98_t5577_reset(hFile, SR98_RATE_RF_32);
+	return status;
+}
 
 BOOL sr98_send_receive(HANDLE hFile, BYTE ctl, LPCVOID in, BYTE szIn, LPBYTE *out, BYTE *szOut)
 {
@@ -141,7 +167,6 @@ BOOL sr98_send_receive(HANDLE hFile, BYTE ctl, LPCVOID in, BYTE szIn, LPBYTE *ou
 	}
 	return status;
 }
-
 
 BOOL sr98_devices_get(PSR98_DEVICE *devices, DWORD *count)
 {

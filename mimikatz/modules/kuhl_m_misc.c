@@ -18,6 +18,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_skeleton,	L"skeleton",	NULL},
 	{kuhl_m_misc_compressme,L"compressme",	NULL},
 	{kuhl_m_misc_wp,		L"wp",	NULL},
+	{kuhl_m_misc_mflt,		L"mflt",	NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -835,4 +836,72 @@ void kuhl_m_misc_wp_for_pid(DWORD pid, PCWCHAR wp)
 		CloseHandle(hProcess);
 	}
 	else PRINT_ERROR_AUTO(L"OpenProcess");
+}
+
+NTSTATUS kuhl_m_misc_mflt(int argc, wchar_t * argv[])
+{
+	PFILTER_AGGREGATE_BASIC_INFORMATION info, info2;
+	DWORD szNeeded;// = 0;
+	HANDLE hDevice;
+	HRESULT res;
+
+	res = FilterFindFirst(FilterAggregateBasicInformation, NULL, 0, &szNeeded, &hDevice);
+	if(res == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
+	{
+		if(info = (PFILTER_AGGREGATE_BASIC_INFORMATION) LocalAlloc(LPTR, szNeeded))
+		{
+			res = FilterFindFirst(FilterAggregateBasicInformation, info, szNeeded, &szNeeded, &hDevice);
+			if(res == S_OK)
+			{
+				kuhl_m_misc_mflt_display(info);
+				do
+				{
+					res = FilterFindNext(hDevice, FilterAggregateBasicInformation, NULL, 0, &szNeeded);
+					if(res == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
+					{
+						if(info2 = (PFILTER_AGGREGATE_BASIC_INFORMATION) LocalAlloc(LPTR, szNeeded))
+						{
+							res = FilterFindNext(hDevice, FilterAggregateBasicInformation, info2, szNeeded, &szNeeded);
+							if(res == S_OK)
+								kuhl_m_misc_mflt_display(info2);
+							else PRINT_ERROR(L"FilterFindNext(data): 0x%08x\n", res);
+							LocalFree(info2);
+						}
+					}
+					else if(res != HRESULT_FROM_WIN32(ERROR_NO_MORE_ITEMS)) PRINT_ERROR(L"FilterFindNext(size): 0x%08x\n", res);
+				}
+				while(res == S_OK);
+			}
+			else PRINT_ERROR(L"FilterFindFirst(data): 0x%08x\n", res);
+			LocalFree(info);
+		}
+	}
+	else if(res != HRESULT_FROM_WIN32(ERROR_NO_MORE_ITEMS)) (L"FilterFindFirst(size): 0x%08x\n", res);
+	return STATUS_SUCCESS;
+}
+
+void kuhl_m_misc_mflt_display(PFILTER_AGGREGATE_BASIC_INFORMATION info)
+{
+	DWORD offset;
+	do
+	{
+		switch(info->Flags)
+		{
+		case FLTFL_AGGREGATE_INFO_IS_MINIFILTER:
+			kprintf(L"%u %u %10.*s %.*s\n",
+				info->Type.MiniFilter.FrameID, info->Type.MiniFilter.NumberOfInstances,
+				info->Type.MiniFilter.FilterAltitudeLength / sizeof(wchar_t), (PBYTE) info + info->Type.MiniFilter.FilterAltitudeBufferOffset,
+				info->Type.MiniFilter.FilterNameLength / sizeof(wchar_t), (PBYTE) info + info->Type.MiniFilter.FilterNameBufferOffset
+			);
+			break;
+		case FLTFL_AGGREGATE_INFO_IS_LEGACYFILTER:
+			kprintf(L"--- LEGACY --- %.*s\n", info->Type.LegacyFilter.FilterNameLength / sizeof(wchar_t), (PBYTE) info + info->Type.LegacyFilter.FilterNameBufferOffset);
+			break;
+		default:
+			;
+		}
+		offset = info->NextEntryOffset;
+		info = (PFILTER_AGGREGATE_BASIC_INFORMATION) ((PBYTE) info + offset);
+	}
+	while(offset);
 }

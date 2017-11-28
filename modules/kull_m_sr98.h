@@ -77,8 +77,9 @@ typedef struct _SR98_DEVICE {
 BOOL sr98_test_device(HANDLE hFile);
 BOOL sr98_read_emid(HANDLE hFile, BYTE emid[5]);
 
-BOOL sr98_t5577_write_block(HANDLE hFile, BYTE page, BYTE block, DWORD data, BYTE isPassword, DWORD password);
-BOOL sr98_t5577_wipe(HANDLE hFile);
+BOOL sr98_t5577_reset(HANDLE hFile, BYTE DataRate);
+BOOL sr98_t5577_write_block(HANDLE hFile, BYTE page, BYTE block, DWORD data, BYTE isPassword, DWORD password/*, BYTE lockBit*/);
+BOOL sr98_t5577_wipe(HANDLE hFile, BOOL resetAfter);
 
 BOOL sr98_send_receive(HANDLE hFile, BYTE ctl, LPCVOID in, BYTE szIn, LPBYTE *out, BYTE *szOut);
 BOOL sr98_devices_get(PSR98_DEVICE *devices, DWORD *count);
