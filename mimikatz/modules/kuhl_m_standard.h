@@ -8,6 +8,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_process.h"
+#include "../modules/kull_m_net.h"
 
 const KUHL_M kuhl_m_standard;
 

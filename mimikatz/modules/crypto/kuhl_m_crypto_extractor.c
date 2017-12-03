@@ -386,7 +386,7 @@ void kuhl_m_crypto_extractor_bcrypt32(PKULL_M_MEMORY_ADDRESS address)
 									kuhl_m_crypto_extractor_bcrypt32_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_6_32) p)->bnPrime1.Prime, ((PKIWI_BCRYPT_ASYM_KEY_6_32) p)->bnPrime1.nbBlock * 4, L"Prime1    ");
 									kuhl_m_crypto_extractor_bcrypt32_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_6_32) p)->bnPrime2.Prime, ((PKIWI_BCRYPT_ASYM_KEY_6_32) p)->bnPrime2.nbBlock * 4, L"Prime2    ");
 								}
-								else if(MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1707)
+								else if(MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1703)
 								{
 									kuhl_m_crypto_extractor_bcrypt32_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_81_32) p)->PublicExponent, 1 * 4, L"PubExp    ");
 									kuhl_m_crypto_extractor_bcrypt32_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_81_32) p)->Modulus, ((PKIWI_BCRYPT_ASYM_KEY_81_32) p)->nbModulus * 4, L"Modulus   ");
@@ -569,7 +569,7 @@ void kuhl_m_crypto_extractor_bcrypt64(PKULL_M_MEMORY_ADDRESS address)
 									kuhl_m_crypto_extractor_bcrypt64_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_6_64) p)->bnPrime1.Prime, (DWORD) ((PKIWI_BCRYPT_ASYM_KEY_6_64) p)->bnPrime1.nbBlock * 8, L"Prime1    ");
 									kuhl_m_crypto_extractor_bcrypt64_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_6_64) p)->bnPrime2.Prime, (DWORD) ((PKIWI_BCRYPT_ASYM_KEY_6_64) p)->bnPrime2.nbBlock * 8, L"Prime2    ");
 								}
-								else if(MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1707)
+								else if(MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1703)
 								{
 									kuhl_m_crypto_extractor_bcrypt64_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_81_64) p)->PublicExponent, 1 * 8, L"PubExp    ");
 									kuhl_m_crypto_extractor_bcrypt64_classic(address->hMemory, ((PKIWI_BCRYPT_ASYM_KEY_81_64) p)->Modulus, ((PKIWI_BCRYPT_ASYM_KEY_81_64) p)->nbModulus * 8, L"Modulus   ");

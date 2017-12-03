@@ -234,7 +234,6 @@ BOOL sr98_devices_get(PSR98_DEVICE *devices, DWORD *count)
 											}
 										}
 									}
-									
 								}
 								CloseHandle(deviceHandle);
 							}

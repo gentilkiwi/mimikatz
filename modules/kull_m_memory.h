@@ -8,6 +8,9 @@
 #include "kull_m_minidump.h"
 #include "kull_m_kernel.h"
 
+void * _ReturnAddress(void);
+//#pragma intrinsic(_ReturnAddress)
+
 typedef enum _KULL_M_MEMORY_TYPE
 {
 	KULL_M_MEMORY_TYPE_OWN,

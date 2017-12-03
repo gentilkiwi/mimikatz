@@ -205,17 +205,16 @@ NTSTATUS kuhl_m_standard_localtime(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_standard_hostname(int argc, wchar_t * argv[])
 {
 	wchar_t *buffer;
-	DWORD dwSize = 0;
-	if(!GetComputerNameEx(ComputerNamePhysicalDnsFullyQualified, NULL, &dwSize) && (GetLastError() == ERROR_MORE_DATA))
+	if(kull_m_net_getComputerName(TRUE, &buffer))
 	{
-		if(buffer = (wchar_t *) LocalAlloc(LPTR, dwSize * sizeof(wchar_t)))
-		{
-			if(GetComputerNameEx(ComputerNamePhysicalDnsFullyQualified, buffer, &dwSize))
-				kprintf(L"%s\n", buffer);
-			else PRINT_ERROR_AUTO(L"GetComputerNameEx(data)");
-			LocalFree(buffer);
-		}
+		kprintf(L"%s", buffer);
+		LocalFree(buffer);
 	}
-	else PRINT_ERROR_AUTO(L"GetComputerNameEx(init)");
+	if(kull_m_net_getComputerName(FALSE, &buffer))
+	{
+		kprintf(L" (%s)", buffer);
+		LocalFree(buffer);
+	}
+	kprintf(L"\n");
 	return STATUS_SUCCESS;
 }
