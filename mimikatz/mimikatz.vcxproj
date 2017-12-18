@@ -88,7 +88,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;cabinet.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
@@ -102,6 +102,7 @@
   <ItemGroup>
     <ClCompile Include="..\modules\kull_m_asn1.c" />
     <ClCompile Include="..\modules\kull_m_busylight.c" />
+    <ClCompile Include="..\modules\kull_m_cabinet.c" />
     <ClCompile Include="..\modules\kull_m_cred.c" />
     <ClCompile Include="..\modules\kull_m_crypto.c" />
     <ClCompile Include="..\modules\kull_m_dpapi.c" />
@@ -190,6 +191,7 @@
     <ClInclude Include="..\modules\kull_m_asn1.h" />
     <ClInclude Include="..\modules\kull_m_busylight.h" />
     <ClInclude Include="..\modules\kull_m_busylight_hid.h" />
+    <ClInclude Include="..\modules\kull_m_cabinet.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
