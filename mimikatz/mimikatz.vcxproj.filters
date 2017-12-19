@@ -245,6 +245,9 @@
     <ClCompile Include="..\modules\kull_m_cabinet.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -508,6 +511,9 @@
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_cabinet.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h">
+      <Filter>local modules\crypto</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
