@@ -865,7 +865,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 			{
 				isImpersonate = kull_m_string_args_byName(argc, argv, L"impersonate", NULL, NULL);
 #pragma warning(push)
-#pragma warning(disable:4996)			
+#pragma warning(disable:4996)
 				kull_m_string_args_byName(argc, argv, L"run", &szRun, isImpersonate ? _wpgmptr : L"cmd.exe");
 #pragma warning(pop)
 				kprintf(L"user\t: %s\ndomain\t: %s\nprogram\t: %s\nimpers.\t: %s\n", szUser, szDomain, szRun, isImpersonate ? L"yes" : L"no");

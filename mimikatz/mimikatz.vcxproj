@@ -17,6 +17,14 @@
       <Configuration>Second_Release_PowerShell</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Simple_DLL|Win32">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Simple_DLL|x64">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FB9B5E61-7C34-4280-A211-E979E1D6977F}</ProjectGuid>
@@ -29,8 +37,8 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
-    <ConfigurationType Condition="'$(Configuration)' != 'Second_Release_PowerShell'">Application</ConfigurationType>
-    <ConfigurationType Condition="'$(Configuration)' == 'Second_Release_PowerShell'">DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType Condition="('$(Configuration)' == 'Second_Release_PowerShell') Or ('$(Configuration)' == 'Simple_DLL')">DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
@@ -62,6 +70,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)' == 'Second_Release_PowerShell'">_POWERKATZ;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -79,19 +88,21 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;crypt32.lib;cryptdll.lib;dnsapi.lib;msxml2.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;cabinet.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <DelayLoadDLLs>bcrypt.dll;ncrypt.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
     <ClCompile Include="..\modules\kull_m_asn1.c" />
     <ClCompile Include="..\modules\kull_m_busylight.c" />
+    <ClCompile Include="..\modules\kull_m_cabinet.c" />
     <ClCompile Include="..\modules\kull_m_cred.c" />
     <ClCompile Include="..\modules\kull_m_crypto.c" />
     <ClCompile Include="..\modules\kull_m_dpapi.c" />
@@ -107,6 +118,7 @@
     <ClCompile Include="..\modules\kull_m_process.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
     <ClCompile Include="..\modules\kull_m_remotelib.c" />
+    <ClCompile Include="..\modules\kull_m_sr98.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_bkrp.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_dpapi-entries.c" />
@@ -127,6 +139,8 @@
       <WarningLevel>Level2</WarningLevel>
     </ClCompile>
     <ClCompile Include="mimikatz.c" />
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c" />
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
@@ -159,6 +173,7 @@
     <ClCompile Include="modules\kuhl_m_ts.c" />
     <ClCompile Include="modules\kuhl_m_vault.c" />
     <ClCompile Include="modules\kuhl_m_minesweeper.c" />
+    <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c" />
@@ -177,6 +192,7 @@
     <ClInclude Include="..\modules\kull_m_asn1.h" />
     <ClInclude Include="..\modules\kull_m_busylight.h" />
     <ClInclude Include="..\modules\kull_m_busylight_hid.h" />
+    <ClInclude Include="..\modules\kull_m_cabinet.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
@@ -194,6 +210,7 @@
     <ClInclude Include="..\modules\kull_m_registry.h" />
     <ClInclude Include="..\modules\kull_m_registry_structures.h" />
     <ClInclude Include="..\modules\kull_m_remotelib.h" />
+    <ClInclude Include="..\modules\kull_m_sr98.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_dpapi-entries.h" />
@@ -211,6 +228,8 @@
     <ClInclude Include="..\modules\kull_m_xml.h" />
     <ClInclude Include="..\modules\sqlite3_omit.h" />
     <ClInclude Include="mimikatz.h" />
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h" />
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
@@ -244,6 +263,7 @@
     <ClInclude Include="modules\kuhl_m_ts.h" />
     <ClInclude Include="modules\kuhl_m_vault.h" />
     <ClInclude Include="modules\kuhl_m_minesweeper.h" />
+    <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h" />
@@ -259,10 +279,10 @@
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_tspkg.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_wdigest.h" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' != 'Second_Release_PowerShell'">
+  <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <ResourceCompile Include="mimikatz.rc" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' != 'Second_Release_PowerShell'">
+  <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <None Include="mimikatz.ico" />
   </ItemGroup>
 </Project>

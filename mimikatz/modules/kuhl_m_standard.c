@@ -88,9 +88,23 @@ NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
+const wchar_t *version_libs[] = {
+	L"lsasrv.dll", L"msv1_0.dll", L"tspkg.dll", L"wdigest.dll", L"kerberos.dll", L"livessp.dll", L"dpapisrv.dll",
+	L"kdcsvd.dll", L"cryptdll.dll", L"lsadb.dll", L"samsrv.dll", L"rsaenh.dll", L"ncrypt.dll", L"ncryptprov.dll",
+	L"eventlog.dll", L"wevtsvc.dll", L"termsrv.dll",
+};
 NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 {
+	NTSTATUS status;
+	HMODULE hModule;
+	PNTQUERYSYSTEMINFORMATIONEX pNtQuerySystemInformationEx;
+	SYSTEM_ISOLATED_USER_MODE_INFORMATION iumi = {TRUE, FALSE /* 0 */};
+	DWORD i, len;
+	PVOID buffer;
+	UINT lenVer;
+	VS_FIXEDFILEINFO *verInfo;
 	BOOL isWow64;
+
 	#ifdef _M_X64
 	isWow64 = TRUE;
 	#else
@@ -103,6 +117,45 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			L"msvc %u %u\n",
 			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _MSC_FULL_VER, _MSC_BUILD
 			);
+	}
+
+	if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10) && (hModule = GetModuleHandle(L"ntdll")))
+	{
+		if(pNtQuerySystemInformationEx = (PNTQUERYSYSTEMINFORMATIONEX) GetProcAddress(hModule, "NtQuerySystemInformationEx"))
+		{
+			status = pNtQuerySystemInformationEx(SystemIsolatedUserModeInformation, &iumi, 8, &iumi, sizeof(iumi), NULL);
+			if(NT_SUCCESS(status))
+			{
+				if(iumi.SecureKernelRunning)
+					kprintf(L"\n> SecureKernel is running\n");
+				if(iumi.Spare0[0] & 1)
+					kprintf(L"> Credential Guard may be running\n");
+			}
+			else PRINT_ERROR(L"NtQuerySystemInformationEx: %08x\n", status);
+		}
+	}
+
+	if(argc)
+	{
+		kprintf(L"\n");
+		for(i = 0; i < ARRAYSIZE(version_libs); i++)
+		{
+			if(len = GetFileVersionInfoSize(version_libs[i], NULL))
+			{
+				kprintf(L"%s\t: ", version_libs[i]);
+				if(buffer = LocalAlloc(LPTR, len))
+				{
+					if(GetFileVersionInfo(version_libs[i], 0, len, buffer))
+					{
+						if(VerQueryValue(buffer, L"\\", (LPVOID *) &verInfo, &lenVer) && (verInfo->dwSignature == VS_FFI_SIGNATURE))
+							kprintf(L"%hu.%hu.%hu.%hu\n", verInfo->dwFileVersionMS >> 16, verInfo->dwFileVersionMS, verInfo->dwFileVersionLS >> 16, verInfo->dwFileVersionLS);
+						else PRINT_ERROR_AUTO(L"VerQueryValue");
+					}
+					else PRINT_ERROR_AUTO(L"GetFileVersionInfoEx");
+					LocalFree(buffer);
+				}
+			}
+		}
 	}
 	return STATUS_SUCCESS;
 }
@@ -152,17 +205,16 @@ NTSTATUS kuhl_m_standard_localtime(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_standard_hostname(int argc, wchar_t * argv[])
 {
 	wchar_t *buffer;
-	DWORD dwSize = 0;
-	if(!GetComputerNameEx(ComputerNamePhysicalDnsFullyQualified, NULL, &dwSize) && (GetLastError() == ERROR_MORE_DATA))
+	if(kull_m_net_getComputerName(TRUE, &buffer))
 	{
-		if(buffer = (wchar_t *) LocalAlloc(LPTR, dwSize * sizeof(wchar_t)))
-		{
-			if(GetComputerNameEx(ComputerNamePhysicalDnsFullyQualified, buffer, &dwSize))
-				kprintf(L"%s\n", buffer);
-			else PRINT_ERROR_AUTO(L"GetComputerNameEx(data)");
-			LocalFree(buffer);
-		}
+		kprintf(L"%s", buffer);
+		LocalFree(buffer);
 	}
-	else PRINT_ERROR_AUTO(L"GetComputerNameEx(init)");
+	if(kull_m_net_getComputerName(FALSE, &buffer))
+	{
+		kprintf(L" (%s)", buffer);
+		LocalFree(buffer);
+	}
+	kprintf(L"\n");
 	return STATUS_SUCCESS;
 }

