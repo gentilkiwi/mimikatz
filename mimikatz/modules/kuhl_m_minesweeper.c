@@ -7,6 +7,7 @@
 
 const KUHL_M_C kuhl_m_c_minesweeper[] = {
 	{kuhl_m_minesweeper_infos,	L"infos",	L"infos"},
+	//{kuhl_m_minesweeper_bsod,	L"bsod",	L"bsod"},
 };
 const KUHL_M kuhl_m_minesweeper = {
 	L"minesweeper",	L"MineSweeper module", NULL,
@@ -140,7 +141,6 @@ NTSTATUS kuhl_m_minesweeper_infos(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-
 void kuhl_m_minesweeper_infos_parseField(PKULL_M_MEMORY_HANDLE hMemory, PSTRUCT_MINESWEEPER_REF_ELEMENT base, CHAR ** field, BOOL isVisible)
 {
 	STRUCT_MINESWEEPER_REF_ELEMENT ref_first_element;
@@ -190,3 +190,89 @@ void kuhl_m_minesweeper_infos_parseField(PKULL_M_MEMORY_HANDLE hMemory, PSTRUCT_
 	}
 	else PRINT_ERROR(L"Unable to read first element\n");		
 }
+//
+//#include "../../modules/kull_m_remotelib.h"
+//#ifdef _M_X64
+//BYTE CALL_JMP_X64[] = {	0x48, 0xb8,
+//						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//						0xff, 0xe0};
+//BYTE PTRN_WIN6_Explode[]	= {0x57, 0x41, 0x54, 0x41, 0x55, 0x48, 0x83, 0xec, 0x20, 0x48, 0x8b, 0x41, 0x18};
+//LONG OFFS_WIN6_ToExplode	= -15;
+//#endif
+//
+//NTSTATUS kuhl_m_minesweeper_bsod(int argc, wchar_t * argv[])
+//{
+//	DWORD dwPid;
+//	HANDLE hProcess;
+//	PEB Peb;
+//	PIMAGE_NT_HEADERS pNtHeaders;
+//	KULL_M_MEMORY_SEARCH sMemory = {{{NULL, NULL}, 0}, NULL};
+//	KULL_M_MEMORY_ADDRESS aRemote = {NULL, NULL}, aBuffer = {PTRN_WIN6_Explode, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+//
+//		REMOTE_EXT extensions[] = {
+//		{L"kernel32.dll",	"CreateFileA",	(PVOID) 0x4a4a4a4a4a4a4a4a, NULL},
+//		{L"kernel32.dll",	"CloseHandle",	(PVOID) 0x4b4b4b4b4b4b4b4b, NULL},
+//		{L"kernel32.dll",	"DeviceIoControl",		(PVOID) 0x4c4c4c4c4c4c4c4c, NULL},
+//	};
+//	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
+//	
+//	if(kull_m_process_getProcessIdForName(L"minesweeper.exe", &dwPid))
+//	{
+//		if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION, FALSE, dwPid))
+//		{
+//			if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &aRemote.hMemory))
+//			{
+//				if(kull_m_process_peb(aRemote.hMemory, &Peb, FALSE))
+//				{
+//					aRemote.address = Peb.ImageBaseAddress;
+//					if(kull_m_process_ntheaders(&aRemote, &pNtHeaders))
+//					{
+//						sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory = aRemote.hMemory;
+//						sMemory.kull_m_memoryRange.kull_m_memoryAdress.address = (LPVOID) pNtHeaders->OptionalHeader.ImageBase;
+//						sMemory.kull_m_memoryRange.size = pNtHeaders->OptionalHeader.SizeOfImage;
+//						if(kull_m_memory_search(&aBuffer, sizeof(PTRN_WIN6_Explode), &sMemory, TRUE))
+//						{
+//							sMemory.result = (PBYTE) sMemory.result + OFFS_WIN6_ToExplode;
+//							aRemote.address = NULL;
+//							if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(aRemote.hMemory, kuhl_m_minesweeper_bsod_thread, (DWORD) ((PBYTE) kuhl_m_minesweeper_bsod_thread_end - (PBYTE) kuhl_m_minesweeper_bsod_thread), &extForCb, &aRemote))
+//							{
+//								*(PVOID *) (CALL_JMP_X64 + 2) = aRemote.address;
+//								aBuffer.address = CALL_JMP_X64;
+//								aRemote.address = sMemory.result;
+//								if(kull_m_memory_copy(&aRemote, &aBuffer, sizeof(CALL_JMP_X64)))
+//									kprintf(L"WARNING! Next Minesweeper error will BSOD!\n");
+//							}
+//							else PRINT_ERROR(L"Unable to create remote functions\n");
+//						}
+//						else PRINT_ERROR(L"Search is KO\n");
+//						LocalFree(pNtHeaders);
+//					}
+//					else PRINT_ERROR(L"Minesweeper NT Headers\n");
+//				}
+//				else PRINT_ERROR(L"Minesweeper PEB\n");
+//				kull_m_memory_close(aRemote.hMemory);
+//			}
+//			CloseHandle(hProcess);
+//		}
+//		else PRINT_ERROR_AUTO(L"OpenProcess");
+//	}
+//	else PRINT_ERROR(L"No MineSweeper in memory!\n");
+//	return STATUS_SUCCESS;
+//}
+//
+//typedef HANDLE	(WINAPI * PCREATEFILEA) (__in     LPCSTR lpFileName, __in     DWORD dwDesiredAccess, __in     DWORD dwShareMode, __in_opt LPSECURITY_ATTRIBUTES lpSecurityAttributes, __in     DWORD dwCreationDisposition, __in     DWORD dwFlagsAndAttributes, __in_opt HANDLE hTemplateFile);
+//typedef BOOL	(WINAPI * PDEVICEIOCONTROL) (__in        HANDLE hDevice, __in        DWORD dwIoControlCode, __in_bcount_opt(nInBufferSize) LPVOID lpInBuffer, __in        DWORD nInBufferSize, __out_bcount_part_opt(nOutBufferSize, *lpBytesReturned) LPVOID lpOutBuffer, __in        DWORD nOutBufferSize, __out_opt   LPDWORD lpBytesReturned, __inout_opt LPOVERLAPPED lpOverlapped );
+//typedef BOOL	(WINAPI * PCLOSEHANDLE) (__in HANDLE hObject);
+//#pragma optimize("", off)
+//void __fastcall kuhl_m_minesweeper_bsod_thread(PVOID a, INT b, INT c, BOOL d)
+//{
+//	DWORD fn[] = {0x5c2e5c5c, 'imim', '\0vrd'};
+//	HANDLE hDriver = ((PCREATEFILEA) 0x4a4a4a4a4a4a4a4a)((PSTR) fn, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+//	if(hDriver && hDriver != INVALID_HANDLE_VALUE)
+//	{
+//		((PDEVICEIOCONTROL) 0x4c4c4c4c4c4c4c4c)(hDriver, IOCTL_MIMIDRV_BSOD, NULL, 0, NULL, 0, NULL, NULL);
+//		((PCLOSEHANDLE) 0x4b4b4b4b4b4b4b4b)(hDriver); // !
+//	}
+//}
+//DWORD kuhl_m_minesweeper_bsod_thread_end(){return 'sbsm';}
+//#pragma optimize("", on)

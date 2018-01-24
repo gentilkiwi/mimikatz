@@ -233,6 +233,21 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_mimicom.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c">
+      <Filter>local modules\lsadump</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_sr98.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_cabinet.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -485,6 +500,21 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_mimicom.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h">
+      <Filter>local modules\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h">
+      <Filter>local modules\lsadump</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_sr98.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_cabinet.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h">
+      <Filter>local modules\crypto</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -515,6 +545,12 @@
     </Filter>
     <Filter Include="common modules\rpc">
       <UniqueIdentifier>{36857c96-00a6-4cb6-8ca9-591d0561662c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\crypto">
+      <UniqueIdentifier>{de3bf270-ef33-4d83-bec2-77c4450b411a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\lsadump">
+      <UniqueIdentifier>{3b2bcf11-3674-4ee4-949c-491c8c5efd34}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

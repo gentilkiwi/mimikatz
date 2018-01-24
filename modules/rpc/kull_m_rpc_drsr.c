@@ -38,6 +38,9 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	DWORD dcOutVersion = 0;
 	DRS_MSG_DCINFOREPLY dcInfoRep = {0};
 	LPWSTR sGuid;
+	LPWSTR sSid;
+	LPWSTR sTempDomain;
+	PSID pSid;
 	UNICODE_STRING uGuid;
 
 	RtlZeroMemory(pDrsExtensionsInt, sizeof(DRS_EXTENSIONS_INT));
@@ -81,6 +84,22 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 				{
 					RtlInitUnicodeString(&uGuid, sGuid);
 					ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+				}
+			}
+			else
+			{
+				if (kull_m_token_getSidDomainFromName(Domain, &pSid, &sTempDomain, NULL, ServerName))
+				{
+					if (ConvertSidToStringSid(pSid, &sSid))
+					{
+						if(kull_m_rpc_drsr_CrackName(hDrs, DS_SID_OR_SID_HISTORY_NAME, sSid,  DS_UNIQUE_ID_NAME, &sGuid, NULL))
+						{
+							RtlInitUnicodeString(&uGuid, sGuid);
+							ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+						}
+						LocalFree(pSid);
+					}
+					LocalFree(sTempDomain);
 				}
 			}
 		}
@@ -283,25 +302,12 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
 
 void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply)
 {
-	DWORD i;
 	if(reply)
 	{
 		switch (nameCrackOutVersion)
 		{
 		case 1:
-			if(reply->V1.pResult)
-			{
-				for(i = 0; i < reply->V1.pResult->cItems; i++)
-				{
-					if(reply->V1.pResult->rItems[i].pDomain)
-						MIDL_user_free(reply->V1.pResult->rItems[i].pDomain);
-					if(reply->V1.pResult->rItems[i].pName)
-						MIDL_user_free(reply->V1.pResult->rItems[i].pName);
-				}
-				if(reply->V1.pResult->rItems)
-					MIDL_user_free(reply->V1.pResult->rItems);
-				MIDL_user_free(reply->V1.pResult);
-			}
+			kull_m_rpc_ms_drsr_FreeDRS_MSG_CRACKREPLY_V1(&reply->V1);
 			break;
 		default:
 			PRINT_ERROR(L"nameCrackOutVersion not valid (0x%08x - %u)\n", nameCrackOutVersion, nameCrackOutVersion);

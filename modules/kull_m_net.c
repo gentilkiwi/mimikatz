@@ -51,3 +51,23 @@ BOOL kull_m_net_getDC(LPCWSTR fullDomainName, DWORD altFlags, LPWSTR * fullDCNam
 	else PRINT_ERROR(L"DsGetDcName: %u\n", ret);
 	return status;
 }
+
+BOOL kull_m_net_getComputerName(BOOL isFull, LPWSTR *name)
+{
+	BOOL status = FALSE;
+	COMPUTER_NAME_FORMAT ft = isFull ? ComputerNamePhysicalDnsFullyQualified : ComputerNamePhysicalNetBIOS;
+	DWORD dwSize = 0;
+	if(!GetComputerNameEx(ft, NULL, &dwSize) && (GetLastError() == ERROR_MORE_DATA))
+	{
+		if(*name = (wchar_t *) LocalAlloc(LPTR, dwSize * sizeof(wchar_t)))
+		{
+			if(!(status = GetComputerNameEx(ft, *name, &dwSize)))
+			{
+				PRINT_ERROR_AUTO(L"GetComputerNameEx(data)");
+				LocalFree(*name);
+			}
+		}
+	}
+	else PRINT_ERROR_AUTO(L"GetComputerNameEx(init)");
+	return status;
+}

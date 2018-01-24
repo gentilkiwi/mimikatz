@@ -6,6 +6,17 @@
 #pragma once
 #include "globals.h"
 
+typedef struct _KIWI_DATETIME_FORMATS {
+	LPCWSTR format;
+	int minFields;
+	BYTE idxYear;
+	BYTE idxMonth;
+	BYTE idxDay;
+	BYTE idxHour;
+	BYTE idxMinute;
+	BYTE idxSecond;
+} KIWI_DATETIME_FORMATS, *PKIWI_DATETIME_FORMATS;
+
 typedef CONST char *PCSZ;
 typedef STRING ANSI_STRING;
 typedef PSTRING PANSI_STRING;
@@ -85,3 +96,5 @@ BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
 #ifndef MIMIKATZ_W2000_SUPPORT
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);
 #endif
+BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...);
+BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime);
