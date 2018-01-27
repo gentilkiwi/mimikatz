@@ -14,6 +14,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_bkey,		L"backupkeys",	NULL},
 	{kuhl_m_lsadump_rpdata,		L"rpdata",		NULL},
 	{kuhl_m_lsadump_dcsync,		L"dcsync",		L"Ask a DC to synchronize an object"},
+	{kuhl_m_lsadump_dcshadow,	L"dcshadow",	L"They told me I could be anything I wanted, so I became a domain controller"},
 	{kuhl_m_lsadump_setntlm,	L"setntlm",		L"Ask a server to set a new password/ntlm for one user"},
 	{kuhl_m_lsadump_changentlm,	L"changentlm",	L"Ask a server to set a new password/ntlm for one user"},
 	{kuhl_m_lsadump_netsync,	L"netsync",		L"Ask a DC to send current and previous NTLM hash of DC/SRV/WKS"},
