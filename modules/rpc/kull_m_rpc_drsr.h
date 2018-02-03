@@ -199,7 +199,7 @@ typedef enum {
 #define szOID_serverReference				"1.2.840.113556.1.4.515"
 #define szOID_msDS_Behavior_Version			"1.2.840.113556.1.4.1459"
 #define szOID_msDS_HasDomainNCs				"1.2.840.113556.1.4.1820"
-#define szOID_msDS_hasMasterNCs				"1.2.840.113556.1.4.1836";
+#define szOID_msDS_hasMasterNCs				"1.2.840.113556.1.4.1836"
 
 #define szOID_ANSI_nTDSDSA					"1.2.840.113556.1.5.7000.47"
 
