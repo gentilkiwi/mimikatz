@@ -140,6 +140,7 @@ typedef struct _DCSHADOW_DOMAIN_INFO {
 	// The site (first-or-default in general)
 	PWSTR szDsServiceName;
 	DWORD dwDomainControllerFunctionality;
+	DWORD dwReplEpoch;
 	DWORD maxDCUsn;
 	BOOL fUseSchemaSignature;
 	BYTE pbSchemaSignature[21];
