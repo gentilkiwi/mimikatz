@@ -299,7 +299,7 @@ NTSTATUS kuhl_m_rpc_server(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_rpc_connect(int argc, wchar_t * argv[])
 {
-	RPC_STATUS status, ntStatus;
+	RPC_STATUS status = RPC_S_INVALID_ARG, ntStatus;
 	PCWSTR szRemote, szProtSeq, szEndpoint, szService, szAlg;
 	DWORD AuthnSvc, rpcExc;
 	ALG_ID alg;
@@ -413,7 +413,7 @@ NTSTATUS SRV_MiniUnbind(MIMI_HANDLE *phMimi)
 
 NTSTATUS SRV_MimiCommand(MIMI_HANDLE phMimi, DWORD szEncCommand, BYTE *encCommand, DWORD *szEncResult, BYTE **encResult)
 {
-	NTSTATUS status;
+	NTSTATUS status = RPC_S_INVALID_ARG;
 	PBYTE clearCommand, encBuffer;
 	DWORD szClearCommand, szEncBuffer;
 	*szEncResult = 0;
@@ -461,7 +461,7 @@ NTSTATUS SRV_MimiCommand(MIMI_HANDLE phMimi, DWORD szEncCommand, BYTE *encComman
 
 NTSTATUS SRV_MimiClear(handle_t rpc_handle, wchar_t *command, DWORD *size, wchar_t **result)
 {
-	NTSTATUS status;
+	NTSTATUS status = RPC_S_INVALID_ARG;
 	EnterCriticalSection(&outputCritical);
 	kprintf(L"\n\n" MIMIKATZ L"(rpc): %s\n", command);
 	outputBufferElements = 0xffff;

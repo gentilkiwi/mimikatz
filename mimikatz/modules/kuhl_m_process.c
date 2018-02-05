@@ -162,7 +162,7 @@ NTSTATUS kuhl_m_process_callbackProcess(int argc, wchar_t * argv[], PKULL_M_MODU
 		}
 		else PRINT_ERROR_AUTO(L"kull_m_memory_open");
 		
-		if(type = KULL_M_MEMORY_TYPE_PROCESS)
+		if(type == KULL_M_MEMORY_TYPE_PROCESS)
 			CloseHandle(hProcess);
 	}
 	return STATUS_SUCCESS;

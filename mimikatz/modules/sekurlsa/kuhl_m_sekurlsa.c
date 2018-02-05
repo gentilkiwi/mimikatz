@@ -921,7 +921,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 			kprintf(L"mode\t: replacing NTLM/RC4 key in a session\n");
 			kuhl_m_sekurlsa_pth_luid(&data);
 		}
-		else
+		else if(szUser)
 		{
 			if(kull_m_process_create(KULL_M_PROCESS_CREATE_LOGON, szRun, CREATE_SUSPENDED, NULL, LOGON_NETCREDENTIALS_ONLY, szUser, szDomain, L"", &processInfos, FALSE))
 			{
@@ -958,6 +958,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 			}
 			else PRINT_ERROR_AUTO(L"CreateProcessWithLogonW");
 		}
+		else PRINT_ERROR(L"Bas user or LUID\n");
 	}
 	else PRINT_ERROR(L"Missing at least one argument : ntlm/rc4 OR aes128 OR aes256\n");
 

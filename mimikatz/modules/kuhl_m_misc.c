@@ -831,7 +831,7 @@ void kuhl_m_misc_wp_for_pid(DWORD pid, PCWCHAR wp)
 					else PRINT_ERROR_AUTO(L"kull_m_remotelib_create");
 					LocalFree(iData);
 				}
-				kull_m_memory_free(&aRemoteFunc, 0);
+				kull_m_memory_free(&aRemoteFunc);
 			}
 			else PRINT_ERROR(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace\n");
 			kull_m_memory_close(hMemory);

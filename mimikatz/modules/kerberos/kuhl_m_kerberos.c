@@ -410,11 +410,11 @@ wchar_t * kuhl_m_kerberos_generateFileName_short(PKIWI_KERBEROS_TICKET ticket, L
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType, rodc = 0;
+	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType = 0, rodc = 0;
 	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, szClaims, /*base,*/ filename;
 	PWCHAR baseDot, netbiosDomain;
 	PISID pSid;
-	PGROUP_MEMBERSHIP groups;
+	PGROUP_MEMBERSHIP groups = NULL;
 	PKERB_SID_AND_ATTRIBUTES sids = NULL;
 	PCLAIMS_SET pClaimsSet = NULL;
 	PBERVAL BerApp_KrbCred;

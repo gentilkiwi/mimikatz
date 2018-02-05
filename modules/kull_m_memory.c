@@ -235,17 +235,17 @@ BOOL kull_m_memory_alloc(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght, IN
 	return (Address->address) != NULL;
 }
 
-BOOL kull_m_memory_free(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght)
+BOOL kull_m_memory_free(IN PKULL_M_MEMORY_ADDRESS Address)
 {
 	BOOL status = FALSE;
 
 	switch(Address->hMemory->type)
 	{
 		case KULL_M_MEMORY_TYPE_OWN:
-			status = VirtualFree(Address->address, Lenght, MEM_RELEASE);
+			status = VirtualFree(Address->address, 0, MEM_RELEASE);
 			break;
 		case KULL_M_MEMORY_TYPE_PROCESS:
-			status = VirtualFreeEx(Address->hMemory->pHandleProcess->hProcess, Address->address, Lenght, MEM_RELEASE);
+			status = VirtualFreeEx(Address->hMemory->pHandleProcess->hProcess, Address->address, 0, MEM_RELEASE);
 			break;
 		case KULL_M_MEMORY_TYPE_KERNEL:
 			kull_m_kernel_ioctl_handle(Address->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_VM_FREE, Address->address, 0, NULL, NULL, FALSE);
@@ -260,9 +260,9 @@ BOOL kull_m_memory_free(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght)
 BOOL kull_m_memory_query(IN PKULL_M_MEMORY_ADDRESS Address, OUT PMEMORY_BASIC_INFORMATION MemoryInfo)
 {
 	BOOL status = FALSE;
-	PMINIDUMP_MEMORY_INFO_LIST maListeInfo = NULL;
-	PMINIDUMP_MEMORY_INFO mesInfos = NULL;
-	ULONG i;
+	//PMINIDUMP_MEMORY_INFO_LIST maListeInfo = NULL;
+	//PMINIDUMP_MEMORY_INFO mesInfos = NULL;
+	//ULONG i;
 
 	switch(Address->hMemory->type)
 	{
@@ -272,24 +272,24 @@ BOOL kull_m_memory_query(IN PKULL_M_MEMORY_ADDRESS Address, OUT PMEMORY_BASIC_IN
 	case KULL_M_MEMORY_TYPE_PROCESS:
 		status = VirtualQueryEx(Address->hMemory->pHandleProcess->hProcess, Address->address, MemoryInfo, sizeof(MEMORY_BASIC_INFORMATION)) == sizeof(MEMORY_BASIC_INFORMATION);
 		break;
-	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
-		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(Address->hMemory->pHandleProcessDmp->hMinidump, MemoryInfoListStream))
-		{
-			for(i = 0; (i < maListeInfo->NumberOfEntries) && !status; i++)
-			{
-				if(status = ((PBYTE) Address->address >= (PBYTE) mesInfos->BaseAddress) && ((PBYTE) Address->address <= (PBYTE) mesInfos->BaseAddress + (SIZE_T) mesInfos->RegionSize))
-				{
-					MemoryInfo->AllocationBase = (PVOID) mesInfos->AllocationBase;
-					MemoryInfo->AllocationProtect = mesInfos->AllocationProtect;
-					MemoryInfo->BaseAddress = (PVOID) mesInfos->BaseAddress;
-					MemoryInfo->Protect = mesInfos->Protect;
-					MemoryInfo->RegionSize = (SIZE_T) mesInfos->RegionSize;
-					MemoryInfo->State = mesInfos->State;
-					MemoryInfo->Type = mesInfos->Type;
-				}
-			}
-		}
-		break;
+	//case KULL_M_MEMORY_TYPE_PROCESS_DMP:
+	//	if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(Address->hMemory->pHandleProcessDmp->hMinidump, MemoryInfoListStream))
+	//	{
+	//		for(i = 0; (i < maListeInfo->NumberOfEntries) && !status; i++)
+	//		{
+	//			if(status = ((PBYTE) Address->address >= (PBYTE) mesInfos->BaseAddress) && ((PBYTE) Address->address <= (PBYTE) mesInfos->BaseAddress + (SIZE_T) mesInfos->RegionSize))
+	//			{
+	//				MemoryInfo->AllocationBase = (PVOID) mesInfos->AllocationBase;
+	//				MemoryInfo->AllocationProtect = mesInfos->AllocationProtect;
+	//				MemoryInfo->BaseAddress = (PVOID) mesInfos->BaseAddress;
+	//				MemoryInfo->Protect = mesInfos->Protect;
+	//				MemoryInfo->RegionSize = (SIZE_T) mesInfos->RegionSize;
+	//				MemoryInfo->State = mesInfos->State;
+	//				MemoryInfo->Type = mesInfos->Type;
+	//			}
+	//		}
+	//	}
+	//	break;
 	default:
 		break;
 	}

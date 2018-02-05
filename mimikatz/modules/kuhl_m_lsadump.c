@@ -239,8 +239,10 @@ BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBY
 		}
 		else PRINT_ERROR(L"LSA Key Class read error\n");
 	}
-	for(i = 0; i < SYSKEY_LENGTH; i++)
-		sysKey[i] = buffKey[kuhl_m_lsadump_SYSKEY_PERMUT[i]];	
+	
+	if(status)
+		for(i = 0; i < SYSKEY_LENGTH; i++)
+			sysKey[i] = buffKey[kuhl_m_lsadump_SYSKEY_PERMUT[i]];	
 
 	return status;
 }
@@ -977,7 +979,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 PCWCHAR szSamSrv = L"samsrv.dll", szLsaSrv = L"lsasrv.dll", szNtDll = L"ntdll.dll", szKernel32 = L"kernel32.dll", szAdvapi32 = L"advapi32.dll";
 NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 {
-	NTSTATUS status, enumStatus;
+	NTSTATUS status = STATUS_UNSUCCESSFUL, enumStatus;
 
 	LSA_OBJECT_ATTRIBUTES objectAttributes;
 	LSA_HANDLE hPolicy;
@@ -1115,7 +1117,7 @@ NTSTATUS kuhl_m_lsadump_lsa(int argc, wchar_t * argv[])
 		}
 
 		if(aRemoteThread)
-			kull_m_memory_free(aRemoteThread, 0);
+			kull_m_memory_free(aRemoteThread);
 	}
 
 	if(hMemory)

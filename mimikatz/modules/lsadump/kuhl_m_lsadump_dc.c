@@ -514,7 +514,7 @@ void kuhl_m_lsadump_dcsync_descrSecret(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLO
 			{
 				if(name == wcsstr(name, L"BCKUPKEY_"))
 				{
-					if(((_wcsicmp(name, L"BCKUPKEY_P Secret") == 0) || (_wcsicmp(name, L"BCKUPKEY_PREFERRED Secret") == 0)) && (size = sizeof(GUID)))
+					if(((_wcsicmp(name, L"BCKUPKEY_P Secret") == 0) || (_wcsicmp(name, L"BCKUPKEY_PREFERRED Secret") == 0)) && (size == sizeof(GUID)))
 					{
 						kprintf(L"Link to key with GUID: ");
 						kull_m_string_displayGUID((LPCGUID) data);
