@@ -698,7 +698,7 @@ NTSTATUS kuhl_m_crypto_l_sc(int argc, wchar_t * argv[])
 							status = SCardListCards(hContext, atr, NULL, 0, (LPWSTR) &mszCards, &dwLen);
 							if(status == SCARD_S_SUCCESS)
 							{
-								for(pCard = mszCards; *pCard; pCard += wcslen(pCard) + 1)
+								for(pCard = mszCards; pCard && *pCard; pCard += wcslen(pCard) + 1)
 								{
 									kprintf(L"   Model: %s\n", pCard);
 

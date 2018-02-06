@@ -481,35 +481,36 @@ BOOL kull_m_process_create(KULL_M_PROCESS_CREATE_TYPE type, PCWSTR commandLine, 
 	RtlZeroMemory(&startupInfo, sizeof(STARTUPINFO));
 	startupInfo.cb = sizeof(STARTUPINFO);
 
-	ptrProcessInfos = pProcessInfos ? pProcessInfos : (PPROCESS_INFORMATION) LocalAlloc(LPTR, sizeof(PROCESS_INFORMATION));
-
-	if(dupCommandLine = _wcsdup(commandLine))
+	if(ptrProcessInfos = pProcessInfos ? pProcessInfos : (PPROCESS_INFORMATION) LocalAlloc(LPTR, sizeof(PROCESS_INFORMATION)))
 	{
-		switch(type)
+		if(dupCommandLine = _wcsdup(commandLine))
 		{
-		case KULL_M_PROCESS_CREATE_NORMAL:
-			status = CreateProcess(NULL, dupCommandLine, NULL, NULL, FALSE, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
-			break;
-		case KULL_M_PROCESS_CREATE_USER:
-			status = CreateProcessAsUser(hUserToken, NULL, dupCommandLine, NULL, NULL, FALSE, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
-			break;
-		/*case KULL_M_PROCESS_CREATE_TOKEN:
-			status = CreateProcessWithTokenW(hUserToken, iLogonFlags, NULL, dupCommandLine, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
-			break;*/
-		case KULL_M_PROCESS_CREATE_LOGON:
-			status = CreateProcessWithLogonW(user, domain, password, iLogonFlags, NULL, dupCommandLine, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
-			break;
-		}
+			switch(type)
+			{
+			case KULL_M_PROCESS_CREATE_NORMAL:
+				status = CreateProcess(NULL, dupCommandLine, NULL, NULL, FALSE, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
+				break;
+			case KULL_M_PROCESS_CREATE_USER:
+				status = CreateProcessAsUser(hUserToken, NULL, dupCommandLine, NULL, NULL, FALSE, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
+				break;
+				/*case KULL_M_PROCESS_CREATE_TOKEN:
+				status = CreateProcessWithTokenW(hUserToken, iLogonFlags, NULL, dupCommandLine, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
+				break;*/
+			case KULL_M_PROCESS_CREATE_LOGON:
+				status = CreateProcessWithLogonW(user, domain, password, iLogonFlags, NULL, dupCommandLine, iProcessFlags, NULL, NULL, &startupInfo, ptrProcessInfos);
+				break;
+			}
 
-		if(autoCloseHandle || !pProcessInfos)
-		{
-			CloseHandle(ptrProcessInfos->hThread);
-			CloseHandle(ptrProcessInfos->hProcess);
-		}
+			if(status && (autoCloseHandle || !pProcessInfos))
+			{
+				CloseHandle(ptrProcessInfos->hThread);
+				CloseHandle(ptrProcessInfos->hProcess);
+			}
 
-		if(!pProcessInfos)
-			LocalFree(ptrProcessInfos);
-		free(dupCommandLine);
+			if(!pProcessInfos)
+				LocalFree(ptrProcessInfos);
+			free(dupCommandLine);
+		}
 	}
 	return status;
 }

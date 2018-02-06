@@ -159,7 +159,7 @@ NTSTATUS mimikatz_initOrClean(BOOL Init)
 
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input)
 {
-	NTSTATUS status;
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	PWCHAR full;
 	if(full = kull_m_file_fullPath(input))
 	{

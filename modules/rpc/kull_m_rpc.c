@@ -221,7 +221,8 @@ void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes)
 
 void __RPC_USER midl_user_free(void __RPC_FAR * p)
 {
-	LocalFree(p);
+	if(p)
+		LocalFree(p);
 }
 
 void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize)

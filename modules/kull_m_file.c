@@ -22,7 +22,7 @@ BOOL kull_m_file_getAbsolutePathOf(PCWCHAR thisData, wchar_t ** reponse)
 {
 	BOOL reussite = FALSE;
 	wchar_t *monRep;
-	*reponse = (wchar_t *) LocalAlloc(LPTR, MAX_PATH);
+	*reponse = (wchar_t *) LocalAlloc(LPTR, MAX_PATH * sizeof(wchar_t));
 
 	if(PathIsRelative(thisData))
 	{
@@ -32,8 +32,7 @@ BOOL kull_m_file_getAbsolutePathOf(PCWCHAR thisData, wchar_t ** reponse)
 			LocalFree(monRep);
 		}
 	}
-	else
-		reussite = PathCanonicalize(*reponse, thisData);
+	else reussite = PathCanonicalize(*reponse, thisData);
 
 	if(!reussite)
 		LocalFree(*reponse);

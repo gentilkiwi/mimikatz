@@ -74,7 +74,7 @@ BOOL kuhl_m_lsadump_getUsersAndSamKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN H
 BOOL kuhl_m_lsadump_getCurrentControlSet(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hSystemBase, PHKEY phCurrentControlSet);
 BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBYTE sysKey);
 BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, LPCBYTE sysKey, LPBYTE samKey);
-BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm);
+BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm, BOOL isHistory);
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, PSID DomainSid, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
@@ -181,8 +181,8 @@ typedef struct _USER_ACCOUNT_V {
 	SAM_ENTRY unk2;
 	SAM_ENTRY LMHash;
 	SAM_ENTRY NTLMHash;
-	SAM_ENTRY unk3;
-	SAM_ENTRY unk4;
+	SAM_ENTRY NTLMHistory;
+	SAM_ENTRY LMHistory;
 	BYTE datas[ANYSIZE_ARRAY];
 } USER_ACCOUNT_V, *PUSER_ACCOUNT_V;
 
@@ -197,7 +197,7 @@ typedef struct _SAM_HASH_AES {
 typedef struct _SAM_HASH {
 	WORD PEKID;
 	WORD Revision;
-	BYTE hash[LM_NTLM_HASH_LENGTH];
+	BYTE data[ANYSIZE_ARRAY];
 } SAM_HASH, *PSAM_HASH;
 
 typedef struct _POL_REVISION {

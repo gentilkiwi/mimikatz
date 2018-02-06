@@ -164,6 +164,11 @@ typedef enum {
 	EXOP_REPL_SECRETS = 7
 } EXOP_REQ;
 
+#define szOID_objectclass					"2.5.4.0"
+#define szOID_hasMasterNCs					"1.2.840.113556.1.2.14"
+#define szOID_dMDLocation					"1.2.840.113556.1.2.36"
+#define szOID_invocationId					"1.2.840.113556.1.2.115"
+
 #define szOID_ANSI_name						"1.2.840.113556.1.4.1"
 #define szOID_objectGUID					"1.2.840.113556.1.4.2"
 
@@ -187,6 +192,17 @@ typedef enum {
 #define szOID_ANSI_trustAuthOutgoing		"1.2.840.113556.1.4.135"
 
 #define szOID_ANSI_currentValue				"1.2.840.113556.1.4.27"
+
+#define szOID_options						"1.2.840.113556.1.4.307"
+#define szOID_systemFlags					"1.2.840.113556.1.4.375"
+#define szOID_ldapServer_show_deleted		"1.2.840.113556.1.4.417"
+#define szOID_serverReference				"1.2.840.113556.1.4.515"
+#define szOID_msDS_Behavior_Version			"1.2.840.113556.1.4.1459"
+#define szOID_msDS_ReplicationEpoch			"1.2.840.113556.1.4.1720"
+#define szOID_msDS_HasDomainNCs				"1.2.840.113556.1.4.1820"
+#define szOID_msDS_hasMasterNCs				"1.2.840.113556.1.4.1836"
+
+#define szOID_ANSI_nTDSDSA					"1.2.840.113556.1.5.7000.47"
 
 #define ATT_WHEN_CREATED				MAKELONG(  2, 2)
 #define ATT_WHEN_CHANGED				MAKELONG(  3, 2)
@@ -228,7 +244,8 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 BOOL kull_m_rpc_drsr_getDCBind(RPC_BINDING_HANDLE *hBinding, GUID *NtdsDsaObjectGuid, DRS_HANDLE *hDrs, DRS_EXTENSIONS_INT *pDrsExtensionsInt);
 BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWSTR Name, DS_NAME_FORMAT FormatWanted, LPWSTR *CrackedName, LPWSTR *CrackedDomain);
 BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply(SCHEMA_PREFIX_TABLE *prefixTable, REPLENTINFLIST *objects);
-BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val);
+BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContext_SessionKey *SessionKey);
+BOOL kull_m_rpc_drsr_CreateGetNCChangesReply_encrypt(ATTRVAL *val, SecPkgContext_SessionKey *SessionKey);
 
 void kull_m_rpc_drsr_free_DRS_MSG_DCINFOREPLY_data(DWORD dcOutVersion, DRS_MSG_DCINFOREPLY * reply);
 void kull_m_rpc_drsr_free_DRS_MSG_CRACKREPLY_data(DWORD nameCrackOutVersion, DRS_MSG_CRACKREPLY * reply);
@@ -241,3 +258,29 @@ BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, A
 ATTRVALBLOCK * kull_m_rpc_drsr_findAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid);
 PVOID kull_m_rpc_drsr_findMonoAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, PVOID data, DWORD *size);
 void kull_m_rpc_drsr_findPrintMonoAttr(LPCWSTR prefix, SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, BOOL newLine);
+
+LPWSTR kull_m_rpc_drsr_MakeSpnWithGUID(LPCGUID ServClass, LPCWSTR ServName, LPCGUID InstName);
+NTSTATUS kull_m_rpc_drsr_start_server(LPCWSTR ServName, LPCGUID InstName);
+NTSTATUS kull_m_rpc_drsr_stop_server();
+
+// cf https://technet.microsoft.com/en-us/library/cc961740.aspx
+#define SYNTAX_UNDEFINED				0x550500
+#define SYNTAX_DN						0x550501
+#define SYNTAX_OID						0x550502
+#define SYNTAX_CASE_SENSITIVE_STRING	0x550503
+#define SYNTAX_CASE_IGNORE_STRING		0x550504
+#define SYNTAX_STRING_IA5				0x550505
+#define SYNTAX_STRING_NUMERIC			0x550506
+#define SYNTAX_OBJECT_DN_BINARY			0x550507
+#define SYNTAX_BOOLEAN					0x550508
+#define SYNTAX_INTEGER					0x550509
+#define SYNTAX_OCTET_STRING				0x55050a
+#define SYNTAX_GENERALIZED_TIME			0x55050b
+#define SYNTAX_UNICODE_STRING			0x55050c
+#define SYNTAX_OBJECT_PRESENTATION_ADDR	0x55050d
+#define SYNTAX_OBJECT_DN				0x55050e
+#define SYNTAX_NTSECURITYDESCRIPTOR		0x55050f
+#define SYNTAX_LARGE_INTEGER			0x550510
+#define SYNTAX_SID						0x550511
+
+const SCHEMA_PREFIX_TABLE SCHEMA_DEFAULT_PREFIX_TABLE;
