@@ -2512,6 +2512,11 @@ ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHG
 	return status;
 }
 
+ULONG SRV_IDL_DRSVerifyNames(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_VERIFYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_VERIFYREPLY *pmsgOut)
+{
+	return STATUS_NOT_IMPLEMENTED;
+}
+
 // this function is here to acknowledge that we add a DC in our own replication list
 // needed or the remote DC will log the error
 ULONG SRV_IDL_DRSUpdateRefs(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_UPDREFS *pmsgUpdRefs)

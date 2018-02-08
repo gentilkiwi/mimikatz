@@ -251,6 +251,29 @@ typedef union _DRS_MSG_REPDEL {
 	DRS_MSG_REPDEL_V1 V1;
 } DRS_MSG_REPDEL;
 
+typedef struct _DRS_MSG_VERIFYREQ_V1 {
+	DWORD dwFlags;
+	DWORD cNames;
+	DSNAME **rpNames;
+	ATTRBLOCK RequiredAttrs;
+	SCHEMA_PREFIX_TABLE PrefixTable;
+} DRS_MSG_VERIFYREQ_V1;
+
+typedef union _DRS_MSG_VERIFYREQ {
+	DRS_MSG_VERIFYREQ_V1 V1;
+} DRS_MSG_VERIFYREQ;
+
+typedef struct _DRS_MSG_VERIFYREPLY_V1 {
+	DWORD error;
+	DWORD cNames;
+	ENTINF *rpEntInf;
+	SCHEMA_PREFIX_TABLE PrefixTable;
+} DRS_MSG_VERIFYREPLY_V1;
+
+typedef union _DRS_MSG_VERIFYREPLY {
+	DRS_MSG_VERIFYREPLY_V1 V1;
+} DRS_MSG_VERIFYREPLY;
+
 typedef struct _DRS_MSG_CRACKREQ_V1 {
 	ULONG CodePage;
 	ULONG LocaleId;
@@ -345,9 +368,12 @@ void __RPC_USER SRV_DRS_HANDLE_rundown(DRS_HANDLE hDrs);
 ULONG SRV_IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs);
 ULONG SRV_IDL_DRSUnbind(DRS_HANDLE *phDrs);
 ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHGREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_GETCHGREPLY *pmsgOut);
+ULONG SRV_IDL_DRSVerifyNames(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_VERIFYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_VERIFYREPLY *pmsgOut);
 ULONG SRV_IDL_DRSUpdateRefs(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_UPDREFS *pmsgUpdRefs);
 
 void SRV_OpnumNotImplemented(handle_t IDL_handle);
+ULONG SRV_IDL_DRSReplicaAddNotImplemented(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_REPADD *pmsgAdd);
+ULONG SRV_IDL_DRSReplicaDelNotImplemented(DRS_HANDLE hDrs, DWORD dwVersion, DRS_MSG_REPDEL *pmsgDel);
 ULONG SRV_IDL_DRSCrackNamesNotImplemented(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_CRACKREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_CRACKREPLY *pmsgOut);
 ULONG SRV_IDL_DRSDomainControllerInfoNotImplemented(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_DCINFOREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_DCINFOREPLY *pmsgOut);
-ULONG SRV_IDL_DRSAddEntry(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_ADDENTRYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_ADDENTRYREPLY *pmsgOut);
+ULONG SRV_IDL_DRSAddEntryNotImplemented(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_ADDENTRYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_ADDENTRYREPLY *pmsgOut);
