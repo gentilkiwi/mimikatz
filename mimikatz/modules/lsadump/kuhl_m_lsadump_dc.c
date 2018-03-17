@@ -2358,7 +2358,7 @@ ULONG SRV_IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS 
 		{
 			if(((PDRS_EXTENSIONS_INT) pextClient)->dwFlags & DRS_EXT_STRONG_ENCRYPTION)
 			{
-				size = ((PDRS_EXTENSIONS_INT) pextClient)->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) ? FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) : FIELD_OFFSET(DRS_EXTENSIONS_INT, SiteObjGuid);
+				size = (ULONG) ((((PDRS_EXTENSIONS_INT) pextClient)->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt)) ? FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) : FIELD_OFFSET(DRS_EXTENSIONS_INT, SiteObjGuid));
 				if(*ppextServer = (DRS_EXTENSIONS *) midl_user_allocate(size))
 				{
 					RtlZeroMemory(*ppextServer, size);

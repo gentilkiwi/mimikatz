@@ -19,6 +19,7 @@
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
 #include "dpapi/kuhl_m_dpapi_oe.h"
+#include "sekurlsa/kuhl_m_sekurlsa.h"
 
 #define	SYSKEY_LENGTH	16
 #define	SAM_KEY_DATA_SALT_LENGTH	16
@@ -303,6 +304,28 @@ typedef struct _MSCACHE_DATA {
 	DWORD unk8;
 } MSCACHE_DATA, *PMSCACHE_DATA;
 
+typedef struct _KIWI_ENC_SC_DATA {
+	BYTE toSign[32];
+	BYTE toHash[32];
+	BYTE toDecrypt[ANYSIZE_ARRAY];
+} KIWI_ENC_SC_DATA, *PKIWI_ENC_SC_DATA;
+
+typedef struct _KIWI_ENC_SC_DATA_NEW {
+	BYTE Header[8]; // SuppData
+	DWORD unk0;
+	DWORD unk1;
+	DWORD unk2;
+	DWORD dataSize;
+	KIWI_ENC_SC_DATA data;
+} KIWI_ENC_SC_DATA_NEW, *PKIWI_ENC_SC_DATA_NEW;
+
+typedef struct _NTLM_SUPPLEMENTAL_CREDENTIAL_V4 {
+	ULONG Version;
+	ULONG Flags;
+	ULONG unk;
+	UCHAR NtPassword[LM_NTLM_HASH_LENGTH];
+} NTLM_SUPPLEMENTAL_CREDENTIAL_V4, *PNTLM_SUPPLEMENTAL_CREDENTIAL_V4;
+
 typedef struct _WDIGEST_CREDENTIALS {
 	BYTE	Reserverd1;
 	BYTE	Reserverd2;
@@ -385,6 +408,8 @@ typedef struct _LSA_SUPCREDENTIALS_BUFFERS {
 typedef struct _KUHL_LSADUMP_DCC_CACHE_DATA {
 	LPCWSTR username;
 	BYTE ntlm[LM_NTLM_HASH_LENGTH];
+	HCRYPTPROV_OR_NCRYPT_KEY_HANDLE hProv;
+	DWORD keySpec;
 } KUHL_LSADUMP_DCC_CACHE_DATA, *PKUHL_LSADUMP_DCC_CACHE_DATA;
 
 typedef struct _KIWI_LSA_PRIVATE_DATA {
@@ -412,6 +437,7 @@ BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);
 void kuhl_m_lsadump_printMsCache(PMSCACHE_ENTRY entry, CHAR version);
+BOOL kuhl_m_lsadump_decryptSCCache(PBYTE data, DWORD size, HCRYPTPROV hProv, DWORD keySpec);
 void kuhl_m_lsadump_getInfosFromServiceName(IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN PCWSTR serviceName);
 BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecret, IN LPCWSTR KeyName, IN PNT6_SYSTEM_KEYS lsaKeysStream, IN PNT5_SYSTEM_KEY lsaKeyUnique, IN PVOID * pBufferOut, IN PDWORD pSzBufferOut);
 void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PCWSTR prefix, PCWSTR secretName);
