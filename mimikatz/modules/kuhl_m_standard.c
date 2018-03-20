@@ -95,18 +95,17 @@ const wchar_t *version_libs[] = {
 };
 NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 {
-	NTSTATUS status;
-	HMODULE hModule;
-	PNTQUERYSYSTEMINFORMATIONEX pNtQuerySystemInformationEx;
-	SYSTEM_ISOLATED_USER_MODE_INFORMATION iumi = {TRUE, FALSE /* 0 */};
 	DWORD i, len;
 	PVOID buffer;
 	UINT lenVer;
 	VS_FIXEDFILEINFO *verInfo;
-	BOOL isWow64;
-
+	BOOL isWow64
 	#ifdef _M_X64
-	isWow64 = TRUE;
+	 = TRUE;
+	NTSTATUS status;
+	HMODULE hModule;
+	PNTQUERYSYSTEMINFORMATIONEX pNtQuerySystemInformationEx;
+	SYSTEM_ISOLATED_USER_MODE_INFORMATION iumi = {TRUE, FALSE /* 0 */};
 	#else
 	if(IsWow64Process(GetCurrentProcess(), &isWow64))
 	#endif
@@ -118,7 +117,7 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _MSC_FULL_VER, _MSC_BUILD
 			);
 	}
-
+	#ifdef _M_X64
 	if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10) && (hModule = GetModuleHandle(L"ntdll")))
 	{
 		if(pNtQuerySystemInformationEx = (PNTQUERYSYSTEMINFORMATIONEX) GetProcAddress(hModule, "NtQuerySystemInformationEx"))
@@ -134,7 +133,7 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			else PRINT_ERROR(L"NtQuerySystemInformationEx: %08x\n", status);
 		}
 	}
-
+	#endif
 	if(argc)
 	{
 		kprintf(L"\n");
