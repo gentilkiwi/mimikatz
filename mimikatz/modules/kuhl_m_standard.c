@@ -107,6 +107,7 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 	PNTQUERYSYSTEMINFORMATIONEX pNtQuerySystemInformationEx;
 	SYSTEM_ISOLATED_USER_MODE_INFORMATION iumi = {TRUE, FALSE /* 0 */};
 	#else
+	;
 	if(IsWow64Process(GetCurrentProcess(), &isWow64))
 	#endif
 	{
