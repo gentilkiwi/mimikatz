@@ -266,7 +266,7 @@ typedef struct _MSCACHE_ENTRY {
 	WORD szUserName;
 	WORD szDomainName;
 	WORD szEffectiveName;
-	WORD szfullName;
+	WORD szFullName;
 	WORD szlogonScript;
 	WORD szprofilePath;
 	WORD szhomeDirectory;
@@ -289,11 +289,30 @@ typedef struct _MSCACHE_ENTRY {
 	BYTE enc_data[ANYSIZE_ARRAY];
 } MSCACHE_ENTRY, *PMSCACHE_ENTRY;
 
+typedef struct _MSCACHE_ENTRY_PTR {
+	UNICODE_STRING UserName;
+	UNICODE_STRING Domain;
+	UNICODE_STRING DnsDomainName;
+	UNICODE_STRING Upn;
+	UNICODE_STRING EffectiveName;
+	UNICODE_STRING FullName;
+
+	UNICODE_STRING LogonScript;
+	UNICODE_STRING ProfilePath;
+	UNICODE_STRING HomeDirectory;
+	UNICODE_STRING HomeDirectoryDrive;
+
+	PGROUP_MEMBERSHIP Groups;
+
+	UNICODE_STRING LogonDomainName;
+
+} MSCACHE_ENTRY_PTR, *PMSCACHE_ENTRY_PTR;
+
 typedef struct _MSCACHE_DATA {
 	BYTE mshashdata[LM_NTLM_HASH_LENGTH];
 	BYTE unkhash[LM_NTLM_HASH_LENGTH];
 	DWORD unk0;
-	DWORD unk1;
+	DWORD szSC;
 	DWORD unkLength;
 	DWORD unk2;
 	DWORD unk3;
