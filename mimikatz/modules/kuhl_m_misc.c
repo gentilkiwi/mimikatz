@@ -20,6 +20,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_wp,		L"wp",	NULL},
 	{kuhl_m_misc_mflt,		L"mflt",	NULL},
 	{kuhl_m_misc_easyntlmchall,	L"easyntlmchall", NULL},
+	{kuhl_m_misc_clip,		L"clip", NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -934,4 +935,175 @@ NTSTATUS kuhl_m_misc_easyntlmchall(int argc, wchar_t * argv[])
 		kull_m_patch_genericProcessOrServiceFromBuild(SHNMReferences, ARRAYSIZE(SHNMReferences), L"SamSs", L"msv1_0.dll", TRUE);
 	else PRINT_ERROR(L"Windows version is not supported (yet)\n");
 	return STATUS_SUCCESS;
+}
+
+HWND kuhl_misc_clip_hWnd, kuhl_misc_clip_hWndNextViewer;
+DWORD kuhl_misc_clip_dwData, kuhl_misc_clip_seq;
+LPBYTE kuhl_misc_clip_Data;
+
+NTSTATUS kuhl_m_misc_clip(int argc, wchar_t * argv[])
+{
+	WNDCLASSEX myClass;
+	ATOM aClass;
+	MSG msg;
+	BOOL bRet;
+	HINSTANCE hInstance = GetModuleHandle(NULL);
+
+	RtlZeroMemory(&myClass, sizeof(WNDCLASSEX));
+	myClass.cbSize = sizeof(WNDCLASSEX);
+	myClass.lpfnWndProc = kuhl_m_misc_clip_MainWndProc;
+	myClass.lpszClassName = MIMIKATZ L"_Window_Message";
+	kprintf(L"Monitoring ClipBoard...(CTRL+C to stop)\n\n");
+	if(aClass = RegisterClassEx(&myClass))
+	{
+		if(kuhl_misc_clip_hWnd = CreateWindowEx(0, (LPCWSTR) aClass, MIMIKATZ, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, hInstance, NULL))
+		{
+			SetConsoleCtrlHandler(kuhl_misc_clip_WinHandlerRoutine, TRUE);
+			kuhl_misc_clip_Data = NULL;
+			kuhl_misc_clip_dwData = kuhl_misc_clip_seq = 0;
+			kuhl_misc_clip_hWndNextViewer = SetClipboardViewer(kuhl_misc_clip_hWnd);
+			while((bRet = GetMessage(&msg, kuhl_misc_clip_hWnd, WM_QUIT, WM_CHANGECBCHAIN)))
+			{
+				if(bRet > FALSE)
+				{
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
+				else if (bRet < FALSE)
+					PRINT_ERROR_AUTO(L"GetMessage");
+			}
+			if(!ChangeClipboardChain(kuhl_misc_clip_hWnd, kuhl_misc_clip_hWndNextViewer))
+				PRINT_ERROR_AUTO(L"ChangeClipboardChain");
+			SetConsoleCtrlHandler(kuhl_misc_clip_WinHandlerRoutine, FALSE);
+			if(!DestroyWindow(kuhl_misc_clip_hWnd))
+				PRINT_ERROR_AUTO(L"DestroyWindow");
+		}
+		if(!UnregisterClass((LPCWSTR) aClass, hInstance))
+			PRINT_ERROR_AUTO(L"UnregisterClass");
+	}
+	else PRINT_ERROR_AUTO(L"RegisterClassEx");
+	return STATUS_SUCCESS;
+
+	//DWORD format;
+	//HANDLE hData;
+	//wchar_t formatName[256];
+	//LPDATAOBJECT data;
+	//IEnumFORMATETC *iFormats;
+
+	//FORMATETC re[45];
+	//DWORD dw = 0, i;
+	//STGMEDIUM medium;
+	//
+	//if(OpenClipboard(NULL))
+	//{
+	//	for(format = EnumClipboardFormats(0); format; format = EnumClipboardFormats(format))
+	//	{
+	//		kprintf(L"* %08x (%5u)\t", format, format);
+	//		if(GetClipboardFormatName(format, formatName, ARRAYSIZE(formatName)) > 1)
+	//			kprintf(L"%s ", formatName);
+	//		if(hData = GetClipboardData(format))
+	//			kprintf(L"(size = %u)", (DWORD) GlobalSize(hData));
+	//		kprintf(L"\n");
+	//	}
+	//	CloseClipboard();
+	//}
+
+	//if(OleGetClipboard(&data) == S_OK)
+	//{
+	//	if(IDataObject_EnumFormatEtc(data, DATADIR_GET, &iFormats) == S_OK)
+	//	{
+	//		kprintf(L"%08x\n", IEnumFORMATETC_Next(iFormats, ARRAYSIZE(re), re, &dw));
+	//		for(i = 0; i < dw; i++)
+	//		{
+	//			kprintf(L"%08x - %5u", re[i].cfFormat, re[i].cfFormat);
+	//				kprintf(L"  %u\t", re[i].tymed);
+
+	//			if(IDataObject_GetData(data, &re[i], &medium) == S_OK)
+	//			{
+	//				kprintf(L"\tT: %08x - %5u", medium.tymed, medium.tymed);
+	//				ReleaseStgMedium(&medium);
+	//			}
+	//			kprintf(L"\n");
+	//		}
+	//		IEnumFORMATETC_Release(iFormats);
+	//	}
+	//	IDataObject_Release(data);
+	//}
+	return STATUS_SUCCESS;
+	
+}
+
+BOOL WINAPI kuhl_misc_clip_WinHandlerRoutine(DWORD dwCtrlType)
+{
+	if(kuhl_misc_clip_Data)
+		LocalFree(kuhl_misc_clip_Data);
+	if(kuhl_misc_clip_hWnd)
+		PostMessage(kuhl_misc_clip_hWnd, WM_QUIT, STATUS_ABANDONED, 0);
+	return ((dwCtrlType == CTRL_C_EVENT) || (dwCtrlType == CTRL_BREAK_EVENT));
+}
+
+LRESULT APIENTRY kuhl_m_misc_clip_MainWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	LRESULT result = (LRESULT) NULL;
+	DWORD curSeq, format, bestFormat = 0, size;
+	HANDLE hData;
+	BOOL bSameSize = FALSE, bSameData = FALSE;
+
+	switch (uMsg)
+	{
+	case WM_CHANGECBCHAIN:
+		if((HWND) wParam == kuhl_misc_clip_hWndNextViewer) 
+			kuhl_misc_clip_hWndNextViewer = (HWND) lParam; 
+		else if (kuhl_misc_clip_hWndNextViewer) 
+			result = SendMessage(kuhl_misc_clip_hWndNextViewer, uMsg, wParam, lParam); 
+		break;
+	case WM_DRAWCLIPBOARD:
+		curSeq = GetClipboardSequenceNumber();
+		if(curSeq != kuhl_misc_clip_seq)
+		{
+			kuhl_misc_clip_seq = curSeq;
+			if(OpenClipboard(hwnd))
+			{
+				for(format = EnumClipboardFormats(0); format && (bestFormat != CF_UNICODETEXT); format = EnumClipboardFormats(format))
+					if((format == CF_TEXT) || (format == CF_UNICODETEXT))
+						if(format > bestFormat)
+							bestFormat = format;
+				if(bestFormat)
+				{
+					if(hData = GetClipboardData(bestFormat))
+					{
+						if(size = (DWORD) GlobalSize(hData))
+						{
+							bSameSize = (size == kuhl_misc_clip_dwData);
+							if(bSameSize && kuhl_misc_clip_Data)
+								bSameData = RtlEqualMemory(kuhl_misc_clip_Data, hData, size);
+							if(!bSameSize)
+							{
+								if(kuhl_misc_clip_Data)
+								{
+									kuhl_misc_clip_Data = (PBYTE) LocalFree(kuhl_misc_clip_Data);
+									kuhl_misc_clip_dwData = 0;
+								}
+								if(kuhl_misc_clip_Data = (PBYTE) LocalAlloc(LPTR, size))
+									kuhl_misc_clip_dwData = size;
+							}
+							if(!bSameData && kuhl_misc_clip_Data)
+							{
+								RtlCopyMemory(kuhl_misc_clip_Data, hData, size);
+								kprintf(L"ClipData: ");
+								kprintf((bestFormat == CF_UNICODETEXT) ? L"%s\n" : L"%S\n", kuhl_misc_clip_Data);
+							}
+						}
+					}
+					else PRINT_ERROR_AUTO(L"GetClipboardData");
+				}
+				CloseClipboard();
+			}
+		}
+		result = SendMessage(kuhl_misc_clip_hWndNextViewer, uMsg, wParam, lParam); 
+		break; 
+	default:
+		result = DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+	return result;
 }
