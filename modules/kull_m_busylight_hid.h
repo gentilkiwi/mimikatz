@@ -85,7 +85,10 @@ extern WINSETUPAPI HDEVINFO WINAPI SetupDiGetClassDevsW(__in_opt CONST GUID *Cla
 extern WINSETUPAPI BOOL WINAPI SetupDiEnumDeviceInterfaces(__in HDEVINFO DeviceInfoSet, __in_opt PSP_DEVINFO_DATA DeviceInfoData, __in CONST GUID *InterfaceClassGuid, __in DWORD MemberIndex, __out PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData);
 extern WINSETUPAPI BOOL WINAPI SetupDiGetDeviceInterfaceDetailW( __in HDEVINFO DeviceInfoSet, __in PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData, __out_bcount_opt(DeviceInterfaceDetailDataSize) PSP_DEVICE_INTERFACE_DETAIL_DATA_W DeviceInterfaceDetailData, __in DWORD DeviceInterfaceDetailDataSize, __out_opt PDWORD RequiredSize,  __out_opt PSP_DEVINFO_DATA DeviceInfoData);
 extern WINSETUPAPI BOOL WINAPI SetupDiDestroyDeviceInfoList(__in HDEVINFO DeviceInfoSet);
+extern WINSETUPAPI BOOL SetupDiGetDeviceRegistryPropertyW(__in HDEVINFO DeviceInfoSet, __in PSP_DEVINFO_DATA DeviceInfoData, __in DWORD Property, __out_opt PDWORD PropertyRegDataType, __out_opt PBYTE PropertyBuffer, __in DWORD PropertyBufferSize, __out_opt PDWORD RequiredSize);
+extern WINSETUPAPI BOOL SetupDiEnumDeviceInfo(__in HDEVINFO DeviceInfoSet, __in DWORD MemberIndex, __out PSP_DEVINFO_DATA DeviceInfoData);
 
 #define SetupDiGetClassDevs SetupDiGetClassDevsW
 #define SetupDiGetDeviceInterfaceDetail SetupDiGetDeviceInterfaceDetailW
+#define SetupDiGetDeviceRegistryProperty SetupDiGetDeviceRegistryPropertyW
 #include <poppack.h>

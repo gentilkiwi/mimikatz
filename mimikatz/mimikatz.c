@@ -29,6 +29,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_sid,
 	&kuhl_m_iis,
 	&kuhl_m_rpc,
+	&kuhl_m_sr98,
 };
 
 int wmain(int argc, wchar_t * argv[])

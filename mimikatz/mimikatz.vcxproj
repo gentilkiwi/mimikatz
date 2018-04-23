@@ -141,6 +141,7 @@
     <ClCompile Include="mimikatz.c" />
     <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c" />
     <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c" />
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_sc.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
@@ -163,6 +164,7 @@
     <ClCompile Include="modules\kuhl_m_net.c" />
     <ClCompile Include="modules\kuhl_m_privilege.c" />
     <ClCompile Include="modules\kuhl_m_process.c" />
+    <ClCompile Include="modules\kuhl_m_sr98.c" />
     <ClCompile Include="modules\kuhl_m_rpc.c" />
     <ClCompile Include="modules\kuhl_m_service.c" />
     <ClCompile Include="modules\kuhl_m_service_remote.c" />
@@ -230,6 +232,7 @@
     <ClInclude Include="mimikatz.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h" />
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_sc.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
@@ -253,6 +256,7 @@
     <ClInclude Include="modules\kuhl_m_net.h" />
     <ClInclude Include="modules\kuhl_m_privilege.h" />
     <ClInclude Include="modules\kuhl_m_process.h" />
+    <ClInclude Include="modules\kuhl_m_sr98.h" />
     <ClInclude Include="modules\kuhl_m_rpc.h" />
     <ClInclude Include="modules\kuhl_m_service.h" />
     <ClInclude Include="modules\kuhl_m_service_remote.h" />

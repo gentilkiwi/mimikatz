@@ -8,7 +8,7 @@
 BOOL sr98_test_device(HANDLE hFile)
 {
 	BOOL status = FALSE;
-	USHORT temoin = 0x4242;
+	USHORT temoin = 'BB';
 	BYTE *out, szOut;
 	if(sr98_send_receive(hFile, SR98_IOCTL_TEST_DEVICE, &temoin, sizeof(temoin), &out, &szOut))
 	{
@@ -21,6 +21,13 @@ BOOL sr98_test_device(HANDLE hFile)
 		LocalFree(out);
 	}
 	return status;
+}
+
+BOOL sr98_beep(HANDLE hFile, BYTE duration)
+{
+	if(duration > 9)
+		duration = 9;
+	return sr98_send_receive(hFile, SR98_IOCTL_BEEP, &duration, 1, NULL, NULL);
 }
 
 BOOL sr98_read_emid(HANDLE hFile, BYTE emid[5])
@@ -47,13 +54,13 @@ BOOL sr98_t5577_write_block(HANDLE hFile, BYTE page, BYTE block, DWORD data, BYT
 	//if(lockBit) // ????
 	//	blockContent[1] |= SR98_T5577_LOCKBIT_MASK
 
-	*(PDWORD) (blockContent + 2) =  data;
+	*(PDWORD) (blockContent + 2) = data;
 	blockContent[6] = block & 7;
 
 	if(isPassword)
 	{
 		blockContent[0] = SR98_SUB_IOCTL_T5577_WRITE_BLOCK_PASS;
-		*(PDWORD) (blockContent + 7) =  password;
+		*(PDWORD) (blockContent + 7) = password;
 	}
 
 	if(sr98_send_receive(hFile, SR98_IOCTL_T5577, blockContent, isPassword ? sizeof(blockContent) : sizeof(blockContent) - sizeof(DWORD), &out, &szOut))
@@ -102,9 +109,9 @@ BOOL sr98_send_receive(HANDLE hFile, BYTE ctl, LPCVOID in, BYTE szIn, LPBYTE *ou
 	BYTE i, crc, inBuffer[24] = {0x03, 0x01, 5 + szIn}, outBuffer[256] = {0}, szBuffer;
 	DWORD ret;
 
-	kprintf(L">  ");
-	kull_m_string_wprintf_hex(in, szIn, 1);
-	kprintf(L"\n");
+	//kprintf(L">  ");
+	//kull_m_string_wprintf_hex(in, szIn, 1);
+	//kprintf(L"\n");
 	if(szIn < (24 - 6))
 	{
 		inBuffer[3] = ctl;
@@ -142,16 +149,16 @@ BOOL sr98_send_receive(HANDLE hFile, BYTE ctl, LPCVOID in, BYTE szIn, LPBYTE *ou
 							if((outBuffer[4 + szBuffer] == crc) && (outBuffer[5 + szBuffer] == 0x04))
 							{
 								status = TRUE;
-								if(out && szOut)
+								if(szBuffer && out && szOut)
 								{
 									*szOut = szBuffer;
 									if(*out = (PBYTE) LocalAlloc(LPTR, szBuffer))
 										RtlCopyMemory(*out, outBuffer + 4, szBuffer);
 									else status = FALSE;
 								}
-								kprintf(L"<  ");
-								kull_m_string_wprintf_hex(outBuffer + 4, szBuffer, 1);
-								kprintf(L"\n");
+								//kprintf(L"<  ");
+								//kull_m_string_wprintf_hex(outBuffer + 4, szBuffer, 1);
+								//kprintf(L"\n");
 							}
 							else PRINT_ERROR(L"Bad CRC/data\n");
 						}

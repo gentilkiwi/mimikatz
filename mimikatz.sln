@@ -16,6 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF
 		inc\DbgHelp.h = inc\DbgHelp.h
 		inc\DhcpSSdk.h = inc\DhcpSSdk.h
 		inc\DsGetDC.h = inc\DsGetDC.h
+		inc\Fci.h = inc\Fci.h
 		inc\fltUser.h = inc\fltUser.h
 		inc\fltUserStructures.h = inc\fltUserStructures.h
 		inc\globals.h = inc\globals.h

@@ -248,6 +248,12 @@
     <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c">
       <Filter>local modules\crypto</Filter>
     </ClCompile>
+    <ClCompile Include="modules\kuhl_m_sr98.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_sc.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -513,6 +519,12 @@
       <Filter>common modules</Filter>
     </ClInclude>
     <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h">
+      <Filter>local modules\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_sr98.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_sc.h">
       <Filter>local modules\crypto</Filter>
     </ClInclude>
   </ItemGroup>
