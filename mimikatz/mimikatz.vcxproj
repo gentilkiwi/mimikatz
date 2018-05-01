@@ -108,6 +108,7 @@
     <ClCompile Include="..\modules\kull_m_dpapi.c" />
     <ClCompile Include="..\modules\kull_m_file.c" />
     <ClCompile Include="..\modules\kull_m_handle.c" />
+    <ClCompile Include="..\modules\kull_m_hid.c" />
     <ClCompile Include="..\modules\kull_m_kernel.c" />
     <ClCompile Include="..\modules\kull_m_key.c" />
     <ClCompile Include="..\modules\kull_m_net.c" />
@@ -116,6 +117,7 @@
     <ClCompile Include="..\modules\kull_m_output.c" />
     <ClCompile Include="..\modules\kull_m_patch.c" />
     <ClCompile Include="..\modules\kull_m_process.c" />
+    <ClCompile Include="..\modules\kull_m_rdm.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
     <ClCompile Include="..\modules\kull_m_remotelib.c" />
     <ClCompile Include="..\modules\kull_m_sr98.c" />
@@ -164,6 +166,7 @@
     <ClCompile Include="modules\kuhl_m_net.c" />
     <ClCompile Include="modules\kuhl_m_privilege.c" />
     <ClCompile Include="modules\kuhl_m_process.c" />
+    <ClCompile Include="modules\kuhl_m_rdm.c" />
     <ClCompile Include="modules\kuhl_m_sr98.c" />
     <ClCompile Include="modules\kuhl_m_rpc.c" />
     <ClCompile Include="modules\kuhl_m_service.c" />
@@ -193,7 +196,6 @@
   <ItemGroup>
     <ClInclude Include="..\modules\kull_m_asn1.h" />
     <ClInclude Include="..\modules\kull_m_busylight.h" />
-    <ClInclude Include="..\modules\kull_m_busylight_hid.h" />
     <ClInclude Include="..\modules\kull_m_cabinet.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
@@ -201,6 +203,7 @@
     <ClInclude Include="..\modules\kull_m_dpapi.h" />
     <ClInclude Include="..\modules\kull_m_file.h" />
     <ClInclude Include="..\modules\kull_m_handle.h" />
+    <ClInclude Include="..\modules\kull_m_hid.h" />
     <ClInclude Include="..\modules\kull_m_kernel.h" />
     <ClInclude Include="..\modules\kull_m_key.h" />
     <ClInclude Include="..\modules\kull_m_net.h" />
@@ -209,6 +212,7 @@
     <ClInclude Include="..\modules\kull_m_output.h" />
     <ClInclude Include="..\modules\kull_m_patch.h" />
     <ClInclude Include="..\modules\kull_m_process.h" />
+    <ClInclude Include="..\modules\kull_m_rdm.h" />
     <ClInclude Include="..\modules\kull_m_registry.h" />
     <ClInclude Include="..\modules\kull_m_registry_structures.h" />
     <ClInclude Include="..\modules\kull_m_remotelib.h" />
@@ -256,6 +260,7 @@
     <ClInclude Include="modules\kuhl_m_net.h" />
     <ClInclude Include="modules\kuhl_m_privilege.h" />
     <ClInclude Include="modules\kuhl_m_process.h" />
+    <ClInclude Include="modules\kuhl_m_rdm.h" />
     <ClInclude Include="modules\kuhl_m_sr98.h" />
     <ClInclude Include="modules\kuhl_m_rpc.h" />
     <ClInclude Include="modules\kuhl_m_service.h" />

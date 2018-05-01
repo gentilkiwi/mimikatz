@@ -6,7 +6,7 @@
 #pragma once
 #include "globals.h"
 #include "kull_m_string.h"
-#include "kull_m_busylight_hid.h" // to adapt
+#include "kull_m_hid.h"
 
 #define SR98_SLEEP_BEFORE_SEND				100
 #define SR98_SLEEP_BEFORE_RECV				100
