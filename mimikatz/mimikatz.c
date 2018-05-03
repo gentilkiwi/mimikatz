@@ -252,34 +252,23 @@ __declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
 #endif
 
 #ifdef _WINDLL
-void reatachIoHandle(DWORD nStdHandle, int flags, const char *Mode, FILE *file)
-{
-	int hConHandle;
-	HANDLE lStdHandle;
-	FILE *fd;
-	if(lStdHandle = GetStdHandle(nStdHandle))
-		if(hConHandle = _open_osfhandle((intptr_t) lStdHandle, flags))
-			if(fd = _fdopen(hConHandle, Mode))
-			{
-				*file = *fd;
-				setvbuf(file, NULL, _IONBF, 0);
-			}
-}
-
 void CALLBACK mimikatz_dll(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow)
 {
+	FILE * pNewStdout;
+	FILE * pNewStderr;
+	FILE * pNewStdin;
 	int argc = 0;
 	wchar_t ** argv;
 
-	if(AllocConsole())
+	if (AllocConsole())
 	{
-		reatachIoHandle(STD_OUTPUT_HANDLE, _O_TEXT, "w", stdout);
-		reatachIoHandle(STD_ERROR_HANDLE, _O_TEXT, "w", stderr);
-		reatachIoHandle(STD_INPUT_HANDLE, _O_TEXT, "r", stdin);
+		freopen_s(&pNewStdout, "CONOUT$", "w", stdout);
+		freopen_s(&pNewStderr, "CONOUT$", "w", stderr);
+		freopen_s(&pNewStdin, "CONIN$", "r", stdin);
 
-		if(lpszCmdLine && lstrlenW(lpszCmdLine))
+		if (lpszCmdLine && lstrlenW(lpszCmdLine))
 		{
-			if(argv = CommandLineToArgvW(lpszCmdLine, &argc))
+			if (argv = CommandLineToArgvW(lpszCmdLine, &argc))
 			{
 				wmain(argc, argv);
 				LocalFree(argv);
