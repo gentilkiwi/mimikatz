@@ -177,7 +177,6 @@ BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO
 											{
 												if(isPrintInfos)
 													kprintf(L"%*s" L"%3u %c|'%s\'\n", level << 1, L"", level, (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? L'D' : L'F' , fData.cFileName);
-
 												if(!(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 												{
 													if(callback)

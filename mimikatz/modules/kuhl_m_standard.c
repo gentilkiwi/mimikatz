@@ -90,24 +90,28 @@ NTSTATUS kuhl_m_standard_base64(int argc, wchar_t * argv[])
 
 const wchar_t *version_libs[] = {
 	L"lsasrv.dll", L"msv1_0.dll", L"tspkg.dll", L"wdigest.dll", L"kerberos.dll", L"livessp.dll", L"dpapisrv.dll",
-	L"kdcsvd.dll", L"cryptdll.dll", L"lsadb.dll", L"samsrv.dll", L"rsaenh.dll", L"ncrypt.dll", L"ncryptprov.dll",
+	L"kdcsvc.dll", L"cryptdll.dll", L"lsadb.dll", L"samsrv.dll", L"rsaenh.dll", L"ncrypt.dll", L"ncryptprov.dll",
 	L"eventlog.dll", L"wevtsvc.dll", L"termsrv.dll",
 };
 NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 {
-	NTSTATUS status;
-	HMODULE hModule;
-	PNTQUERYSYSTEMINFORMATIONEX pNtQuerySystemInformationEx;
-	SYSTEM_ISOLATED_USER_MODE_INFORMATION iumi = {TRUE, FALSE /* 0 */};
 	DWORD i, len;
 	PVOID buffer;
 	UINT lenVer;
 	VS_FIXEDFILEINFO *verInfo;
-	BOOL isWow64;
-
+	PKIWI_CABINET pCab;
+	wchar_t *system, *cabname, pathc[MAX_PATH];
+	DWORD dwSystem;
+	char *pFile, *acabname;
+	BOOL isWow64
 	#ifdef _M_X64
-	isWow64 = TRUE;
+	 = TRUE;
+	NTSTATUS status;
+	HMODULE hModule;
+	PNTQUERYSYSTEMINFORMATIONEX pNtQuerySystemInformationEx;
+	SYSTEM_ISOLATED_USER_MODE_INFORMATION iumi = {TRUE, FALSE /* 0 */};
 	#else
+	;
 	if(IsWow64Process(GetCurrentProcess(), &isWow64))
 	#endif
 	{
@@ -118,7 +122,7 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _MSC_FULL_VER, _MSC_BUILD
 			);
 	}
-
+	#ifdef _M_X64
 	if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10) && (hModule = GetModuleHandle(L"ntdll")))
 	{
 		if(pNtQuerySystemInformationEx = (PNTQUERYSYSTEMINFORMATIONEX) GetProcAddress(hModule, "NtQuerySystemInformationEx"))
@@ -134,8 +138,8 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			else PRINT_ERROR(L"NtQuerySystemInformationEx: %08x\n", status);
 		}
 	}
-
-	if(argc)
+	#endif
+	if(kull_m_string_args_byName(argc, argv, L"full", NULL, NULL))
 	{
 		kprintf(L"\n");
 		for(i = 0; i < ARRAYSIZE(version_libs); i++)
@@ -156,6 +160,52 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 				}
 			}
 		}
+	}
+
+	if(kull_m_string_args_byName(argc, argv, L"cab", NULL, NULL))
+	{
+		kprintf(L"\n");
+		if(dwSystem = GetSystemDirectory(NULL, 0))
+		{
+			if(system = (wchar_t *) LocalAlloc(LPTR, dwSystem * sizeof(wchar_t)))
+			{
+				if(GetSystemDirectory(system, dwSystem) == (dwSystem - 1))
+				{
+					if(kull_m_string_sprintf(&cabname, MIMIKATZ L"_" MIMIKATZ_ARCH L"_sysfiles_%u", MIMIKATZ_NT_BUILD_NUMBER))
+					{
+						if(acabname = kull_m_string_unicode_to_ansi(cabname))
+						{
+							kprintf(L"CAB: %S\n", acabname);
+							if(pCab = kull_m_cabinet_create(acabname))
+							{
+								for(i = 0; i < ARRAYSIZE(version_libs); i++)
+								{
+									if(PathCombine(pathc, system, version_libs[i]))
+									{
+										if(kull_m_file_isFileExist(pathc))
+										{
+											if(pFile = kull_m_string_unicode_to_ansi(pathc))
+											{
+												kprintf(L" -> %s\n", version_libs[i]);
+												kull_m_cabinet_add(pCab, pFile, NULL);
+												LocalFree(pFile);
+											}
+										}
+									}
+									else PRINT_ERROR_AUTO(L"PathCombine");
+								}
+								kull_m_cabinet_close(pCab);
+							}
+							LocalFree(acabname);
+						}
+						LocalFree(cabname);
+					}
+				}
+				else PRINT_ERROR_AUTO(L"GetSystemDirectory(data)");
+				LocalFree(system);
+			}
+		}
+		else PRINT_ERROR_AUTO(L"GetSystemDirectory(init)");	
 	}
 	return STATUS_SUCCESS;
 }
