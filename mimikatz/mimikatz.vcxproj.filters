@@ -248,6 +248,21 @@
     <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c">
       <Filter>local modules\crypto</Filter>
     </ClCompile>
+    <ClCompile Include="modules\kuhl_m_sr98.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_sc.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_rdm.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_rdm.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_hid.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -440,9 +455,6 @@
     <ClInclude Include="modules\kuhl_m_busylight.h">
       <Filter>local modules</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\kull_m_busylight_hid.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.h">
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
@@ -514,6 +526,21 @@
     </ClInclude>
     <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h">
       <Filter>local modules\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_sr98.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_sc.h">
+      <Filter>local modules\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_rdm.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_rdm.h">
+      <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_hid.h">
+      <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -6,10 +6,10 @@
 #pragma once
 #include "globals.h"
 #include "kull_m_string.h"
-#include "kull_m_busylight_hid.h" // to adapt
+#include "kull_m_hid.h"
 
-#define SR98_SLEEP_BEFORE_SEND				10
-#define SR98_SLEEP_BEFORE_RECV				10
+#define SR98_SLEEP_BEFORE_SEND				100
+#define SR98_SLEEP_BEFORE_RECV				100
 
 #define SR98_RATE_RF_32						0
 #define SR98_RATE_RF_64						1
@@ -75,6 +75,7 @@ typedef struct _SR98_DEVICE {
 } SR98_DEVICE, *PSR98_DEVICE;
 
 BOOL sr98_test_device(HANDLE hFile);
+BOOL sr98_beep(HANDLE hFile, BYTE duration);
 BOOL sr98_read_emid(HANDLE hFile, BYTE emid[5]);
 
 BOOL sr98_t5577_reset(HANDLE hFile, BYTE DataRate);

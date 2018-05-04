@@ -5,11 +5,11 @@
 */
 #pragma once
 #include "kuhl_m.h"
-#include <cardmod.h>
 #include "../modules/kull_m_crypto.h"
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_registry.h"
+#include "crypto/kuhl_m_crypto_sc.h"
 #include "crypto/kuhl_m_crypto_extractor.h"
 #include "crypto/kuhl_m_crypto_patch.h"
 
@@ -49,7 +49,6 @@ NTSTATUS kuhl_m_crypto_l_providers(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_stores(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_crypto_l_sc(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[]);
@@ -65,6 +64,3 @@ wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * 
 void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport);
 void kuhl_m_crypto_l_keys_capi(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwProvType, DWORD dwFlags, BOOL export, LPCWSTR szStore);
 void kuhl_m_crypto_l_keys_cng(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwFlags, BOOL export, LPCWSTR szStore);
-void kuhl_m_crypto_l_mdr(LPCWSTR szMdr, SCARDCONTEXT ctxScard, SCARDHANDLE hScard, LPCWSTR szModel, LPCBYTE pbAtr, DWORD cbAtr);
-DWORD kuhl_m_crypto_l_sc_provtypefromname(LPCWSTR szProvider);
-PWSTR kuhl_m_crypto_l_sc_containerFromReader(LPCWSTR reader);

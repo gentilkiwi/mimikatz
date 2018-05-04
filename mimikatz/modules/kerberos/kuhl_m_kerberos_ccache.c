@@ -5,7 +5,7 @@
 */
 #include "kuhl_m_kerberos_ccache.h"
 
-const UNICODE_STRING usXCACHECONF = {24, 26, L"X-CACHECONF:"};
+DECLARE_CONST_UNICODE_STRING(usXCACHECONF, L"X-CACHECONF:");
 NTSTATUS kuhl_m_kerberos_ccache_enum(int argc, wchar_t * argv[], BOOL isInject, BOOL isSave)
 {
 	PBYTE file, data;

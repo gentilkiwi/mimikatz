@@ -74,6 +74,9 @@ typedef struct _KERB_INFOS {
 	LONG	offsetSizeOfCsp;
 	LONG	offsetNames;
 	SIZE_T	structCspInfosSize;
+
+	LONG	offsetPasswordErase;
+	SIZE_T	passwordEraseSize;
 } KERB_INFOS, *PKERB_INFOS;
 
 typedef struct _KERB_SMARTCARD_CSP_INFO_5 {

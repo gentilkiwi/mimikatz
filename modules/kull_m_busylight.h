@@ -5,7 +5,7 @@
 */
 #pragma once
 #include "globals.h"
-#include "kull_m_busylight_hid.h"
+#include "kull_m_hid.h"
 
 #define BUSYLIGHT_INPUT_REPORT_SIZE				65
 #define BUSYLIGHT_OUTPUT_REPORT_SIZE			65

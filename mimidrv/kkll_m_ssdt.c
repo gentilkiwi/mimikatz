@@ -44,6 +44,7 @@ NTSTATUS kkll_m_ssdt_list(PKIWI_BUFFER outBuffer)
 
 #ifdef _M_X64
 const UCHAR PTRN_WALL_Ke[]	= {/*0x00, 0x00, 0x4d, 0x0f, 0x45,*/ 0xd3, 0x42, 0x3b, 0x44, 0x17, 0x10, 0x0f, 0x83};
+const UCHAR PTRN_W1803_Ke[] = {0xd3, 0x41, 0x3b, 0x44, 0x3a, 0x10, 0x0f, 0x83};
 const LONG OFFS_WNO8_Ke		= -24;//-19;
 const LONG OFFS_WIN8_Ke		= -21;//-16;
 const LONG OFFS_WIN10A_Ke	= -38;//-16;
@@ -53,7 +54,15 @@ NTSTATUS kkll_m_ssdt_getKeServiceDescriptorTable()
 	if(KeServiceDescriptorTable)
 		status = STATUS_SUCCESS;
 	else
-		status = kkll_m_memory_genericPointerSearch((PUCHAR *) &KeServiceDescriptorTable, ((PUCHAR) ZwUnloadKey) - (21 * PAGE_SIZE), ((PUCHAR) ZwUnloadKey) + (16 * PAGE_SIZE), PTRN_WALL_Ke, sizeof(PTRN_WALL_Ke), (KiwiOsIndex < KiwiOsIndex_8) ? OFFS_WNO8_Ke : (KiwiOsIndex < KiwiOsIndex_10_1607) ? OFFS_WIN8_Ke : OFFS_WIN10A_Ke);
+	{
+		status = kkll_m_memory_genericPointerSearch(
+			(PUCHAR *) &KeServiceDescriptorTable,
+			((PUCHAR) ZwUnloadKey) - (21 * PAGE_SIZE),
+			((PUCHAR) ZwUnloadKey) + (19 * PAGE_SIZE),
+			(KiwiOsIndex < KiwiOsIndex_10_1803) ? PTRN_WALL_Ke : PTRN_W1803_Ke,
+			(KiwiOsIndex < KiwiOsIndex_10_1803) ? sizeof(PTRN_WALL_Ke) : sizeof(PTRN_W1803_Ke),
+			(KiwiOsIndex < KiwiOsIndex_8) ? OFFS_WNO8_Ke : (KiwiOsIndex < KiwiOsIndex_10_1607) ? OFFS_WIN8_Ke : OFFS_WIN10A_Ke);
+	}
 	return status;
 }
 #endif
