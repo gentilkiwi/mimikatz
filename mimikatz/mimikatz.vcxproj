@@ -116,6 +116,7 @@
     <ClCompile Include="..\modules\kull_m_minidump.c" />
     <ClCompile Include="..\modules\kull_m_output.c" />
     <ClCompile Include="..\modules\kull_m_patch.c" />
+    <ClCompile Include="..\modules\kull_m_pipe.c" />
     <ClCompile Include="..\modules\kull_m_process.c" />
     <ClCompile Include="..\modules\kull_m_rdm.c" />
     <ClCompile Include="..\modules\kull_m_registry.c" />
@@ -149,6 +150,7 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos_ccache.c" />
@@ -211,6 +213,7 @@
     <ClInclude Include="..\modules\kull_m_minidump.h" />
     <ClInclude Include="..\modules\kull_m_output.h" />
     <ClInclude Include="..\modules\kull_m_patch.h" />
+    <ClInclude Include="..\modules\kull_m_pipe.h" />
     <ClInclude Include="..\modules\kull_m_process.h" />
     <ClInclude Include="..\modules\kull_m_rdm.h" />
     <ClInclude Include="..\modules\kull_m_registry.h" />
@@ -242,6 +245,7 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos_ccache.h" />

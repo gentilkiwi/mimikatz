@@ -18,6 +18,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_setntlm,	L"setntlm",		L"Ask a server to set a new password/ntlm for one user"},
 	{kuhl_m_lsadump_changentlm,	L"changentlm",	L"Ask a server to set a new password/ntlm for one user"},
 	{kuhl_m_lsadump_netsync,	L"netsync",		L"Ask a DC to send current and previous NTLM hash of DC/SRV/WKS"},
+	{kuhl_m_lsadump_packages,	L"packages",	NULL},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -2233,5 +2234,62 @@ NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[])
 		}
 	}
 	else PRINT_ERROR(L"Argument /user: is needed\n");
+	return STATUS_SUCCESS;
+}
+
+PCWCHAR PACKAGES_FLAGS[] = {
+	L"INTEGRITY", L"PRIVACY", L"TOKEN_ONLY", L"DATAGRAM",
+	L"CONNECTION", L"MULTI_REQUIRED", L"CLIENT_ONLY", L"EXTENDED_ERROR",
+	L"IMPERSONATION", L"ACCEPT_WIN32_NAME", L"STREAM", L"NEGOTIABLE",
+	L"GSS_COMPATIBLE", L"LOGON", L"ASCII_BUFFERS", L"FRAGMENT",
+	L"MUTUAL_AUTH", L"DELEGATION", L"READONLY_WITH_CHECKSUM", L"RESTRICTED_TOKENS",
+	L"NEGO_EXTENDER", L"NEGOTIABLE2", L"APPCONTAINER_PASSTHROUGH", L"APPCONTAINER_CHECKS",
+};
+NTSTATUS kuhl_m_lsadump_packages(int argc, wchar_t * argv[])
+{
+	SECURITY_STATUS status;
+	ULONG cPackages, i, j;
+	PSecPkgInfo pPackageInfo;
+	CredHandle hCred;
+	CtxtHandle hCtx;
+	SecBuffer OutBuff = {0, SECBUFFER_TOKEN, NULL};
+	SecBufferDesc Output = {SECBUFFER_VERSION, 1, &OutBuff};
+	ULONG ContextAttr;
+
+	status = EnumerateSecurityPackages(&cPackages, &pPackageInfo);
+	if(status == SEC_E_OK)
+	{
+		for(i = 0; i < cPackages; i++)
+		{
+			kprintf(L"Name        : %s\nDescription : %s\nCapabilities: %08x ( ", pPackageInfo[i].Name, pPackageInfo[i].Comment, pPackageInfo[i].fCapabilities);
+			for(j = 0; j < sizeof(ULONG) * 8; j++)
+				if((pPackageInfo[i].fCapabilities >> j) & 1)
+					kprintf(L"%s ; ", (j < ARRAYSIZE(PACKAGES_FLAGS)) ? PACKAGES_FLAGS[j] : L"?");
+			kprintf(L")\nMaxToken    : %u\nRPCID       : 0x%04x (%hu)\nVersion     : %hu\n", pPackageInfo[i].cbMaxToken, pPackageInfo[i].wRPCID, pPackageInfo[i].wRPCID, pPackageInfo[i].wVersion);
+
+			if(argc)
+			{
+				status = AcquireCredentialsHandle(NULL, pPackageInfo[i].Name, SECPKG_CRED_OUTBOUND, NULL, NULL, NULL, NULL, &hCred, NULL);
+				if(status == SEC_E_OK)
+				{
+					status = InitializeSecurityContext(&hCred, NULL, argv[0], ISC_REQ_ALLOCATE_MEMORY, 0, SECURITY_NATIVE_DREP, NULL, 0, &hCtx, &Output, &ContextAttr, NULL);
+					if((status == SEC_E_OK) || (status == SEC_I_COMPLETE_AND_CONTINUE)  || (status == SEC_I_COMPLETE_NEEDED)  || (status == SEC_I_CONTINUE_NEEDED)  || (status == SEC_I_INCOMPLETE_CREDENTIALS)  || (status == SEC_E_INCOMPLETE_MESSAGE))
+					{
+						kull_m_string_wprintf_hex(OutBuff.pvBuffer, OutBuff.cbBuffer, 1 | (16 << 16));
+						kprintf(L"\n");
+						if(OutBuff.pvBuffer)
+							FreeContextBuffer(OutBuff.pvBuffer);
+						DeleteSecurityContext(&hCtx);
+					}
+					else PRINT_ERROR(L"InitializeSecurityContext: 0x%08x\n", status);
+					FreeCredentialHandle(&hCred);
+				}
+				else PRINT_ERROR(L"AcquireCredentialsHandle: 0x%08x\n", status);
+			}
+			kprintf(L"\n");
+		}
+		FreeContextBuffer(pPackageInfo);
+	}
+	else PRINT_ERROR(L"EnumerateSecurityPackages: 0x%08x\n", status);
 	return STATUS_SUCCESS;
 }

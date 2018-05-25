@@ -258,7 +258,7 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContex
 	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest}, cryptoData;
 	DWORD realLen, calcChecksum;
 	PVOID toFree;
-
+	
 	if(pKey->SessionKey && pKey->SessionKeyLength)
 	{
 		if((val->valLen >= (ULONG) FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData)) && val->pVal)

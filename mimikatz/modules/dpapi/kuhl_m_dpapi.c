@@ -20,6 +20,7 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 #ifdef SQLITE3_OMIT
 	{kuhl_m_dpapi_chrome,		L"chrome",		L"Chrome test"},
 #endif
+	{kuhl_m_dpapi_ssh,			L"ssh",		L"SSH Agent registry cache"},
 	{kuhl_m_dpapi_oe_cache,		L"cache", NULL},
 };
 const KUHL_M kuhl_m_dpapi = {
@@ -516,7 +517,15 @@ BOOL kuhl_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 					kuhl_m_dpapi_oe_masterkey_add(&blob->guidMasterKey, masterkey, masterkeyLen);
 
 				if(!status && !masterkey)
-					PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				{
+					if(GetLastError() == NTE_BAD_KEY_STATE)
+					{
+						PRINT_ERROR(L"NTE_BAD_KEY_STATE, needed Masterkey is: ");
+						kull_m_string_displayGUID(&blob->guidMasterKey);
+						kprintf(L"\n");
+					}
+					else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				}
 			}
 			//kprintf(L"\n");
 		}

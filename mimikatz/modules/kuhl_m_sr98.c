@@ -36,7 +36,7 @@ NTSTATUS kuhl_m_sr98_beep(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_sr98_raw(int argc, wchar_t * argv[])
 {
-	KUHL_M_SR98_RAW_BLOCK blocks[7];
+	KUHL_M_SR98_RAW_BLOCK blocks[8];
 	PSR98_DEVICE devices;
 	ULONG count;
 	PCWCHAR szBlock;
