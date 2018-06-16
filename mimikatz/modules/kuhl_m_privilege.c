@@ -26,12 +26,10 @@ const KUHL_M kuhl_m_privilege = {
 NTSTATUS kuhl_m_privilege_simple(ULONG privId)
 {
 	ULONG previousState;
-	NTSTATUS status;
-	status = RtlAdjustPrivilege(privId, TRUE, FALSE, &previousState);
+	NTSTATUS status = RtlAdjustPrivilege(privId, TRUE, FALSE, &previousState);
 	if(NT_SUCCESS(status))
 		kprintf(L"Privilege \'%u\' OK\n", privId);
-	else
-		PRINT_ERROR(L"RtlAdjustPrivilege (%u) %08x\n", privId, status);
+	else PRINT_ERROR(L"RtlAdjustPrivilege (%u) %08x\n", privId, status);
 	return status;
 }
 
