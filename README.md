@@ -104,6 +104,10 @@ You can use any tools you want to sync, even incorporated `GIT` in Visual Studio
 * SVN URL is  : https://github.com/gentilkiwi/mimikatz/trunk
 * ZIP file is : https://github.com/gentilkiwi/mimikatz/archive/master.zip
 
+### Binaries [![Build status](https://ci.appveyor.com/api/projects/status/gqcqwwfpoh2lokq6?svg=true)](https://ci.appveyor.com/project/osospeed/mimikatz)
+
+An automatic build is available. Binaries can be downloaded from the Artifacts section [here](https://ci.appveyor.com/project/osospeed/mimikatz/).
+
 ### Build the solution
 * After opening the solution, `Build` / `Build Solution` (you can change architecture)
 * `mimikatz` is now built and ready to be used! (`Win32` / `x64`)
