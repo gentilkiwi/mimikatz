@@ -1,0 +1,13 @@
+version: 1.0.{build}
+image: Visual Studio 2013
+configuration: Release
+environment:
+  matrix:
+  - Platform: x64
+  - Platform: Win32
+build:
+  parallel: true
+  verbosity: minimal
+artifacts:
+- path: Win32\*
+- path: x64\*
