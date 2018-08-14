@@ -675,25 +675,39 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 	return BerApp_KrbCred;
 }
 
-NTSTATUS kuhl_m_kerberos_hash_data(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count)
+
+NTSTATUS kuhl_m_kerberos_hash_data_raw(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count, PBYTE *buffer, DWORD *dwBuffer)
 {
 	PKERB_ECRYPT pCSystem;
 	NTSTATUS status = CDLocateCSystem(keyType, &pCSystem);
-	PVOID buffer;
 	if(NT_SUCCESS(status))
 	{
-		if(buffer = LocalAlloc(LPTR, pCSystem->KeySize))
+		if(*buffer = (PBYTE) LocalAlloc(LPTR, pCSystem->KeySize))
 		{
-			status = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? pCSystem->HashPassword_NT5(pString, buffer) : pCSystem->HashPassword_NT6(pString, pSalt, count, buffer);
-			if(NT_SUCCESS(status))
+			*dwBuffer = pCSystem->KeySize;
+			status = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? pCSystem->HashPassword_NT5(pString, *buffer) : pCSystem->HashPassword_NT6(pString, pSalt, count, *buffer);
+			if(!NT_SUCCESS(status))
 			{
-				kprintf(L"\t* %s ", kuhl_m_kerberos_ticket_etype(keyType));
-				kull_m_string_wprintf_hex(buffer, pCSystem->KeySize, 0);
-				kprintf(L"\n");
+				*buffer = (PBYTE) LocalFree(*buffer);
+				PRINT_ERROR(L"HashPassword : %08x\n", status);
 			}
-			else PRINT_ERROR(L"HashPassword : %08x\n", status);
-			LocalFree(buffer);
 		}
+	}
+	else PRINT_ERROR(L"CDLocateCSystem : %08x\n", status);
+	return status;
+}
+
+NTSTATUS kuhl_m_kerberos_hash_data(LONG keyType, PCUNICODE_STRING pString, PCUNICODE_STRING pSalt, DWORD count)
+{
+	PBYTE buffer;
+	DWORD dwBuffer;
+	NTSTATUS status = kuhl_m_kerberos_hash_data_raw(keyType, pString, pSalt, count, &buffer, &dwBuffer);
+	if(NT_SUCCESS(status))
+	{
+		kprintf(L"\t* %s ", kuhl_m_kerberos_ticket_etype(keyType));
+		kull_m_string_wprintf_hex(buffer, dwBuffer, 0);
+		kprintf(L"\n");
+		LocalFree(buffer);
 	}
 	return status;
 }

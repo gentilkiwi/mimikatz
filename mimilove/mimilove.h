@@ -10,7 +10,7 @@
 #define MIMILOVE				L"mimilove"
 #define MIMILOVE_VERSION		L"1.0"
 #define MIMILOVE_CODENAME		L"Love edition <3"
-#define MIMILOVE_FULL			MIMILOVE L" " MIMILOVE_VERSION L" built on " TEXT(__DATE__) L" " TEXT(__TIME__) L" - lil!"
+#define MIMILOVE_FULL			MIMILOVE L" " MIMILOVE_VERSION L" built on " TEXT(__DATE__) L" " TEXT(__TIME__)
 #define MIMILOVE_SECOND			L"\"" MIMILOVE_CODENAME L"\""
 #define MIMILOVE_SPECIAL		L"Windows 2000 only!                               "
 

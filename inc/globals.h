@@ -32,7 +32,7 @@
 #define MIMIKATZ				L"mimikatz"
 #define MIMIKATZ_VERSION		L"2.1.1"
 #define MIMIKATZ_CODENAME		L"A La Vie, A L\'Amour"
-#define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") built on " TEXT(__DATE__) L" " TEXT(__TIME__) L" - lil!"
+#define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") built on " TEXT(__DATE__) L" " TEXT(__TIME__)
 #define MIMIKATZ_SECOND			L"\"" MIMIKATZ_CODENAME L"\""
 #define MIMIKATZ_DEFAULT_LOG	MIMIKATZ L".log"
 #define MIMIKATZ_DRIVER			L"mimidrv"
