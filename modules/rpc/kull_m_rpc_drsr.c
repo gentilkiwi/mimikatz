@@ -258,7 +258,7 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContex
 	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest}, cryptoData;
 	DWORD realLen, calcChecksum;
 	PVOID toFree;
-
+	
 	if(pKey->SessionKey && pKey->SessionKeyLength)
 	{
 		if((val->valLen >= (ULONG) FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData)) && val->pVal)
@@ -723,5 +723,6 @@ const PrefixTableEntry PrefixDefaultTableEntries[] = {
 	{24,{2 , (BYTE *) "\x55\x15"}},
 	{25,{2 , (BYTE *) "\x55\x12"}},
 	{26,{2 , (BYTE *) "\x55\x14"}},
+	{27,{9 , (BYTE *) "\x2b\x06\x01\x04\x01\x8b\x3a\x65\x77"}},
 };
 const SCHEMA_PREFIX_TABLE SCHEMA_DEFAULT_PREFIX_TABLE = {ARRAYSIZE(PrefixDefaultTableEntries), (PrefixTableEntry *) PrefixDefaultTableEntries};

@@ -14,6 +14,7 @@
 #include "packages/kuhl_m_dpapi_creds.h"
 #include "packages/kuhl_m_dpapi_wlan.h"
 #include "packages/kuhl_m_dpapi_chrome.h"
+#include "packages/kuhl_m_dpapi_ssh.h"
 
 const KUHL_M kuhl_m_dpapi;
 

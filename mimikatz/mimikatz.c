@@ -31,6 +31,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_rpc,
 	&kuhl_m_sr98,
 	&kuhl_m_rdm,
+	&kuhl_m_acr,
 };
 
 int wmain(int argc, wchar_t * argv[])
@@ -73,7 +74,7 @@ void mimikatz_begin()
 #endif
 	kprintf(L"\n"
 		L"  .#####.   " MIMIKATZ_FULL L"\n"
-		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo)\n"
+		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo) ** Vegas Edition **\n"
 		L" ## / \\ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" ## \\ / ##       > http://blog.gentilkiwi.com/mimikatz\n"
 		L" '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )\n"

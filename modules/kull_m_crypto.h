@@ -35,6 +35,10 @@ typedef struct _RSA_GENERICKEY_BLOB {
 #define IPSEC_FLAG_CHECK 0xf42a19b6
 #endif
 
+#ifndef CNG_RSA_PRIVATE_KEY_BLOB
+#define CNG_RSA_PRIVATE_KEY_BLOB (LPCSTR) 83
+#endif
+
 typedef struct _PVK_FILE_HDR {
 	DWORD	dwMagic;
 	DWORD	dwVersion;

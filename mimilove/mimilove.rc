@@ -24,7 +24,7 @@ BLOCK "StringFileInfo"
 			VALUE "LegalCopyright", "Copyright (c) 2007 - 2018 gentilkiwi (Benjamin DELPY)"
 			VALUE "OriginalFilename", "mimilove.exe"
 			VALUE "PrivateBuild", "Build with love for POC only"
-			VALUE "SpecialBuild", "kiwi flavor !"
+			VALUE "SpecialBuild", "lil :)"
 		END
 	END
 	BLOCK "VarFileInfo"

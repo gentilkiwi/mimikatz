@@ -263,6 +263,21 @@
     <ClCompile Include="..\modules\kull_m_hid.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_pipe.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_pn532.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_acr.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\kuhl_m_acr.c">
+      <Filter>local modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -541,6 +556,21 @@
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_hid.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_pipe.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_pn532.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_acr.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\kuhl_m_acr.h">
+      <Filter>local modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
