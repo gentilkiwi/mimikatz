@@ -15,3 +15,4 @@ BOOL kull_m_xml_LoadXMLFile(IXMLDOMDocument *pXMLDom, PCWSTR filename);
 BOOL kull_m_xml_SaveXMLFile(IXMLDOMDocument *pXMLDom, PCWSTR filename);
 
 wchar_t * kull_m_xml_getAttribute(IXMLDOMNode *pNode, PCWSTR name);
+wchar_t * kull_m_xml_getTextValue(IXMLDOMNode *pNode, PCWSTR name);

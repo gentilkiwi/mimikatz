@@ -111,3 +111,29 @@ wchar_t * kull_m_xml_getAttribute(IXMLDOMNode *pNode, PCWSTR name)
 	}
 	return result;
 }
+
+wchar_t * kull_m_xml_getTextValue(IXMLDOMNode *pNode, PCWSTR name)
+{
+	wchar_t *result = NULL;
+	IXMLDOMNode *pSingleNode, *pChild;
+	BSTR bstrGeneric;
+
+	if((IXMLDOMNode_selectSingleNode(pNode, (BSTR) name, &pSingleNode) == S_OK) && pSingleNode)
+	{
+		if((IXMLDOMNode_get_firstChild(pSingleNode, &pChild) == S_OK) && pChild)
+		{
+			if(IXMLDOMNode_get_text(pChild, &bstrGeneric) == S_OK)
+			{
+				kull_m_string_copy(&result, bstrGeneric);
+				SysFreeString(bstrGeneric);
+			}
+
+		}
+
+
+
+
+
+	}
+	return result;
+}
