@@ -278,6 +278,9 @@
     <ClCompile Include="modules\kuhl_m_acr.c">
       <Filter>local modules</Filter>
     </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -571,6 +574,9 @@
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_acr.h">
       <Filter>local modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.h">
+      <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
