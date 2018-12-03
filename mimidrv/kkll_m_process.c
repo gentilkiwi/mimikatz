@@ -7,6 +7,7 @@
 
 const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 {					/*  EprocessNext, EprocessFlags2, TokenPrivs, SignatureProtect */
+					/*  dt nt!_EPROCESS -n ActiveProcessLinks -n Flags2 -n SignatureLevel */
 #ifdef _M_IX86
 /* UNK	*/	{0},
 /* XP	*/	{0x0088},
@@ -21,6 +22,7 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 10_1703*/{0x00b8, 0x00c0, 0x0040, 0x02ec},
 /* 10_1709*/{0x00b8, 0x00c0, 0x0040, 0x02ec},
 /* 10_1803*/{0x00b8, 0x00c0, 0x0040, 0x02ec},
+/* 10_1809*/{0x00b8, 0x00c8, 0x0040, 0x02f4},
 #else
 /* UNK	*/	{0},
 /* XP	*/	{0},
@@ -35,6 +37,7 @@ const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 /* 10_1703*/{0x02e8, 0x0300, 0x0040, 0x06c8},
 /* 10_1709*/{0x02e8, 0x0300, 0x0040, 0x06c8},
 /* 10_1803*/{0x02e8, 0x0300, 0x0040, 0x06c8},
+/* 10_1809*/{0x02e8, 0x0300, 0x0040, 0x06c8},
 #endif
 };
 

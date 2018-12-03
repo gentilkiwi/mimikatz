@@ -17,12 +17,14 @@ BYTE PTRN_WIN5_PasswdSet[]	= {0x74, 0x18, 0x8b, 0x4d, 0x08, 0x8b, 0x11};
 BYTE PTRN_WIN6_PasswdSet[]	= {0x74, 0x11, 0x8b, 0x0b, 0x39, 0x4e, 0x10};
 BYTE PTRN_WIN63_PasswdSet[]	= {0x74, 0x15, 0x8b, 0x0a, 0x39, 0x4e, 0x10};
 BYTE PTRN_WIN64_PasswdSet[]	= {0x74, 0x15, 0x8b, 0x0f, 0x39, 0x4e, 0x10};
+BYTE PTRN_WIN1809_PasswdSet[] = {0x74, 0x15, 0x8b, 0x17, 0x39, 0x56, 0x10};
 KULL_M_PATCH_GENERIC WDigestReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_PasswdSet),	PTRN_WIN5_PasswdSet},	{0, NULL}, {-6, 36}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WIN5_PasswdSet),	PTRN_WIN5_PasswdSet},	{0, NULL}, {-6, 28}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_PasswdSet),	PTRN_WIN6_PasswdSet},	{0, NULL}, {-6, 32}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,	{sizeof(PTRN_WIN63_PasswdSet),	PTRN_WIN63_PasswdSet},	{0, NULL}, {-4, 32}},
 	{KULL_M_WIN_MIN_BUILD_10,	{sizeof(PTRN_WIN64_PasswdSet),	PTRN_WIN64_PasswdSet},	{0, NULL}, {-6, 32}},
+	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WIN1809_PasswdSet),	PTRN_WIN1809_PasswdSet},	{0, NULL}, {-6, 32}},
 };
 #endif
 
