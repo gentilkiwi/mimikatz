@@ -8,7 +8,7 @@ Licence : https://creativecommons.org/licenses/by/4.0/
 const KUHL_M_C kuhl_m_c_sid[] = {
 	{kuhl_m_sid_lookup,		L"lookup",			L"Name or SID lookup"},
 	{kuhl_m_sid_query,		L"query",			L"Query object by SID or name"},
-#ifdef _M_X64
+#if defined(_M_X64)
 	{kuhl_m_sid_modify,		L"modify",			L"Modify object SID of an object"},
 	{kuhl_m_sid_add,		L"add",				L"Add a SID to sIDHistory of an object"},
 	{kuhl_m_sid_clear,		L"clear",			L"Clear sIDHistory of an object"},
@@ -85,7 +85,7 @@ NTSTATUS kuhl_m_sid_query(int argc, wchar_t * argv[])
 	}
 	return STATUS_SUCCESS;
 }
-#ifdef _M_X64
+#if defined(_M_X64)
 NTSTATUS kuhl_m_sid_modify(int argc, wchar_t * argv[])
 {
 	PLDAP ld;
@@ -201,7 +201,7 @@ NTSTATUS kuhl_m_sid_clear(int argc, wchar_t * argv[])
 BYTE PTRN_JMP[]			= {0xeb};
 BYTE PTRN_JMP_NEAR[]	= {0x90, 0xe9};
 BYTE PTRN_6NOP[]		= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
-#ifdef _M_X64
+#if defined(_M_X64)
 // LocalModify:SampModifyLoopbackCheck
 BYTE PTRN_WN52_LoopBackCheck[]	= {0x48, 0x8b, 0xd8, 0x48, 0x89, 0x84, 0x24, 0x80, 0x00, 0x00, 0x00, 0xc7, 0x07, 0x01, 0x00, 0x00, 0x00, 0x83};
 BYTE PTRN_WN61_LoopBackCheck[]	= {0x48, 0x8b, 0xf8, 0x48, 0x89, 0x84, 0x24, 0x88, 0x00, 0x00, 0x00, 0x41, 0xbe, 0x01, 0x00, 0x00, 0x00, 0x44, 0x89, 0x33, 0x33, 0xdb, 0x39};
@@ -224,7 +224,7 @@ KULL_M_PATCH_GENERIC SysModReservedAttReferences[] = {
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WN81_SysModReservedAtt),	PTRN_WN81_SysModReservedAtt},	{sizeof(PTRN_6NOP), PTRN_6NOP}, {-6}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WN10_1607_SysModReservedAtt),	PTRN_WN10_1607_SysModReservedAtt},	{sizeof(PTRN_6NOP), PTRN_6NOP}, {-6}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 #endif
 NTSTATUS kuhl_m_sid_patch(int argc, wchar_t * argv[])
 {

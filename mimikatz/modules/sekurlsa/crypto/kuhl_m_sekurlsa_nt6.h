@@ -58,7 +58,7 @@ NTSTATUS kuhl_m_sekurlsa_nt6_clean();
 PLSA_PROTECT_MEMORY kuhl_m_sekurlsa_nt6_pLsaProtectMemory, kuhl_m_sekurlsa_nt6_pLsaUnprotectMemory;
 
 NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION lsassLsaSrvModule);
-BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M_SEKURLSA_OS_CONTEXT pOs, PKIWI_BCRYPT_GEN_KEY pGenKey);
+BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M_SEKURLSA_OS_CONTEXT pOs, PKIWI_BCRYPT_GEN_KEY pGenKey, LONG armOffset); // TODO:ARM64
 
 NTSTATUS kuhl_m_sekurlsa_nt6_LsaInitializeProtectedMemory();
 VOID kuhl_m_sekurlsa_nt6_LsaCleanupProtectedMemory();

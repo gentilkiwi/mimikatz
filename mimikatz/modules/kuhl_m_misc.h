@@ -20,7 +20,9 @@ NTSTATUS kuhl_m_misc_cmd(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_regedit(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_taskmgr(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_ncroutemon(int argc, wchar_t * argv[]);
+#if !defined(_M_ARM64)
 NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
+#endif
 //NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[]);
@@ -48,7 +50,7 @@ typedef struct _KUHL_M_MISC_DETOURS_HOOKS {
 PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD machineOfProcess, DWORD level);
 BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SIZE_T szDisableString, PWSTR enableString, SIZE_T szEnableString);
 
-#ifndef NTDSAPI
+#if !defined(NTDSAPI)
 #define NTDSAPI DECLSPEC_IMPORT
 #endif
 NTDSAPI DWORD WINAPI DsBindW(IN OPTIONAL LPCWSTR DomainControllerName, IN OPTIONAL LPCWSTR DnsDomainName, OUT HANDLE *phDS);

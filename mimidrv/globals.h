@@ -44,10 +44,10 @@ typedef enum _KIWI_OS_INDEX {
 	KiwiOsIndex_MAX		= 14,
 } KIWI_OS_INDEX, *PKIWI_OS_INDEX;
 
-#ifdef _M_IX86
-#define EX_FAST_REF_MASK	0x07
-#else
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 #define EX_FAST_REF_MASK	0x0f
+#elif defined(_M_IX86)
+#define EX_FAST_REF_MASK	0x07
 #endif
 
 #define KIWI_mask3bits(addr)	 (((ULONG_PTR) (addr)) & ~7)

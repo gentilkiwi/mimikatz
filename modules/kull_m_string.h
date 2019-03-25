@@ -93,7 +93,7 @@ BOOL kull_m_string_args_bool_byName(int argc, wchar_t * argv[], LPCWSTR name, PB
 BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src);
 BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src);
 BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);
 #endif
 BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...);

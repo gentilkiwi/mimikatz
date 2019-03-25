@@ -4,7 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
-#ifdef LSASS_DECRYPT
+#if defined(LSASS_DECRYPT)
 #include "../globals_sekurlsa.h"
 typedef struct _KIWI_DECRYPTOR {
 	DWORD cbData;

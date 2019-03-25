@@ -4,7 +4,7 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_dpapi_chrome.h"
-#ifdef SQLITE3_OMIT
+#if defined(SQLITE3_OMIT)
 
 NTSTATUS kuhl_m_dpapi_chrome(int argc, wchar_t * argv[])
 {

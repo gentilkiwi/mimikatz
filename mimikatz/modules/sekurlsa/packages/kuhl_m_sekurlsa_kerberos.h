@@ -172,7 +172,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_51 {
 	PVOID		unk6;
 	PVOID		unk7;
 	LUID		LocallyUniqueIdentifier;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	FILETIME	unk8;
@@ -209,7 +209,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION {
 	PVOID		unk5;
 	PVOID		unk6;
 	LUID		LocallyUniqueIdentifier;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	FILETIME	unk7;
@@ -264,7 +264,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_10 {
 	PVOID		unk11;
 	PVOID		unk12;
 	PVOID		unk13;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	KIWI_KERBEROS_10_PRIMARY_CREDENTIAL	credentials;
@@ -326,7 +326,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_10_1607 {
 	PVOID		unk11;
 	PVOID		unk12;
 	PVOID		unk13;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607	credentials;

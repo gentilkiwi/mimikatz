@@ -17,7 +17,7 @@ PKKLL_M_MEMORY_OFFSETS pObpTypeDirectoryObjectOffsets = NULL;
 POB_PRE_OPERATION_CALLBACK kkll_m_notify_fakePre = NULL;
 POB_POST_OPERATION_CALLBACK kkll_m_notify_fakePost = NULL;
 
-#ifdef _M_X64
+#if defined(_M_X64)
 UCHAR PTRN_W23_Thread[] =	{0x66, 0x90, 0x66, 0x90, 0x48, 0x8b, 0xce, 0xe8};
 UCHAR PTRN_WVI_Thread[] =	{0xbf, 0x40, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xcb, 0xe8};
 UCHAR PTRN_W10_Thread[] =	{0x48, 0x8b, 0xcd, 0xe8};
@@ -119,7 +119,7 @@ KKLL_M_MEMORY_GENERIC RegReferences[] = {
 	{KiwiOsIndex_10_1803,	{sizeof(PTRN_W10_Reg), PTRN_W10_Reg},					L"CmUnRegisterCallback",				L"DbgkLkmdUnregisterCallback",		{ -9, 0x028}},
 	{KiwiOsIndex_10_1809,	{sizeof(PTRN_W10_Reg), PTRN_W10_Reg},					L"CmUnRegisterCallback",				L"DbgkLkmdUnregisterCallback",		{ -9, 0x028}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 UCHAR PTRN_WXP_Thread[] =	{0xc7, 0x45, 0xa4, 0x08, 0x00, 0x00, 0x00, 0xff, 0x75, 0xbc, 0xe8};
 UCHAR PTRN_W23_Thread[] =	{0xc7, 0x45, 0xac, 0x08, 0x00, 0x00, 0x00, 0xff, 0x75, 0xd0, 0xe8};
 UCHAR PTRN_WVI_Thread[] =	{0xc7, 0x45, 0x0c, 0x40, 0x00, 0x00, 0x00, 0x53, 0xe8};
@@ -405,7 +405,7 @@ NTSTATUS kkll_m_notify_desc_object_callback(POBJECT_CALLBACK_ENTRY pCallbackEntr
 		}
 		if(NT_SUCCESS(status) && pCallbackEntry->PostOperation)
 		{
-			status = kprintf(outBuffer, L"\t\tPreOperation  : ");
+			status = kprintf(outBuffer, L"\t\tPostOperation : ");
 			if(NT_SUCCESS(status))
 				status = kkll_m_modules_fromAddr(outBuffer, pCallbackEntry->PostOperation);
 		}

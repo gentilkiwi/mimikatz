@@ -214,7 +214,7 @@ void kull_m_string_displaySID(IN PSID pSid)
 	}
 	else PRINT_ERROR_AUTO(L"ConvertSidToStringSid");
 }
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 PWSTR kull_m_string_getRandomGUID()
 {
 	UNICODE_STRING uString;
@@ -369,7 +369,7 @@ BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst)
 	}
 	return status;
 }
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData)
 {
 	BOOL status = FALSE;

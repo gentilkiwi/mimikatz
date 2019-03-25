@@ -104,41 +104,48 @@ BOOL kull_m_pn532_InListPassiveTarget(PKULL_M_PN532_COMM comm, const BYTE MaxTg,
 				RtlCopyMemory(dataIn + 2, pbInit, cbInit);
 			if(kull_m_pn532_sendrecv(comm, PN532_CMD_InListPassiveTarget, dataIn, cbInit + 2, dataOut, &wOut))
 			{
-				*NbTg = dataOut[0];
-				if(*Targets = (PPN532_TARGET) LocalAlloc(LPTR, *NbTg * sizeof(PN532_TARGET) + wOut - 1)) // not efficient, but...
+				if(dataOut[0])
 				{
-					ptr = (PBYTE) *Targets + *NbTg * sizeof(PN532_TARGET);
-					RtlCopyMemory(ptr, dataOut + 1, wOut - 1);
-
-					for(i = 0; i < dataOut[0]; i++)
+					if(NbTg && Targets)
 					{
-						(*Targets)[i].Tg = *ptr++;
-						(*Targets)[i].BrTy = BrTy;
-						switch(BrTy)
+						*NbTg = dataOut[0];
+						if(*Targets = (PPN532_TARGET) LocalAlloc(LPTR, *NbTg * sizeof(PN532_TARGET) + wOut - 1)) // not efficient, but...
 						{
-						case 0:
-							(*Targets)[i].Target.TypeA.SENS_RES = *(PUINT16) ptr;
-							ptr += sizeof((*Targets)[i].Target.TypeA.SENS_RES);
-							(*Targets)[i].Target.TypeA.SEL_RES = *ptr++;
-							(*Targets)[i].Target.TypeA.NFCIDLength = *ptr++;
-							if((*Targets)[i].Target.TypeA.NFCIDLength)
+							ptr = (PBYTE) *Targets + *NbTg * sizeof(PN532_TARGET);
+							RtlCopyMemory(ptr, dataOut + 1, wOut - 1);
+							for(i = 0; i < dataOut[0]; i++)
 							{
-								(*Targets)[i].Target.TypeA.NFCID1 = ptr;
-								ptr += (*Targets)[i].Target.TypeA.NFCIDLength;
-							}
-							if((*Targets)[i].Target.TypeA.SEL_RES & 0x20)
-							{
-								(*Targets)[i].Target.TypeA.ATSLength = *ptr++;
-								if((*Targets)[i].Target.TypeA.ATSLength)
+								(*Targets)[i].Tg = *ptr++;
+								(*Targets)[i].BrTy = BrTy;
+								switch(BrTy)
 								{
-									(*Targets)[i].Target.TypeA.ATS = ptr;
-									ptr += (*Targets)[i].Target.TypeA.ATSLength;
+								case 0:
+									(*Targets)[i].Target.TypeA.Tg = (*Targets)[i].Tg;
+									(*Targets)[i].Target.TypeA.SENS_RES = *(PUINT16) ptr;
+									ptr += sizeof((*Targets)[i].Target.TypeA.SENS_RES);
+									(*Targets)[i].Target.TypeA.SEL_RES = *ptr++;
+									(*Targets)[i].Target.TypeA.NFCIDLength = *ptr++;
+									if((*Targets)[i].Target.TypeA.NFCIDLength)
+									{
+										(*Targets)[i].Target.TypeA.NFCID1 = ptr;
+										ptr += (*Targets)[i].Target.TypeA.NFCIDLength;
+									}
+									if((*Targets)[i].Target.TypeA.SEL_RES & 0x20)
+									{
+										(*Targets)[i].Target.TypeA.ATSLength = *ptr++;
+										if((*Targets)[i].Target.TypeA.ATSLength)
+										{
+											(*Targets)[i].Target.TypeA.ATS = ptr;
+											ptr += (*Targets)[i].Target.TypeA.ATSLength;
+										}
+									}
+									break;
 								}
 							}
-							break;
+							status = TRUE;
 						}
 					}
-					status = TRUE;
+					else status = TRUE;
 				}
 			}
 		}
@@ -153,14 +160,54 @@ BOOL kull_m_pn532_InRelease(PKULL_M_PN532_COMM comm, const BYTE Tg)
 	BOOL status = FALSE;
 	BYTE ret;
 	UINT16 wOut = sizeof(ret);
-
-			if(kull_m_pn532_sendrecv(comm, PN532_CMD_InRelease, &Tg, sizeof(Tg), &ret, &wOut))
-			{
-	
-			}
+	if(kull_m_pn532_sendrecv(comm, PN532_CMD_InRelease, &Tg, sizeof(Tg), &ret, &wOut))
+		status = !ret;
 	return status;
 }
 
+BOOL kull_m_pn532_Mifare_Classic_AuthBlock(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE authKey, const BYTE blockId, const BYTE key[MIFARE_CLASSIC_KEY_SIZE])
+{
+	BOOL status = FALSE;
+	PN532_DATA_EXCHANGE_MIFARE authBlock = {target->Tg, {authKey, blockId}};
+	BYTE dataOut;
+	UINT16 wOut = sizeof(dataOut);
+	RtlCopyMemory(authBlock.DataOut.Data, key, MIFARE_CLASSIC_KEY_SIZE);
+	RtlCopyMemory(authBlock.DataOut.Data + MIFARE_CLASSIC_KEY_SIZE, target->NFCID1, MIFARE_CLASSIC_UID_SIZE/*target->Target.TypeA.NFCIDLength*/); // !
+	if(kull_m_pn532_sendrecv(comm, PN532_CMD_InDataExchange, (PBYTE) &authBlock, 13, &dataOut, &wOut))
+		status = !dataOut;
+	return status;
+}
+
+BOOL kull_m_pn532_Mifare_Classic_ReadBlock(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE blockId, PMIFARE_CLASSIC_RAW_BLOCK block)
+{
+	BOOL status = FALSE;
+	PN532_DATA_EXCHANGE_MIFARE readBlock = {target->Tg, {MIFARE_CLASSIC_CMD_READ, blockId}};
+	BYTE dataOut[MIFARE_CLASSIC_BLOCK_SIZE + 1];
+	UINT16 wOut = sizeof(dataOut);
+	RtlZeroMemory(block, sizeof(MIFARE_CLASSIC_RAW_BLOCK));
+	if(kull_m_pn532_sendrecv(comm, PN532_CMD_InDataExchange, (PBYTE) &readBlock, 3, dataOut, &wOut))
+		if(status = !dataOut[0])
+			RtlCopyMemory(block->data, dataOut + 1, wOut - 1);
+	return status;
+}
+
+BOOL kull_m_pn532_Mifare_Classic_ReadSector(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE sectorId, PMIFARE_CLASSIC_RAW_SECTOR sector)
+{
+	BOOL status = TRUE;
+	BYTE i;
+	RtlZeroMemory(sector, sizeof(MIFARE_CLASSIC_RAW_SECTOR));
+	for(i = 0; i < MIFARE_CLASSIC_BLOCKS_PER_SECTOR; i++)
+		status &= kull_m_pn532_Mifare_Classic_ReadBlock(comm, target, sectorId * MIFARE_CLASSIC_BLOCKS_PER_SECTOR + i, &sector->blocks[i]);
+	return status;
+}
+
+BOOL kull_m_pn532_Mifare_Classic_ReadSectorWithKey(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE sectorId, const BYTE authKey, const BYTE key[MIFARE_CLASSIC_KEY_SIZE], PMIFARE_CLASSIC_RAW_SECTOR sector)
+{
+	BOOL status = FALSE;
+	if(kull_m_pn532_Mifare_Classic_AuthBlock(comm, target, authKey, sectorId * MIFARE_CLASSIC_BLOCKS_PER_SECTOR, key))
+		status = kull_m_pn532_Mifare_Classic_ReadSector(comm, target, sectorId, sector);
+	return status;
+}
 
 const LPCWCHAR TgInitMode[] = {L"Mifare", L"Active mode", L"FeliCa"};
 const UINT16 TgInitBaudrate[] = {106, 212, 424};
@@ -215,9 +262,6 @@ void kull_m_pn532_TgResponseToInitiator(PKULL_M_PN532_COMM comm)
 
 	kull_m_pn532_sendrecv(comm, PN532_CMD_TgResponseToInitiator, dataIn, sizeof(dataIn), dataOut, &wOut);
 }
-
-
-
 
 void kull_m_pn532_TgGetData(PKULL_M_PN532_COMM comm)
 {

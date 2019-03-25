@@ -12,7 +12,7 @@
 #define CM_REG_MAX_CALLBACKS	100
 
 typedef struct _KKLL_M_NOTIFY_CALLBACK {
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG unk0;
 #endif
 	PVOID * callback;

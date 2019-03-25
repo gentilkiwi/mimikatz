@@ -3,10 +3,10 @@
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
-#ifdef LSASS_DECRYPT
+#if defined(LSASS_DECRYPT)
 #include "kuhl_m_sekurlsa_nt63.h"
 
-#ifdef _M_IX86
+#if defined(_M_IX86)
 BYTE kuhl_m_sekurlsa_nt63_decryptorCode[] = {
 	0x8b, 0x44, 0x24, 0x04,			// mov	 eax, dword ptr _lpparameter$[esp-4]
 	0x6a, 0x00,						// push	 0
@@ -18,7 +18,7 @@ BYTE kuhl_m_sekurlsa_nt63_decryptorCode[] = {
 	0xc2, 0x04, 0x00				// ret   4
 };
 #define kuhl_m_sekurlsa_nt63_decryptorCode_Offset 13
-#elif defined _M_X64
+#elif defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE kuhl_m_sekurlsa_nt63_decryptorCode[] = {
 	0x8b, 0x11,						// mov	 edx, dword ptr [rcx]
 	0x45, 0x33, 0xc0,				// xor	 r8d, r8d

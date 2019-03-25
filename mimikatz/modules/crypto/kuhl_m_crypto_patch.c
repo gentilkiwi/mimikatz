@@ -9,7 +9,7 @@ PCP_EXPORTKEY K_CPExportKey = NULL;
 
 BYTE PATC_WIN5_CPExportKey_EXPORT[]	= {0xeb};
 BYTE PATC_W6AL_CPExportKey_EXPORT[]	= {0x90, 0xe9};
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WIN5_CPExportKey_4001[]	= {0x0c, 0x01, 0x40, 0x00, 0x00, 0x75};
 BYTE PTRN_WIN5_CPExportKey_4000[]	= {0x0c, 0x0e, 0x72};
 BYTE PTRN_W6AL_CPExportKey_4001[]	= {0x0c, 0x01, 0x40, 0x00, 0x00, 0x0f, 0x85};
@@ -81,7 +81,7 @@ NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[])
 
 BYTE PATC_WALL_SPCryptExportKey_EXPORT[]	= {0xeb};
 BYTE PATC_W10_1607_SPCryptExportKey_EXPORT[]= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WI60_SPCryptExportKey[]			= {0xf6, 0x43, 0x28, 0x02, 0x0f, 0x85};
 BYTE PTRN_WNO8_SPCryptExportKey[]			= {0xf6, 0x43, 0x28, 0x02, 0x75};
 BYTE PTRN_WI80_SPCryptExportKey[]			= {0xf6, 0x43, 0x24, 0x02, 0x75};

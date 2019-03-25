@@ -104,7 +104,7 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 	DWORD dwSystem;
 	char *pFile, *acabname;
 	BOOL isWow64
-	#ifdef _M_X64
+	#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	 = TRUE;
 	NTSTATUS status;
 	HMODULE hModule;
@@ -122,7 +122,7 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _MSC_FULL_VER, _MSC_BUILD
 			);
 	}
-	#ifdef _M_X64
+	#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	if((MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10) && (hModule = GetModuleHandle(L"ntdll")))
 	{
 		if(pNtQuerySystemInformationEx = (PNTQUERYSYSTEMINFORMATIONEX) GetProcAddress(hModule, "NtQuerySystemInformationEx"))

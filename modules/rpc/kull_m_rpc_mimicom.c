@@ -1,10 +1,10 @@
 #include "kull_m_rpc_mimicom.h"
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 #define TYPE_FORMAT_STRING_SIZE	123
 #define PROC_FORMAT_STRING_SIZE	221
 static const unsigned short MimiCom_FormatStringOffsetTable[] = {0, 54, 98, 166};
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 #define TYPE_FORMAT_STRING_SIZE	129
 #define PROC_FORMAT_STRING_SIZE	213
 static const unsigned short MimiCom_FormatStringOffsetTable[] = {0, 52, 94, 160};
@@ -44,7 +44,7 @@ static const MIDL_STUB_DESC
 	MimiCom_c_StubDesc = {(void *) &MimiCom___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &MimiCom__MIDL_AutoBindHandle, 0, 0, 0, 0, mimicom__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 static const MIDL_SERVER_INFO MimiCom_ServerInfo = {&MimiCom_s_StubDesc, MimiCom_ServerRoutineTable, mimicom__MIDL_ProcFormatString.Format, MimiCom_FormatStringOffsetTable, 0, 0, 0, 0};
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 NTSTATUS CLI_MimiBind(handle_t rpc_handle, PMIMI_PUBLICKEY clientPublicKey, PMIMI_PUBLICKEY serverPublicKey, MIMI_HANDLE *phMimi)
 {
 	return (NTSTATUS) NdrClientCall2((PMIDL_STUB_DESC) &MimiCom_c_StubDesc, (PFORMAT_STRING) &mimicom__MIDL_ProcFormatString.Format[0], rpc_handle, clientPublicKey, serverPublicKey, phMimi).Simple;
@@ -77,7 +77,7 @@ static const mimicom_MIDL_TYPE_FORMAT_STRING mimicom__MIDL_TypeFormatString = {0
 	0x01, 0x00, 0x29, 0x00, 0x08, 0x00, 0x01, 0x00, 0x02, 0x5b, 0x11, 0x0c, 0x08, 0x5c, 0x11, 0x14, 0x02, 0x00, 0x12, 0x00, 0x02, 0x00, 0x1b, 0x00, 0x01, 0x00, 0x29, 0x54, 0x18, 0x00, 0x01, 0x00,
 	0x02, 0x5b, 0x11, 0x08, 0x25, 0x5c, 0x11, 0x14, 0x02, 0x00, 0x12, 0x00, 0x02, 0x00, 0x1b, 0x01, 0x02, 0x00, 0x29, 0x54, 0x10, 0x00, 0x01, 0x00, 0x05, 0x5b, 0x00,
 }};
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 #pragma optimize("", off ) 
 NTSTATUS CLI_MimiBind(handle_t rpc_handle, PMIMI_PUBLICKEY clientPublicKey, PMIMI_PUBLICKEY serverPublicKey, MIMI_HANDLE *phMimi)
 {

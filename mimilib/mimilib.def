@@ -18,3 +18,6 @@ EXPORTS
 
 	DhcpServerCalloutEntry	=	kdhcp_DhcpServerCalloutEntry
 	DhcpNewPktHook			=	kdhcp_DhcpNewPktHook
+
+	Msv1_0SubAuthenticationRoutine	= ksub_Msv1_0SubAuthenticationRoutine
+	Msv1_0SubAuthenticationFilter	= ksub_Msv1_0SubAuthenticationRoutine

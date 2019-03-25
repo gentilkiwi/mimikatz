@@ -5,7 +5,7 @@
 */
 #include "kkll_m_ssdt.h"
 
-#ifdef _M_X64
+#if defined(_M_X64)
 PSERVICE_DESCRIPTOR_TABLE			KeServiceDescriptorTable = NULL;
 #endif
 
@@ -15,7 +15,7 @@ NTSTATUS kkll_m_ssdt_list(PKIWI_BUFFER outBuffer)
 	USHORT idxFunction;
 	ULONG_PTR funcAddr;
 
-#ifdef _M_X64
+#if defined(_M_X64)
 	status = kkll_m_ssdt_getKeServiceDescriptorTable();
 	if(NT_SUCCESS(status))
 	{
@@ -23,7 +23,7 @@ NTSTATUS kkll_m_ssdt_list(PKIWI_BUFFER outBuffer)
 		status = kprintf(outBuffer, L"KeServiceDescriptorTable : 0x%p (%u)\n", KeServiceDescriptorTable, KeServiceDescriptorTable->TableSize);
 		for(idxFunction = 0; (idxFunction < KeServiceDescriptorTable->TableSize) && NT_SUCCESS(status) ; idxFunction++)
 		{
-#ifdef _M_IX86
+#if defined(_M_IX86)
 			funcAddr = (ULONG_PTR) KeServiceDescriptorTable->ServiceTable[idxFunction];
 #else
 			funcAddr = (ULONG_PTR) KeServiceDescriptorTable->OffsetToService;
@@ -36,13 +36,13 @@ NTSTATUS kkll_m_ssdt_list(PKIWI_BUFFER outBuffer)
 			if(NT_SUCCESS(status))
 				status = kkll_m_modules_fromAddr(outBuffer, (PVOID) funcAddr);
 		}
-#ifdef _M_X64
+#if defined(_M_X64)
 	}
 #endif
 	return status;
 }
 
-#ifdef _M_X64
+#if defined(_M_X64)
 const UCHAR PTRN_WALL_Ke[]	= {/*0x00, 0x00, 0x4d, 0x0f, 0x45,*/ 0xd3, 0x42, 0x3b, 0x44, 0x17, 0x10, 0x0f, 0x83};
 const UCHAR PTRN_W1803_Ke[] = {0xd3, 0x41, 0x3b, 0x44, 0x3a, 0x10, 0x0f, 0x83};
 const LONG OFFS_WNO8_Ke		= -24;//-19;

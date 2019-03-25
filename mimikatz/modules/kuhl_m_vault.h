@@ -114,7 +114,7 @@ typedef struct _VAULT_BYTE_BUFFER {
 typedef struct _VAULT_CREDENTIAL_ATTRIBUTEW {
     LPWSTR  Keyword;
     DWORD Flags;
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	DWORD badAlign;
 #endif
     DWORD ValueSize;

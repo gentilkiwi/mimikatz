@@ -8,7 +8,7 @@
 const ULONG MF_OffSetTable[KiwiOsIndex_MAX][MF_MAX] =
 {
 				/* CallbackOffset, CallbackPreOffset, CallbackPostOffset, CallbackVolumeNameOffset */
-#ifdef _M_IX86
+#if defined(_M_IX86)
 /* UNK	*/	{0},
 /* XP	*/	{0x007c, 0x000c, 0x0010, 0x002c},
 /* 2K3	*/	{0x007c, 0x000c, 0x0010, 0x002c},

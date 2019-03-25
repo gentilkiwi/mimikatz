@@ -37,7 +37,7 @@ NTSTATUS NTAPI kssp_SpGetInfo(PSecPkgInfoW PackageInfo)
 
 NTSTATUS NTAPI kssp_SpAcceptCredentials(SECURITY_LOGON_TYPE LogonType, PUNICODE_STRING AccountName, PSECPKG_PRIMARY_CRED PrimaryCredentials, PSECPKG_SUPPLEMENTAL_CRED SupplementalCredentials)
 {
-	FILE * kssp_logfile;;
+	FILE *kssp_logfile;
 #pragma warning(push)
 #pragma warning(disable:4996)
 	if(kssp_logfile = _wfopen(L"kiwissp.log", L"a"))

@@ -8,7 +8,7 @@
 const ULONG EPROCESS_OffSetTable[KiwiOsIndex_MAX][Eprocess_MAX] =
 {					/*  EprocessNext, EprocessFlags2, TokenPrivs, SignatureProtect */
 					/*  dt nt!_EPROCESS -n ActiveProcessLinks -n Flags2 -n SignatureLevel */
-#ifdef _M_IX86
+#if defined(_M_IX86)
 /* UNK	*/	{0},
 /* XP	*/	{0x0088},
 /* 2K3	*/	{0x0098},

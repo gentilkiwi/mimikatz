@@ -17,7 +17,7 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	{kuhl_m_dpapi_vault,		L"vault",		L"VAULT test"},
 	{kuhl_m_dpapi_wifi,			L"wifi",		L"WiFi test"},
 	{kuhl_m_dpapi_wwan,			L"wwan",		L"Wwan test"},
-#ifdef SQLITE3_OMIT
+#if defined(SQLITE3_OMIT)
 	{kuhl_m_dpapi_chrome,		L"chrome",		L"Chrome test"},
 #endif
 	{kuhl_m_dpapi_ssh,			L"ssh",		L"SSH Agent registry cache"},
