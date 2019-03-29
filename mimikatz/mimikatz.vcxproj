@@ -1,14 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
-	<ProjectConfiguration Include="Release|ARM64"><Configuration>Release</Configuration><Platform>ARM64</Platform></ProjectConfiguration>
-    <ProjectConfiguration Include="Second_Release_PowerShell|Win32"><Configuration>Second_Release_PowerShell</Configuration><Platform>Win32</Platform></ProjectConfiguration>
-    <ProjectConfiguration Include="Second_Release_PowerShell|x64"><Configuration>Second_Release_PowerShell</Configuration><Platform>x64</Platform></ProjectConfiguration>
-    <ProjectConfiguration Include="Simple_DLL|Win32"><Configuration>Simple_DLL</Configuration><Platform>Win32</Platform></ProjectConfiguration>
-    <ProjectConfiguration Include="Simple_DLL|x64"><Configuration>Simple_DLL</Configuration><Platform>x64</Platform></ProjectConfiguration>
-	<ProjectConfiguration Include="Simple_DLL|ARM64"><Configuration>Simple_DLL</Configuration><Platform>ARM64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Second_Release_PowerShell|Win32">
+      <Configuration>Second_Release_PowerShell</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Second_Release_PowerShell|x64">
+      <Configuration>Second_Release_PowerShell</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Simple_DLL|Win32">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Simple_DLL|x64">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Simple_DLL|ARM64">
+      <Configuration>Simple_DLL</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FB9B5E61-7C34-4280-A211-E979E1D6977F}</ProjectGuid>
@@ -18,7 +42,7 @@
     <SccAuxPath>Svn</SccAuxPath>
     <SccLocalPath>Svn</SccLocalPath>
     <SccProvider>SubversionScc</SccProvider>
-	<WindowsTargetPlatformVersion Condition="'$(Platform)' == 'ARM64'">10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(Platform)' == 'ARM64'">10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -101,6 +125,7 @@
     <ClCompile Include="..\modules\kull_m_hid.c" />
     <ClCompile Include="..\modules\kull_m_kernel.c" />
     <ClCompile Include="..\modules\kull_m_key.c" />
+    <ClCompile Include="..\modules\kull_m_ldap.c" />
     <ClCompile Include="..\modules\kull_m_net.c" />
     <ClCompile Include="..\modules\kull_m_memory.c" />
     <ClCompile Include="..\modules\kull_m_minidump.c" />
@@ -202,6 +227,7 @@
     <ClInclude Include="..\modules\kull_m_hid.h" />
     <ClInclude Include="..\modules\kull_m_kernel.h" />
     <ClInclude Include="..\modules\kull_m_key.h" />
+    <ClInclude Include="..\modules\kull_m_ldap.h" />
     <ClInclude Include="..\modules\kull_m_mifare.h" />
     <ClInclude Include="..\modules\kull_m_net.h" />
     <ClInclude Include="..\modules\kull_m_memory.h" />

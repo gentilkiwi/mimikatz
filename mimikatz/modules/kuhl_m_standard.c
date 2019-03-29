@@ -11,6 +11,7 @@ const KUHL_M_C kuhl_m_c_standard[] = {
 	{kuhl_m_standard_cls,		L"cls",			L"Clear screen (doesn\'t work with redirections, like PsExec)"},
 	{kuhl_m_standard_answer,	L"answer",		L"Answer to the Ultimate Question of Life, the Universe, and Everything"},
 	{kuhl_m_standard_coffee,	L"coffee",		L"Please, make me a coffee!"},
+	{kuhl_m_standard_owl,		L"owl",			L"Cam's owl"},
 	{kuhl_m_standard_sleep,		L"sleep",		L"Sleep an amount of milliseconds"},
 	{kuhl_m_standard_log,		L"log",			L"Log mimikatz input/output to file"},
 	{kuhl_m_standard_base64,	L"base64",		L"Switch file input/output base64"},
@@ -57,6 +58,16 @@ NTSTATUS kuhl_m_standard_answer(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_standard_coffee(int argc, wchar_t * argv[])
 {
 	kprintf(L"\n    ( (\n     ) )\n  .______.\n  |      |]\n  \\      /\n   `----'\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_standard_owl(int argc, wchar_t * argv[])
+{
+	kprintf(L" '___'\n"
+			L" (O.o)\n"
+			L" /),,)\n"
+			L"  \"\"\n"
+			);
 	return STATUS_SUCCESS;
 }
 

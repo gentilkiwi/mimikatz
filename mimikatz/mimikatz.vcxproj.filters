@@ -281,6 +281,9 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.c">
       <Filter>local modules\dpapi\packages</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_ldap.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -579,6 +582,9 @@
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_mifare.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_ldap.h">
       <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>

@@ -74,7 +74,7 @@ void mimikatz_begin()
 #endif
 	kprintf(L"\n"
 		L"  .#####.   " MIMIKATZ_FULL L"\n"
-		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo) ** Kitten Edition **\n"
+		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo) ** Cam Edition **\n"
 		L" ## / \\ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
 		L" ## \\ / ##       > http://blog.gentilkiwi.com/mimikatz\n"
 		L" '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )\n"
