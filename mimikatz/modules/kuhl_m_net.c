@@ -634,19 +634,25 @@ NTSTATUS kuhl_m_net_deleg(int argc, wchar_t * argv[])
 {
 	DWORD i, dwRet;
 	PLDAP ld;
-	PWCHAR dn, pAttribute, myAttrs[] = {L"userPrincipalName", L"sAMAccountName", L"userAccountControl", L"servicePrincipalName", L"msDS-AllowedToDelegateTo", L"msDS-AllowedToActOnBehalfOfOtherIdentity", L"objectSid", L"objectGUID", NULL},
+	PWCHAR server, dn, pAttribute, myAttrs[] = {L"userPrincipalName", L"sAMAccountName", L"userAccountControl", L"servicePrincipalName", L"msDS-AllowedToDelegateTo", L"msDS-AllowedToActOnBehalfOfOtherIdentity", L"objectSid", L"objectGUID", NULL},
 		filter = L"(&"
 L"(servicePrincipalname=*)"
 L"(|(msDS-AllowedToActOnBehalfOfOtherIdentity=*)(msDS-AllowedToDelegateTo=*)(UserAccountControl:1.2.840.113556.1.4.804:=17301504))"
 L"(!(UserAccountControl:1.2.840.113556.1.4.804:=67117056))"
 L"(|(objectcategory=computer)(objectcategory=person)(objectcategory=msDS-GroupManagedServiceAccount)(objectcategory=msDS-ManagedServiceAccount))"
 L")";
-	PCHAR aBuffer;
+	PCHAR aBuffer, aQuery;
 	PLDAPMessage pMessage = NULL, pEntry;
 	BerElement* pBer = NULL;
 	PBERVAL *pBerVal;
+	
+	DNS_STATUS dnsStatus;
+	PDNS_RECORD pRecords;
 
-	if(kull_m_ldap_getLdapAndRootDN(argc ? argv[0] : NULL, &ld, &dn))
+	BOOL isCheckDNS = kull_m_string_args_byName(argc, argv, L"dns", NULL, NULL);
+	kull_m_string_args_byName(argc, argv, L"server", &server, NULL);
+
+	if(kull_m_ldap_getLdapAndRootDN(server, &ld, &dn))
 	{
 		dwRet = ldap_search_s(ld, dn, LDAP_SCOPE_SUBTREE, filter, myAttrs, FALSE, &pMessage);
 		if(dwRet == LDAP_SUCCESS)
@@ -697,7 +703,31 @@ L")";
 							)
 						{
 							for(i = 0; pBerVal[i]; i++)
+							{
 								kprintf(L"\n    %*S", pBerVal[i]->bv_len, pBerVal[i]->bv_val);
+								
+								if(isCheckDNS && (_wcsicmp(pAttribute, L"servicePrincipalName") == 0))
+								{
+									if(kull_m_string_copyA_len(&aBuffer, pBerVal[i]->bv_val, pBerVal[i]->bv_len))
+									{
+										if(strstr(aBuffer, "HTTP/") == aBuffer)
+										{
+											aQuery = aBuffer + lstrlenA("HTTP/");
+											if(*aQuery && strchr(aQuery, '.'))
+											{
+												pRecords = NULL;
+												dnsStatus = DnsQuery_A(aQuery, DNS_TYPE_A, DNS_QUERY_BYPASS_CACHE | DNS_QUERY_NO_LOCAL_NAME | DNS_QUERY_NO_HOSTS_FILE | DNS_QUERY_NO_NETBT | DNS_QUERY_NO_MULTICAST | DNS_QUERY_TREAT_AS_FQDN, NULL, &pRecords, NULL);
+												if((dnsStatus == ERROR_SUCCESS) && pRecords)
+													DnsRecordListFree(pRecords, DnsFreeRecordList);
+												else if(dnsStatus == DNS_ERROR_RCODE_NAME_ERROR)
+													kprintf(L" ** NAME IS NOT REGISTERED! **");
+												else PRINT_ERROR(L"DnsQuery: %08x", dnsStatus);
+											}
+										}
+										LocalFree(aBuffer);
+									}
+								}
+							}
 							kprintf(L"\n");
 						}
 						ldap_value_free_len(pBerVal);
