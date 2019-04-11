@@ -5,14 +5,14 @@
 */
 #include "kull_m_ldap.h"
 
-BOOL kull_m_ldap_getLdapAndRootDN(PCWCHAR system, PLDAP *ld, PWCHAR *rootDn)
+BOOL kull_m_ldap_getLdapAndRootDN(PCWCHAR system, PCWCHAR nc, PLDAP *ld, PWCHAR *rootDn)
 {
 	BOOL status = FALSE;
 	DWORD dwErr;
 
 	if(*ld = ldap_init((PWCHAR) system, LDAP_PORT))
 	{
-		if(*rootDn = kull_m_ldap_getRootDomainNamingContext(*ld))
+		if(*rootDn = kull_m_ldap_getRootDomainNamingContext(nc, *ld))
 		{
 			dwErr = ldap_bind_s(*ld, NULL, NULL, LDAP_AUTH_NEGOTIATE);
 			status = (dwErr == LDAP_SUCCESS);
@@ -29,10 +29,10 @@ BOOL kull_m_ldap_getLdapAndRootDN(PCWCHAR system, PLDAP *ld, PWCHAR *rootDn)
 	return status;
 }
 
-PWCHAR kull_m_ldap_getRootDomainNamingContext(LDAP *ld)
+PWCHAR kull_m_ldap_getRootDomainNamingContext(PCWCHAR nc, LDAP *ld)
 {
 	DWORD dwErr;
-	PWCHAR rootAttr[] = {L"rootDomainNamingContext", NULL}, ret = NULL;
+	PWCHAR rootAttr[] = {nc ? (PWCHAR) nc : L"rootDomainNamingContext", NULL}, ret = NULL;
 	PLDAPMessage pMessage = NULL;
 	PBERVAL *pBerVal;
 

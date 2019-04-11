@@ -9,5 +9,5 @@
 #include <WinBer.h>
 #include "kull_m_string.h"
 
-BOOL kull_m_ldap_getLdapAndRootDN(PCWCHAR system, PLDAP *ld, PWCHAR *rootDn);
-PWCHAR kull_m_ldap_getRootDomainNamingContext(LDAP *ld);
+BOOL kull_m_ldap_getLdapAndRootDN(PCWCHAR system, PCWCHAR nc, PLDAP *ld, PWCHAR *rootDn);
+PWCHAR kull_m_ldap_getRootDomainNamingContext(PCWCHAR nc, LDAP *ld);
