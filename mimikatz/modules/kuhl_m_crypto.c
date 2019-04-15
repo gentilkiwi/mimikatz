@@ -1003,7 +1003,11 @@ BOOL makePin(HCRYPTPROV hProv, BOOL isHw, LPSTR pin)
 	if(isHw && pin)
 	{
 		if(!(status = CryptSetProvParam(hProv, PP_KEYEXCHANGE_PIN, (const BYTE *) pin, 0)))
+		{
 			PRINT_ERROR_AUTO(L"CryptSetProvParam(PP_KEYEXCHANGE_PIN)");
+			if(!(status = CryptSetProvParam(hProv, PP_SIGNATURE_PIN, (const BYTE *) pin, 0)))
+				PRINT_ERROR_AUTO(L"CryptSetProvParam(PP_SIGNATURE_PIN)");
+		}
 	}
 	else status = TRUE;
 	return status;
@@ -1422,7 +1426,7 @@ NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 	LPCWSTR szStoreCA, szNameCA, szPfx = NULL, szPin, szCrlDp;
 	HCERTSTORE hCertStoreCA;
 	PCCERT_CONTEXT pCertCtxCA;
-	BOOL isExported = FALSE;
+	BOOL isExported = FALSE, noUserStore = FALSE;
 	CERT_EXTENSION eku = {0}, san = {0}, cdp = {0};
 	DWORD szCertificate = 0;
 	PBYTE Certificate = NULL;
@@ -1435,7 +1439,7 @@ NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 		if(kull_m_string_args_byName(argc, argv, L"pin", &szPin, NULL))
 			ki.pin = kull_m_string_unicode_to_ansi(szPin);
 	}
-
+	noUserStore = kull_m_string_args_byName(argc, argv, L"nostore", NULL, NULL);
 	kull_m_string_args_byName(argc, argv, L"castore", &szStoreCA, L"LOCAL_MACHINE");
 	if(kull_m_string_args_byName(argc, argv, L"caname", &szNameCA, NULL))
 	{
@@ -1462,7 +1466,7 @@ NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 									isExported = kull_m_crypto_DerAndKeyInfoToPfx(Certificate, szCertificate, &ki.keyInfos, szPfx);
 									kprintf(L"Private Export : %s - %s\n", szPfx, isExported ? L"OK" : L"KO");
 								}
-								else
+								else if(!noUserStore)
 								{
 									isExported = kull_m_crypto_DerAndKeyInfoToStore(Certificate, szCertificate, &ki.keyInfos, CERT_SYSTEM_STORE_CURRENT_USER, L"My", FALSE);
 									kprintf(L"Private Store  : CERT_SYSTEM_STORE_CURRENT_USER/My - %s\n", isExported ? L"OK" : L"KO");

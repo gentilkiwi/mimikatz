@@ -525,3 +525,15 @@ extern NTSTATUS NTAPI LsaQuerySecret(__in LSA_HANDLE SecretHandle, __out_opt OPT
 
 NTSTATUS kuhl_m_lsadump_netsync_NlComputeCredentials(PBYTE input, PBYTE output, PBYTE key);
 void kuhl_m_lsadump_netsync_AddTimeStampForAuthenticator(PNETLOGON_CREDENTIAL Credential, DWORD TimeStamp, PNETLOGON_AUTHENTICATOR Authenticator, BYTE sessionKey[MD5_DIGEST_LENGTH]);
+
+typedef struct _KUHL_M_LSADUMP_CHANGENTLM_DATA {
+	BOOL isOldLM;
+	BYTE oldLM[LM_NTLM_HASH_LENGTH];
+	BYTE newLM[LM_NTLM_HASH_LENGTH];
+	BOOL isNewNTLM;
+	BYTE oldNTLM[LM_NTLM_HASH_LENGTH];
+	BYTE newNTLM[LM_NTLM_HASH_LENGTH];
+} KUHL_M_LSADUMP_CHANGENTLM_DATA, *PKUHL_M_LSADUMP_CHANGENTLM_DATA;
+
+typedef NTSTATUS (CALLBACK * PKUHL_M_LSADUMP_DOMAINUSER) (SAMPR_HANDLE hUser, PVOID pvArg);
+NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUserAccess, PKUHL_M_LSADUMP_DOMAINUSER callback, PVOID pvArg);
