@@ -226,6 +226,38 @@ BOOL kull_m_crypto_pkcs5_pbkdf2_hmac(DWORD calgid, LPCVOID password, DWORD passw
 	return status;
 }
 
+BOOL kull_m_crypto_desx_encrypt(HCRYPTPROV hProv, LPCVOID key, LPCVOID block, PVOID encrypted)
+{
+	BOOL status = FALSE;
+	HCRYPTKEY hKey;
+	DWORD dwLen = 8;
+	RtlCopyMemory(encrypted, block, 8);
+	if(kull_m_crypto_hkey(hProv, CALG_DES, key, 8, 0, &hKey, NULL))
+	{
+		*(PULONGLONG) encrypted ^= *(PULONGLONG) ((PBYTE) key + 8);
+		if(status = CryptEncrypt(hKey, 0, FALSE, 0, (PBYTE) encrypted, &dwLen, dwLen))
+			*(PULONGLONG) encrypted ^= *(PULONGLONG)  ((PBYTE) key + 16);
+		CryptDestroyKey(hKey);
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_desx_decrypt(HCRYPTPROV hProv, LPCVOID key, LPCVOID block, PVOID decrypted)
+{
+	BOOL status = FALSE;
+	HCRYPTKEY hKey;
+	DWORD dwLen = 8;
+	RtlCopyMemory(decrypted, block, 8);
+	if(kull_m_crypto_hkey(hProv, CALG_DES, key, 8, 0, &hKey, NULL))
+	{
+		*(PULONGLONG) decrypted ^= *(PULONGLONG) ((PBYTE) key + 16);
+		if(status = CryptDecrypt(hKey, 0, FALSE, 0, (PBYTE) decrypted, &dwLen))
+			*(PULONGLONG) decrypted ^= *(PULONGLONG)  ((PBYTE) key + 8);
+		CryptDestroyKey(hKey);
+	}
+	return status;
+}
+
 BOOL kull_m_crypto_aesBlockEncryptDecrypt(HCRYPTKEY hKey, PBYTE data, DWORD nbBlock, BOOL encrypt)
 {
 	nbBlock *= 16;

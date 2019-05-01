@@ -125,14 +125,13 @@ NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[])
 	}
 	return STATUS_SUCCESS;
 }
-
 NTSTATUS kuhl_m_sekurlsa_init()
 {
 	lsassLocalHelper =
 	#if defined(_M_ARM64)
 		&lsassLocalHelpers[0]
 	#else
-		lsassLocalHelper = (MIMIKATZ_NT_MAJOR_VERSION < 6) ? &lsassLocalHelpers[0] : 
+		(MIMIKATZ_NT_MAJOR_VERSION < 6) ? &lsassLocalHelpers[0] : 
 		#if defined(LSASS_DECRYPT)
 			((MIMIKATZ_NT_BUILD_NUMBER != 9431) ? &lsassLocalHelpers[1] : &lsassLocalHelpers[2])
 		#else

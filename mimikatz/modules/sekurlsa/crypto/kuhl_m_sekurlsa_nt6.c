@@ -31,7 +31,7 @@ KULL_M_PATCH_GENERIC PTRN_WIN8_LsaInitializeProtectedMemory_KeyRef[] = { // Init
 #endif
 
 NTSTATUS kuhl_m_sekurlsa_nt6_KeyInit = STATUS_NOT_FOUND;
-PLSA_PROTECT_MEMORY kuhl_m_sekurlsa_nt6_pLsaProtectMemory = kuhl_m_sekurlsa_nt6_LsaProtectMemory, kuhl_m_sekurlsa_nt6_pLsaUnprotectMemory = kuhl_m_sekurlsa_nt6_LsaUnprotectMemory;
+const PLSA_PROTECT_MEMORY kuhl_m_sekurlsa_nt6_pLsaProtectMemory = kuhl_m_sekurlsa_nt6_LsaProtectMemory, kuhl_m_sekurlsa_nt6_pLsaUnprotectMemory = kuhl_m_sekurlsa_nt6_LsaUnprotectMemory;
 KIWI_BCRYPT_GEN_KEY k3Des, kAes;
 BYTE InitializationVector[16];
 
@@ -110,12 +110,12 @@ VOID kuhl_m_sekurlsa_nt6_LsaCleanupProtectedMemory()
 	kuhl_m_sekurlsa_nt6_KeyInit = STATUS_NOT_FOUND;
 }
 
-VOID WINAPI kuhl_m_sekurlsa_nt6_LsaProtectMemory (IN PVOID Buffer, IN ULONG BufferSize)
+VOID WINAPI kuhl_m_sekurlsa_nt6_LsaProtectMemory(IN PVOID Buffer, IN ULONG BufferSize)
 {
 	kuhl_m_sekurlsa_nt6_LsaEncryptMemory((PUCHAR) Buffer, BufferSize, TRUE);
 }
 
-VOID WINAPI kuhl_m_sekurlsa_nt6_LsaUnprotectMemory (IN PVOID Buffer, IN ULONG BufferSize)
+VOID WINAPI kuhl_m_sekurlsa_nt6_LsaUnprotectMemory(IN PVOID Buffer, IN ULONG BufferSize)
 {
 	kuhl_m_sekurlsa_nt6_LsaEncryptMemory((PUCHAR) Buffer, BufferSize, FALSE);
 }
@@ -128,7 +128,7 @@ NTSTATUS kuhl_m_sekurlsa_nt6_LsaEncryptMemory(PUCHAR pMemory, ULONG cbMemory, BO
 	ULONG cbIV, cbResult;
 	PBCRYPT_ENCRYPT cryptFunc = Encrypt ? BCryptEncrypt : BCryptDecrypt;
 	RtlCopyMemory(LocalInitializationVector, InitializationVector, sizeof(InitializationVector));
-	if (cbMemory % 8)
+	if(cbMemory % 8)
 	{
 		hKey = &kAes.hKey;
 		cbIV = sizeof(InitializationVector);
