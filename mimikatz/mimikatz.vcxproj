@@ -201,7 +201,6 @@
     <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
-    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.c" />
@@ -303,7 +302,6 @@
     <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
-    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h" />
     <ClInclude Include="modules\sekurlsa\globals_sekurlsa.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.h" />

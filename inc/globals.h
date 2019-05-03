@@ -20,7 +20,6 @@
 #include "../modules/kull_m_output.h"
 //#define KERBEROS_TOOLS
 //#define SERVICE_INCONTROL
-//#define LSASS_DECRYPT
 #define NET_MODULE
 #define SQLITE3_OMIT
 #if defined(_M_ARM64)

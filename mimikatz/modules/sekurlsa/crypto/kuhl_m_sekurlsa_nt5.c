@@ -138,7 +138,7 @@ VOID WINAPI kuhl_m_sekurlsa_nt5_LsaUnprotectMemory(IN PVOID Buffer, IN ULONG Buf
 
 NTSTATUS kuhl_m_sekurlsa_nt5_LsaEncryptMemory(PUCHAR pMemory, ULONG cbMemory, BOOL Encrypt)
 {
-	NTSTATUS status = STATUS_NOT_FOUND;
+	NTSTATUS status = STATUS_SUCCESS;
 	SYMCRYPT_RC4_STATE rc4state;
 	BYTE ChainingValue[8];
 	PCRYPT_ENCRYPT cryptFunc;
@@ -232,7 +232,7 @@ VOID SymCryptDesGenCrypt2(PCSYMCRYPT_NT5_DES_EXPANDED_KEY pExpandedKey, LPCBYTE 
 
 	if(Encrypt)
 	{
-		for( r=0; r<16; r += 2 )
+		for(r = 0; r < 16; r += 2)
 		{
 			F(L, R, pExpandedKey->roundKey[r  ]);
 			F(R, L, pExpandedKey->roundKey[r+1]);
@@ -240,7 +240,7 @@ VOID SymCryptDesGenCrypt2(PCSYMCRYPT_NT5_DES_EXPANDED_KEY pExpandedKey, LPCBYTE 
 	}
 	else
 	{
-		for( r=14; r>=0; r -= 2 )
+		for(r = 14; r >= 0 ; r -= 2)
 		{
 			F(L, R, pExpandedKey->roundKey[r+1]);
 			F(R, L, pExpandedKey->roundKey[r]);

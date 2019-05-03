@@ -68,9 +68,6 @@
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c">
       <Filter>local modules\sekurlsa\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c">
-      <Filter>local modules\sekurlsa\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="modules\kuhl_m_ts.c">
       <Filter>local modules</Filter>
     </ClCompile>
@@ -363,9 +360,6 @@
       <Filter>local modules\sekurlsa\crypto</Filter>
     </ClInclude>
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h">
-      <Filter>local modules\sekurlsa\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h">
       <Filter>local modules\sekurlsa\crypto</Filter>
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_ts.h">
