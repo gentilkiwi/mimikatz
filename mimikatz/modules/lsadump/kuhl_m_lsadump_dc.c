@@ -817,7 +817,6 @@ NTSTATUS kuhl_m_lsadump_dcshadow_encode(PDCSHADOW_PUSH_REQUEST request, int argc
 	BOOL cleanData = kull_m_string_args_byName(argc, argv, L"clean", NULL, NULL), multipleValues = kull_m_string_args_byName(argc, argv, L"multiple", NULL, NULL);
 	UNICODE_STRING us;
 
-
 	if(kull_m_string_args_byName(argc, argv, L"object", &szObject, NULL))
 	{
 		if(kull_m_string_args_byName(argc, argv, L"attribute", &szAttribute, NULL))
@@ -899,7 +898,6 @@ NTSTATUS kuhl_m_lsadump_dcshadow_view(PDCSHADOW_PUSH_REQUEST request)
 	}
 	return STATUS_SUCCESS;
 }
-
 
 PBERVAL kuhl_m_lsadump_dcshadow_getSingleAttr(PLDAP ld, PLDAPMessage pMessage, PCWCHAR attr)
 {

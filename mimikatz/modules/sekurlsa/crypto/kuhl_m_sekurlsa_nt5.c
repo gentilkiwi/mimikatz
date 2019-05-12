@@ -344,13 +344,13 @@ VOID SymCryptRc4Crypt2(PSYMCRYPT_RC4_STATE pState, LPCBYTE pbSrc, PBYTE pbDst, S
     LPCBYTE pbSrcEnd;
 	for(pbSrcEnd = pbSrc + cbData; pbSrc < pbSrcEnd; pbSrc++, pbDst++)
 	{
-        Ti = pState->S[pState->i];
-        pState->j = (pState->j + Ti );
-        Tj = pState->S[pState->j];
-        pState->S[pState->i] = Tj;
-        pState->S[pState->j] = Ti;
-        *pbDst = (*pbSrc ^ pState->S[(Ti + Tj) & 0xff]);
-        pState->i = (pState->i + 1);
-    }
+		Ti = pState->S[pState->i];
+		pState->j = (pState->j + Ti );
+		Tj = pState->S[pState->j];
+		pState->S[pState->i] = Tj;
+		pState->S[pState->j] = Ti;
+		*pbDst = (*pbSrc ^ pState->S[(Ti + Tj) & 0xff]);
+		pState->i = (pState->i + 1);
+	}
 }
 #endif
