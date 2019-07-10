@@ -160,6 +160,7 @@
     <ClCompile Include="mimikatz.c" />
     <ClCompile Include="modules\crypto\kuhl_m_crypto_extractor.c" />
     <ClCompile Include="modules\crypto\kuhl_m_crypto_patch.c" />
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_pki.c" />
     <ClCompile Include="modules\crypto\kuhl_m_crypto_sc.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
@@ -260,6 +261,7 @@
     <ClInclude Include="mimikatz.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h" />
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_pki.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_sc.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />

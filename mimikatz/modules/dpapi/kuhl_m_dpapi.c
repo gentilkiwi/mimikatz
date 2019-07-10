@@ -320,7 +320,7 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 					{
 						kprintf(L"\n[domainkey] with RPC\n");
 
-						if(!(kull_m_string_args_byName(argc, argv, L"dc", &szDc, NULL) || kull_m_string_args_byName(argc, argv, L"system", &szDc, NULL)))
+						if(!(kull_m_string_args_byName(argc, argv, L"dc", &szDc, NULL)))
 						{
 							if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 								if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))

@@ -15,6 +15,7 @@ NTSTATUS kuhl_m_sr98_b0(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sr98_list(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sr98_hid26(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sr98_em4100(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_sr98_noralsy(int argc, wchar_t * argv[]);
 
 typedef struct _KUHL_M_SR98_RAW_BLOCK {
 	UCHAR toProg;
@@ -28,3 +29,5 @@ UCHAR kuhl_m_sr98_hid26_Manchester_4bits(UCHAR data4);
 void kuhl_m_sr98_hid26_blocks(ULONG blocks[4], UCHAR FacilityCode, USHORT CardNumber, PULONGLONG pWiegand);
 
 void kuhl_m_sr98_em4100_blocks(ULONG blocks[3], ULONGLONG CardNumber);
+
+void kuhl_m_sr98_noralsy_blocks(ULONG blocks[4], ULONG CardNumber, USHORT Year);

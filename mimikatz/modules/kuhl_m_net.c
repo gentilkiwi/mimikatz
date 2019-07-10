@@ -575,6 +575,7 @@ NTSTATUS kuhl_m_net_serverinfo(int argc, wchar_t * argv[])
 
 const PCWCHAR TRUST_ATTRIBUTES_FLAGS[] = {L"IN_FOREST", L"DIRECT_OUTBOUND", L"TREE_ROOT", L"PRIMARY", L"NATIVE_MODE", L"DIRECT_INBOUND"};
 const PCWCHAR TRUST_ATTRIBUTES[] = {L"NON_TRANSITIVE", L"UPLEVEL_ONLY", L"FILTER_SIDS/QUARANTINED_DOMAIN", L"FOREST_TRANSITIVE", L"CROSS_ORGANIZATION", L"WITHIN_FOREST", L"TREAT_AS_EXTERNAL", L"TRUST_USES_RC4_ENCRYPTION", L"TRUST_USES_AES_KEYS"};
+const PCWCHAR TRUST_ATTRIBUTES_LEGACY[] = {L"TREE_PARENT", L"TREE_ROOT"}; // 0x00400000, 0x00800000
 const PCWCHAR TRUST_DIRECTION[] = {L"DISABLED", L"INBOUND", L"OUTBOUND", L"BIDIRECTIONAL"};
 NTSTATUS kuhl_m_net_trust(int argc, wchar_t * argv[])
 {
@@ -626,9 +627,12 @@ NTSTATUS kuhl_m_net_trust(int argc, wchar_t * argv[])
 				else kprintf(L"?\n");
 			}
 			kprintf(L"     Attributes: 0x%08x ( ", pTrusts[i].TrustAttributes);
-			for(j = 0; j < (8 * sizeof(DWORD)); j++)
+			for(j = 0; j < (8 * sizeof(DWORD) - 10); j++)
 				if((pTrusts[i].TrustAttributes >> j) & 1)
 					kprintf(L"%s ; ", (j < ARRAYSIZE(TRUST_ATTRIBUTES)) ? TRUST_ATTRIBUTES[j] : L"?");
+			for(j = 0; j < 10; j++)
+				if((pTrusts[i].TrustAttributes >> (j + 22)) & 1)
+					kprintf(L"%s ; ", (j < ARRAYSIZE(TRUST_ATTRIBUTES_LEGACY)) ? TRUST_ATTRIBUTES_LEGACY[j] : L"?");
 			kprintf(L")\n     SID       : ");
 			kull_m_string_displaySID(pTrusts[i].DomainSid);
 			kprintf(L"\n     GUID      : ");
@@ -678,9 +682,12 @@ NTSTATUS kuhl_m_net_trust(int argc, wchar_t * argv[])
 
 									if(_wcsicmp(pAttribute, L"trustAttributes") == 0)
 									{
-										for(j = 0; j < (8 * sizeof(DWORD)); j++)
+										for(j = 0; j < (8 * sizeof(DWORD) - 10); j++)
 											if((ret >> j) & 1)
 												kprintf(L"%s ; ", (j < ARRAYSIZE(TRUST_ATTRIBUTES)) ? TRUST_ATTRIBUTES[j] : L"?");
+										for(j = 0; j < 10; j++)
+											if((ret >> (j + 22)) & 1)
+												kprintf(L"%s ; ", (j < ARRAYSIZE(TRUST_ATTRIBUTES_LEGACY)) ? TRUST_ATTRIBUTES_LEGACY[j] : L"?");
 										kprintf(L"\n");
 									}
 									else if(_wcsicmp(pAttribute, L"trustType") == 0)
