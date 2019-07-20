@@ -284,6 +284,9 @@
     <ClCompile Include="modules\crypto\kuhl_m_crypto_pki.c">
       <Filter>local modules\crypto</Filter>
     </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -586,6 +589,9 @@
     </ClInclude>
     <ClInclude Include="modules\crypto\kuhl_m_crypto_pki.h">
       <Filter>local modules\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.h">
+      <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

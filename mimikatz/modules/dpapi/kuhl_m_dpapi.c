@@ -22,6 +22,7 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 #endif
 	{kuhl_m_dpapi_ssh,			L"ssh",		L"SSH Agent registry cache"},
 	{kuhl_m_dpapi_rdg,			L"rdg",		L"RDG saved passwords"},
+	{kuhl_m_dpapi_powershell,	L"ps",		L"PowerShell credentials (PSCredentials or SecureString)"},
 	{kuhl_m_dpapi_oe_cache,		L"cache", NULL},
 };
 const KUHL_M kuhl_m_dpapi = {
