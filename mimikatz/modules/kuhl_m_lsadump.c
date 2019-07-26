@@ -494,6 +494,15 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 				if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key))))
 					PRINT_ERROR(L"RtlEncryptDecryptRC4 KO");
 			}
+            else if (pDomAccF->keys1.Revision == 2) {
+				pAesKey = (PSAM_KEY_DATA_AES)&pDomAccF->keys1;
+				if (kull_m_crypto_genericAES128Decrypt(sysKey, pAesKey->Salt, pAesKey->data, pAesKey->DataLen, &out, &len))
+				{
+					if (status = (len == SAM_KEY_DATA_KEY_LENGTH))
+						RtlCopyMemory(samKey, out, SAM_KEY_DATA_KEY_LENGTH);
+					LocalFree(out);
+				}
+			}
 			else PRINT_ERROR(L"Unknow Classic Struct Key revision (%u)", pDomAccF->keys1.Revision);
 			break;
 		case 3:
