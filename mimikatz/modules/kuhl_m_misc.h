@@ -27,6 +27,7 @@ NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_mflt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_easyntlmchall(int argc, wchar_t * argv[]);
@@ -57,6 +58,7 @@ NTDSAPI DWORD WINAPI DsBindW(IN OPTIONAL LPCWSTR DomainControllerName, IN OPTION
 NTDSAPI DWORD WINAPI DsAddSidHistoryW(IN HANDLE hDS, IN DWORD Flags, IN LPCWSTR SrcDomain, IN LPCWSTR SrcPrincipal, IN OPTIONAL LPCWSTR SrcDomainController, IN OPTIONAL RPC_AUTH_IDENTITY_HANDLE SrcDomainCreds, IN LPCWSTR DstDomain, IN LPCWSTR DstPrincipal);
 NTDSAPI DWORD WINAPI DsUnBindW(IN HANDLE *phDS);
 
+typedef BOOL	(WINAPI * PLOCKWORKSTATION) (VOID);
 typedef BOOL	(WINAPI * PSYSTEMPARAMETERSINFOW) (__in UINT uiAction, __in UINT uiParam, __inout_opt PVOID pvParam, __in UINT fWinIni);
 typedef DWORD	(WINAPI * PGETLASTERROR) (VOID);
 
@@ -65,6 +67,8 @@ typedef struct _KIWI_WP_DATA {
 	PCWCHAR wp;
 } KIWI_WP_DATA, *PKIWI_WP_DATA;
 
+BOOL CALLBACK kuhl_m_misc_lock_callback(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
+void kuhl_m_misc_lock_for_pid(DWORD pid, PCWCHAR wp);
 BOOL CALLBACK kuhl_m_misc_wp_callback(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 void kuhl_m_misc_wp_for_pid(DWORD pid, PCWCHAR wp);
 void kuhl_m_misc_mflt_display(PFILTER_AGGREGATE_BASIC_INFORMATION info);

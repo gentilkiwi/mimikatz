@@ -57,7 +57,7 @@ BOOL kuhl_m_dpapi_powershell_check_against_one_type(IXMLDOMNode *pObj, LPCWSTR T
 						{
 							if(IXMLDOMNode_get_text(pT, &bstrGeneric) == S_OK)
 							{
-								status = !wcsicmp(bstrGeneric, TypeName);
+								status = !_wcsicmp(bstrGeneric, TypeName);
 								SysFreeString(bstrGeneric);
 							}
 						}
