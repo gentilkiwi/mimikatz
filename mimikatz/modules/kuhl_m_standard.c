@@ -72,6 +72,7 @@ NTSTATUS kuhl_m_standard_sleep(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_standard_log(int argc, wchar_t * argv[])
 {
 	PCWCHAR filename = (kull_m_string_args_byName(argc, argv, L"stop", NULL, NULL) ? NULL : (argc ? argv[0] : MIMIKATZ_DEFAULT_LOG));
+	kull_m_string_args_bool_byName(argc, argv, L"base64", &isBase64Output);
 	kprintf(L"Using \'%s\' for logfile : %s\n", filename, kull_m_output_file(filename) ? L"OK" : L"KO");
 	return STATUS_SUCCESS;
 }
