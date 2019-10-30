@@ -10,6 +10,7 @@
 #include "../../modules/kull_m_process.h"
 #include "../../modules/kull_m_net.h"
 #include "../../modules/kull_m_cabinet.h"
+#include "../../modules/kull_m_output.h"
 
 const KUHL_M kuhl_m_standard;
 
