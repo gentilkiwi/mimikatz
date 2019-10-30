@@ -114,7 +114,7 @@ void kprintf_inputline(PCWCHAR format, ...)
 {
 	va_list args;
 	va_start(args, format);
-	if (logfile)
+	if(logfile)
 	{
 		if(isBase64Output)
 		{
