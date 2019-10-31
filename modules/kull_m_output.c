@@ -61,9 +61,9 @@ void kprintf(PCWCHAR format, ...)
 		if(isBase64Output)
 		{
 			// get current size
-			size_t current_length = ftell(logfile);
+			DWORD current_length = ftell(logfile);
 			// get new content size
-			size_t appended_length = _vscwprintf(format, args);
+			DWORD appended_length = _vscwprintf(format, args);
 			// set position to 0
 			fseek(logfile, 0, SEEK_SET);
 			// alloc current_content buffer
@@ -72,7 +72,7 @@ void kprintf(PCWCHAR format, ...)
 			size_t n_read = fread_s(current_content, current_length, sizeof(wchar_t), current_length / sizeof(wchar_t), logfile);
 			current_content[current_length] = '\x00';
 			// base64decode
-			size_t decoded_length = 0;
+			DWORD decoded_length = 0;
 			CryptStringToBinary(current_content, current_length, CRYPT_STRING_BASE64, NULL, &decoded_length, NULL, NULL);
 			wchar_t* decoded_content = LocalAlloc(LPTR, decoded_length * sizeof(wchar_t));
 			CryptStringToBinary(current_content, current_length, CRYPT_STRING_BASE64, (BYTE *) decoded_content, &decoded_length, NULL, NULL);
@@ -81,13 +81,13 @@ void kprintf(PCWCHAR format, ...)
 			memcpy(concatenated_content, decoded_content, decoded_length);
 			vswprintf(concatenated_content + wcslen(concatenated_content), appended_length + 1, format, args);
 			// base64encode
-			size_t encoded_length = 0;
+			DWORD encoded_length = 0;
 			CryptBinaryToString((const BYTE *) concatenated_content, decoded_length + appended_length * sizeof(wchar_t), CRYPT_STRING_BASE64, NULL, &encoded_length);
 			LPWSTR encoded_content = LocalAlloc(LPTR, encoded_length * sizeof(wchar_t));
 			CryptBinaryToString((const BYTE *) concatenated_content, decoded_length + appended_length * sizeof(wchar_t), CRYPT_STRING_BASE64, encoded_content, &encoded_length);
 			// write to file
 			fseek(logfile, 0, SEEK_SET);
-			for(size_t i = 0; i < encoded_length; i++)
+			for(DWORD i = 0; i < encoded_length; i++)
 			{
 				if(encoded_content[i] != '\x0d' && encoded_content[i] != '\x0a' && encoded_content[i] != '\x00')
 					fwrite(encoded_content + i, sizeof(wchar_t), 1, logfile);
@@ -119,9 +119,9 @@ void kprintf_inputline(PCWCHAR format, ...)
 		if(isBase64Output)
 		{
 			// get current size
-			size_t current_length = ftell(logfile);
+			DWORD current_length = ftell(logfile);
 			// get new content size
-			size_t appended_length = _vscwprintf(format, args);
+			DWORD appended_length = _vscwprintf(format, args);
 			// set position to 0
 			fseek(logfile, 0, SEEK_SET);
 			// alloc current_content buffer
@@ -130,7 +130,7 @@ void kprintf_inputline(PCWCHAR format, ...)
 			size_t n_read = fread_s(current_content, current_length, sizeof(wchar_t), current_length / sizeof(wchar_t), logfile);
 			current_content[current_length] = '\x00';
 			// base64decode
-			size_t decoded_length = 0;
+			DWORD decoded_length = 0;
 			CryptStringToBinary(current_content, current_length, CRYPT_STRING_BASE64, NULL, &decoded_length, NULL, NULL);
 			wchar_t* decoded_content = LocalAlloc(LPTR, decoded_length * sizeof(wchar_t));
 			CryptStringToBinary(current_content, current_length, CRYPT_STRING_BASE64, (BYTE *) decoded_content, &decoded_length, NULL, NULL);
@@ -139,13 +139,13 @@ void kprintf_inputline(PCWCHAR format, ...)
 			memcpy(concatenated_content, decoded_content, decoded_length);
 			vswprintf(concatenated_content + wcslen(concatenated_content), appended_length + 1, format, args);
 			// base64encode
-			size_t encoded_length = 0;
+			DWORD encoded_length = 0;
 			CryptBinaryToString((const BYTE *) concatenated_content, decoded_length + appended_length * sizeof(wchar_t), CRYPT_STRING_BASE64, NULL, &encoded_length);
 			LPWSTR encoded_content = LocalAlloc(LPTR, encoded_length * sizeof(wchar_t));
 			CryptBinaryToString((const BYTE *) concatenated_content, decoded_length + appended_length * sizeof(wchar_t), CRYPT_STRING_BASE64, encoded_content, &encoded_length);
 			// write to file
 			fseek(logfile, 0, SEEK_SET);
-			for(size_t i = 0; i < encoded_length; i++)
+			for(DWORD i = 0; i < encoded_length; i++)
 			{
 				if(encoded_content[i] != '\x0d' && encoded_content[i] != '\x0a' && encoded_content[i] != '\x00')
 					fwrite(encoded_content + i, sizeof(wchar_t), 1, logfile);
