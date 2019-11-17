@@ -10,7 +10,7 @@
 #include "kuhl_m_sekurlsa_utils.h"
 #include "crypto/kuhl_m_sekurlsa_nt5.h"
 #include "crypto/kuhl_m_sekurlsa_nt6.h"
-#ifdef LSASS_DECRYPT
+#if defined(LSASS_DECRYPT)
 #include "crypto/kuhl_m_sekurlsa_nt63.h"
 #endif
 
@@ -64,16 +64,21 @@ NTSTATUS kuhl_m_sekurlsa_getLogonData(const PKUHL_M_SEKURLSA_PACKAGE * lsassPack
 BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_logondata(IN PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, IN OPTIONAL LPVOID pOptionalData);
 VOID kuhl_m_sekurlsa_pth_luid(PSEKURLSA_PTH_DATA data);
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags);
+VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _KIWI_CREDENTIAL_KEY * key, LPCWSTR sid);
 VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
 VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
 void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport);
+#if !defined(_M_ARM64)
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
+#endif
 void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
 void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
+#if !defined(_M_ARM64)
 NTSTATUS kuhl_m_sekurlsa_krbtgt(int argc, wchar_t * argv[]);
+#endif
 NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_trust(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_sekurlsa_bkeys(int argc, wchar_t * argv[]);

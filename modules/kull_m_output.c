@@ -6,21 +6,21 @@
 #include "kull_m_output.h"
 
 FILE * logfile = NULL;
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 wchar_t * outputBuffer = NULL;
 size_t outputBufferElements = 0, outputBufferElementsPosition = 0;
 #endif
 
 void kprintf(PCWCHAR format, ...)
 {
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 	int varBuf;
 	size_t tempSize;
 	wchar_t * tmpBuffer;
 #endif
 	va_list args;
 	va_start(args, format);
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 	if(outputBuffer)
 	{
 		varBuf = _vscwprintf(format, args);
@@ -47,8 +47,8 @@ void kprintf(PCWCHAR format, ...)
 		}
 	}
 #endif
-#ifndef _POWERKATZ
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(_POWERKATZ)
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 	else
 #endif
 	{
@@ -99,8 +99,8 @@ int previousStdOut, previousStdErr;
 UINT previousConsoleOutput;
 void kull_m_output_init()
 {
-#ifndef _POWERKATZ
-#ifndef _WINDLL
+#if !defined(_POWERKATZ)
+#if !defined(_WINDLL)
 	previousStdOut = _setmode(_fileno(stdout), _O_U8TEXT);
 	previousStdErr = _setmode(_fileno(stderr), _O_U8TEXT);
 #endif
@@ -111,8 +111,8 @@ void kull_m_output_init()
 
 void kull_m_output_clean()
 {
-#ifndef _POWERKATZ
-#ifndef _WINDLL
+#if !defined(_POWERKATZ)
+#if !defined(_WINDLL)
 	_setmode(_fileno(stdout), previousStdOut);
 	_setmode(_fileno(stderr), previousStdErr);
 #endif

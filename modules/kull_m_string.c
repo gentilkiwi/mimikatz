@@ -214,7 +214,7 @@ void kull_m_string_displaySID(IN PSID pSid)
 	}
 	else PRINT_ERROR_AUTO(L"ConvertSidToStringSid");
 }
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 PWSTR kull_m_string_getRandomGUID()
 {
 	UNICODE_STRING uString;
@@ -299,14 +299,37 @@ BOOL kull_m_string_args_bool_byName(int argc, wchar_t * argv[], LPCWSTR name, PB
 	return status;
 }
 
+BOOL kull_m_string_copy_len(LPWSTR *dst, LPCWSTR src, size_t size)
+{
+	BOOL status = FALSE;
+	if(src && dst && size)
+	{
+		size = (size + 1) * sizeof(wchar_t);
+		if(*dst = (LPWSTR) LocalAlloc(LPTR, size))
+		{
+			RtlCopyMemory(*dst, src, size);
+			status = TRUE;
+		}
+	}
+	return status;
+}
+
 BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src)
 {
 	BOOL status = FALSE;
 	size_t size;
 	if(src && dst && (size = wcslen(src)))
+		status = kull_m_string_copy_len(dst, src, size);
+	return status;
+}
+
+BOOL kull_m_string_copyA_len(LPSTR *dst, LPCSTR src, size_t size)
+{
+	BOOL status = FALSE;
+	if(src && dst && size)
 	{
-		size = (size + 1) * sizeof(wchar_t);
-		if(*dst = (LPWSTR) LocalAlloc(LPTR, size))
+		size = (size + 1) * sizeof(char);
+		if(*dst = (LPSTR) LocalAlloc(LPTR, size))
 		{
 			RtlCopyMemory(*dst, src, size);
 			status = TRUE;
@@ -320,14 +343,7 @@ BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src)
 	BOOL status = FALSE;
 	size_t size;
 	if(src && dst && (size = strlen(src)))
-	{
-		size = (size + 1) * sizeof(char);
-		if(*dst = (LPSTR) LocalAlloc(LPTR, size))
-		{
-			RtlCopyMemory(*dst, src, size);
-			status = TRUE;
-		}
-	}
+		status = kull_m_string_copyA_len(dst, src, size);
 	return status;
 }
 
@@ -369,7 +385,7 @@ BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst)
 	}
 	return status;
 }
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData)
 {
 	BOOL status = FALSE;

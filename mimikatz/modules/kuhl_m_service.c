@@ -53,7 +53,7 @@ NTSTATUS genericFunction(KUHL_M_SERVICE_FUNC function, wchar_t * text, int argc,
 				kprintf(L"OK\n");
 			else PRINT_ERROR_AUTO(L"Service operation");
 		}
-#ifdef SERVICE_INCONTROL
+#if defined(SERVICE_INCONTROL)
 		else if(dwControl && (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_BUILD_7))
 		{
 			kuhl_service_sendcontrol_inprocess(argv[0], dwControl);

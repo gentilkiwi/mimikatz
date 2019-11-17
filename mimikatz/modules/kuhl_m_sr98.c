@@ -12,6 +12,7 @@ const KUHL_M_C kuhl_m_c_sr98[] = {
 	{kuhl_m_sr98_list,		L"list",	NULL},
 	{kuhl_m_sr98_hid26,		L"hid",		NULL},
 	{kuhl_m_sr98_em4100,	L"em4100",	NULL},
+	{kuhl_m_sr98_noralsy,	L"noralsy",	NULL},
 };
 const KUHL_M kuhl_m_sr98 = {
 	L"sr98", L"RF module for SR98 device and T5577 target", NULL,
@@ -153,11 +154,11 @@ NTSTATUS kuhl_m_sr98_hid26(int argc, wchar_t * argv[])
 					kprintf(L" * Wiegand     : %I64u (0x%I64x)\n", Wiegand, Wiegand);
 					kuhl_m_sr98_sendBlocks(blocks, ARRAYSIZE(blocks));
 				}
-				else PRINT_ERROR(L"CardNumber (/cn) must be in the [0;65535] range - it was %u (0x%08x)", Number, Number);
+				else PRINT_ERROR(L"CardNumber (/cn) must be in the [0;65535] range - it was %u (0x%08x)\n", Number, Number);
 			}
 			else PRINT_ERROR(L"CardNumber (/cn) is needed\n");
 		}
-		else PRINT_ERROR(L"FacilityCode (/fc) must be in the [0;255] range - it was %u (0x%08x)", Number, Number);
+		else PRINT_ERROR(L"FacilityCode (/fc) must be in the [0;255] range - it was %u (0x%08x)\n", Number, Number);
 	}
 	else PRINT_ERROR(L"FacilityCode (/fc) is needed\n");
 	return STATUS_SUCCESS;
@@ -166,12 +167,33 @@ NTSTATUS kuhl_m_sr98_hid26(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_sr98_em4100(int argc, wchar_t * argv[])
 {
 	PCWCHAR szNumber;
-	ULONGLONG Number;
+	ULONGLONG Number = 0;
 	ULONG blocks[3];
+	PSR98_DEVICE devices;
+	ULONG count;
 
-	kprintf(L"\nEM4100 encoder\n\n");
-	if(kull_m_string_args_byName(argc, argv, L"id", &szNumber, NULL))
+	if(kull_m_string_args_byName(argc, argv, L"read", NULL, NULL))
 	{
+		kprintf(L"\nEM4100 reader\n\n");
+		if(sr98_devices_get(&devices, &count))
+		{
+			if(count == 1)
+			{
+				if(sr98_read_emid(devices->hDevice, (PBYTE) &Number))
+				{
+					Number = _byteswap_uint64(Number);
+					Number >>= 24;
+					kprintf(L" * Tag ID      : %I64u (0x%I64x)\n", Number, Number);
+				}
+				else PRINT_ERROR(L"sr98_read_emid\n");
+			}
+			else PRINT_ERROR(L"Reader device is not unique (%u)\n", count);
+			sr98_devices_free(devices);
+		}
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"id", &szNumber, NULL))
+	{
+		kprintf(L"\nEM4100 encoder\n\n");
 		Number = _wcstoui64(szNumber, NULL, 0);
 		if((Number < 0x10000000000))
 		{
@@ -180,9 +202,44 @@ NTSTATUS kuhl_m_sr98_em4100(int argc, wchar_t * argv[])
 			kprintf(L" * EM4100      : 0x%08x%08x\n", blocks[1], blocks[2]);
 			kuhl_m_sr98_sendBlocks(blocks, ARRAYSIZE(blocks));
 		}
-		else PRINT_ERROR(L"Tag Id (/id) must be in the [0;255] range - it was %I64u (0x%I64x)", Number, Number);
+		else PRINT_ERROR(L"Tag Id (/id) must be in the [0;255] range - it was %I64u (0x%I64x)\n", Number, Number);
 	}
-	else PRINT_ERROR(L"Tag Id (/id) is needed\n");
+	else PRINT_ERROR(L"Tag Id (/id) is needed, or /read\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_sr98_noralsy(int argc, wchar_t * argv[])
+{
+	PCWCHAR szNumber;
+	ULONG Number = 0, blocks[4];
+	USHORT Year, i;// = 1999;
+
+	if(kull_m_string_args_byName(argc, argv, L"year", &szNumber, L"1999"))
+	{
+		Number = wcstoul(szNumber, NULL, 0);
+		if(Number <= 0xffff)
+		{
+			Year = (USHORT) Number;
+			kprintf(L" * Year        : %hu (0x%04x)\n", Year, Year);
+			if(kull_m_string_args_byName(argc, argv, L"id", &szNumber, NULL))
+			{
+				Number = wcstoul(szNumber, NULL, 0);
+				if(Number < 10000000)
+				{
+					kprintf(L" * Tag ID      : %u (0x%08x)\n", Number, Number);
+					kuhl_m_sr98_noralsy_blocks(blocks, Number, Year);
+					kprintf(L" * RAW         : ");
+					for(i = 1; i < 4; i++)
+						kprintf(L"%08x", blocks[i]);
+					kprintf(L"\n");
+					kuhl_m_sr98_sendBlocks(blocks, ARRAYSIZE(blocks));
+				}
+				else PRINT_ERROR(L"Tag Id (/id) must be in the [0;9999999] range - it was %u (0x%08x)\n", Number, Number);
+			}
+			else PRINT_ERROR(L"Tag Id (/id) is needed\n");
+		}
+		else PRINT_ERROR(L"Year (/year) must be in the [0;0xffff] range - it was %u (0x%08x)\n", Number, Number);
+	}
 	return STATUS_SUCCESS;
 }
 
@@ -322,4 +379,23 @@ void kuhl_m_sr98_em4100_blocks(ULONG blocks[3], ULONGLONG CardNumber)
 	blocks[0] = 0x00148040; // RF/64, Manchester, [1-2]
 	blocks[1] = (ULONG) (tmpData >> 32);
 	blocks[2] = (ULONG) tmpData;
+}
+
+void kuhl_m_sr98_noralsy_blocks(ULONG blocks[4], ULONG CardNumber, USHORT Year)
+{
+	UCHAR r1, r2, r3, r4, r5, r6, r7, y1, y2, c;
+	r1 = (UCHAR) (CardNumber / 1000000);
+	r2 = (UCHAR) ((CardNumber % 1000000) / 100000);
+	r3 = (UCHAR) ((CardNumber % 100000) / 10000);
+	r4 = (UCHAR) ((CardNumber % 10000) / 1000);
+	r5 = (UCHAR) ((CardNumber % 1000) / 100);
+	r6 = (UCHAR) ((CardNumber % 100) / 10);
+	r7 = (UCHAR) (CardNumber % 10);
+	y1 = (UCHAR) ((Year % 100) / 10);
+	y2 = (UCHAR) (Year % 10);
+	c = r1 ^ r2 ^ r3 ^ y1 ^ y2 ^ 0 ^ r4 ^ r5 ^ r6 ^ r7;
+	blocks[0] = 0x00088068; // RF/32, Manchester, [1-3];
+	blocks[1] = 0xbb0214ff;
+	blocks[2] = (r1 << 28) | (r2 << 24) | (r3 << 20) | (y1 << 16) | (y2 << 12) | (r4 << 4) | r5;
+	blocks[3] = (r6 << 28) | (r7 << 24) | (c << 20) | (7 << 16); // 7 = 0xb ^ 0xb ^ 0x0 ^ 0x2 ^ 0x1 ^ 0x4 ^ 0xf ^ 0xf (^ c1 ^ c1);
 }

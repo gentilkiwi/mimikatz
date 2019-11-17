@@ -5,10 +5,11 @@
 */
 #pragma once
 #include "kuhl_m.h"
-#include "../modules/kull_m_net.h"
-#include "../modules/kull_m_token.h"
-#include "../modules/kull_m_samlib.h"
-#include "../modules/kull_m_string.h"
+#include "lsadump/kuhl_m_lsadump_dc.h"
+#include "../../modules/kull_m_ldap.h"
+#include "../../modules/kull_m_net.h"
+#include "../../modules/kull_m_token.h"
+#include <WinDNS.h>
 
 const KUHL_M kuhl_m_net;
 
@@ -28,3 +29,6 @@ void kuhl_m_net_share_type(DWORD type);
 
 NTSTATUS kuhl_m_net_share(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_net_serverinfo(int argc, wchar_t * argv[]);
+
+NTSTATUS kuhl_m_net_trust(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_net_deleg(int argc, wchar_t * argv[]);

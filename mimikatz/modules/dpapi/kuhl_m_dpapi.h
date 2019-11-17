@@ -16,6 +16,7 @@
 #include "packages/kuhl_m_dpapi_chrome.h"
 #include "packages/kuhl_m_dpapi_ssh.h"
 #include "packages/kuhl_m_dpapi_rdg.h"
+#include "packages/kuhl_m_dpapi_powershell.h"
 
 const KUHL_M kuhl_m_dpapi;
 

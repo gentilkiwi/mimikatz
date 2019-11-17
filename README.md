@@ -106,7 +106,7 @@ You can use any tools you want to sync, even incorporated `GIT` in Visual Studio
 
 ### Build the solution
 * After opening the solution, `Build` / `Build Solution` (you can change architecture)
-* `mimikatz` is now built and ready to be used! (`Win32` / `x64`)
+* `mimikatz` is now built and ready to be used! (`Win32` / `x64` even `ARM64` if you're lucky)
   * you can have error `MSB3073` about `_build_.cmd` and `mimidrv`, it's because the driver cannot be build without Windows Driver Kit **7.1** (WinDDK), but `mimikatz` and `mimilib` are OK.
 
 ### ddk2003
@@ -122,12 +122,10 @@ Follow instructions:
 CC BY 4.0 licence - https://creativecommons.org/licenses/by/4.0/
 
 `mimikatz` needs coffee to be developed:
-* ETH: 0x3a56af999b5e68f9e6e0a7dce1833efefad5b470
-* BTC: 1C6bubazp9xq3BfYiHvsqP1sEhFYykUDo5
 * PayPal: https://www.paypal.me/delpy/
 
 ## Author
 * Benjamin DELPY `gentilkiwi`, you can contact me on Twitter ( @gentilkiwi ) or by mail ( benjamin [at] gentilkiwi.com )
-* DCSync function in `lsadump` module was co-writed with Vincent LE TOUX, you can contact him by mail ( vincent.letoux [at] gmail.com ) or visit his website ( http://www.mysmartlogon.com )
+* DCSync and DCShadow functions in `lsadump` module were co-writed with Vincent LE TOUX, you can contact him by mail ( vincent.letoux [at] gmail.com ) or visit his website ( http://www.mysmartlogon.com )
 
 This is a **personal** development, please respect its philosophy and don't use it for bad things!

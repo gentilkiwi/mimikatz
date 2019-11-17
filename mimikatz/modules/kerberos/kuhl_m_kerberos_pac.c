@@ -249,7 +249,7 @@ BOOL kuhl_m_pac_stringToSids(PCWSTR szSids, PKERB_SID_AND_ATTRIBUTES *sids, DWOR
 	return (*sids && *cbSids);
 }
 
-#ifdef KERBEROS_TOOLS
+#if defined(KERBEROS_TOOLS)
 NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 {
 	PPACTYPE pacType;

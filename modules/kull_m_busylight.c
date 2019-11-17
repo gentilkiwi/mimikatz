@@ -128,7 +128,7 @@ BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWOR
 												else
 												{
 													PRINT_ERROR_AUTO(L"CreateFile (hBusy)");
-													LocalFree(*next);
+													*next = (PBUSYLIGHT_DEVICE) LocalFree(*next);
 												}
 											}
 										}

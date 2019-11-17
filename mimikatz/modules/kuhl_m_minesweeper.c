@@ -14,10 +14,10 @@ const KUHL_M kuhl_m_minesweeper = {
 	ARRAYSIZE(kuhl_m_c_minesweeper), kuhl_m_c_minesweeper, NULL, NULL
 };
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WIN6_Game_SafeGetSingleton[] = {0x48, 0x89, 0x44, 0x24, 0x70, 0x48, 0x85, 0xc0, 0x74, 0x0a, 0x48, 0x8b, 0xc8, 0xe8};
 LONG OFFS_WIN6_ToG	= -21;
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WIN6_Game_SafeGetSingleton[] = {0x84, 0xc0, 0x75, 0x07, 0x6a, 0x67, 0xe8};
 LONG OFFS_WIN6_ToG	= 12;
 #endif
@@ -55,12 +55,12 @@ NTSTATUS kuhl_m_minesweeper_infos(int argc, wchar_t * argv[])
 						if(kull_m_memory_search(&aBuffer, sizeof(PTRN_WIN6_Game_SafeGetSingleton), &sMemory, TRUE))
 						{
 							aRemote.address = (PBYTE) sMemory.result + OFFS_WIN6_ToG;
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 							aBuffer.address = &offsetTemp;
 							if(kull_m_memory_copy(&aBuffer, &aRemote, sizeof(LONG)))
 							{
 								aRemote.address = (PBYTE) aRemote.address + 1 + sizeof(LONG) + offsetTemp;
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 							aBuffer.address = &aRemote.address;
 							if(kull_m_memory_copy(&aBuffer, &aRemote, sizeof(PVOID)))
 							{
@@ -72,7 +72,7 @@ NTSTATUS kuhl_m_minesweeper_infos(int argc, wchar_t * argv[])
 									aBuffer.address = &Game;
 									if(kull_m_memory_copy(&aBuffer, &aRemote, sizeof(STRUCT_MINESWEEPER_GAME)))
 									{
-#ifdef _M_IX86
+#if defined(_M_IX86)
 										if(MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_7)
 											Game.pBoard = Game.pBoard_WIN7x86;
 #endif

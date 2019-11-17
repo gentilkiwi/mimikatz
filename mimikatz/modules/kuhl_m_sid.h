@@ -5,8 +5,7 @@
 */
 #pragma once
 #include "kuhl_m.h"
-#include <Winldap.h>
-#include <WinBer.h>
+#include "../modules/kull_m_ldap.h"
 #include "../modules/kull_m_token.h"
 #include "../modules/kull_m_service.h"
 #include "../modules/kull_m_patch.h"
@@ -23,5 +22,3 @@ NTSTATUS kuhl_m_sid_patch(int argc, wchar_t * argv[]);
 void kuhl_m_sid_displayMessage(PLDAP ld, PLDAPMessage pMessage);
 BOOL kuhl_m_sid_quickSearch(int argc, wchar_t * argv[], BOOL needUnique, PCWCHAR system, PLDAP *ld, PLDAPMessage *pMessage);
 PWCHAR kuhl_m_sid_filterFromArgs(int argc, wchar_t * argv[]);
-BOOL kuhl_m_sid_getLdapAndRootDN(PCWCHAR system, PLDAP *ld, PWCHAR *rootDn);
-PWCHAR kuhl_m_sid_getRootDomainNamingContext(LDAP *ld);

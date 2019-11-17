@@ -20,12 +20,15 @@ NTSTATUS kuhl_m_misc_cmd(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_regedit(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_taskmgr(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_ncroutemon(int argc, wchar_t * argv[]);
+#if !defined(_M_ARM64)
 NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
+#endif
 //NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_mflt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_easyntlmchall(int argc, wchar_t * argv[]);
@@ -49,7 +52,7 @@ typedef struct _KUHL_M_MISC_DETOURS_HOOKS {
 PBYTE kuhl_m_misc_detours_testHookDestination(PKULL_M_MEMORY_ADDRESS base, WORD machineOfProcess, DWORD level);
 BOOL kuhl_m_misc_generic_nogpo_patch(PCWSTR commandLine, PWSTR disableString, SIZE_T szDisableString, PWSTR enableString, SIZE_T szEnableString);
 
-#ifndef NTDSAPI
+#if !defined(NTDSAPI)
 #define NTDSAPI DECLSPEC_IMPORT
 #endif
 NTDSAPI DWORD WINAPI DsBindW(IN OPTIONAL LPCWSTR DomainControllerName, IN OPTIONAL LPCWSTR DnsDomainName, OUT HANDLE *phDS);
@@ -98,6 +101,7 @@ typedef DWORD	(WINAPI * PWLANENUMINTERFACES)	(IN HANDLE hClientHandle, IN PVOID 
 typedef DWORD	(WINAPI * PWLANGETPROFILELIST)	(IN HANDLE hClientHandle, IN LPCGUID pInterfaceGuid, IN PVOID pReserved, OUT PWLAN_PROFILE_INFO_LIST *ppProfileList);
 typedef DWORD	(WINAPI * PWLANGETPROFILE)		(IN HANDLE hClientHandle, IN LPCGUID pInterfaceGuid, IN LPCWSTR strProfileName, IN PVOID pReserved, IN LPWSTR *pstrProfileXml, IN OUT OPTIONAL DWORD *pdwFlags, OUT OPTIONAL PDWORD pdwGrantedAccess);
 typedef VOID	(WINAPI * PWLANFREEMEMORY)		(IN PVOID pMemory);
+typedef BOOL	(WINAPI * PLOCKWORKSTATION) (VOID);
 typedef BOOL	(WINAPI * PSYSTEMPARAMETERSINFOW) (__in UINT uiAction, __in UINT uiParam, __inout_opt PVOID pvParam, __in UINT fWinIni);
 typedef DWORD	(WINAPI * PGETLASTERROR) (VOID);
 
@@ -106,6 +110,8 @@ typedef struct _KIWI_WP_DATA {
 	PCWCHAR wp;
 } KIWI_WP_DATA, *PKIWI_WP_DATA;
 
+BOOL CALLBACK kuhl_m_misc_lock_callback(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
+void kuhl_m_misc_lock_for_pid(DWORD pid, PCWCHAR wp);
 BOOL CALLBACK kuhl_m_misc_wp_callback(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 void kuhl_m_misc_wp_for_pid(DWORD pid, PCWCHAR wp);
 void kuhl_m_misc_mflt_display(PFILTER_AGGREGATE_BASIC_INFORMATION info);

@@ -31,6 +31,7 @@
     </ClCompile>
     <ClCompile Include="kdns.c" />
     <ClCompile Include="kdhcp.c" />
+    <ClCompile Include="ksub.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h" />
@@ -56,6 +57,7 @@
     </ClInclude>
     <ClInclude Include="kdns.h" />
     <ClInclude Include="kdhcp.h" />
+    <ClInclude Include="ksub.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sekurlsadbg">

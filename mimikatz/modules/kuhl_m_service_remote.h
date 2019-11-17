@@ -5,7 +5,7 @@
 */
 #pragma once
 #include "kuhl_m_service.h"
-#ifdef SERVICE_INCONTROL
+#if defined(SERVICE_INCONTROL)
 #include "../modules/kull_m_remotelib.h"
 #include "../modules/kull_m_patch.h"
 

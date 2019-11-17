@@ -20,7 +20,7 @@
 #include "modules/kuhl_m_token.h"
 #include "modules/kuhl_m_vault.h"
 #include "modules/kuhl_m_minesweeper.h"
-#ifdef NET_MODULE
+#if defined(NET_MODULE)
 #include "modules/kuhl_m_net.h"
 #endif
 #include "modules/dpapi/kuhl_m_dpapi.h"
@@ -52,14 +52,14 @@ NTSTATUS mimikatz_initOrClean(BOOL Init);
 NTSTATUS mimikatz_doLocal(wchar_t * input);
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input);
 
-#ifdef _POWERKATZ
+#if defined(_POWERKATZ)
 __declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input);
-#elif defined _WINDLL
+#elif defined(_WINDLL)
 void reatachIoHandle(DWORD nStdHandle, int flags, const char *Mode, FILE *file);
 void CALLBACK mimikatz_dll(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow);
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64)
 #pragma comment(linker, "/export:mainW=mimikatz_dll")
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 #pragma comment(linker, "/export:mainW=_mimikatz_dll@16")
 #endif
 #endif

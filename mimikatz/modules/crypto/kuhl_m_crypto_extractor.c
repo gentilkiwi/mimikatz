@@ -139,7 +139,7 @@ void kuhl_m_crypto_extractor_capi32(PKULL_M_MEMORY_ADDRESS address)
 		}
 	}
 }
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 
 void kuhl_m_crypto_extractor_capi64(PKULL_M_MEMORY_ADDRESS address)
 {
@@ -434,7 +434,7 @@ void kuhl_m_crypto_extractor_bcrypt32(PKULL_M_MEMORY_ADDRESS address)
 	}
 }
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 void kuhl_m_crypto_extractor_bcrypt64_bn(PKIWI_BCRYPT_BIGNUM_Header bn)
 {
 	if(bn->tag)
@@ -645,9 +645,9 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMe
 		aRemote = {pMemoryBasicInformation->BaseAddress, ps->hMemory}, aKey = aRemote;
 	PBYTE cur, limite;
 	DWORD size = 
-		#ifdef _M_X64
+		#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 		(ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? FIELD_OFFSET(KIWI_CRYPTKEY64, KiwiProv) : FIELD_OFFSET(KIWI_CRYPTKEY32, KiwiProv);
-		#else
+		#elif defined(_M_IX86)
 		FIELD_OFFSET(KIWI_CRYPTKEY32, KiwiProv);
 		#endif
 	
@@ -661,9 +661,9 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMe
 				for(cur = (PBYTE) aLocalBuffer.address; cur < limite; cur += (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(DWORD64) : sizeof(DWORD32))
 				{
 					if(
-						#ifdef _M_X64
+						#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 						RtlEqualMemory(cur, (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? (PVOID) &ps->ProcessKiwiCryptKey64 : (PVOID) &ps->ProcessKiwiCryptKey32, size)
-						#else
+						#elif defined(_M_IX86)
 						RtlEqualMemory(cur, &ps->ProcessKiwiCryptKey32, size)
 						#endif
 					)
@@ -674,7 +674,7 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMe
 							kprintf(L"\n%wZ (%u)\n", ps->processName, ps->currPid);
 						}
 						aKey.address = cur + ((PBYTE) aRemote.address - (PBYTE) aLocalBuffer.address);
-						#ifdef _M_X64
+						#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 						if(ps->Machine == IMAGE_FILE_MACHINE_AMD64)
 							kuhl_m_crypto_extractor_capi64(&aKey);
 						else
@@ -721,7 +721,7 @@ BOOL CALLBACK kuhl_m_crypto_extract_exports_callback_module_exportedEntry32(PKUL
 	}
 	return !ps->bAllProcessKiwiCryptKey;
 }
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BOOL CALLBACK kuhl_m_crypto_extract_exports_callback_module_exportedEntry64(PKULL_M_PROCESS_EXPORTED_ENTRY pExportedEntryInformations, PVOID pvArg)
 {
 	PKIWI_CRYPT_SEARCH ps = (PKIWI_CRYPT_SEARCH) pvArg;
@@ -765,9 +765,9 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysisBCrypt(PMEMORY_BASIC_INFORMATI
 		aRemote = {pMemoryBasicInformation->BaseAddress, ps->hMemory}, aKey = aRemote;
 	PBYTE cur, limite;
 	DWORD size = 
-		#ifdef _M_X64
+		#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 		(ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(Bcrypt64) : sizeof(Bcrypt32);
-		#else
+		#elif defined(_M_IX86)
 		sizeof(Bcrypt32);
 		#endif
 	
@@ -781,13 +781,13 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysisBCrypt(PMEMORY_BASIC_INFORMATI
 				for(cur = (PBYTE) aLocalBuffer.address; cur < limite; cur += (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ? sizeof(DWORD64) : sizeof(DWORD32))
 				{
 					if(
-						#ifdef _M_X64
+						#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 						RtlEqualMemory(cur, (ps->Machine == IMAGE_FILE_MACHINE_AMD64) ?
 						((MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt64_old : Bcrypt64)
 						:
 						((MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt32_old : Bcrypt32)
 						, size)
-						#else
+						#elif defined(_M_IX86)
 						RtlEqualMemory(cur, (MIMIKATZ_NT_BUILD_NUMBER < KULL_M_WIN_BUILD_7) ? Bcrypt32_old : Bcrypt32, size) 
 						#endif
 					)
@@ -798,7 +798,7 @@ BOOL CALLBACK kuhl_m_crypto_extract_MemoryAnalysisBCrypt(PMEMORY_BASIC_INFORMATI
 							kprintf(L"\n%wZ (%u)\n", ps->processName, ps->currPid);
 						}
 						aKey.address = cur + ((PBYTE) aRemote.address - (PBYTE) aLocalBuffer.address);
-						#ifdef _M_X64
+						#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 						if(ps->Machine == IMAGE_FILE_MACHINE_AMD64)
 							kuhl_m_crypto_extractor_bcrypt64(&aKey);
 						else
@@ -839,13 +839,13 @@ BOOL CALLBACK kuhl_m_crypto_extract_ProcessAnalysis(PSYSTEM_PROCESS_INFORMATION 
 							ps->Machine = pNtHeaders->FileHeader.Machine;
 							ps->bAllProcessKiwiCryptKey = FALSE;
 							RtlZeroMemory(&ps->ProcessKiwiCryptKey32, sizeof(KIWI_CRYPTKEY32));
-							#ifdef _M_X64
+							#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 							RtlZeroMemory(&ps->ProcessKiwiCryptKey64, sizeof(KIWI_CRYPTKEY64));
 							#endif
 							if(
-								#ifdef _M_X64
+								#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 									NT_SUCCESS(kull_m_process_getExportedEntryInformations(&cryptInfos.DllBase, (pNtHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64) ? kuhl_m_crypto_extract_exports_callback_module_exportedEntry64 : kuhl_m_crypto_extract_exports_callback_module_exportedEntry32, pvArg))
-								#else
+								#elif defined(_M_IX86)
 									NT_SUCCESS(kull_m_process_getExportedEntryInformations(&cryptInfos.DllBase, kuhl_m_crypto_extract_exports_callback_module_exportedEntry32, pvArg))
 								#endif
 								&& ps->bAllProcessKiwiCryptKey)
@@ -881,7 +881,7 @@ BOOL CALLBACK kuhl_m_crypto_extract_ProcessAnalysis(PSYSTEM_PROCESS_INFORMATION 
 NTSTATUS kuhl_m_crypto_extract(int argc, wchar_t * argv[])
 {
 	KIWI_CRYPT_SEARCH searchData = {NULL, 0, {0}, 
-	#ifdef _M_X64
+	#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	{0}, 
 	#endif
 	FALSE, GetCurrentProcessId(), 0, 0, NULL};

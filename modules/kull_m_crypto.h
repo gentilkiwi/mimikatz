@@ -31,11 +31,11 @@ typedef struct _RSA_GENERICKEY_BLOB {
 #define PVK_RC4_PASSWORD_ENCRYPT		1
 #define PVK_RC2_CBC_PASSWORD_ENCRYPT	2
 
-#ifndef IPSEC_FLAG_CHECK
+#if !defined(IPSEC_FLAG_CHECK)
 #define IPSEC_FLAG_CHECK 0xf42a19b6
 #endif
 
-#ifndef CNG_RSA_PRIVATE_KEY_BLOB
+#if !defined(CNG_RSA_PRIVATE_KEY_BLOB)
 #define CNG_RSA_PRIVATE_KEY_BLOB (LPCSTR) 83
 #endif
 
@@ -67,6 +67,8 @@ BOOL kull_m_crypto_hash(ALG_ID algid, LPCVOID data, DWORD dataLen, LPVOID hash, 
 BOOL kull_m_crypto_hkey(HCRYPTPROV hProv, ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD flags, HCRYPTKEY *hKey, HCRYPTPROV *hSessionProv);
 BOOL kull_m_crypto_hmac(DWORD calgid, LPCVOID key, DWORD keyLen, LPCVOID message, DWORD messageLen, LPVOID hash, DWORD hashWanted);
 BOOL kull_m_crypto_pkcs5_pbkdf2_hmac(DWORD calgid, LPCVOID password, DWORD passwordLen, LPCVOID salt, DWORD saltLen, DWORD iterations, BYTE *key, DWORD keyLen, BOOL isDpapiInternal);
+BOOL kull_m_crypto_desx_encrypt(HCRYPTPROV hProv, LPCVOID key, LPCVOID block, PVOID encrypted);
+BOOL kull_m_crypto_desx_decrypt(HCRYPTPROV hProv, LPCVOID key, LPCVOID block, PVOID decrypted);
 BOOL kull_m_crypto_aesCTSEncryptDecrypt(DWORD aesCalgId, PVOID data, DWORD szData, PVOID key, DWORD szKey, PVOID pbIV, BOOL encrypt);
 BOOL kull_m_crypto_DeriveKeyRaw(ALG_ID hashId, LPVOID hash, DWORD hashLen, LPVOID key, DWORD keyLen);
 BOOL kull_m_crypto_close_hprov_delete_container(HCRYPTPROV hProv);

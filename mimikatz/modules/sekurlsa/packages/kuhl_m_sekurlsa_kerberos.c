@@ -4,7 +4,12 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa_kerberos.h"
-#ifdef _M_X64
+#if defined(_M_ARM64)
+BYTE PTRN_WALL_KerbUnloadLogonSessionTable[] = {0x09, 0xfd, 0xdf, 0xc8, 0xe1, 0x03, 0x00, 0x91, 0x20, 0x01, 0x3f, 0xd6};
+KULL_M_PATCH_GENERIC KerberosReferences[] = {
+	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { -16, 4, 7}},
+};
+#elif defined(_M_X64)
 BYTE PTRN_WALL_KerbFreeLogonSessionList[]	= {0x48, 0x3b, 0xfe, 0x0f, 0x84};
 BYTE PTRN_WALL_KerbUnloadLogonSessionTable[]= {0x48, 0x8b, 0x18, 0x48, 0x8d, 0x0d};
 KULL_M_PATCH_GENERIC KerberosReferences[] = {
@@ -17,11 +22,12 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_10_1511,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 6}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 7}},
 };
-#elif defined _M_IX86
-BYTE PTRN_WALL_KerbReferenceLogonSession[]	= {0x8B, 0x7D, 0x08, 0x8B, 0x17, 0x39, 0x50};
+#elif defined(_M_IX86)
+BYTE PTRN_WALL_KerbReferenceLogonSession[]	= {0x8b, 0x7d, 0x08, 0x8b, 0x17, 0x39, 0x50};
 BYTE PTRN_WNO8_KerbUnloadLogonSessionTable[]= {0x53, 0x8b, 0x18, 0x50, 0x56};
 BYTE PTRN_WIN8_KerbUnloadLogonSessionTable[]= {0x57, 0x8b, 0x38, 0x50, 0x68};
 BYTE PTRN_WI10_KerbUnloadLogonSessionTable[]= {0x56, 0x8b, 0x30, 0x50, 0x57};
+BYTE PTRN_WN1903_KerbUnloadLogonSessionTable[] = {0x56, 0x8b, 0x30, 0x50, 0x53};
 KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WALL_KerbReferenceLogonSession),	PTRN_WALL_KerbReferenceLogonSession},	{0, NULL}, {-8, 0}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WALL_KerbReferenceLogonSession),	PTRN_WALL_KerbReferenceLogonSession},	{0, NULL}, {-8, 1}},
@@ -31,6 +37,7 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,4}},
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,5}},
 	{KULL_M_WIN_BUILD_10_1511,	{sizeof(PTRN_WI10_KerbUnloadLogonSessionTable),	PTRN_WI10_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,7}},
+	{KULL_M_WIN_BUILD_10_1903,	{sizeof(PTRN_WN1903_KerbUnloadLogonSessionTable),	PTRN_WN1903_KerbUnloadLogonSessionTable}, {0, NULL}, {-15,7}},
 };
 #endif
 

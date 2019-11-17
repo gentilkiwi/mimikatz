@@ -198,7 +198,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION {
 	PVOID		unk5;
 	PVOID		unk6;
 	LUID		LocallyUniqueIdentifier;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	FILETIME	unk7;
@@ -253,7 +253,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_10 {
 	PVOID		unk11;
 	PVOID		unk12;
 	PVOID		unk13;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	KIWI_KERBEROS_10_PRIMARY_CREDENTIAL	credentials;
@@ -315,7 +315,7 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_10_1607 {
 	PVOID		unk11;
 	PVOID		unk12;
 	PVOID		unk13;
-#ifdef _M_IX86
+#if defined(_M_IX86)
 	ULONG		unkAlign;
 #endif
 	KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607	credentials;
@@ -385,9 +385,9 @@ typedef struct _KIWI_TS_PRIMARY_CREDENTIAL {
 } KIWI_TS_PRIMARY_CREDENTIAL, *PKIWI_TS_PRIMARY_CREDENTIAL;
 
 typedef struct _KIWI_TS_CREDENTIAL {
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64)
 	BYTE unk0[108];
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 	BYTE unk0[64];
 #endif
 	LUID LocallyUniqueIdentifier;
@@ -397,9 +397,9 @@ typedef struct _KIWI_TS_CREDENTIAL {
 } KIWI_TS_CREDENTIAL, *PKIWI_TS_CREDENTIAL;
 
 typedef struct _KIWI_TS_CREDENTIAL_1607 {
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64)
 	BYTE unk0[112];
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 	BYTE unk0[68];
 #endif
 	LUID LocallyUniqueIdentifier;
@@ -413,9 +413,9 @@ typedef struct _KIWI_TS_CREDENTIAL_HELPER {
 	LONG offsetToTsPrimary;
 } KIWI_TS_CREDENTIAL_HELPER, *PKIWI_TS_CREDENTIAL_HELPER;
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64)
 	#define offsetWDigestPrimary 48
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 	#define offsetWDigestPrimary 32
 #endif
 typedef struct _KIWI_WDIGEST_LIST_ENTRY {

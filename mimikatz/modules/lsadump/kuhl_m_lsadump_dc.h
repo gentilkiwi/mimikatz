@@ -37,6 +37,8 @@ typedef struct _USER_PROPERTIES {
 } USER_PROPERTIES, *PUSER_PROPERTIES;
 #pragma pack(pop)
 
+const wchar_t * KUHL_M_LSADUMP_UF_FLAG[32];
+
 BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
 void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport);
 void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes);

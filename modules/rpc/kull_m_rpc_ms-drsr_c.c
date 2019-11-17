@@ -1,6 +1,6 @@
 #include "kull_m_rpc_ms-drsr.h"
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING {
 	SHORT Pad;
 	UCHAR Format[1757];
@@ -11,7 +11,7 @@ typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING {
 	UCHAR Format[853];
 } ms2Ddrsr_MIDL_PROC_FORMAT_STRING;
 static const unsigned short drsuapi_FormatStringOffsetTable[] = {0, 60, 104, 134, 202, 258, 314, 370, 400, 468, 498, 528, 558, 626, 656, 686, 716, 784};
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 typedef struct _ms2Ddrsr_MIDL_TYPE_FORMAT_STRING {
 	SHORT Pad;
 	UCHAR Format[1933];
@@ -63,7 +63,7 @@ static const MIDL_STUB_DESC
 static const MIDL_SERVER_INFO drsuapi_ServerInfo = {&drsuapi_s_StubDesc, drsuapi_ServerRoutineTable, ms2Ddrsr__MIDL_ProcFormatString.Format, drsuapi_FormatStringOffsetTable, 0, 0, 0, 0};
 static const MIDL_TYPE_PICKLING_INFO __MIDL_TypePicklingInfo = {0x33205054, 0x3, 0, 0, 0,};
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 ULONG IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs)
 {
     return (ULONG) NdrClientCall2((PMIDL_STUB_DESC) &drsuapi_c_StubDesc, (PFORMAT_STRING) &ms2Ddrsr__MIDL_ProcFormatString.Format[0], rpc_handle, puuidClientDsa, pextClient, ppextServer, phDrs).Simple;
@@ -210,7 +210,7 @@ static const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString = 
 	0xff, 0xff, 0x1a, 0x03, 0x28, 0x00, 0x00, 0x00, 0x08, 0x00, 0x36, 0x4c, 0x00, 0xe1, 0xfa, 0x5b, 0x12, 0x00, 0xf0, 0xff, 0x1a, 0x03, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4c, 0x00, 0xe4, 0xff,
 	0x5c, 0x5b, 0x11, 0x04, 0x02, 0x00, 0x2b, 0x09, 0x29, 0x54, 0x18, 0x00, 0x01, 0x00, 0x02, 0x00, 0x28, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x82, 0xfc, 0xff, 0xff, 0x00,
 }};
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 #pragma optimize("", off)
 ULONG IDL_DRSBind(handle_t rpc_handle, UUID *puuidClientDsa, DRS_EXTENSIONS *pextClient, DRS_EXTENSIONS **ppextServer, DRS_HANDLE *phDrs)
 {

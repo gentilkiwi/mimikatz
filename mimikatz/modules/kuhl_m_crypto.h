@@ -12,6 +12,7 @@
 #include "crypto/kuhl_m_crypto_sc.h"
 #include "crypto/kuhl_m_crypto_extractor.h"
 #include "crypto/kuhl_m_crypto_patch.h"
+#include "crypto/kuhl_m_crypto_pki.h"
 
 typedef struct _KUHL_M_CRYPTO_DWORD_TO_DWORD {
 	PCWSTR	name;
@@ -51,7 +52,6 @@ NTSTATUS kuhl_m_crypto_l_certificates(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_c_cert_to_hw(int argc, wchar_t * argv[]);
 
 BOOL WINAPI kuhl_m_crypto_l_stores_enumCallback_print(const void *pvSystemStore, DWORD dwFlags, PCERT_SYSTEM_STORE_INFO pStoreInfo, void *pvReserved, void *pvArg);
@@ -64,5 +64,3 @@ wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * 
 void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport);
 void kuhl_m_crypto_l_keys_capi(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwProvType, DWORD dwFlags, BOOL export, LPCWSTR szStore);
 void kuhl_m_crypto_l_keys_cng(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwFlags, BOOL export, LPCWSTR szStore);
-
-BOOL kuhl_m_crypto_c_sc_auth_quickEncode(__in LPCSTR lpszStructType, __in const void *pvStructInfo, PDATA_BLOB data);
