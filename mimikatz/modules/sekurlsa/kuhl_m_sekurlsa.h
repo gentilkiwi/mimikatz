@@ -220,3 +220,5 @@ typedef struct _ENC_LSAISO_DATA_BLOB {
 	BYTE unkData2[16];
 	BYTE data[ANYSIZE_ARRAY];
 } ENC_LSAISO_DATA_BLOB, *PENC_LSAISO_DATA_BLOB;
+
+#include "../dpapi/kuhl_m_dpapi_oe.h"

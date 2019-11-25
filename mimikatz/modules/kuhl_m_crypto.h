@@ -9,6 +9,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_file.h"
 #include "../modules/kull_m_registry.h"
+#include "sekurlsa/kuhl_m_sekurlsa.h"
 #include "crypto/kuhl_m_crypto_sc.h"
 #include "crypto/kuhl_m_crypto_extractor.h"
 #include "crypto/kuhl_m_crypto_patch.h"
@@ -64,3 +65,6 @@ wchar_t * kuhl_m_crypto_generateFileName(const wchar_t * term0, const wchar_t * 
 void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport);
 void kuhl_m_crypto_l_keys_capi(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwProvType, DWORD dwFlags, BOOL export, LPCWSTR szStore);
 void kuhl_m_crypto_l_keys_cng(LPCWSTR szContainer, LPCWSTR szProvider, DWORD dwFlags, BOOL export, LPCWSTR szStore);
+
+BOOL kuhl_m_crypto_system_data(PBYTE data, DWORD len, PCWCHAR originalName, BOOL isExport);
+BOOL CALLBACK kuhl_m_crypto_system_directory(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg);

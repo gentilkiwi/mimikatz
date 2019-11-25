@@ -73,6 +73,21 @@ NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
+BOOL kuhl_m_dpapi_keys_cng_isIso(PKULL_M_KEY_CNG_PROPERTY * properties, DWORD cbProperties)
+{
+	DWORD i;
+	BOOL result = FALSE;
+	for(i = 0; i < cbProperties; i++)
+	{
+		if((properties[i]->dwNameLen >= 22) && RtlEqualMemory(NCRYPT_USE_VIRTUAL_ISOLATION_PROPERTY, properties[i]->pName, 22) && (properties[i]->dwPropertyLen == sizeof(BOOL)))
+		{
+			result = *(PBOOL) properties[i]->pProperty;
+			break;
+		}
+	}
+	return result;
+}
+
 NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 {
 	PBYTE file;
@@ -82,6 +97,7 @@ NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 	PKULL_M_KEY_CNG_PROPERTY * properties;
 	LPCWSTR infile;
 	PWSTR name;
+	BOOL isIso = FALSE;
 
 	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
@@ -96,6 +112,7 @@ NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 					if(kull_m_key_cng_properties_create(out, outLen, &properties, &cbProperties))
 					{
 						kull_m_key_cng_properties_descr(0, properties, cbProperties);
+						isIso = kuhl_m_dpapi_keys_cng_isIso(properties, cbProperties);
 						kull_m_key_cng_properties_delete(properties, cbProperties);
 					}
 					LocalFree(out);
@@ -103,12 +120,20 @@ NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 
 				if(kuhl_m_dpapi_unprotect_raw_or_blob(cngKey->pPrivateKey, cngKey->dwPrivateKeyLen, NULL, argc, argv, KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB, sizeof(KIWI_DPAPI_ENTROPY_CNG_KEY_BLOB), &out, &outLen, L"Decrypting Private Key:\n"))
 				{
-					kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
-					if(name = (PWSTR) LocalAlloc(LPTR, cngKey->dwNameLen + sizeof(wchar_t)))
+					if(isIso)
 					{
-						RtlCopyMemory(name, cngKey->pName, cngKey->dwNameLen);
-						kuhl_m_crypto_exportRawKeyToFile(out, outLen, TRUE, L"raw", 0, name, TRUE, TRUE);
-						LocalFree(name);
+						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) out + sizeof(DWORD)));
+						kprintf(L"\n");
+					}
+					else
+					{
+						kull_m_string_wprintf_hex(out, outLen, 0);kprintf(L"\n");
+						if(name = (PWSTR) LocalAlloc(LPTR, cngKey->dwNameLen + sizeof(wchar_t)))
+						{
+							RtlCopyMemory(name, cngKey->pName, cngKey->dwNameLen);
+							kuhl_m_crypto_exportRawKeyToFile(out, outLen, TRUE, L"raw", 0, name, TRUE, TRUE);
+							LocalFree(name);
+						}
 					}
 					LocalFree(out);
 				}

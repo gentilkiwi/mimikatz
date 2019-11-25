@@ -8,39 +8,51 @@
 NTSTATUS kuhl_m_dpapi_cred(int argc, wchar_t * argv[])
 {
 	PCWSTR infile;
-	PVOID file, out;
-	DWORD szFile, szOut;
+	PBYTE file;
+	PVOID out;
+	DWORD i, szFile, szOut;
 	BOOL isNT5Cred;
 	PKULL_M_CRED_BLOB cred;
 	PKULL_M_CRED_LEGACY_CREDS_BLOB legacyCreds;
-
+	
 	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
 	{
-		if(kull_m_file_readData(infile, (PBYTE *) &file, &szFile))
+		if(kull_m_file_readData(infile, &file, &szFile))
 		{
-			isNT5Cred = RtlEqualGuid((PBYTE) file + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER);
-			kull_m_dpapi_blob_quick_descr(0, isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob);
-			if(kuhl_m_dpapi_unprotect_raw_or_blob(isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob, isNT5Cred ? szFile : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blobSize, NULL, argc, argv, NULL, 0, &out, &szOut, isNT5Cred ? L"Decrypting Legacy Credential(s):\n" : L"Decrypting Credential:\n"))
+			if(szFile >= FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
 			{
-				if(isNT5Cred)
+				isNT5Cred = RtlEqualGuid(file + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER);
+				kull_m_dpapi_blob_quick_descr(0, isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob);
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob, isNT5Cred ? szFile : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blobSize, NULL, argc, argv, NULL, 0, &out, &szOut, isNT5Cred ? L"Decrypting Legacy Credential(s):\n" : L"Decrypting Credential:\n"))
 				{
-					if(legacyCreds = kull_m_cred_legacy_creds_create(out))
+					if(isNT5Cred)
 					{
-						kull_m_cred_legacy_creds_descr(0, legacyCreds);
-						kull_m_cred_legacy_creds_delete(legacyCreds);
+						if(legacyCreds = kull_m_cred_legacy_creds_create(out))
+						{
+							kull_m_cred_legacy_creds_descr(0, legacyCreds);
+							for(i = 0; i < legacyCreds->__count; i++)
+								kuhl_m_dpapi_cred_tryEncrypted(legacyCreds->Credentials[i]->TargetName, legacyCreds->Credentials[i]->CredentialBlob, legacyCreds->Credentials[i]->CredentialBlobSize, argc, argv);
+							kull_m_cred_legacy_creds_delete(legacyCreds);
+						}
 					}
-				}
-				else 
-				{
-					if(cred = kull_m_cred_create(out))
+					else 
 					{
-						kull_m_cred_descr(0, cred);
-						kull_m_cred_delete(cred);
+						if(cred = kull_m_cred_create(out))
+						{
+							kull_m_cred_descr(0, cred);
+							if(kull_m_string_args_byName(argc, argv, L"lsaiso", NULL, NULL))
+							{
+								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) cred->CredentialBlob);
+								kprintf(L"\n");
+							}
+							else kuhl_m_dpapi_cred_tryEncrypted(cred->TargetName, cred->CredentialBlob, cred->CredentialBlobSize, argc, argv);
+							kull_m_cred_delete(cred);
+						}
 					}
+					LocalFree(out);
 				}
-				LocalFree(out);
+				LocalFree(file);
 			}
-			LocalFree(file);
 		}
 		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 	}
@@ -84,7 +96,6 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 								{
 									kprintf(L"  AES128 key: "); kull_m_string_wprintf_hex(aes128, AES_128_KEY_SIZE, 0); kprintf(L"\n");
 									kprintf(L"  AES256 key: "); kull_m_string_wprintf_hex(aes256, AES_256_KEY_SIZE, 0); kprintf(L"\n\n");
-									
 									if(CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT))
 									{
 										for(i = 0; i < vaultCredential->__cbElements; i++)
@@ -146,8 +157,30 @@ NTSTATUS kuhl_m_dpapi_vault(int argc, wchar_t * argv[])
 		else PRINT_ERROR_AUTO(L"kull_m_file_readData (cred)");
 	}
 	else PRINT_ERROR(L"Input Cred file needed (/cred:file)\n");
-				
+
 	return STATUS_SUCCESS;
+}
+
+void kuhl_m_dpapi_cred_tryEncrypted(LPCWSTR target, LPCBYTE data, DWORD dataLen, int argc, wchar_t * argv[])
+{
+	PVOID cred;
+	DWORD credLen;
+	if(wcsstr(target, L"Microsoft_WinInet_"))
+	{
+		if(dataLen >= FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+		{
+			if(RtlEqualGuid(data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
+			{
+				kprintf(L"\n");
+				if(kuhl_m_dpapi_unprotect_raw_or_blob(data, dataLen, NULL, argc, argv, KULL_M_CRED_ENTROPY_CRED_DER, sizeof(KULL_M_CRED_ENTROPY_CRED_DER), &cred, &credLen, L"Decrypting additional blob\n"))
+				{
+					kprintf(L"   CredentialBlob: ");
+					kull_m_string_printSuspectUnicodeString(cred, credLen);
+					LocalFree(cred);
+				}
+			}
+		}
+	}
 }
 
 BOOL kuhl_m_dpapi_vault_key_type(PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribute, HCRYPTPROV hProv, BYTE aes128[AES_128_KEY_SIZE], BYTE aes256[AES_256_KEY_SIZE], HCRYPTKEY *hKey, BOOL *isAttr)

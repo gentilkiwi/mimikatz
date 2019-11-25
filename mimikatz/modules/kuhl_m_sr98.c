@@ -13,6 +13,7 @@ const KUHL_M_C kuhl_m_c_sr98[] = {
 	{kuhl_m_sr98_hid26,		L"hid",		NULL},
 	{kuhl_m_sr98_em4100,	L"em4100",	NULL},
 	{kuhl_m_sr98_noralsy,	L"noralsy",	NULL},
+	{kuhl_m_sr98_nedap,		L"nedap",	NULL},
 };
 const KUHL_M kuhl_m_sr98 = {
 	L"sr98", L"RF module for SR98 device and T5577 target", NULL,
@@ -243,6 +244,53 @@ NTSTATUS kuhl_m_sr98_noralsy(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
+NTSTATUS kuhl_m_sr98_nedap(int argc, wchar_t * argv[])
+{
+	PCWCHAR szNumber;
+	UCHAR SubType, i;
+	USHORT CustomerCode;
+	ULONG Number, blocks[5];
+	BOOLEAN isLong = kull_m_string_args_byName(argc, argv, L"long", NULL, NULL);
+
+	kprintf(L"\nNedap XS encoder\n\n");
+	kull_m_string_args_byName(argc, argv, L"sub", &szNumber, L"5");
+	Number = wcstoul(szNumber, NULL, 0);
+	if(Number < 0x10)
+	{
+		SubType = (UCHAR) Number;
+		kprintf(L" * SubType     : %hhu (0x%1x)\n", SubType, SubType);
+		if(kull_m_string_args_byName(argc, argv, L"cc", &szNumber, NULL))
+		{
+			Number = wcstoul(szNumber, NULL, 0);
+			if(Number < 0x1000)
+			{
+				CustomerCode = (USHORT) Number;
+				kprintf(L" * CustomerCode: %hu (0x%03x)\n", CustomerCode, CustomerCode);
+				if(kull_m_string_args_byName(argc, argv, L"cn", &szNumber, NULL))
+				{
+					Number = wcstoul(szNumber, NULL, 0);
+					kprintf(L" * CardNumber  : %u (0x%08x)\n", Number, Number);
+					if(Number > 0)
+					{
+						kuhl_m_sr98_nedap_blocks(blocks, isLong, SubType, CustomerCode, Number);
+						kprintf(L" * Nedap       : ");
+						for(i = 1; i < (isLong ? 5 : 3); i++)
+							kprintf(L"%08x", blocks[i]);
+						kprintf(L" (%s)\n", isLong ? L"long" : L"short");
+						kuhl_m_sr98_sendBlocks(blocks, isLong ? ARRAYSIZE(blocks) : (ARRAYSIZE(blocks) - 2));
+					}
+					else PRINT_ERROR(L"CardNumber (/cn) must be > 0 - it was %u (0x%08x)\n", Number, Number);
+				}
+				else PRINT_ERROR(L"CardNumber (/cn) is needed\n");
+			}
+			else PRINT_ERROR(L"CustomerCode (/cc) must be in the [0;4096] range - it was %u (0x%08x)\n", Number, Number);
+		}
+		else PRINT_ERROR(L"CustomerCode (/cc) is needed\n");
+	}
+	else PRINT_ERROR(L"SubType (/sub) must be in the [0;15] range - it was %u (0x%08x)\n", Number, Number);
+	return STATUS_SUCCESS;
+}
+
 BOOL kuhl_m_sr98_sendBlocks(ULONG *blocks, UCHAR nb)
 {
 	BOOL status = FALSE;
@@ -398,4 +446,65 @@ void kuhl_m_sr98_noralsy_blocks(ULONG blocks[4], ULONG CardNumber, USHORT Year)
 	blocks[1] = 0xbb0214ff;
 	blocks[2] = (r1 << 28) | (r2 << 24) | (r3 << 20) | (y1 << 16) | (y2 << 12) | (r4 << 4) | r5;
 	blocks[3] = (r6 << 28) | (r7 << 24) | (c << 20) | (7 << 16); // 7 = 0xb ^ 0xb ^ 0x0 ^ 0x2 ^ 0x1 ^ 0x4 ^ 0xf ^ 0xf (^ c1 ^ c1);
+}
+
+USHORT kuhl_m_sr98_crc16_ccitt_1021(const UCHAR *data, ULONG len)
+{
+	ULONG i, j, res;
+	for (i = 0, res = 0; i < len; i++)
+	{
+		res = ((data[i] << 8) ^ res) & 0x0000ffff;
+		for(j = 0; j < 8; j++)
+		{
+			if(res & 0x8000 )
+				res = (2 * res ^ 0x1021);
+			else res <<= 1;
+		}
+	}
+	return (USHORT) res;
+}
+
+const UCHAR kuhl_m_sr98_nedap_translateTable[10] = {8, 2, 1, 12, 4, 5, 10, 13, 0, 9};
+void kuhl_m_sr98_nedap_blocks(ULONG blocks[5], BOOLEAN isLong, UCHAR SubType, USHORT CustomerCode, ULONG CardNumber)
+{
+	UCHAR r1, r2, r3, r4, r5, idxC2, idxC3, idxC4, idxC5, i, tmp;
+	USHORT checksum;
+	ULONGLONG uBuffer, t;
+
+	r1 = (UCHAR) (CardNumber / 10000);
+	r2 = (UCHAR) ((CardNumber % 10000) / 1000);
+	r3 = (UCHAR) ((CardNumber % 1000) / 100);
+	r4 = (UCHAR) ((CardNumber % 100) / 10);
+	r5 = (UCHAR) (CardNumber % 10);
+	idxC2 = (r1 + 1 + r2) % 10;
+	idxC3 = (idxC2 + 1 + r3) % 10;
+	idxC4 = (idxC3 + 1 + r4) % 10;
+	idxC5 = (idxC4 + 1 + r5) % 10;
+
+	uBuffer = ((ULONGLONG) (0xc0 | (SubType & 0x0f)) << 32) | ((ULONGLONG) (CustomerCode & 0x0fff) << 20) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[r1] << 16) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC2] << 12) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC3] << 8) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC4] << 4) | kuhl_m_sr98_nedap_translateTable[idxC5];
+	t = _byteswap_uint64(uBuffer) >> 24;
+	checksum = kuhl_m_sr98_crc16_ccitt_1021((const UCHAR *) &t, 5);
+	uBuffer <<= 16;
+	((PUCHAR) &uBuffer)[0] = (UCHAR) ((checksum & 0x000f) << 4) | ((uBuffer >> 16) & 0x0f);
+	((PUCHAR) &uBuffer)[1] = (UCHAR) ((checksum & 0x00f0) << 0) | ((uBuffer >> 20) & 0x0f);
+	((PUCHAR) &uBuffer)[2] = (UCHAR) ((checksum & 0x0f00) >> 4) | ((uBuffer >> 24) & 0x0f);
+	((PUCHAR) &uBuffer)[3] = (UCHAR) ((checksum & 0xf000) >> 8) | ((uBuffer >> 28) & 0x0f);
+	for(i = 0, tmp = 1; i < ((sizeof(ULONGLONG) - 1) * 8); i++) // to check ? -1 ?
+		tmp ^= (uBuffer >> i) & 1;
+	uBuffer <<= 1;
+	uBuffer |= 0xfe00000000000000 | tmp;
+
+	blocks[1] = (ULONG) (uBuffer >> 32);
+	blocks[2] = (ULONG) uBuffer;
+	if(isLong)
+	{
+		uBuffer = ((ULONGLONG) ((r4 << 4) | r5) << 55) | ((ULONGLONG) ((r2 << 4) | r3) << 46) | ((ULONGLONG) r1 << 37) | ((ULONGLONG) C_FIXED0 << 28) | ((ULONGLONG) C_FIXED1 << 19) | ((ULONGLONG) C_UNK0 << 10) | ((ULONGLONG) C_UNK1 << 1);
+		for(i = 1, tmp = 0; i < (sizeof(ULONGLONG) * 8); i++)
+			tmp ^= (uBuffer >> i) & 1;
+		uBuffer |= tmp;
+		blocks[3] = (ULONG) (uBuffer >> 32);
+		blocks[4] = (ULONG) uBuffer;
+		blocks[0] = 0x907f0082; // RF/64, Biphase, [1-4], inverted
+	}
+	else blocks[0] = 0x907f0042; // RF/64, Biphase, [1-2], inverted
 }

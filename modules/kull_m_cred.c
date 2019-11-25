@@ -5,6 +5,16 @@
 */
 #include "kull_m_cred.h"
 
+const wchar_t KULL_M_CRED_ENTROPY_CRED_DER[37] = L"\x0184\x0188\x0194\x00c8\x00e0\x00d8\x00e4\x0198\x00b4\x00e4\x0188\x00d0\x00dc\x00b4\x00d0\x018c\x0190\x00e4\x00b4\x0184\x00cc\x00d4\x00e0\x00b4\x018c\x00c8\x00c8\x00e4\x00c0\x00d0\x0190\x0188\x0184\x00dc\x0198\x00dc";
+const wchar_t KULL_M_CRED_ENTROPYDOM_CRED_DER[37] = L"\x00e0\x00c8\x0108\x0110\x00c0\x0114\x00d8\x00dc\x00b4\x00e4\x0118\x0114\x0104\x00b4\x00d0\x00dc\x00d0\x00e0\x00b4\x00e0\x00d8\x00dc\x00c8\x00b4\x0110\x00d4\x0114\x0118\x0114\x00d4\x0108\x00dc\x00dc\x00e4\x0108\x00c0";
+//wchar_t entropyCred[] = L"abe2869f-9b47-4cd9-a358-c22904dba7f7";
+//wchar_t entropyDomCred[] = L"82BD0E67-9FEA-4748-8672-D5EFE5B779B0";
+//DWORD i;
+//for(i = 0; i < ARRAYSIZE(entropyCred); i++)
+//	entropyCred[i] <<= 2;
+//for(i = 0; i < ARRAYSIZE(entropyDomCred); i++)
+//	entropyDomCred[i] <<= 2;
+
 PKULL_M_CRED_BLOB kull_m_cred_create(PVOID data/*, DWORD size*/)
 {
 	PKULL_M_CRED_BLOB cred = NULL;

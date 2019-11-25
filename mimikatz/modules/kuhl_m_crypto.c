@@ -420,12 +420,14 @@ NTSTATUS kuhl_m_crypto_l_keys(int argc, wchar_t * argv[])
 
 void kuhl_m_crypto_printKeyInfos(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE monProv, HCRYPTKEY maCle)
 {
-	BOOL isExportable, keyOperation = FALSE;
+	BOOL isExportable, keyOperation = FALSE, isVirtualIso = FALSE;
 	DWORD keySize, dwSizeNeeded;
 	if(monProv)
 	{
 		__try 
 		{
+			if(NT_SUCCESS(NCryptGetProperty(monProv, NCRYPT_USE_VIRTUAL_ISOLATION_PROPERTY, (BYTE *) &keySize, sizeof(DWORD), &dwSizeNeeded, 0)))
+				isVirtualIso = (BOOL) keySize;
 			keyOperation = NT_SUCCESS(NCryptGetProperty(monProv, NCRYPT_EXPORT_POLICY_PROPERTY, (BYTE *) &keySize, sizeof(DWORD), &dwSizeNeeded, 0));
 			isExportable = (keySize & NCRYPT_ALLOW_EXPORT_FLAG);
 			keyOperation &= NT_SUCCESS(NCryptGetProperty(monProv, NCRYPT_LENGTH_PROPERTY,  (BYTE *) &keySize, sizeof(DWORD), &dwSizeNeeded, 0));
@@ -449,10 +451,14 @@ void kuhl_m_crypto_printKeyInfos(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE monProv, HCRYPT
 	}
 
 	if(keyOperation)
+	{
+		if(isVirtualIso)
+			kprintf(L"\t** LSA Isolated key **\n");
 		kprintf(
 		L"\tExportable key : %s\n"
 		L"\tKey size       : %u\n",
 		(isExportable ? L"YES" : L"NO"), keySize);
+	}
 }
 
 void kuhl_m_crypto_exportRawKeyToFile(LPCVOID data, DWORD size, BOOL isCNG, const wchar_t * store, const DWORD index, const wchar_t * name, BOOL wantExport, BOOL wantInfos)
@@ -735,6 +741,10 @@ BOOL kuhl_m_crypto_system_data(PBYTE data, DWORD len, PCWCHAR originalName, BOOL
 			case CERT_keyid_file_element:
 				kuhl_m_crypto_file_rawData(prop, originalName, isExport);
 				break;
+			case 118: // CERT_ISOLATED_KEY_PROP_ID
+				kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) prop->data);
+				kprintf(L"\n");
+				break;
 			case CERT_SHA1_HASH_PROP_ID:
 			case CERT_MD5_HASH_PROP_ID :
 			case CERT_SIGNATURE_HASH_PROP_ID:
@@ -791,7 +801,7 @@ NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[])
 
 void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, BOOL isExport)
 {
-	PCWCHAR type, file = PathFindFileName(inFile);
+	PCWCHAR type, file;
 	wchar_t * buffer;
 	size_t charCount;
 
@@ -821,6 +831,7 @@ void kuhl_m_crypto_file_rawData(PKUHL_M_CRYPTO_CERT_PROP prop, PCWCHAR inFile, B
 		if(isExport)
 		{
 			kprintf(L"  ");
+			file = PathFindFileName(inFile);
 			charCount = wcslen(file) + 1 + wcslen(type) + 1;
 			if(buffer = (wchar_t *) LocalAlloc(LPTR, (charCount) * sizeof(wchar_t)))
 			{
