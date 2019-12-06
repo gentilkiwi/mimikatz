@@ -825,7 +825,15 @@ const KULL_M_CRYPTO_DUAL_STRING_DWORD kull_m_crypto_cert_prop_id[] = {
 	{L"CERT_SCEP_SIGNER_CERT_PROP_ID",						112}, // sha1 Thumbprint
 	{L"CERT_SCEP_NONCE_PROP_ID",							113}, // blob
 	{L"CERT_SCEP_ENCRYPT_HASH_CNG_ALG_PROP_ID",				114}, // string: "CNGEncryptAlgId/CNGHashAlgId"  example: "3DES/SHA1"
-	{L"CERT_SCEP_FLAGS_PROP_ID",							115},
+	{L"CERT_SCEP_FLAGS_PROP_ID",							115}, // DWORD
+	{L"CERT_SCEP_GUID_PROP_ID",								116}, // string
+	{L"CERT_SERIALIZABLE_KEY_CONTEXT_PROP_ID",				117}, // CERT_KEY_CONTEXT
+	{L"CERT_ISOLATED_KEY_PROP_ID",							118}, // blob
+	{L"CERT_SERIAL_CHAIN_PROP_ID",							119},
+	{L"CERT_KEY_CLASSIFICATION_PROP_ID",					120}, // DWORD CertKeyType
+	{L"CERT_OCSP_MUST_STAPLE_PROP_ID",						121},
+	{L"CERT_DISALLOWED_ENHKEY_USAGE_PROP_ID",				122},
+	{L"CERT_NONCOMPLIANT_ROOT_URL_PROP_ID",					123}, // NULL terminated UNICODE string
 };
 
 DWORD kull_m_crypto_system_store_to_dword(PCWSTR name)

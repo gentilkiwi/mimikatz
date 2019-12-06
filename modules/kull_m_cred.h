@@ -8,6 +8,9 @@
 #include "kull_m_dpapi.h"
 #include "kull_m_string.h"
 
+const wchar_t KULL_M_CRED_ENTROPY_CRED_DER[37];
+const wchar_t KULL_M_CRED_ENTROPYDOM_CRED_DER[37];
+
 #pragma pack(push, 1)
 typedef struct _KULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE {
 	DWORD id;

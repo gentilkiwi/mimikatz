@@ -898,9 +898,9 @@ NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[])
 	PCWCHAR process;
 	UNICODE_STRING uProcess;
 	kull_m_string_args_byName(argc, argv, L"process", &process, L"explorer.exe");
-		RtlInitUnicodeString(&uProcess, process);
-		kprintf(L"Proxy process : %wZ\n", &uProcess);
-		kull_m_process_getProcessInformation(kuhl_m_misc_lock_callback, &uProcess);
+	RtlInitUnicodeString(&uProcess, process);
+	kprintf(L"Proxy process : %wZ\n", &uProcess);
+	kull_m_process_getProcessInformation(kuhl_m_misc_lock_callback, &uProcess);
 	return STATUS_SUCCESS;
 }
 

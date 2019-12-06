@@ -536,13 +536,22 @@ BOOL kull_m_dpapi_unprotect_raw_or_blob(LPCVOID pDataIn, DWORD dwDataInLen, LPWS
 	return status;
 }
 
+BOOL kull_m_dpapi_getProtected(PVOID PassHash, DWORD PassLen, PCWSTR sid)
+{
+	BOOL status = FALSE;
+	DWORD SidLen = lstrlen(sid) * sizeof(wchar_t);
+	BYTE sha2[32];
+	if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA_256, PassHash, PassLen, sid, SidLen, 10000, sha2, sizeof(sha2), FALSE))
+		status = kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA_256, sha2, sizeof(sha2), sid, SidLen, 1, (PBYTE) PassHash, PassLen, FALSE);
+	return status;
+}
+
 BOOL kull_m_dpapi_unprotect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR password, PCWSTR sid, BOOL isKeyOfProtectedUser, PVOID *output, DWORD *outputLen)
 {
 	BOOL status = FALSE;
 	ALG_ID PassAlg;
 	DWORD PassLen, SidLen = (DWORD) wcslen(sid) * sizeof(wchar_t);
 	PVOID PassHash;
-	BYTE sha2[32];
 	
 	PassAlg = (flags & 4) ? CALG_SHA1 : CALG_MD4;
 	PassLen = kull_m_crypto_hash_len(PassAlg);
@@ -551,9 +560,7 @@ BOOL kull_m_dpapi_unprotect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_M
 		if(kull_m_crypto_hash(PassAlg, password, (DWORD) wcslen(password) * sizeof(wchar_t), PassHash, PassLen))
 		{
 			if(isKeyOfProtectedUser && (PassAlg == CALG_MD4))
-				if(kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA_256, PassHash, PassLen, sid, SidLen, 10000, sha2, sizeof(sha2), FALSE))
-					kull_m_crypto_pkcs5_pbkdf2_hmac(CALG_SHA_256, sha2, sizeof(sha2), sid, SidLen, 1, (PBYTE) PassHash, PassLen, FALSE);
-
+				kull_m_dpapi_getProtected(PassHash, PassLen, sid);
 			status = kull_m_dpapi_unprotect_masterkey_with_userHash(masterkey, PassHash, PassLen, sid, output, outputLen);
 		}
 		LocalFree(PassHash);
@@ -565,8 +572,12 @@ BOOL kull_m_dpapi_unprotect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY mast
 {
 	BOOL status = FALSE;
 	BYTE sha1DerivedKey[SHA_DIGEST_LENGTH];
-	
-	if(kull_m_crypto_hmac(CALG_SHA1, userHash, userHashLen, sid, (DWORD) (wcslen(sid) + 1) * sizeof(wchar_t), sha1DerivedKey, SHA_DIGEST_LENGTH))
+
+	if(sid)
+		status = kull_m_crypto_hmac(CALG_SHA1, userHash, userHashLen, sid, (lstrlen(sid) + 1) * sizeof(wchar_t), sha1DerivedKey, SHA_DIGEST_LENGTH);
+	else RtlCopyMemory(sha1DerivedKey, userHash, min(sizeof(sha1DerivedKey), userHashLen));
+
+	if(!sid || status)
 		status = kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkey, sha1DerivedKey, SHA_DIGEST_LENGTH, output, outputLen);
 	return status;
 }

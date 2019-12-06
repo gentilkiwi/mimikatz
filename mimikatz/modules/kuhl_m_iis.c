@@ -301,7 +301,6 @@ void kuhl_m_iis_apphost_provider_decrypt(int argc, wchar_t * argv[], PCWSTR keyC
 					kprintf(L"OK\n");
 				else
 				{
-
 					if(kull_m_file_readData(pvkName, (PBYTE *) &pvk, &szPvk))
 					{
 						kprintf(L"  | PVK file  : %s - \'%s\' : ", keyContainerName, pvkName);

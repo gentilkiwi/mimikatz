@@ -33,6 +33,7 @@ typedef struct _KUHL_M_DPAPI_OE_DOMAINKEY_ENTRY {
 
 NTSTATUS kuhl_m_dpapi_oe_clean();
 NTSTATUS kuhl_m_dpapi_oe_cache(int argc, wchar_t * argv[]);
+BOOL kuhl_m_dpapi_oe_is_sid_valid_ForCacheOrAuto(PSID sid, LPCWSTR szSid, BOOL AutoOrCache);
 BOOL kuhl_m_dpapi_oe_autosid(LPCWSTR filename, LPWSTR * pSid);
 
 LIST_ENTRY gDPAPI_Masterkeys;

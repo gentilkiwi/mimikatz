@@ -32,45 +32,54 @@ const KUHL_M kuhl_m_dpapi = {
 
 NTSTATUS kuhl_m_dpapi_blob(int argc, wchar_t * argv[])
 {
-	DATA_BLOB dataIn, dataOut;
+	DATA_BLOB dataIn = {0, NULL}, dataOut;
 	PKULL_M_DPAPI_BLOB blob;
-	PCWSTR outfile, infile;
+	PCWSTR szData;
 	PWSTR description = NULL;
 
-	if(kull_m_string_args_byName(argc, argv, L"in", &infile, NULL))
+	if(kull_m_string_args_byName(argc, argv, L"in", &szData, NULL))
 	{
-		if(kull_m_file_readData(infile, &dataIn.pbData, &dataIn.cbData))
+		if(!kull_m_file_readData(szData, &dataIn.pbData, &dataIn.cbData))
+			PRINT_ERROR_AUTO(L"kull_m_file_readData");
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"raw", &szData, NULL))
+	{
+		if(!kull_m_string_stringToHexBuffer(szData, &dataIn.pbData, &dataIn.cbData))
+			PRINT_ERROR(L"kull_m_string_stringToHexBuffer!\n");
+	}
+
+	if(dataIn.pbData)
+	{
+		if(blob = kull_m_dpapi_blob_create(dataIn.pbData))
 		{
-			if(blob = kull_m_dpapi_blob_create(dataIn.pbData))
+			kull_m_dpapi_blob_descr(0, blob);
+			if(kuhl_m_dpapi_unprotect_raw_or_blob(dataIn.pbData, dataIn.cbData, &description, argc, argv, NULL, 0, (LPVOID *) &dataOut.pbData, &dataOut.cbData, NULL))
 			{
-				kull_m_dpapi_blob_descr(0, blob);
-
-				if(kuhl_m_dpapi_unprotect_raw_or_blob(dataIn.pbData, dataIn.cbData, &description, argc, argv, NULL, 0, (LPVOID *) &dataOut.pbData, &dataOut.cbData, NULL))
+				if(description)
 				{
-					if(description)
-					{
-						kprintf(L"description : %s\n", description);
-						LocalFree(description);
-					}
-
-					if(kull_m_string_args_byName(argc, argv, L"out", &outfile, NULL))
-					{
-						if(kull_m_file_writeData(outfile, dataOut.pbData, dataOut.cbData))
-							kprintf(L"Write to file \'%s\' is OK\n", outfile);
-					}
-					else
-					{
-						kprintf(L"data: ");
-						kull_m_string_printSuspectUnicodeString(dataOut.pbData, dataOut.cbData);
-						kprintf(L"\n");
-					}
-					LocalFree(dataOut.pbData);
+					kprintf(L"description : %s\n", description);
+					LocalFree(description);
 				}
-				kull_m_dpapi_blob_delete(blob);
+				if(kull_m_string_args_byName(argc, argv, L"out", &szData, NULL))
+				{
+					if(kull_m_file_writeData(szData, dataOut.pbData, dataOut.cbData))
+						kprintf(L"Write to file \'%s\' is OK\n", szData);
+				}
+				else
+				{
+					kprintf(L"data: ");
+					if(kull_m_string_args_byName(argc, argv, L"ascii", NULL, NULL))
+					{
+						kprintf(L"%.*S\n", dataOut.cbData, dataOut.pbData);
+					}
+					else kull_m_string_printSuspectUnicodeString(dataOut.pbData, dataOut.cbData);
+					kprintf(L"\n");
+				}
+				LocalFree(dataOut.pbData);
 			}
-			LocalFree(dataIn.pbData);
+			kull_m_dpapi_blob_delete(blob);
 		}
-		else PRINT_ERROR_AUTO(L"kull_m_file_readData");
+		LocalFree(dataIn.pbData);
 	}
 	return STATUS_SUCCESS;
 }
@@ -224,12 +233,13 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 							if((cbSystem - cbSystemOffset) == 2 * SHA_DIGEST_LENGTH)
 							{
 								kprintf(L"\n[masterkey] with DPAPI_SYSTEM (machine, then user): "); kull_m_string_wprintf_hex(pSystem + cbSystemOffset, 2 * SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
-								if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset, SHA_DIGEST_LENGTH, &output, &cbOutput))
+								if(kull_m_dpapi_unprotect_masterkey_with_userHash(masterkeys->MasterKey, pSystem + cbSystemOffset, SHA_DIGEST_LENGTH, convertedSid, &output, &cbOutput))
+
 								{
 									kprintf(L"** MACHINE **\n");
 									kuhl_m_dpapi_display_MasterkeyInfosAndFree(statusGuid ? &guid : NULL, output, cbOutput, NULL);
 								}
-								else if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset + SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, &output, &cbOutput))
+								else if(kull_m_dpapi_unprotect_masterkey_with_userHash(masterkeys->MasterKey, pSystem + cbSystemOffset + SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, convertedSid, &output, &cbOutput))
 								{
 									kprintf(L"** USER **\n");
 									kuhl_m_dpapi_display_MasterkeyInfosAndFree(statusGuid ? &guid : NULL, output, cbOutput, NULL);
@@ -239,11 +249,12 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 							else
 							{
 								kprintf(L"\n[masterkey] with DPAPI_SYSTEM: "); kull_m_string_wprintf_hex(pSystem + cbSystemOffset, cbSystem - cbSystemOffset, 0); kprintf(L"\n");
-								if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset, cbSystem - cbSystemOffset, &output, &cbOutput))
+								if(kull_m_dpapi_unprotect_masterkey_with_userHash(masterkeys->MasterKey, pSystem + cbSystemOffset, cbSystem - cbSystemOffset, convertedSid, &output, &cbOutput))
 									kuhl_m_dpapi_display_MasterkeyInfosAndFree(statusGuid ? &guid : NULL, output, cbOutput, NULL);
 								else PRINT_ERROR(L"kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey\n");
 							}
 						}
+						else PRINT_ERROR(L"system masterkey needs /SYSTEM:key\n");
 					}
 					else if(convertedSid)
 					{

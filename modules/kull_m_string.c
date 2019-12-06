@@ -28,8 +28,7 @@ void kull_m_string_printSuspectUnicodeString(PVOID data, DWORD size)
 	UNICODE_STRING uString = {(USHORT) size, (USHORT) size, (LPWSTR) data};
 	if(kull_m_string_suspectUnicodeString(&uString))
 		kprintf(L"%wZ", &uString);
-	else 
-		kull_m_string_wprintf_hex(uString.Buffer, uString.Length, 1);
+	else kull_m_string_wprintf_hex(uString.Buffer, uString.Length, 1);
 }
 
 void kull_m_string_MakeRelativeOrAbsoluteString(PVOID BaseAddress, PLSA_UNICODE_STRING String, BOOL relative)
