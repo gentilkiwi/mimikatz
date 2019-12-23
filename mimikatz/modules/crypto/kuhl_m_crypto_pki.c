@@ -403,6 +403,7 @@ BOOL generateCertificate(PKIWI_KEY_INFO ki, PKIWI_CERT_INFO ci, PCCERT_CONTEXT s
 	CERT_INFO CertInfo = {0};
 
 	PWSTR dn;
+	PCCRYPT_OID_INFO info;
 
 	CertInfo.dwVersion = CERT_V3;
 	CertInfo.cExtension = 3; // KU, SKI, BC2
@@ -444,8 +445,10 @@ BOOL generateCertificate(PKIWI_KEY_INFO ki, PKIWI_CERT_INFO ci, PCCERT_CONTEXT s
 					if(ci->cdp)
 						CertInfo.rgExtension[CertInfo.cExtension++] = *ci->cdp;
 
-					kprintf(L"[s.cert] algorithm : %S\n", CertInfo.SignatureAlgorithm.pszObjId);
-					kprintf(L"[s.cert] validity  : ");
+					kprintf(L"[s.cert] algorithm : %S", CertInfo.SignatureAlgorithm.pszObjId);
+					if(info = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, CertInfo.SignatureAlgorithm.pszObjId, CRYPT_OID_DISABLE_SEARCH_DS_FLAG))
+						kprintf(L" (%s)", info->pwszName);
+					kprintf(L"\n[s.cert] validity  : ");
 					kull_m_string_displayLocalFileTime(&CertInfo.NotBefore);
 					kprintf(L" -> ");
 					kull_m_string_displayLocalFileTime(&CertInfo.NotAfter);
@@ -552,15 +555,17 @@ BOOL generateCertificate(PKIWI_KEY_INFO ki, PKIWI_CERT_INFO ci, PCCERT_CONTEXT s
 
 NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 {
-	LPCWSTR szStoreCA, szNameCA, szPfx = NULL, szPin, szCrlDp;
+	LPCWSTR szStoreCA, szNameCA = NULL, szHashCA, szPfx = NULL, szKeySize, szPin, szCrlDp, szUPN;
 	HCERTSTORE hCertStoreCA;
 	PCCERT_CONTEXT pCertCtxCA;
-	BOOL isExported = FALSE, noUserStore = FALSE;
+	BOOL isExported = FALSE, noUserStore = FALSE, findHash = FALSE;
 	CERT_EXTENSION eku = {0}, san = {0}, cdp = {0};
 	DWORD szCertificate = 0;
 	PBYTE Certificate = NULL;
 	KIWI_KEY_INFO ki = {{NULL, MS_ENHANCED_PROV, PROV_RSA_FULL, CRYPT_SILENT, 0, NULL, AT_KEYEXCHANGE}, NULL, CRYPT_EXPORTABLE, 2048};
-	KIWI_CERT_INFO ci = {NULL, NULL, NULL, NULL, MIMIKATZ, L"FR", NULL, CERT_DIGITAL_SIGNATURE_KEY_USAGE | CERT_KEY_ENCIPHERMENT_KEY_USAGE, szOID_OIWSEC_sha1RSASign/*szOID_RSA_SHA256RSA*/, FALSE, &eku, &san, NULL};
+	KIWI_CERT_INFO ci = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, CERT_DIGITAL_SIGNATURE_KEY_USAGE | CERT_KEY_ENCIPHERMENT_KEY_USAGE, szOID_RSA_SHA256RSA, FALSE, &eku, &san, NULL};
+	BYTE hashB[SHA_DIGEST_LENGTH] = {0};
+	CRYPT_HASH_BLOB hash = {sizeof(hashB), hashB};
 
 	if(kull_m_string_args_byName(argc, argv, L"hw", NULL, NULL))
 	{
@@ -570,19 +575,45 @@ NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 	}
 	noUserStore = kull_m_string_args_byName(argc, argv, L"nostore", NULL, NULL);
 	kull_m_string_args_byName(argc, argv, L"castore", &szStoreCA, L"LOCAL_MACHINE");
-	if(kull_m_string_args_byName(argc, argv, L"caname", &szNameCA, NULL))
+	
+	if(kull_m_string_args_byName(argc, argv, L"sha1", NULL, NULL))
+		ci.algorithm = szOID_OIWSEC_sha1RSASign;
+
+	if(kull_m_string_args_byName(argc, argv, L"keysize", &szKeySize, NULL))
+		ki.wKeySize = (WORD) wcstoul(szKeySize, NULL, 0);
+
+	kull_m_string_args_byName(argc, argv, L"caname", &szNameCA, NULL);
+	if(kull_m_string_args_byName(argc, argv, L"cahash", &szHashCA, NULL))
 	{
-		if(kull_m_string_args_byName(argc, argv, L"upn", &ci.cn, NULL))
+		findHash = kull_m_string_stringToHex(szHashCA, hash.pbData, hash.cbData);
+		if(!findHash)
+			PRINT_ERROR(L"/cahash needs a SHA1 in hex (40chars for 20bytes)\n");
+	}
+
+	if(szNameCA || findHash)
+	{
+		if(kull_m_string_args_byName(argc, argv, L"upn", &szUPN, NULL))
 		{
+			kull_m_string_args_byName(argc, argv, L"cn", &ci.cn, szUPN);
+			kull_m_string_args_byName(argc, argv, L"o", &ci.o, MIMIKATZ);
+			kull_m_string_args_byName(argc, argv, L"ou", &ci.ou, NULL);
+			kull_m_string_args_byName(argc, argv, L"c", &ci.c, L"FR");
+
 			kprintf(L"CA store       : %s\n", szStoreCA);
 			if(hCertStoreCA = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, (HCRYPTPROV_LEGACY) NULL, kull_m_crypto_system_store_to_dword(szStoreCA) | CERT_STORE_OPEN_EXISTING_FLAG | CERT_STORE_READONLY_FLAG, L"My"))
 			{
-				kprintf(L"CA name        : %s\n", szNameCA);
-				if(pCertCtxCA = CertFindCertificateInStore(hCertStoreCA, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_SUBJECT_STR, szNameCA, NULL))
+				if(findHash)
+				{
+					kprintf(L"CA hash (sha1) : ");
+					kull_m_string_wprintf_hex(hash.pbData, hash.cbData, 0);
+					kprintf(L"\n");
+				}
+				else kprintf(L"CA name        : %s\n", szNameCA);
+				if(pCertCtxCA = CertFindCertificateInStore(hCertStoreCA, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, findHash ? CERT_FIND_SHA1_HASH : CERT_FIND_SUBJECT_STR, findHash ? (LPVOID) &hash : (LPVOID) szNameCA, NULL))
 				{
 					if(kuhl_m_crypto_c_sc_auth_Ext_EKU(&eku, 2, szOID_KP_SMARTCARD_LOGON, szOID_PKIX_KP_CLIENT_AUTH))
 					{
-						if(kuhl_m_crypto_c_sc_auth_Ext_AltUPN(&san, ci.cn))
+						if(kuhl_m_crypto_c_sc_auth_Ext_AltUPN(&san, szUPN))
 						{
 							if(kull_m_string_args_byName(argc, argv, L"crldp", &szCrlDp, NULL))
 								if(kuhl_m_crypto_c_sc_auth_Ext_CDP(&cdp, 1, szCrlDp))
@@ -624,7 +655,7 @@ NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 		}
 		else PRINT_ERROR(L"/upn:user@domain.local needed\n");
 	}
-	else PRINT_ERROR(L"/caname:CA-KIWI needed\n");
+	else PRINT_ERROR(L"/caname:CA-KIWI or /cahash:SHA1 needed\n");
 
 	if(ki.pin)
 		LocalFree(ki.pin);
@@ -634,7 +665,5 @@ NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_crypto_c_pkiwi(int argc, wchar_t * argv[])
 {
 	KIWI_KEY_INFO CaKi = {{NULL, MS_ENHANCED_PROV, PROV_RSA_FULL, CRYPT_SILENT, 0, NULL, AT_SIGNATURE}, NULL, CRYPT_EXPORTABLE, 4096};
-
-
 	return STATUS_SUCCESS;
 }

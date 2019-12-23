@@ -167,6 +167,7 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.c" />
@@ -269,6 +270,7 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.h" />
