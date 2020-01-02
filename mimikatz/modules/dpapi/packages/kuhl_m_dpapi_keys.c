@@ -9,7 +9,7 @@ NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[])
 {
 	PVOID file, out;
 	PRSA_GENERICKEY_BLOB blob;
-	DWORD szFile, outLen, szBlob;
+	DWORD szFile, outLen, szBlob, dwProviderType;
 	PKULL_M_KEY_CAPI_BLOB capiKey;
 	LPCWSTR infile;
 	PWSTR name;
@@ -30,11 +30,11 @@ NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[])
 				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pSiPrivateKey, capiKey->dwSiPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting AT_SIGNATURE Private Key:\n"))
 				{
 					kull_m_string_wprintf_hex(out, outLen, 0); kprintf(L"\n");
-					if(kull_m_key_capi_decryptedkey_to_raw(out, outLen, &blob, &szBlob))
+					if(kull_m_key_capi_decryptedkey_to_raw(capiKey->pSiPublicKey,capiKey->dwSiPublicKeyLen, out, outLen, CALG_RSA_SIGN, &blob, &szBlob, &dwProviderType))
 					{
 						if(name = kull_m_string_qad_ansi_to_unicode(capiKey->pName))
 						{
-							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw_signature", 0, name, TRUE, TRUE);
+							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, AT_SIGNATURE, dwProviderType, L"dpapi_signature", 0, name, TRUE, TRUE);
 							LocalFree(name);
 						}
 						LocalFree(blob);
@@ -50,11 +50,11 @@ NTSTATUS kuhl_m_dpapi_keys_capi(int argc, wchar_t * argv[])
 				if(kuhl_m_dpapi_unprotect_raw_or_blob(capiKey->pExPrivateKey, capiKey->dwExPrivateKeyLen, NULL, argc, argv, NULL, 0, &out, &outLen, L"Decrypting AT_EXCHANGE Private Key:\n"))
 				{
 					kull_m_string_wprintf_hex(out, outLen, 0); kprintf(L"\n");
-					if(kull_m_key_capi_decryptedkey_to_raw(out, outLen, &blob, &szBlob))
+					if(kull_m_key_capi_decryptedkey_to_raw(capiKey->pExPublicKey, capiKey->dwExPublicKeyLen, out, outLen, CALG_RSA_KEYX, &blob, &szBlob, &dwProviderType))
 					{
 						if(name = kull_m_string_qad_ansi_to_unicode(capiKey->pName))
 						{
-							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, L"raw_exchange", 0, name, TRUE, TRUE);
+							kuhl_m_crypto_exportRawKeyToFile(blob, szBlob, FALSE, AT_KEYEXCHANGE, dwProviderType, L"dpapi_exchange", 0, name, TRUE, TRUE);
 							LocalFree(name);
 						}
 						LocalFree(blob);
@@ -131,7 +131,7 @@ NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 						if(name = (PWSTR) LocalAlloc(LPTR, cngKey->dwNameLen + sizeof(wchar_t)))
 						{
 							RtlCopyMemory(name, cngKey->pName, cngKey->dwNameLen);
-							kuhl_m_crypto_exportRawKeyToFile(out, outLen, TRUE, L"raw", 0, name, TRUE, TRUE);
+							kuhl_m_crypto_exportRawKeyToFile(out, outLen, TRUE, CERT_NCRYPT_KEY_SPEC, 0, L"dpapi", 0, name, TRUE, TRUE);
 							LocalFree(name);
 						}
 					}

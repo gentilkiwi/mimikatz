@@ -103,33 +103,20 @@ BOOL kull_m_crypto_DeriveKeyRaw(ALG_ID hashId, LPVOID hash, DWORD hashLen, LPVOI
 BOOL kull_m_crypto_close_hprov_delete_container(HCRYPTPROV hProv)
 {
 	BOOL status = FALSE;
-	DWORD provtype, szLen = 0;
+	DWORD provtype;
 	PSTR container, provider;
-	if(CryptGetProvParam(hProv, PP_CONTAINER, NULL, &szLen, 0))
+	if(kull_m_crypto_CryptGetProvParam(hProv, PP_CONTAINER, FALSE, (PBYTE *) &container, NULL, NULL))
 	{
-		if(container = (PSTR) LocalAlloc(LPTR, szLen))
+		if(kull_m_crypto_CryptGetProvParam(hProv, PP_NAME, FALSE, (PBYTE *) &provider, NULL, NULL))
 		{
-			if(CryptGetProvParam(hProv, PP_CONTAINER, (LPBYTE) container, &szLen, 0))
+			if(kull_m_crypto_CryptGetProvParam(hProv, PP_PROVTYPE, FALSE, NULL, NULL, &provtype))
 			{
-				if(CryptGetProvParam(hProv, PP_NAME, NULL, &szLen, 0))
-				{
-					if(provider = (PSTR) LocalAlloc(LPTR, szLen))
-					{
-						if(CryptGetProvParam(hProv, PP_NAME, (LPBYTE) provider, &szLen, 0))
-						{
-							szLen = sizeof(DWORD);
-							if(CryptGetProvParam(hProv, PP_PROVTYPE, (LPBYTE) &provtype, &szLen, 0))
-							{
-								CryptReleaseContext(hProv, 0);
-								status = CryptAcquireContextA(&hProv, container, provider, provtype, CRYPT_DELETEKEYSET);
-							}
-						}
-						LocalFree(provider);
-					}
-				}
-				LocalFree(container);
+				CryptReleaseContext(hProv, 0);
+				status = CryptAcquireContextA(&hProv, container, provider, provtype, CRYPT_DELETEKEYSET);
 			}
+			LocalFree(provider);
 		}
+		LocalFree(container);
 	}
 	if(!status)
 		PRINT_ERROR_AUTO(L"CryptGetProvParam/CryptAcquireContextA");
@@ -568,7 +555,7 @@ BOOL kull_m_crypto_exportPfx(HCERTSTORE hStore, LPCWSTR filename)
 		}
 	}
 	if(!isExported)
-		PRINT_ERROR_AUTO(L"PFXExportCertStoreEx");
+		PRINT_ERROR_AUTO(L"PFXExportCertStoreEx/kull_m_file_writeData");
 	return isExported;
 }
 
@@ -634,6 +621,163 @@ BOOL kull_m_crypto_DerAndKeyInfoToStore(LPCVOID der, DWORD derLen, PCRYPT_KEY_PR
 		}
 		else PRINT_ERROR_AUTO(L"CertAddEncodedCertificateToStore");
 		CertCloseStore(hTempStore, CERT_CLOSE_STORE_FORCE_FLAG);
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_CryptGetProvParam(HCRYPTPROV hProv, DWORD dwParam, BOOL withError, PBYTE *data, OPTIONAL DWORD *cbData, OPTIONAL DWORD *simpleDWORD)
+{
+	BOOL status = FALSE;
+	DWORD dwSizeNeeded;
+
+	if(simpleDWORD)
+	{
+		dwSizeNeeded = sizeof(DWORD);
+		if(CryptGetProvParam(hProv, dwParam, (BYTE *) simpleDWORD, &dwSizeNeeded, 0))
+			status = TRUE;
+		else if(withError) PRINT_ERROR_AUTO(L"CryptGetProvParam(simple DWORD)");
+	}
+	else
+	{
+		if(CryptGetProvParam(hProv, dwParam, NULL, &dwSizeNeeded, 0))
+		{
+			if(*data = (PBYTE) LocalAlloc(LPTR, dwSizeNeeded))
+			{
+				if(CryptGetProvParam(hProv, dwParam, *data, &dwSizeNeeded, 0))
+				{
+					if(cbData)
+						*cbData = dwSizeNeeded;
+					status = TRUE;
+				}
+				else
+				{
+					if(withError)
+						PRINT_ERROR_AUTO(L"CryptGetProvParam(data)");
+					*data = (PBYTE) LocalFree(*data);
+				}
+			}
+		}
+		else if(withError) PRINT_ERROR_AUTO(L"CryptGetProvParam(init)");
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_NCryptGetProperty(NCRYPT_HANDLE monProv, LPCWSTR pszProperty, BOOL withError, PBYTE *data, OPTIONAL DWORD *cbData, OPTIONAL DWORD *simpleDWORD, OPTIONAL NCRYPT_HANDLE *simpleHandle)
+{
+	BOOL status = FALSE;
+	NTSTATUS ntStatus;
+	DWORD dwSizeNeeded;
+
+	if(simpleDWORD)
+	{
+		ntStatus = NCryptGetProperty(monProv, pszProperty, (BYTE *) simpleDWORD, sizeof(DWORD), &dwSizeNeeded, 0);
+		if(NT_SUCCESS(ntStatus))
+			status = TRUE;
+		else if(withError) PRINT_ERROR(L"NCryptGetProperty(%s) - simple DWORD: 0x%08x\n", pszProperty, ntStatus);
+	}
+	else if(simpleHandle)
+	{
+		ntStatus = NCryptGetProperty(monProv, pszProperty, (BYTE *) simpleHandle, sizeof(NCRYPT_HANDLE), &dwSizeNeeded, 0);
+		if(NT_SUCCESS(ntStatus))
+			status = TRUE;
+		else if(withError) PRINT_ERROR(L"NCryptGetProperty(%s) - simple NCRYPT_HANDLE: 0x%08x\n", pszProperty, ntStatus);
+
+	}
+	else
+	{
+		ntStatus = NCryptGetProperty(monProv, pszProperty, NULL, 0, &dwSizeNeeded, 0);
+		if(NT_SUCCESS(ntStatus))
+		{
+			if(*data = (PBYTE) LocalAlloc(LPTR, dwSizeNeeded))
+			{
+				ntStatus = NCryptGetProperty(monProv, pszProperty, *data, dwSizeNeeded, &dwSizeNeeded, 0);
+				if(NT_SUCCESS(ntStatus))
+				{
+					if(cbData)
+						*cbData = dwSizeNeeded;
+					status = TRUE;
+				}
+				else
+				{
+					if(withError)
+						PRINT_ERROR(L"NCryptGetProperty(%s) - data: 0x%08x\n", pszProperty, ntStatus);
+					*data = (PBYTE) LocalFree(*data);
+				}
+			}
+		}
+		else if(withError) PRINT_ERROR(L"NCryptGetProperty(%s) - init: 0x%08x\n", pszProperty, ntStatus);
+	}
+	return status;
+}
+
+BOOL kull_m_crypto_NCryptFreeHandle(NCRYPT_PROV_HANDLE *hProv, NCRYPT_KEY_HANDLE *hKey)
+{
+	NTSTATUS ntStatus;
+	if(*hKey)
+	{
+		__try
+		{
+			ntStatus = NCryptFreeObject(*hKey);
+			if(NT_SUCCESS(ntStatus))
+				*hKey = 0;
+			else PRINT_ERROR(L"NCryptFreeObject(key): 0x%08x\n", ntStatus);
+		}
+		__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
+		{
+			PRINT_ERROR(L"No CNG to support this function\n");
+		}
+	}
+	if(*hProv)
+	{
+		__try
+		{
+			ntStatus = NCryptFreeObject(*hProv);
+			if(NT_SUCCESS(ntStatus))
+				*hProv = 0;
+			else PRINT_ERROR(L"NCryptFreeObject(prov): 0x%08x\n", ntStatus);
+		}
+		__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
+		{
+			PRINT_ERROR(L"No CNG to support this function\n");
+		}
+	}
+	return !(*hKey || *hProv);
+}
+
+BOOL kull_m_crypto_NCryptImportKey(LPCVOID data, DWORD dwSize, LPCWSTR type, NCRYPT_PROV_HANDLE *hProv, NCRYPT_KEY_HANDLE *hKey)
+{
+	BOOL status = FALSE;
+	NTSTATUS ntStatus;
+	DWORD dwExportPolicy = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG;
+	*hProv = 0;
+	*hKey = 0;
+	__try
+	{
+		ntStatus = NCryptOpenStorageProvider(hProv, MS_KEY_STORAGE_PROVIDER, 0);
+		if(NT_SUCCESS(ntStatus))
+		{
+			ntStatus = NCryptImportKey(*hProv, 0, type, NULL, hKey, (PBYTE) data, dwSize, NCRYPT_DO_NOT_FINALIZE_FLAG);
+			if(NT_SUCCESS(ntStatus))
+			{
+				ntStatus = NCryptSetProperty(*hKey, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE) &dwExportPolicy, sizeof(DWORD), 0);
+				if(NT_SUCCESS(ntStatus))
+				{
+					ntStatus = NCryptFinalizeKey(*hKey, 0);
+					if(NT_SUCCESS(ntStatus))
+						status = TRUE;
+					else PRINT_ERROR(L"NCryptFinalizeKey: 0x%08x\n", ntStatus);
+				}
+				else PRINT_ERROR(L"NCryptSetProperty(export_policy): 0x%08x\n", ntStatus);
+			}
+			else PRINT_ERROR(L"NCryptImportKey: 0x%08x\n", ntStatus);
+		}
+		else PRINT_ERROR(L"NCryptOpenStorageProvider: 0x%08x\n", ntStatus);
+		if(!status)
+			kull_m_crypto_NCryptFreeHandle(hProv, hKey);
+	}
+	__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
+	{
+		PRINT_ERROR(L"No CNG to support this function\n");
 	}
 	return status;
 }
@@ -956,6 +1100,15 @@ PCWCHAR kull_m_crypto_kp_mode_to_str(const DWORD keyMode)
 	return result;
 }
 
+const PCWCHAR PP_IMPTYPE_DESCR[] = {L"CRYPT_IMPL_HARDWARE", L"CRYPT_IMPL_SOFTWARE", L"CRYPT_IMPL_UNKNOWN", L"CRYPT_IMPL_REMOVABLE"};
+void kull_m_crypto_pp_imptypes_descr(const DWORD implTypes)
+{
+	DWORD i;
+	for(i = 0; i < ARRAYSIZE(PP_IMPTYPE_DESCR); i++)
+		if((implTypes >> i) & 1)
+			kprintf(L"%s ; ", PP_IMPTYPE_DESCR[i]);
+}
+
 const PCWCHAR BCRYPT_INTERFACES[] = {L"BCRYPT_CIPHER_INTERFACE", L"BCRYPT_HASH_INTERFACE", L"BCRYPT_ASYMMETRIC_ENCRYPTION_INTERFACE", L"BCRYPT_SECRET_AGREEMENT_INTERFACE",
 	L"BCRYPT_SIGNATURE_INTERFACE", L"BCRYPT_RNG_INTERFACE", L"BCRYPT_KEY_DERIVATION_INTERFACE"};
 PCWCHAR kull_m_crypto_bcrypt_interface_to_str(const DWORD interf)
@@ -997,6 +1150,23 @@ PCWCHAR kull_m_crypto_bcrypt_mode_to_str(const DWORD keyMode)
 	return result;
 }
 
+const PCWCHAR NCRYPT_IMPL_TYPES[] = {L"NCRYPT_IMPL_HARDWARE_FLAG", L"NCRYPT_IMPL_SOFTWARE_FLAG", L"NCRYPT_IMPL_?", L"NCRYPT_IMPL_REMOVABLE_FLAG", L"NCRYPT_IMPL_HARDWARE_RNG_FLAG"};
+void kull_m_crypto_ncrypt_impl_types_descr(const DWORD implTypes)
+{
+	DWORD i;
+	for(i = 0; i < ARRAYSIZE(NCRYPT_IMPL_TYPES); i++)
+		if((implTypes >> i) & 1)
+			kprintf(L"%s ; ", NCRYPT_IMPL_TYPES[i]);
+}
+
+const PCWCHAR NCRYPT_ALLOW_EXPORTS[] = {L"NCRYPT_ALLOW_EXPORT_FLAG", L"NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG", L"NCRYPT_ALLOW_ARCHIVING_FLAG", L"NCRYPT_ALLOW_PLAINTEXT_ARCHIVING_FLAG"};
+void kull_m_crypto_ncrypt_allow_exports_descr(const DWORD allowExports)
+{
+	DWORD i;
+	for(i = 0; i < ARRAYSIZE(NCRYPT_ALLOW_EXPORTS); i++)
+		if((allowExports >> i) & 1)
+			kprintf(L"%s ; ", NCRYPT_ALLOW_EXPORTS[i]);
+}
 
 const BYTE kull_m_crypto_dh_g_rgbPrime[] = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x81, 0x53, 0xe6, 0xec, 0x51, 0x66, 0x28, 0x49,

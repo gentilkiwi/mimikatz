@@ -72,7 +72,7 @@ PKULL_M_KEY_CAPI_BLOB kull_m_key_capi_create(PVOID data/*, DWORD size*/);
 void kull_m_key_capi_delete(PKULL_M_KEY_CAPI_BLOB capiKey);
 void kull_m_key_capi_descr(DWORD level, PKULL_M_KEY_CAPI_BLOB capiKey);
 BOOL kull_m_key_capi_write(PKULL_M_KEY_CAPI_BLOB capiKey, PVOID *data, DWORD *size);
-BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID decrypted, DWORD decryptedLen, PRSA_GENERICKEY_BLOB *blob, DWORD *blobLen);
+BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID publickey, DWORD publickeyLen, LPCVOID decrypted, DWORD decryptedLen, ALG_ID keyAlg, PRSA_GENERICKEY_BLOB *blob, DWORD *blobLen, DWORD *dwProviderType);
 
 PKULL_M_KEY_CNG_BLOB kull_m_key_cng_create(PVOID data/*, DWORD size*/);
 void kull_m_key_cng_delete(PKULL_M_KEY_CNG_BLOB cngKey);

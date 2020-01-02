@@ -97,6 +97,8 @@ BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src);
 BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
 #if !defined(MIMIKATZ_W2000_SUPPORT)
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);
+BOOL kull_m_string_EncodeB64_headersA(LPCSTR type, const PBYTE pbData, const DWORD cbData, LPSTR *out);
 #endif
 BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...);
+BOOL kull_m_string_sprintfA(PSTR *outBuffer, PCSTR format, ...);
 BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime);

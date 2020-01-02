@@ -25,6 +25,16 @@ typedef struct _RSA_GENERICKEY_BLOB {
 	RSAPUBKEY RsaKey; // works with RSA2 ;)
 } RSA_GENERICKEY_BLOB, *PRSA_GENERICKEY_BLOB;
 
+typedef struct _DSS_GENERICKEY_BLOB {
+	BLOBHEADER Header;
+	DSSPUBKEY DsaKey; // works with DSS2 ;)
+} DSS_GENERICKEY_BLOB, *PDSS_GENERICKEY_BLOB;
+
+typedef struct _DSS_GENERICKEY3_BLOB {
+	BLOBHEADER Header;
+	DSSPRIVKEY_VER3 DsaKey; // works with DSS4 (but not DSS3) ;)
+} DSS_GENERICKEY3_BLOB, *PDSS_GENERICKEY3_BLOB;
+
 #define PVK_FILE_VERSION_0				0
 #define PVK_MAGIC						0xb0b5f11e // bob's file
 #define PVK_NO_ENCRYPT					0
@@ -33,6 +43,10 @@ typedef struct _RSA_GENERICKEY_BLOB {
 
 #if !defined(IPSEC_FLAG_CHECK)
 #define IPSEC_FLAG_CHECK 0xf42a19b6
+#endif
+
+#if !defined(X509_ECC_PRIVATE_KEY)
+#define X509_ECC_PRIVATE_KEY	(LPCSTR) 82
 #endif
 
 #if !defined(CNG_RSA_PRIVATE_KEY_BLOB)
@@ -53,6 +67,31 @@ typedef struct _RSA_GENERICKEY_BLOB {
 #endif
 #if !defined(NCRYPT_USE_PER_BOOT_KEY_PROPERTY)
 #define NCRYPT_USE_PER_BOOT_KEY_PROPERTY		L"Per Boot Key"
+#endif
+
+#if !defined(BCRYPT_ECCFULLPRIVATE_BLOB)
+#define BCRYPT_ECCFULLPRIVATE_BLOB				L"ECCFULLPRIVATEBLOB"
+#endif
+
+#if !defined(BCRYPT_ECDH_PRIVATE_GENERIC_MAGIC)
+#define BCRYPT_ECDH_PRIVATE_GENERIC_MAGIC   0x564B4345  // ECKV
+#endif
+
+#if !defined(BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC)
+#define BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC  0x56444345  // ECDV
+#endif
+
+#ifndef CRYPT_ECC_PRIVATE_KEY_INFO_v1
+//+-------------------------------------------------------------------------
+//  ECC Private Key Info
+//--------------------------------------------------------------------------
+typedef struct _CRYPT_ECC_PRIVATE_KEY_INFO{
+    DWORD                       dwVersion;  // ecPrivKeyVer1(1)
+    CRYPT_DER_BLOB              PrivateKey; // d
+    LPSTR                       szCurveOid; // Optional
+    CRYPT_BIT_BLOB              PublicKey;  // Optional (x, y)
+}  CRYPT_ECC_PRIVATE_KEY_INFO, *PCRYPT_ECC_PRIVATE_KEY_INFO;
+#define CRYPT_ECC_PRIVATE_KEY_INFO_v1       1
 #endif
 
 typedef struct _PVK_FILE_HDR {
@@ -100,6 +139,11 @@ BOOL kull_m_crypto_DerAndKeyToPfx(LPCVOID der, DWORD derLen, LPCVOID key, DWORD 
 BOOL kull_m_crypto_DerAndKeyInfoToPfx(LPCVOID der, DWORD derLen, PCRYPT_KEY_PROV_INFO pInfo, LPCWSTR filename);
 BOOL kull_m_crypto_DerAndKeyInfoToStore(LPCVOID der, DWORD derLen, PCRYPT_KEY_PROV_INFO pInfo, DWORD systemStore, LPCWSTR store, BOOL force);
 
+BOOL kull_m_crypto_CryptGetProvParam(HCRYPTPROV hProv, DWORD dwParam, BOOL withError, PBYTE *data, OPTIONAL DWORD *cbData, OPTIONAL DWORD *simpleDWORD);
+BOOL kull_m_crypto_NCryptGetProperty(NCRYPT_HANDLE monProv, LPCWSTR pszProperty, BOOL withError, PBYTE *data, OPTIONAL DWORD *cbData, OPTIONAL DWORD *simpleDWORD, OPTIONAL NCRYPT_HANDLE *simpleHandle);
+BOOL kull_m_crypto_NCryptFreeHandle(NCRYPT_PROV_HANDLE *hProv, NCRYPT_KEY_HANDLE *hKey);
+BOOL kull_m_crypto_NCryptImportKey(LPCVOID data, DWORD dwSize, LPCWSTR type, NCRYPT_PROV_HANDLE *hProv, NCRYPT_KEY_HANDLE *hKey);
+
 typedef struct _KULL_M_CRYPTO_DUAL_STRING_DWORD {
 	PCWSTR	name;
 	DWORD	id;
@@ -125,14 +169,15 @@ ALG_ID kull_m_crypto_name_to_algid(PCWSTR name);
 PCWCHAR kull_m_crypto_cert_prop_id_to_name(const DWORD propId);
 void kull_m_crypto_kp_permissions_descr(const DWORD keyPermissions);
 PCWCHAR kull_m_crypto_kp_mode_to_str(const DWORD keyMode);
+void kull_m_crypto_pp_imptypes_descr(const DWORD implTypes);
 PCWCHAR kull_m_crypto_bcrypt_interface_to_str(const DWORD interf);
 PCWCHAR kull_m_crypto_bcrypt_cipher_alg_to_str(const DWORD alg);
 PCWCHAR kull_m_crypto_bcrypt_asym_alg_to_str(const DWORD alg);
 PCWCHAR kull_m_crypto_bcrypt_mode_to_str(const DWORD keyMode);
+void kull_m_crypto_ncrypt_impl_types_descr(const DWORD implTypes);
+void kull_m_crypto_ncrypt_allow_exports_descr(const DWORD allowExports);
 
-
-typedef struct _MIMI_PUBLICKEY
-{
+typedef struct _MIMI_PUBLICKEY {
 	ALG_ID sessionType;
 	DWORD cbPublicKey;
 	BYTE *pbPublicKey;

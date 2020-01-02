@@ -25,7 +25,7 @@ NTSTATUS kuhl_m_dpapi_lunahsm(int argc, wchar_t * argv[])
 			LocalFree(aClient);
 		}
 	}
-	if(kull_m_string_args_byName(argc, argv, L"hive", &szArg, NULL))
+	else if(kull_m_string_args_byName(argc, argv, L"hive", &szArg, NULL))
 	{
 		hDataSoftware = CreateFile(szArg, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 		if(hDataSoftware != INVALID_HANDLE_VALUE)

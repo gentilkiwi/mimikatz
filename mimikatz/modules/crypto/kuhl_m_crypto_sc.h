@@ -4,9 +4,8 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
-#include "../kuhl_m.h"
-#include <cardmod.h>
 #include "../kuhl_m_crypto.h"
+#include <cardmod.h>
 //#include "../../../modules/kull_m_crypto.h"
 
 NTSTATUS kuhl_m_crypto_l_sc(int argc, wchar_t * argv[]);

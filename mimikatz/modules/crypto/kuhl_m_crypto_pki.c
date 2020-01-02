@@ -222,7 +222,7 @@ BOOL getCertificate(HCRYPTPROV_OR_NCRYPT_KEY_HANDLE hProv, DWORD dwKeySpec, LPCS
 	return status;
 }
 
-PWSTR getCertificateName(PCERT_NAME_BLOB blob)
+PWSTR kuhl_m_crypto_pki_getCertificateName(PCERT_NAME_BLOB blob)
 {
 	PWSTR ret = NULL;
 	DWORD dwSizeNeeded = CertNameToStr(X509_ASN_ENCODING, blob, CERT_X500_NAME_STR, NULL, 0);
@@ -370,7 +370,7 @@ BOOL generateCrl(PKIWI_CRL_INFO ci, PCCERT_CONTEXT signer, PKIWI_SIGNER dSigner,
 
 		if(getFromSigner(signer, dSigner, &hSigner, &dwSignerKeySpec, &bFreeSignerKey, &CrlInfo.rgExtension[1], &CrlInfo.Issuer))
 		{
-			if(dn = getCertificateName(&CrlInfo.Issuer))
+			if(dn = kuhl_m_crypto_pki_getCertificateName(&CrlInfo.Issuer))
 			{
 				kprintf(L" [i.cert] subject  : %s\n", dn);
 				LocalFree(dn);
@@ -423,7 +423,7 @@ BOOL generateCertificate(PKIWI_KEY_INFO ki, PKIWI_CERT_INFO ci, PCCERT_CONTEXT s
 
 	if(kuhl_m_crypto_c_sc_auth_quickEncode(X509_NAME, &Name, &CertInfo.Subject))
 	{
-		if(dn = getCertificateName(&CertInfo.Subject))
+		if(dn = kuhl_m_crypto_pki_getCertificateName(&CertInfo.Subject))
 		{
 			kprintf(L"[s.cert] subject   : %s\n", dn);
 			LocalFree(dn);
@@ -460,8 +460,7 @@ BOOL generateCertificate(PKIWI_KEY_INFO ki, PKIWI_CERT_INFO ci, PCCERT_CONTEXT s
 						kprintf(L"[s.key ] container : %s\n", ki->keyInfos.pwszContainerName);
 						if(CryptAcquireContext(&ki->hProv, NULL, ki->keyInfos.pwszProvName, ki->keyInfos.dwProvType, CRYPT_VERIFYCONTEXT | CRYPT_SILENT))
 						{
-							dwSignerKeySpec = sizeof(DWORD);
-							if(CryptGetProvParam(ki->hProv, PP_IMPTYPE, (PBYTE) &dwImplType, &dwSignerKeySpec, 0))
+							if(kull_m_crypto_CryptGetProvParam(ki->hProv, PP_IMPTYPE, FALSE, NULL, NULL, &dwImplType))
 								isHw = dwImplType & CRYPT_IMPL_HARDWARE;
 							if(isHw)
 							{
@@ -487,7 +486,7 @@ BOOL generateCertificate(PKIWI_KEY_INFO ki, PKIWI_CERT_INFO ci, PCCERT_CONTEXT s
 										if(getFromSigner(signer, dSigner, &hSigner, &dwSignerKeySpec, &bFreeSignerKey, &CertInfo.rgExtension[CertInfo.cExtension], &CertInfo.Issuer))
 										{
 											pAki = &CertInfo.rgExtension[CertInfo.cExtension++];
-											if(dn = getCertificateName(&CertInfo.Issuer))
+											if(dn = kuhl_m_crypto_pki_getCertificateName(&CertInfo.Issuer))
 											{
 												kprintf(L" [i.cert] subject  : %s\n", dn);
 												LocalFree(dn);

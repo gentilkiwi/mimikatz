@@ -19,7 +19,7 @@ NTSTATUS kuhl_m_dpapi_cred(int argc, wchar_t * argv[])
 	{
 		if(kull_m_file_readData(infile, &file, &szFile))
 		{
-			if(szFile >= FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+			if(szFile >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
 			{
 				isNT5Cred = RtlEqualGuid(file + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER);
 				kull_m_dpapi_blob_quick_descr(0, isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob);
@@ -167,7 +167,7 @@ void kuhl_m_dpapi_cred_tryEncrypted(LPCWSTR target, LPCBYTE data, DWORD dataLen,
 	DWORD credLen;
 	if(wcsstr(target, L"Microsoft_WinInet_"))
 	{
-		if(dataLen >= FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+		if(dataLen >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
 		{
 			if(RtlEqualGuid(data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
 			{

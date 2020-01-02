@@ -1821,7 +1821,7 @@ void kuhl_m_lsadump_analyzeKey(LPCGUID guid, PKIWI_BACKUP_KEY secret, DWORD size
 		case 2:
 			kprintf(L"  * RSA key\n");
 			kuhl_m_dpapi_oe_domainkey_add(guid, secret->data, secret->keyLen, TRUE);
-			kuhl_m_crypto_exportRawKeyToFile(secret->data, secret->keyLen, FALSE, L"ntds", 0, shortname, isExport, TRUE);
+			kuhl_m_crypto_exportRawKeyToFile(secret->data, secret->keyLen, FALSE, AT_KEYEXCHANGE, PROV_RSA_FULL, L"ntds", 0, shortname, isExport, TRUE);
 			if(isExport)
 			{
 				data = secret->data + secret->keyLen;
