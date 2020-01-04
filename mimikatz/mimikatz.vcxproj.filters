@@ -185,9 +185,6 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c">
       <Filter>local modules\dpapi\packages</Filter>
     </ClCompile>
-    <ClCompile Include="..\modules\sqlite3_omit.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
     <ClCompile Include="..\modules\kull_m_xml.c">
       <Filter>common modules</Filter>
     </ClCompile>
@@ -289,6 +286,9 @@
     </ClCompile>
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.c">
       <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\sqlite3.c">
+      <Filter>common modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -491,9 +491,6 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h">
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\sqlite3_omit.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\kull_m_xml.h">
       <Filter>common modules</Filter>
     </ClInclude>
@@ -598,6 +595,9 @@
     </ClInclude>
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.h">
       <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\sqlite3.h">
+      <Filter>common modules</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

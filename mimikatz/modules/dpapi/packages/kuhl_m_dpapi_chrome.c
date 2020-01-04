@@ -4,7 +4,6 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_dpapi_chrome.h"
-#if defined(SQLITE3_OMIT)
 
 NTSTATUS kuhl_m_dpapi_chrome(int argc, wchar_t * argv[])
 {
@@ -119,4 +118,3 @@ BOOL kuhl_m_dpapi_chrome_isTableExist(sqlite3 *pDb, const char *table)
 	sqlite3_finalize(pStmt);
 	return status;
 }
-#endif

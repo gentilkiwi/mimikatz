@@ -21,7 +21,6 @@
 //#define KERBEROS_TOOLS
 //#define SERVICE_INCONTROL
 #define NET_MODULE
-#define SQLITE3_OMIT
 #if defined(_M_ARM64)
 	#define MIMIKATZ_ARCH L"arm64"
 #elif defined(_M_X64)
