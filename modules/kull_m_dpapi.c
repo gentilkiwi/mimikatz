@@ -558,24 +558,35 @@ BOOL kull_m_dpapi_unprotect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_M
 	if(PassHash = LocalAlloc(LPTR, PassLen))
 	{
 		if(kull_m_crypto_hash(PassAlg, password, (DWORD) wcslen(password) * sizeof(wchar_t), PassHash, PassLen))
-		{
-			if(isKeyOfProtectedUser && (PassAlg == CALG_MD4))
-				kull_m_dpapi_getProtected(PassHash, PassLen, sid);
-			status = kull_m_dpapi_unprotect_masterkey_with_userHash(masterkey, PassHash, PassLen, sid, output, outputLen);
-		}
+			status = kull_m_dpapi_unprotect_masterkey_with_userHash(masterkey, PassHash, PassLen, sid, isKeyOfProtectedUser, output, outputLen);
 		LocalFree(PassHash);
 	}
 	return status;
 }
 
-BOOL kull_m_dpapi_unprotect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID userHash, DWORD userHashLen, PCWSTR sid, PVOID *output, DWORD *outputLen)
+BOOL kull_m_dpapi_unprotect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID userHash, DWORD userHashLen, PCWSTR sid, BOOL isKeyOfProtectedUser, PVOID *output, DWORD *outputLen)
 {
-	BOOL status = FALSE;
-	BYTE sha1DerivedKey[SHA_DIGEST_LENGTH];
+	BYTE sha1DerivedKey[SHA_DIGEST_LENGTH], ntlmofprotected[LM_NTLM_HASH_LENGTH];
+	BOOL status = FALSE, isNTLMofProtected = isKeyOfProtectedUser && sid && (userHashLen == sizeof(ntlmofprotected));
+	LPCVOID hash;
+	DWORD hashLen;
+
+	if(!isNTLMofProtected)
+	{
+		hash = userHash;
+		hashLen = userHashLen;
+	}
+	else
+	{
+		RtlCopyMemory(ntlmofprotected, userHash, sizeof(ntlmofprotected));
+		kull_m_dpapi_getProtected(ntlmofprotected, sizeof(ntlmofprotected), sid);
+		hash = ntlmofprotected;
+		hashLen = sizeof(ntlmofprotected);
+	}
 
 	if(sid)
-		status = kull_m_crypto_hmac(CALG_SHA1, userHash, userHashLen, sid, (lstrlen(sid) + 1) * sizeof(wchar_t), sha1DerivedKey, SHA_DIGEST_LENGTH);
-	else RtlCopyMemory(sha1DerivedKey, userHash, min(sizeof(sha1DerivedKey), userHashLen));
+		status = kull_m_crypto_hmac(CALG_SHA1, hash, hashLen, sid, (lstrlen(sid) + 1) * sizeof(wchar_t), sha1DerivedKey, SHA_DIGEST_LENGTH);
+	else RtlCopyMemory(sha1DerivedKey, hash, min(sizeof(sha1DerivedKey), hashLen));
 
 	if(!sid || status)
 		status = kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkey, sha1DerivedKey, SHA_DIGEST_LENGTH, output, outputLen);
