@@ -485,7 +485,7 @@ BOOL kull_m_dpapi_unprotect_blob(PKULL_M_DPAPI_BLOB blob, LPCVOID masterkey, DWO
 								status = CryptDecrypt(hSessionKey, 0, TRUE, 0, (LPBYTE) *dataOut, dataOutLen);
 								if(!status)
 								{
-									LocalFree(*dataOut);	
+									*dataOut = LocalFree(*dataOut);	
 									PRINT_ERROR_AUTO(L"CryptDecrypt");
 								}
 							}

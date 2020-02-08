@@ -165,18 +165,50 @@ void kuhl_m_dpapi_cred_tryEncrypted(LPCWSTR target, LPCBYTE data, DWORD dataLen,
 {
 	PVOID cred;
 	DWORD credLen;
+	PKULL_M_CRED_APPSENSE_DN pAppDN;
 	if(wcsstr(target, L"Microsoft_WinInet_"))
 	{
 		if(dataLen >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
 		{
 			if(RtlEqualGuid(data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
 			{
-				kprintf(L"\n");
 				if(kuhl_m_dpapi_unprotect_raw_or_blob(data, dataLen, NULL, argc, argv, KULL_M_CRED_ENTROPY_CRED_DER, sizeof(KULL_M_CRED_ENTROPY_CRED_DER), &cred, &credLen, L"Decrypting additional blob\n"))
 				{
 					kprintf(L"   CredentialBlob: ");
 					kull_m_string_printSuspectUnicodeString(cred, credLen);
+					kprintf(L"\n");
 					LocalFree(cred);
+				}
+			}
+		}
+	}
+	else if(wcsstr(target, L"AppSense_DataNow_"))
+	{
+		kprintf(L"\n* Ivanti FileDirector credential blob *\n");
+		if(dataLen >= FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
+		{
+			pAppDN = (PKULL_M_CRED_APPSENSE_DN) data;
+			if(!strcmp("AppN_DN_Win", pAppDN->type))
+			{
+				if(pAppDN->credBlobSize)
+				{
+					if(kuhl_m_dpapi_unprotect_raw_or_blob(pAppDN->data, pAppDN->credBlobSize, NULL, argc, argv, NULL, 0, &cred, &credLen, L"Decrypting additional blob\n"))
+					{
+						kprintf(L"   CredentialBlob: ");
+						kull_m_string_printSuspectUnicodeString(cred, credLen);
+						kprintf(L"\n");
+						LocalFree(cred);
+					}
+				}
+				if(pAppDN->unkBlobSize)
+				{
+					if(kuhl_m_dpapi_unprotect_raw_or_blob(pAppDN->data + pAppDN->credBlobSize, pAppDN->unkBlobSize, NULL, argc, argv, NULL, 0, &cred, &credLen, L"Decrypting additional blob\n"))
+					{
+						kprintf(L"   UnkBlob       : ");
+						kull_m_string_printSuspectUnicodeString(cred, credLen);
+						kprintf(L"\n");
+						LocalFree(cred);
+					}
 				}
 			}
 		}
@@ -195,7 +227,6 @@ BOOL kuhl_m_dpapi_vault_key_type(PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribu
 		calgId = CALG_AES_128;
 		key = aes128;
 		keyLen = AES_128_KEY_SIZE;
-		
 	}
 	else
 	{

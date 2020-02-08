@@ -170,6 +170,13 @@ typedef struct _KULL_M_CRED_VAULT_CLEAR {
 } KULL_M_CRED_VAULT_CLEAR, *PKULL_M_CRED_VAULT_CLEAR;
 #pragma pack(pop)
 
+typedef struct _KULL_M_CRED_APPSENSE_DN {
+	char type[12];
+	DWORD credBlobSize;
+	DWORD unkBlobSize;
+	BYTE data[ANYSIZE_ARRAY];
+} KULL_M_CRED_APPSENSE_DN, *PKULL_M_CRED_APPSENSE_DN;
+
 PKULL_M_CRED_BLOB kull_m_cred_create(PVOID data/*, DWORD size*/);
 void kull_m_cred_delete(PKULL_M_CRED_BLOB cred);
 void kull_m_cred_descr(DWORD level, PKULL_M_CRED_BLOB cred);
