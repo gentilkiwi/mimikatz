@@ -119,6 +119,7 @@
     <ClCompile Include="..\modules\kull_m_cabinet.c" />
     <ClCompile Include="..\modules\kull_m_cred.c" />
     <ClCompile Include="..\modules\kull_m_crypto.c" />
+    <ClCompile Include="..\modules\kull_m_crypto_sk.c" />
     <ClCompile Include="..\modules\kull_m_dpapi.c" />
     <ClCompile Include="..\modules\kull_m_file.c" />
     <ClCompile Include="..\modules\kull_m_handle.c" />
@@ -154,7 +155,7 @@
     <ClCompile Include="..\modules\kull_m_xml.c" />
     <ClCompile Include="..\modules\sqlite3.c">
       <PreprocessorDefinitions>SQLITE_UNTESTABLE;SQLITE_DISABLE_INTRINSIC;SQLITE_OMIT_LOCALTIME;SQLITE_DQS=0;SQLITE_THREADSAFE=0;SQLITE_DEFAULT_MEMSTATUS=0;SQLITE_DEFAULT_WAL_SYNCHRONOUS=1;SQLITE_LIKE_DOESNT_MATCH_BLOBS;SQLITE_MAX_EXPR_DEPTH=0;SQLITE_OMIT_DECLTYPE;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_PROGRESS_CALLBACK;SQLITE_OMIT_SHARED_CACHE;SQLITE_USE_ALLOCA;SQLITE_OMIT_OR_OPTIMIZATION;SQLITE_OMIT_LIKE_OPTIMIZATION;SQLITE_OMIT_BETWEEN_OPTIMIZATION;SQLITE_OMIT_TRUNCATE_OPTIMIZATION;SQLITE_OMIT_TCL_VARIABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-	  <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level2</WarningLevel>
     </ClCompile>
     <ClCompile Include="mimikatz.c" />
@@ -205,6 +206,7 @@
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa.c" />
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.c" />
@@ -222,6 +224,7 @@
     <ClInclude Include="..\modules\kull_m_cabinet.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
+    <ClInclude Include="..\modules\kull_m_crypto_sk.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
     <ClInclude Include="..\modules\kull_m_dpapi.h" />
     <ClInclude Include="..\modules\kull_m_file.h" />
@@ -310,6 +313,7 @@
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
     <ClInclude Include="modules\sekurlsa\globals_sekurlsa.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa.h" />
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.h" />

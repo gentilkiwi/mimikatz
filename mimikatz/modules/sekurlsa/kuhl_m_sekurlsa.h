@@ -66,7 +66,7 @@ VOID kuhl_m_sekurlsa_pth_luid(PSEKURLSA_PTH_DATA data);
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags);
 VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _KIWI_CREDENTIAL_KEY * key, LPCWSTR sid);
-VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
+BOOL kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob, LPBYTE *output, DWORD *cbOutput);
 VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
 void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport);
 #if !defined(_M_ARM64)
@@ -208,11 +208,15 @@ typedef struct _LSAISO_DATA_BLOB {
 	DWORD unk2;
 	DWORD unk3;
 	DWORD unk4;
-	BYTE unkKeyData[3*16];
-	BYTE unkData2[16];
-	DWORD unk5;
-	DWORD origSize;
-	BYTE data[ANYSIZE_ARRAY];
+	BYTE KdfContext[32];
+	BYTE Tag[16];
+	DWORD unk5; // AuthData start
+	DWORD unk6;
+	DWORD unk7;
+	DWORD unk8;
+	DWORD unk9;
+	DWORD szEncrypted; // AuthData ends + type
+	BYTE data[ANYSIZE_ARRAY]; // Type then Encrypted
 } LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;
 
 typedef struct _ENC_LSAISO_DATA_BLOB {
@@ -222,3 +226,4 @@ typedef struct _ENC_LSAISO_DATA_BLOB {
 } ENC_LSAISO_DATA_BLOB, *PENC_LSAISO_DATA_BLOB;
 
 #include "../dpapi/kuhl_m_dpapi_oe.h"
+#include "kuhl_m_sekurlsa_sk.h"

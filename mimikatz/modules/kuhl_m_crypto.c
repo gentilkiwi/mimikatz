@@ -879,7 +879,7 @@ BOOL kuhl_m_crypto_system_data(PBYTE data, DWORD len, PCWCHAR originalName, BOOL
 				kuhl_m_crypto_file_rawData(prop, originalName, isExport);
 				break;
 			case 118: // CERT_ISOLATED_KEY_PROP_ID
-				kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) prop->data);
+				kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) prop->data, NULL, NULL);
 				kprintf(L"\n");
 				break;
 			case CERT_SHA1_HASH_PROP_ID:

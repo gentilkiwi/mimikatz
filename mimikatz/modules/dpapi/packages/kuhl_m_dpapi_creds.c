@@ -42,7 +42,7 @@ NTSTATUS kuhl_m_dpapi_cred(int argc, wchar_t * argv[])
 							kull_m_cred_descr(0, cred);
 							if(kull_m_string_args_byName(argc, argv, L"lsaiso", NULL, NULL))
 							{
-								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) cred->CredentialBlob);
+								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) cred->CredentialBlob, NULL, NULL);
 								kprintf(L"\n");
 							}
 							else kuhl_m_dpapi_cred_tryEncrypted(cred->TargetName, cred->CredentialBlob, cred->CredentialBlobSize, argc, argv);

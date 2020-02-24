@@ -17,5 +17,5 @@ BOOL kull_m_minidump_close(IN PKULL_M_MINIDUMP_HANDLE hMinidump);
 BOOL kull_m_minidump_copy(IN PKULL_M_MINIDUMP_HANDLE hMinidump, OUT VOID *Destination, IN VOID *Source, IN SIZE_T Length);
 
 LPVOID kull_m_minidump_RVAtoPTR(IN PKULL_M_MINIDUMP_HANDLE hMinidump, RVA64 rva);
-LPVOID kull_m_minidump_stream(IN PKULL_M_MINIDUMP_HANDLE hMinidump, MINIDUMP_STREAM_TYPE type);
+LPVOID kull_m_minidump_stream(IN PKULL_M_MINIDUMP_HANDLE hMinidump, MINIDUMP_STREAM_TYPE type, OUT OPTIONAL DWORD *pSize);
 LPVOID kull_m_minidump_remapVirtualMemory64(IN PKULL_M_MINIDUMP_HANDLE hMinidump, IN VOID *Source, IN SIZE_T Length);

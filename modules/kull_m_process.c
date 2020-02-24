@@ -200,7 +200,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 
 	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
 		moduleInformation.NameDontUseOutsideCallback = &moduleName;
-		if(pMinidumpModuleList = (PMINIDUMP_MODULE_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, ModuleListStream))
+		if(pMinidumpModuleList = (PMINIDUMP_MODULE_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, ModuleListStream, NULL))
 		{
 			for(i = 0; (i < pMinidumpModuleList->NumberOfModules) && continueCallback; i++)
 			{
@@ -316,7 +316,7 @@ NTSTATUS kull_m_process_getMemoryInformations(PKULL_M_MEMORY_HANDLE memory, PKUL
 		status = STATUS_SUCCESS;
 		break;
 	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
-		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, MemoryInfoListStream))
+		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, MemoryInfoListStream, NULL))
 		{
 			for(i = 0; (i < maListeInfo->NumberOfEntries) && continueCallback; i++)
 			{

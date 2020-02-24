@@ -290,6 +290,12 @@
     <ClCompile Include="..\modules\sqlite3.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\kull_m_crypto_sk.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.c">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -598,6 +604,12 @@
     </ClInclude>
     <ClInclude Include="..\modules\sqlite3.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_crypto_sk.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.h">
+      <Filter>local modules\sekurlsa</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

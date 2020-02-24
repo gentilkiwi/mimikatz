@@ -122,7 +122,7 @@ NTSTATUS kuhl_m_dpapi_keys_cng(int argc, wchar_t * argv[])
 				{
 					if(isIso)
 					{
-						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) out + sizeof(DWORD)));
+						kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) ((PBYTE) out + sizeof(DWORD)), NULL, NULL);
 						kprintf(L"\n");
 					}
 					else
