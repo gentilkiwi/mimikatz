@@ -23,4 +23,5 @@ void kuhl_m_sekurlsa_sk_candidatekeys_descr();
 DWORD kuhl_m_sekurlsa_sk_search(PBYTE data, DWORD size, BOOL light);
 DWORD kuhl_m_sekurlsa_sk_search_file(LPCWSTR filename);
 
+NTSTATUS kuhl_m_sekurlsa_sk_bootKey(int argc, wchar_t* argv[]);
 BOOL kuhl_m_sekurlsa_sk_tryDecode(PLSAISO_DATA_BLOB blob, PBYTE *output, DWORD *cbOutput);

