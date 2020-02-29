@@ -112,35 +112,33 @@ void kuhl_m_dpapi_rdg_LogonCredentials(DWORD level, IXMLDOMNode *pNode, int argc
 
 	if((IXMLDOMNode_selectSingleNode(pNode, L"logonCredentials", &pLogonCredentialsNode) == S_OK) && pLogonCredentialsNode)
 	{
-		if(userName = kull_m_xml_getTextValue(pLogonCredentialsNode, L"userName"))
+		if(password = kull_m_xml_getTextValue(pLogonCredentialsNode, L"password"))
 		{
-			if(domain = kull_m_xml_getTextValue(pLogonCredentialsNode, L"domain"))
+			userName = kull_m_xml_getTextValue(pLogonCredentialsNode, L"userName");
+			domain = kull_m_xml_getTextValue(pLogonCredentialsNode, L"domain");
+			kprintf(L"%*s" L"* %s \\ %s : %s\n", level << 1, L"", domain ? domain : L"<NULL>", userName ? userName : L"<NULL>", password);
+			if(kull_m_string_quick_base64_to_Binary(password, &data, &szData))
 			{
-				if(password = kull_m_xml_getTextValue(pLogonCredentialsNode, L"password"))
+				if(szData >= (sizeof(DWORD) + sizeof(GUID)))
 				{
-					kprintf(L"%*s" L"* %s \\ %s : %s\n", level << 1, L"", domain, userName, password);
-					if(kull_m_string_quick_base64_to_Binary(password, &data, &szData))
+					if(RtlEqualGuid((PBYTE) data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
 					{
-						if(szData >= (sizeof(DWORD) + sizeof(GUID)))
+						if(kuhl_m_dpapi_unprotect_raw_or_blob(data, szData, NULL, argc, argv, NULL, 0, &pDataOut, &dwDataOutLen, NULL))
 						{
-							if(RtlEqualGuid((PBYTE) data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
-							{
-								if(kuhl_m_dpapi_unprotect_raw_or_blob(data, szData, NULL, argc, argv, NULL, 0, &pDataOut, &dwDataOutLen, NULL))
-								{
-									kprintf(L"%*s" L">> cleartext password: %.*s\n", level << 1, L"", dwDataOutLen / sizeof(wchar_t), pDataOut);
-									LocalFree(pDataOut);
-								}
-							}
-							else PRINT_ERROR(L"Maybe certificate encryption (todo)\n");
+							kprintf(L"%*s" L">> cleartext password: %.*s\n", level << 1, L"", dwDataOutLen / sizeof(wchar_t), pDataOut);
+							LocalFree(pDataOut);
 						}
-						else PRINT_ERROR(L"szData: %u\n", szData);
-						LocalFree(data);
 					}
-					LocalFree(password);
+					else PRINT_ERROR(L"Maybe certificate encryption (todo)\n");
 				}
-				LocalFree(domain);
+				else PRINT_ERROR(L"szData: %u\n", szData);
+				LocalFree(data);
 			}
-			LocalFree(userName);
+			if(domain)
+				LocalFree(domain);
+			if(userName)
+				LocalFree(userName);
+			LocalFree(password);
 		}
 	}
 }
