@@ -20,23 +20,35 @@ PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY kuhl_m_dpapi_oe_masterkey_get(LPCGUID guid)
 	return NULL;
 }
 
-BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID keyHash, DWORD keyLen)
+BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID key, DWORD keyLen)
 {
 	BOOL status = FALSE;
 	PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry;
 	BYTE digest[SHA_DIGEST_LENGTH];
 
-	if(guid && keyHash && keyLen)
+	if(guid && key && keyLen)
 	{
 		if(!kuhl_m_dpapi_oe_masterkey_get(guid))
 		{
-			if(keyLen != SHA_DIGEST_LENGTH)
-				kull_m_crypto_hash(CALG_SHA1, keyHash, keyLen, digest, sizeof(digest));
-
 			if(entry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_MASTERKEY_ENTRY)))
 			{
 				RtlCopyMemory(&entry->data.guid, guid, sizeof(GUID));
-				RtlCopyMemory(entry->data.keyHash, (keyLen == SHA_DIGEST_LENGTH) ? keyHash : digest, SHA_DIGEST_LENGTH);
+				if(keyLen == SHA_DIGEST_LENGTH)
+				{
+					RtlCopyMemory(entry->data.keyHash, key, SHA_DIGEST_LENGTH);
+					status = TRUE;
+				}
+				else
+				{
+					kull_m_crypto_hash(CALG_SHA1, key, keyLen, digest, sizeof(digest));
+					RtlCopyMemory(entry->data.keyHash, digest, sizeof(digest));
+					if(entry->data.key = (BYTE *) LocalAlloc(LPTR, keyLen))
+					{
+						RtlCopyMemory(entry->data.key, key, keyLen);
+						entry->data.keyLen = keyLen;
+						status = TRUE;
+					}
+				}
 				entry->navigator.Blink = gDPAPI_Masterkeys.Blink;
 				entry->navigator.Flink = &gDPAPI_Masterkeys;
 				((PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
@@ -55,6 +67,9 @@ void kuhl_m_dpapi_oe_masterkey_delete(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry)
 	{
 		((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Blink)->navigator.Flink = entry->navigator.Flink;
 		((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Flink)->navigator.Blink = entry->navigator.Blink;
+
+		if(entry->data.key)
+			LocalFree(entry->data.key);
 		LocalFree(entry);
 	}
 }
@@ -69,7 +84,7 @@ void kuhl_m_dpapi_oe_masterkey_descr(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry)
 		
 		kprintf(L"KeyHash:");
 		kull_m_string_wprintf_hex(entry->data.keyHash, sizeof(entry->data.keyHash), 0);
-		kprintf(L"\n");
+		kprintf(L";Key:%savailable\n", entry->data.key ? L"": L"not ");
 	}
 }
 
@@ -530,7 +545,7 @@ BOOL kuhl_m_dpapi_oe_LoadFromFile(LPCWSTR filename)
 		if(kull_m_dpapi_oe_DecodeDpapiEntries(dataIn, dwDataIn, &entries))
 		{
 			for(i = 0, j = 0; i < entries.MasterKeyCount; i++)
-				if(kuhl_m_dpapi_oe_masterkey_add(&entries.MasterKeys[i]->guid, entries.MasterKeys[i]->keyHash, sizeof(entries.MasterKeys[i]->keyHash)))
+				if(kuhl_m_dpapi_oe_masterkey_add(&entries.MasterKeys[i]->guid, entries.MasterKeys[i]->keyLen ? entries.MasterKeys[i]->key : entries.MasterKeys[i]->keyHash, entries.MasterKeys[i]->keyLen ?  entries.MasterKeys[i]->keyLen : sizeof(entries.MasterKeys[i]->keyHash)))
 					j++;
 			kprintf(L" * %3u/%3u MasterKey(s) imported\n", j, entries.MasterKeyCount);
 
