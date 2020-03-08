@@ -37,3 +37,6 @@ BOOL kull_m_token_getNameDomainFromSID(PSID pSid, PWSTR * pName, PWSTR * pDomain
 BOOL kull_m_token_getSidDomainFromName(PCWSTR pName, PSID * pSid, PWSTR * pDomain, PSID_NAME_USE pSidNameUse, LPCWSTR system);
 
 BOOL kull_m_token_equal(IN HANDLE First, IN HANDLE Second);
+PWSTR kull_m_token_getSidFromToken(HANDLE hToken);
+PWSTR kull_m_token_getCurrentSid();
+BOOL kull_m_token_isLocalAccount(__in_opt HANDLE TokenHandle, __out PBOOL IsMember);

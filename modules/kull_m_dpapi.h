@@ -147,18 +147,22 @@ void kull_m_dpapi_blob_quick_descr(DWORD level, LPCVOID data/*, DWORD size*/);
 PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(LPCVOID data/*, DWORD size*/);
 void kull_m_dpapi_masterkeys_delete(PKULL_M_DPAPI_MASTERKEYS masterkeys);
 void kull_m_dpapi_masterkeys_descr(DWORD level, PKULL_M_DPAPI_MASTERKEYS masterkeys);
+PBYTE kull_m_dpapi_masterkeys_tobin(PKULL_M_DPAPI_MASTERKEYS masterkeys, OPTIONAL DWORD64 *size);
 
 PKULL_M_DPAPI_MASTERKEY kull_m_dpapi_masterkey_create(LPCVOID data, DWORD64 size);
 void kull_m_dpapi_masterkey_delete(PKULL_M_DPAPI_MASTERKEY masterkey);
 void kull_m_dpapi_masterkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY masterkey);
+PBYTE kull_m_dpapi_masterkey_tobin(PKULL_M_DPAPI_MASTERKEY masterkey, OPTIONAL DWORD64 *size);
 
 PKULL_M_DPAPI_MASTERKEY_CREDHIST kull_m_dpapi_masterkeys_credhist_create(LPCVOID data, DWORD64 size);
 void kull_m_dpapi_masterkeys_credhist_delete(PKULL_M_DPAPI_MASTERKEY_CREDHIST credhist);
 void kull_m_dpapi_masterkeys_credhist_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY_CREDHIST credhist);
+PBYTE kull_m_dpapi_masterkeys_credhist_tobin(PKULL_M_DPAPI_MASTERKEY_CREDHIST credhist, OPTIONAL DWORD64 *size);
 
 PKULL_M_DPAPI_MASTERKEY_DOMAINKEY kull_m_dpapi_masterkeys_domainkey_create(PVOID LPCVOID, DWORD64 size);
 void kull_m_dpapi_masterkeys_domainkey_delete(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY domainkey);
 void kull_m_dpapi_masterkeys_domainkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY_DOMAINKEY domainkey);
+PBYTE kull_m_dpapi_masterkeys_domainkey_tobin(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY domainkey, OPTIONAL DWORD64 *size);
 
 PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(LPCVOID data, DWORD size);
 void kull_m_dpapi_credhist_delete(PKULL_M_DPAPI_CREDHIST credhist);
@@ -177,6 +181,11 @@ BOOL kull_m_dpapi_getProtected(PVOID PassHash, DWORD PassLen, PCWSTR sid);
 BOOL kull_m_dpapi_unprotect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR password, PCWSTR sid, BOOL isKeyOfProtectedUser, PVOID *output, DWORD *outputLen);
 BOOL kull_m_dpapi_unprotect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID userHash, DWORD userHashLen, PCWSTR sid, BOOL isKeyOfProtectedUser, PVOID *output, DWORD *outputLen);
 BOOL kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID shaDerivedkey, DWORD shaDerivedkeyLen, PVOID *output, DWORD *outputLen);
+
+BOOL kull_m_dpapi_protect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR password, PCWSTR sid, BOOL isKeyOfProtectedUser, LPCVOID pbKey, DWORD dwKey, OPTIONAL LPCVOID pbInternalSalt);
+BOOL kull_m_dpapi_protect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID userHash, DWORD userHashLen, PCWSTR sid, BOOL isKeyOfProtectedUser, LPCVOID pbKey, DWORD dwKey, OPTIONAL LPCVOID pbInternalSalt);
+BOOL kull_m_dpapi_protect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID shaDerivedkey, DWORD shaDerivedkeyLen, LPCVOID pbKey, DWORD dwKey, OPTIONAL LPCVOID pbInternalSalt);
+
 //BOOL kull_m_dpapi_unprotect_backupkey_with_secret(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR sid, LPCVOID secret, DWORD secretLen, PVOID *output, DWORD *outputLen);
 BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY domainkey, LPCVOID key, DWORD keyLen, PVOID *output, DWORD *outputLen, PSID *sid);
 BOOL kull_m_dpapi_unprotect_domainkey_with_rpc(PKULL_M_DPAPI_MASTERKEYS masterkeys, PVOID rawMasterkeys, LPCWSTR server, PVOID *output, DWORD *outputLen);

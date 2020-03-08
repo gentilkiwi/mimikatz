@@ -204,3 +204,41 @@ BOOL kull_m_token_equal(IN HANDLE First, IN HANDLE Second)
 	else PRINT_ERROR(L"NtCompareTokens: %08x\n", ntStatus);
 	return status;
 }
+
+PWSTR kull_m_token_getSidFromToken(HANDLE hToken)
+{
+	PWSTR Sid = NULL;
+	PTOKEN_USER pTokenUser;
+	DWORD szNeeded;
+	if(!GetTokenInformation(hToken, TokenUser, NULL, 0, &szNeeded) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
+	{
+		if(pTokenUser = (PTOKEN_USER) LocalAlloc(LPTR, szNeeded))
+		{
+			if(GetTokenInformation(hToken, TokenUser, pTokenUser, szNeeded, &szNeeded))
+			{
+				if(!ConvertSidToStringSid(pTokenUser->User.Sid, &Sid))
+					Sid = NULL;
+			}
+			LocalFree(pTokenUser);
+		}
+	}
+	return Sid;
+}
+
+PWSTR kull_m_token_getCurrentSid()
+{
+	PWSTR Sid = NULL;
+	HANDLE hToken;
+	if(OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+	{
+		Sid = kull_m_token_getSidFromToken(hToken);
+		CloseHandle(hToken);
+	}
+	return Sid;
+}
+
+const SID SidLocalAccount = {SID_REVISION, 1, SECURITY_NT_AUTHORITY, {113}};
+BOOL kull_m_token_isLocalAccount(__in_opt HANDLE TokenHandle, __out PBOOL IsMember)
+{
+	return CheckTokenMembership(TokenHandle, (PSID) &SidLocalAccount, IsMember);
+}

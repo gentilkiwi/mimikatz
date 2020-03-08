@@ -10,6 +10,7 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	{kuhl_m_dpapi_protect,		L"protect",		L"Protect a data via a DPAPI call"},
 	{kuhl_m_dpapi_masterkey,	L"masterkey",	L"Describe a Masterkey file, unprotect each Masterkey (key depending)"},
 	{kuhl_m_dpapi_credhist,		L"credhist",	L"Describe a Credhist file"},
+	{kuhl_m_dpapi_create,		L"create",		L"Create a Masterkey file from raw key and metadata"},
 	
 	{kuhl_m_dpapi_keys_capi,	L"capi",		L"CAPI key test"},
 	{kuhl_m_dpapi_keys_cng,		L"cng",			L"CNG key test"},
@@ -274,8 +275,7 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 								kprintf(L" (ntlm type)\n");
 							else if(cbHash == SHA_DIGEST_LENGTH)
 								kprintf(L" (sha1 type)\n");
-							else 
-								kprintf(L" (?)\n");
+							else kprintf(L" (?)\n");
 
 							if(kull_m_dpapi_unprotect_masterkey_with_userHash(masterkeys->MasterKey, pHash, cbHash, convertedSid, isProtected, &output, &cbOutput))
 							{
@@ -373,6 +373,130 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 		}
 	}
 	else PRINT_ERROR(L"Input masterkeys file needed (/in:file)\n");
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_dpapi_create(int argc, wchar_t * argv[])
+{
+	KULL_M_DPAPI_MASTERKEY masterkey = {2, {0}, 4000, CALG_HMAC, CALG_3DES, NULL, 0}; // XP friendly
+	KULL_M_DPAPI_MASTERKEYS masterkeys = {2, 0, 0, {0}, 0, 0, 0, 0, 0, 0, 0, &masterkey, NULL, NULL, NULL};
+	LPCWSTR szData;
+	LPWSTR convertedSid = NULL, convertedGuid = NULL;
+	PSID pSid;
+	PBYTE pKey = NULL, pHash = NULL, pSystem = NULL, data;
+	DWORD cbKey = 0, cbHash = 0, cbSystem = 0;
+	UNICODE_STRING uGuid;
+	GUID guid;
+	wchar_t guidFilename[37];
+	BOOL isLocal, isProtected = kull_m_string_args_byName(argc, argv, L"protected", NULL, NULL);
+
+	if(kull_m_string_args_byName(argc, argv, L"sid", &szData, NULL))
+	{
+		if(ConvertStringSidToSid(szData, &pSid))
+		{
+			ConvertSidToStringSid(pSid, &convertedSid);
+			LocalFree(pSid);
+		}
+		else PRINT_ERROR_AUTO(L"ConvertStringSidToSid");
+	}
+	else convertedSid = kull_m_token_getCurrentSid();
+
+	if(kull_m_string_args_byName(argc, argv, L"hash", &szData, NULL))
+		kull_m_string_stringToHexBuffer(szData, &pHash, &cbHash);
+	if(kull_m_string_args_byName(argc, argv, L"system", &szData, NULL))
+		kull_m_string_stringToHexBuffer(szData, &pSystem, &cbSystem);
+
+	if(kull_m_string_args_byName(argc, argv, L"guid", &szData, NULL))
+	{
+		if(szData[0] == L'{')
+			kull_m_string_copy(&convertedGuid, szData);
+		else kull_m_string_sprintf(&convertedGuid, L"{%s}", szData);
+		if(convertedGuid)
+		{
+			RtlInitUnicodeString(&uGuid, convertedGuid);
+			if(NT_SUCCESS(RtlGUIDFromString(&uGuid, &guid)))
+			{
+				RtlCopyMemory(masterkeys.szGuid, convertedGuid + 1, uGuid.Length - 4);
+				if(kull_m_string_args_byName(argc, argv, L"key", &szData, NULL))
+				{
+					if(kull_m_string_stringToHexBuffer(szData, &pKey, &cbKey))
+					{
+						CDGenerateRandomBits(masterkey.salt, sizeof(masterkey.salt));
+						if(pSystem && cbSystem)
+						{
+							masterkeys.dwFlags |= 2;
+							PRINT_ERROR(L"TODO for local machine secrets, if needed.\n");
+						}
+						else if(convertedSid)
+						{
+							kprintf(L"Target SID is: %s\n", convertedSid);
+							if(kull_m_string_args_byName(argc, argv, L"password", &szData, NULL))
+							{
+								if(kull_m_string_args_byName(argc, argv, L"md4", NULL, NULL) || kull_m_string_args_byName(argc, argv, L"dpapi", NULL, NULL))
+									isLocal = FALSE;
+								else if(kull_m_string_args_byName(argc, argv, L"sha1", NULL, NULL))
+									isLocal = TRUE;
+								else
+								{
+									isLocal = FALSE;
+									kull_m_token_isLocalAccount(NULL, &isLocal);
+								}
+								if(isLocal)
+									masterkeys.dwFlags |= 4;
+								kprintf(L"\n[masterkey] with password: %s (%s user)\n", szData, isProtected ? L"protected" : L"normal");
+								if(!kull_m_dpapi_protect_masterkey_with_password(masterkeys.dwFlags, &masterkey, szData, convertedSid, isProtected, pKey, cbKey, NULL))
+									PRINT_ERROR(L"kull_m_dpapi_protect_masterkey_with_password\n");
+							}
+							else if(pHash)
+							{
+								kprintf(L"\n[masterkey] with hash: "); kull_m_string_wprintf_hex(pHash, cbHash, 0);
+								if(cbHash == LM_NTLM_HASH_LENGTH)
+									kprintf(L" (ntlm type)\n");
+								else if(cbHash == SHA_DIGEST_LENGTH)
+								{
+									kprintf(L" (sha1 type)\n");
+									masterkeys.dwFlags |= 4;
+								}
+								else kprintf(L" (?)\n");
+								if(!kull_m_dpapi_protect_masterkey_with_userHash(&masterkey, pHash, cbHash, convertedSid, isProtected, pKey, cbKey, NULL))
+									PRINT_ERROR(L"kull_m_dpapi_protect_masterkey_with_userHash\n");
+							}
+						}
+
+						if(masterkey.pbKey)
+						{
+							if(data = kull_m_dpapi_masterkeys_tobin(&masterkeys, &masterkeys.dwMasterKeyLen))
+							{
+								kull_m_dpapi_masterkeys_descr(0, &masterkeys);
+								RtlCopyMemory(guidFilename, masterkeys.szGuid, min(sizeof(guidFilename), sizeof(masterkeys.szGuid)));
+								guidFilename[ARRAYSIZE(guidFilename) - 1] = L'\0';
+								kprintf(L"File \'%s\' (hidden & system): ", guidFilename);
+								if(kull_m_file_writeData(guidFilename, data, (DWORD) masterkeys.dwMasterKeyLen))
+								{
+									if(SetFileAttributes(guidFilename, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE))
+										kprintf(L"OK\n");
+									else PRINT_ERROR_AUTO(L"SetFileAttributes");
+								}
+								else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+								LocalFree(data);
+							}
+							LocalFree(masterkey.pbKey);
+						}
+						LocalFree(pKey);
+					}
+				}
+			}
+			else PRINT_ERROR(L"Not a valid GUID\n");
+			LocalFree(convertedGuid);
+		}
+	}
+
+	if(convertedSid)
+		LocalFree(convertedSid);
+	if(pHash)
+		LocalFree(pHash);
+	if(pSystem)
+		LocalFree(pSystem);
 	return STATUS_SUCCESS;
 }
 

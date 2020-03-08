@@ -134,6 +134,19 @@ void kull_m_dpapi_masterkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY masterkey
 	}
 }
 
+PBYTE kull_m_dpapi_masterkey_tobin(PKULL_M_DPAPI_MASTERKEY masterkey, OPTIONAL DWORD64 *size)
+{
+	PBYTE data = NULL;
+	if(data = (PBYTE) LocalAlloc(LPTR, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey) + masterkey->__dwKeyLen))
+	{
+		RtlCopyMemory(data, masterkey, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey));
+		RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey), masterkey->pbKey, masterkey->__dwKeyLen);
+		if(size)
+			*size = FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY, pbKey) + masterkey->__dwKeyLen;
+	}
+	return data;
+}
+
 PKULL_M_DPAPI_MASTERKEY_CREDHIST kull_m_dpapi_masterkeys_credhist_create(LPCVOID data, DWORD64 size)
 {
 	PKULL_M_DPAPI_MASTERKEY_CREDHIST credhist = NULL;
@@ -156,6 +169,18 @@ void kull_m_dpapi_masterkeys_credhist_descr(DWORD level, PKULL_M_DPAPI_MASTERKEY
 		kprintf(L"%*s" L"  dwVersion        : %08x - %u\n", level << 1, L"", credhist->dwVersion, credhist->dwVersion);
 		kprintf(L"%*s" L"  guid             : ", level << 1, L""); kull_m_string_displayGUID(&credhist->guid); kprintf(L"\n\n");
 	}
+}
+
+PBYTE kull_m_dpapi_masterkeys_credhist_tobin(PKULL_M_DPAPI_MASTERKEY_CREDHIST credhist, OPTIONAL DWORD64 *size)
+{
+	PBYTE data = NULL;
+	if(data = (PBYTE) LocalAlloc(LPTR, sizeof(KULL_M_DPAPI_MASTERKEY_CREDHIST)))
+	{
+		RtlCopyMemory(data, credhist, sizeof(KULL_M_DPAPI_MASTERKEY_CREDHIST));
+		if(size)
+			*size = sizeof(KULL_M_DPAPI_MASTERKEY_CREDHIST);
+	}
+	return data;
 }
 
 PKULL_M_DPAPI_MASTERKEY_DOMAINKEY kull_m_dpapi_masterkeys_domainkey_create(LPCVOID data, DWORD64 size)
@@ -196,6 +221,20 @@ void kull_m_dpapi_masterkeys_domainkey_descr(DWORD level, PKULL_M_DPAPI_MASTERKE
 		kprintf(L"%*s" L"  pbSecret         : ", level << 1, L""); kull_m_string_wprintf_hex(domainkey->pbSecret, domainkey->dwSecretLen, 0); kprintf(L"\n");
 		kprintf(L"%*s" L"  pbAccesscheck    : ", level << 1, L""); kull_m_string_wprintf_hex(domainkey->pbAccesscheck, domainkey->dwAccesscheckLen, 0); kprintf(L"\n\n");
 	}
+}
+
+PBYTE kull_m_dpapi_masterkeys_domainkey_tobin(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY domainkey, OPTIONAL DWORD64 *size)
+{
+	PBYTE data = NULL;
+	if(data = (PBYTE) LocalAlloc(LPTR, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY_DOMAINKEY, pbSecret) + domainkey->dwSecretLen + domainkey->dwAccesscheckLen))
+	{
+		RtlCopyMemory(data, domainkey, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY_DOMAINKEY, pbSecret));
+		RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY_DOMAINKEY, pbSecret), domainkey->pbSecret, domainkey->dwSecretLen);
+		RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY_DOMAINKEY, pbSecret) + domainkey->dwSecretLen, domainkey->pbAccesscheck, domainkey->dwAccesscheckLen);
+		if(size)
+			*size = FIELD_OFFSET(KULL_M_DPAPI_MASTERKEY_DOMAINKEY, pbSecret) + domainkey->dwSecretLen + domainkey->dwAccesscheckLen;
+	}
+	return data;
 }
 
 PKULL_M_DPAPI_MASTERKEYS kull_m_dpapi_masterkeys_create(LPCVOID data/*, DWORD size*/)
@@ -267,6 +306,36 @@ void kull_m_dpapi_masterkeys_descr(DWORD level, PKULL_M_DPAPI_MASTERKEYS masterk
 		}
 		kprintf(L"\n");
 	}
+}
+
+PBYTE kull_m_dpapi_masterkeys_tobin(PKULL_M_DPAPI_MASTERKEYS masterkeys, OPTIONAL DWORD64 *size)
+{
+	PBYTE data = NULL;
+	PBYTE MasterKey = NULL, BackupKey = NULL, CredHist = NULL, DomainKey = NULL;
+	
+	if(masterkeys->MasterKey)
+		MasterKey = kull_m_dpapi_masterkey_tobin(masterkeys->MasterKey, &masterkeys->dwMasterKeyLen);
+	if(masterkeys->BackupKey)
+		BackupKey = kull_m_dpapi_masterkey_tobin(masterkeys->BackupKey, &masterkeys->dwBackupKeyLen);
+	if(masterkeys->CredHist)
+		CredHist = kull_m_dpapi_masterkeys_credhist_tobin(masterkeys->CredHist, &masterkeys->dwCredHistLen);
+	if(masterkeys->DomainKey)
+		DomainKey = kull_m_dpapi_masterkeys_domainkey_tobin(masterkeys->DomainKey, &masterkeys->dwDomainKeyLen);
+	if(data = (PBYTE) LocalAlloc(LPTR, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey) + (SIZE_T) (masterkeys->dwMasterKeyLen + masterkeys->dwBackupKeyLen + masterkeys->dwCredHistLen + masterkeys->dwDomainKeyLen)))
+	{
+		RtlCopyMemory(data, masterkeys, FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey));
+		if(MasterKey)
+			RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey), MasterKey, (size_t) masterkeys->dwMasterKeyLen);
+		if(BackupKey)
+			RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey) + masterkeys->dwMasterKeyLen, BackupKey, (size_t) masterkeys->dwBackupKeyLen);
+		if(CredHist)
+			RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey) + masterkeys->dwMasterKeyLen + masterkeys->dwBackupKeyLen, CredHist, (size_t) masterkeys->dwCredHistLen);
+		if(DomainKey)
+			RtlCopyMemory(data + FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey) + masterkeys->dwMasterKeyLen + masterkeys->dwBackupKeyLen + masterkeys->dwCredHistLen, DomainKey, (size_t) masterkeys->dwDomainKeyLen);
+		if(size)
+			*size = FIELD_OFFSET(KULL_M_DPAPI_MASTERKEYS, MasterKey) + masterkeys->dwMasterKeyLen + masterkeys->dwBackupKeyLen + masterkeys->dwCredHistLen + masterkeys->dwDomainKeyLen;
+	}
+	return data;
 }
 
 PKULL_M_DPAPI_CREDHIST kull_m_dpapi_credhist_create(LPCVOID data, DWORD size)
@@ -621,7 +690,7 @@ BOOL kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY
 						RtlCopyMemory(CryptBuffer, masterkey->pbKey, OutLen);
 						if(CryptDecrypt(hSessionKey, 0, FALSE, 0, (PBYTE) CryptBuffer, &OutLen))
 						{
-							*outputLen = OutLen - 16 - HMACLen - ((masterkey->algCrypt == CALG_3DES) ? 4 : 0); // reversed
+							*outputLen = OutLen - 16 - HMACLen - ((masterkey->algCrypt == CALG_3DES) ? 4 : 0); // reversed -- see with blocklen like in protect
 							if(hmac1 = LocalAlloc(LPTR, HMACLen))
 							{
 								if(kull_m_crypto_hmac(HMACAlg, shaDerivedkey, shaDerivedkeyLen, CryptBuffer, 16, hmac1, HMACLen))
@@ -652,6 +721,109 @@ BOOL kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY
 			else PRINT_ERROR_AUTO(L"kull_m_crypto_hkey_session");
 		}
 		LocalFree(HMACHash);
+	}
+	return status;
+}
+
+BOOL kull_m_dpapi_protect_masterkey_with_password(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR password, PCWSTR sid, BOOL isKeyOfProtectedUser, LPCVOID pbKey, DWORD dwKey, OPTIONAL LPCVOID pbInternalSalt)
+{
+	BOOL status = FALSE;
+	ALG_ID PassAlg;
+	DWORD PassLen, SidLen = (DWORD) wcslen(sid) * sizeof(wchar_t);
+	PVOID PassHash;
+	
+	PassAlg = (flags & 4) ? CALG_SHA1 : CALG_MD4;
+	PassLen = kull_m_crypto_hash_len(PassAlg);
+	if(PassHash = LocalAlloc(LPTR, PassLen))
+	{
+		if(kull_m_crypto_hash(PassAlg, password, (DWORD) wcslen(password) * sizeof(wchar_t), PassHash, PassLen))
+			status = kull_m_dpapi_protect_masterkey_with_userHash(masterkey, PassHash, PassLen, sid, isKeyOfProtectedUser, pbKey, dwKey, pbInternalSalt);
+		LocalFree(PassHash);
+	}
+	return status;
+}
+
+BOOL kull_m_dpapi_protect_masterkey_with_userHash(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID userHash, DWORD userHashLen, PCWSTR sid, BOOL isKeyOfProtectedUser, LPCVOID pbKey, DWORD dwKey, OPTIONAL LPCVOID pbInternalSalt)
+{
+	BYTE sha1DerivedKey[SHA_DIGEST_LENGTH], ntlmofprotected[LM_NTLM_HASH_LENGTH];
+	BOOL status = FALSE, isNTLMofProtected = isKeyOfProtectedUser && sid && (userHashLen == sizeof(ntlmofprotected));
+	LPCVOID hash;
+	DWORD hashLen;
+
+	if(!isNTLMofProtected)
+	{
+		hash = userHash;
+		hashLen = userHashLen;
+	}
+	else
+	{
+		RtlCopyMemory(ntlmofprotected, userHash, sizeof(ntlmofprotected));
+		kull_m_dpapi_getProtected(ntlmofprotected, sizeof(ntlmofprotected), sid);
+		hash = ntlmofprotected;
+		hashLen = sizeof(ntlmofprotected);
+	}
+
+	if(sid)
+		status = kull_m_crypto_hmac(CALG_SHA1, hash, hashLen, sid, (lstrlen(sid) + 1) * sizeof(wchar_t), sha1DerivedKey, SHA_DIGEST_LENGTH);
+	else RtlCopyMemory(sha1DerivedKey, hash, min(sizeof(sha1DerivedKey), hashLen));
+
+	if(!sid || status)
+		status = kull_m_dpapi_protect_masterkey_with_shaDerivedkey(masterkey, sha1DerivedKey, SHA_DIGEST_LENGTH, pbKey, dwKey, pbInternalSalt);
+	return status;
+}
+
+BOOL kull_m_dpapi_protect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY masterkey, LPCVOID shaDerivedkey, DWORD shaDerivedkeyLen, LPCVOID pbKey, DWORD dwKey, OPTIONAL LPCVOID pbInternalSalt)
+{
+	BOOL status = FALSE;
+	HCRYPTPROV hSessionProv;
+	HCRYPTKEY hSessionKey;
+	ALG_ID HMACAlg;
+	DWORD HMACLen, BlockLen, KeyLen;
+	PVOID HMACHash;
+
+	HMACAlg = (masterkey->algHash == CALG_HMAC) ? CALG_SHA1 : masterkey->algHash;
+	HMACLen = kull_m_crypto_hash_len(HMACAlg);
+	KeyLen =  kull_m_crypto_cipher_keylen(masterkey->algCrypt);
+	BlockLen = kull_m_crypto_cipher_blocklen(masterkey->algCrypt);
+	HMACLen += HMACLen % BlockLen;  // will be truncated in kull_m_crypto_hmac
+	masterkey->__dwKeyLen = 16 + HMACLen + dwKey;
+	if(masterkey->pbKey = (PBYTE) LocalAlloc(LPTR, masterkey->__dwKeyLen + BlockLen))
+	{
+		if(pbInternalSalt)
+			RtlCopyMemory(masterkey->pbKey, pbInternalSalt, 16);
+		else CDGenerateRandomBits(masterkey->pbKey, 16);
+		if(kull_m_crypto_hmac(HMACAlg, shaDerivedkey, shaDerivedkeyLen, masterkey->pbKey, 16, masterkey->pbKey + 16, HMACLen)) // tmp usage of hmac2 for hmac1
+		{
+			if(kull_m_crypto_hmac(HMACAlg, masterkey->pbKey + 16, HMACLen, pbKey, dwKey, masterkey->pbKey + 16, HMACLen))
+			{
+				RtlCopyMemory(masterkey->pbKey + 16 + HMACLen, pbKey, dwKey);
+				if(HMACHash = LocalAlloc(LPTR, KeyLen + BlockLen))
+				{
+					if(kull_m_crypto_pkcs5_pbkdf2_hmac(HMACAlg, shaDerivedkey, shaDerivedkeyLen, masterkey->salt, sizeof(masterkey->salt), masterkey->rounds, (PBYTE) HMACHash, KeyLen + BlockLen, TRUE))
+					{
+						if(kull_m_crypto_hkey_session(masterkey->algCrypt, HMACHash, KeyLen, 0, &hSessionKey, &hSessionProv))
+						{
+							if(CryptSetKeyParam(hSessionKey, KP_IV, (PBYTE) HMACHash + KeyLen, 0))
+							{
+								if(status = CryptEncrypt(hSessionKey, 0, TRUE, 0, masterkey->pbKey, &masterkey->__dwKeyLen, masterkey->__dwKeyLen + BlockLen))
+									masterkey->__dwKeyLen -= BlockLen;
+								else PRINT_ERROR_AUTO(L"CryptEncrypt");
+							}
+							CryptDestroyKey(hSessionKey);
+							if(!kull_m_crypto_close_hprov_delete_container(hSessionProv))
+								PRINT_ERROR_AUTO(L"kull_m_crypto_close_hprov_delete_container");
+						}
+						else PRINT_ERROR_AUTO(L"kull_m_crypto_hkey_session");
+					}
+					LocalFree(HMACHash);
+				}
+			}
+		}
+		if(!status)
+		{
+			masterkey->pbKey = (PBYTE) LocalFree(masterkey->pbKey);
+			masterkey->__dwKeyLen = 0;
+		}
 	}
 	return status;
 }
