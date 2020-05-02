@@ -978,7 +978,7 @@ NTSTATUS kuhl_m_sekurlsa_pth(int argc, wchar_t * argv[])
 							}
 							else NtResumeProcess(processInfos.hProcess);
 						}
-						else NtTerminateProcess(processInfos.hProcess, STATUS_FATAL_APP_EXIT);
+						else NtTerminateProcess(processInfos.hProcess, STATUS_PROCESS_IS_TERMINATING);
 					}
 					else PRINT_ERROR_AUTO(L"GetTokenInformation");
 					CloseHandle(hToken);

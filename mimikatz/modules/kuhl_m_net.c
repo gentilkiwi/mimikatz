@@ -18,6 +18,7 @@ const KUHL_M_C kuhl_m_c_net[] = {
 	{kuhl_m_net_serverinfo,	L"serverinfo", L""},
 	{kuhl_m_net_trust,		L"trust", L""},
 	{kuhl_m_net_deleg,		L"deleg", L""},
+	{kuhl_m_net_dcom_if,	L"if", L""},
 };
 const KUHL_M kuhl_m_net = {
 	L"net",	L"", NULL,
@@ -852,6 +853,41 @@ L")";
 			ldap_msgfree(pMessage);
 		LocalFree(dn);
 		ldap_unbind(ld);
+	}
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_net_dcom_if(int argc, wchar_t * argv[])
+{
+	RPC_BINDING_HANDLE hBinding;
+	RPC_STATUS rpcStatus;
+	error_status_t errorStatus;
+	COMVERSION ComVersion;
+	DUALSTRINGARRAY *dualStringArray = NULL;
+	DWORD i = 0;
+
+	if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", argc ? argv[0] : NULL, L"135", NULL, FALSE, RPC_C_AUTHN_NONE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, NULL))
+	{
+		rpcStatus = RpcBindingSetAuthInfo(hBinding, NULL, RPC_C_AUTHN_LEVEL_NONE, RPC_C_AUTHN_NONE, NULL, RPC_C_AUTHZ_NONE);
+		if(rpcStatus == RPC_S_OK)
+		{
+			RpcTryExcept
+			{
+				errorStatus = ServerAlive2(hBinding, &ComVersion, &dualStringArray, &i);
+				if(errorStatus == STATUS_SUCCESS)
+				{
+					for(i = 0; (i < ((DWORD) (dualStringArray->wNumEntries - dualStringArray->wSecurityOffset))) && dualStringArray->aStringArray[i]; i += lstrlen((wchar_t *) dualStringArray->aStringArray + i) + 1)
+						kprintf(L"%s\n", dualStringArray->aStringArray + i);
+					MIDL_user_free(dualStringArray);
+				}
+				else PRINT_ERROR(L"ServerAlive2: 0x%08x (%u)\n", errorStatus, errorStatus);
+			}
+			RpcExcept(RPC_EXCEPTION)
+				PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+			RpcEndExcept
+		}
+		else PRINT_ERROR(L"RpcBindingSetAuthInfo: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+		kull_m_rpc_deleteBinding(&hBinding);
 	}
 	return STATUS_SUCCESS;
 }

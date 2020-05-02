@@ -24,6 +24,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_mflt,		L"mflt",		NULL},
 	{kuhl_m_misc_easyntlmchall,	L"easyntlmchall", NULL},
 	{kuhl_m_misc_clip,		L"clip",		 NULL},
+	{kuhl_m_misc_xor,		L"xor",		 NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -1186,4 +1187,36 @@ LRESULT APIENTRY kuhl_m_misc_clip_MainWndProc(HWND hwnd, UINT uMsg, WPARAM wPara
 		result = DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
 	return result;
+}
+
+NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[])
+{
+	BYTE bXor = 0x42;
+	LPCWSTR szInput, szOutput, szXor;
+	PBYTE data;
+	DWORD dwData, i;
+
+	if(kull_m_string_args_byName(argc, argv, L"input", &szInput, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"output", &szOutput, NULL))
+		{
+			if(kull_m_string_args_byName(argc, argv, L"xor", &szXor, NULL))
+				bXor = (BYTE) wcstoul(szXor, NULL, 0);
+
+			kprintf(L"Input : %s\nOutput: %s\nXor   : 0x%02x\n\nOpening: ", szInput, szOutput, bXor);
+			if(kull_m_file_readData(szInput, &data, &dwData))
+			{
+				kprintf(L"OK\nWriting: ");
+				for(i = 0; i < dwData; i++)
+					data[i] ^= bXor;
+				if(kull_m_file_writeData(szOutput, data, dwData))
+					kprintf(L"OK\n");
+				else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+			}
+			else PRINT_ERROR_AUTO(L"kull_m_file_readData");
+		}
+		else PRINT_ERROR(L"An /output:file is needed\n");
+	}
+	else PRINT_ERROR(L"An /input:file is needed\n");
+	return STATUS_SUCCESS;
 }

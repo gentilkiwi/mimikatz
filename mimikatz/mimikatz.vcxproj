@@ -147,6 +147,7 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-bkrp_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-claims.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
@@ -254,6 +255,7 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_mimicom.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-claims.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h" />

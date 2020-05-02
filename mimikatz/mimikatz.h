@@ -43,7 +43,7 @@ extern VOID WINAPI RtlGetNtVersionNumbers(LPDWORD pMajor, LPDWORD pMinor, LPDWOR
 
 int wmain(int argc, wchar_t * argv[]);
 void mimikatz_begin();
-void mimikatz_end();
+void mimikatz_end(NTSTATUS status);
 
 BOOL WINAPI HandlerRoutine(DWORD dwCtrlType);
 
