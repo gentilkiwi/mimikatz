@@ -7,7 +7,6 @@
 #include "globals.h"
 #include "kull_m_dpapi.h"
 #include "kull_m_string.h"
-#include "kull_m_tpm.h"
 
 #define KIWI_DPAPI_ENTROPY_CAPI_KEY_EXPORTFLAGS	"Hj1diQ6kpUx7VC4m"
 #define KIWI_DPAPI_ENTROPY_CNG_KEY_PROPERTIES	"6jnkd5J3ZdQDtrsu"
