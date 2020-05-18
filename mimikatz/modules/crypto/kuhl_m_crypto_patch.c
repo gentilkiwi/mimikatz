@@ -123,6 +123,7 @@ KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_W10_1703_SPCryptExportKey),PTRN_W10_1703_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_W10_1607_SPCryptExportKey),PTRN_W10_1607_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_W10_1809_SPCryptExportKey),PTRN_W10_1809_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}},
+	{KULL_M_WIN_BUILD_10_1909,	{sizeof(PTRN_W10_1607_SPCryptExportKey),PTRN_W10_1607_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WNO8_SPCryptExportKey[]			= {0xf6, 0x41, 0x20, 0x02, 0x75};

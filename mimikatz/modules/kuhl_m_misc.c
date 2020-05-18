@@ -18,7 +18,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 //#endif
 	{kuhl_m_misc_memssp,	L"memssp",		NULL},
 	{kuhl_m_misc_skeleton,	L"skeleton",	NULL},
-	{kuhl_m_misc_compressme,L"compressme",	NULL},
+	{kuhl_m_misc_compress,	L"compress",	NULL},
 	{kuhl_m_misc_lock,		L"lock",		NULL},
 	{kuhl_m_misc_wp,		L"wp",			NULL},
 	{kuhl_m_misc_mflt,		L"mflt",		NULL},
@@ -742,29 +742,38 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-#define MIMIKATZ_COMPRESSED_FILENAME	MIMIKATZ L"_" MIMIKATZ_ARCH L".compressed"
-NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[])
+NTSTATUS kuhl_m_misc_compress(int argc, wchar_t * argv[])
 {
-	PBYTE data, compressedData;
-	DWORD size, compressedSize;
+	LPCWSTR szInput, szOutput;
+	PVOID pInput, pOutput;
+	DWORD dwInput, dwOutput;
 #pragma warning(push)
 #pragma warning(disable:4996)
-	wchar_t *fileName = _wpgmptr;
+	if(kull_m_string_args_byName(argc, argv, L"input", &szInput, _wpgmptr))
 #pragma warning(pop)
-	kprintf(L"Using \'%s\' as input file\n", fileName);
-	if(kull_m_file_readData(fileName, &data, &size))
 	{
-		kprintf(L" * Original size  : %u\n", size);
-		if(kull_m_memory_quick_compress(data, size, (PVOID *) &compressedData, &compressedSize))
+		if(kull_m_string_args_byName(argc, argv, L"output", &szOutput, MIMIKATZ L"_" MIMIKATZ_ARCH L".compressed"))
 		{
-			kprintf(L" * Compressed size: %u (%.2f%%)\nUsing \'%s\' as output file... ", compressedSize, 100 * ((float) compressedSize / (float) size), MIMIKATZ_COMPRESSED_FILENAME);
-			if(kull_m_file_writeData(MIMIKATZ_COMPRESSED_FILENAME, compressedData, compressedSize))
-				kprintf(L"OK!\n");
-			else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
-			LocalFree(compressedData);
+			kprintf(L"Input : %s\nOutput: %s\n\nOpening: ", szInput, szOutput);
+			if(kull_m_file_readData(szInput, (PBYTE *) &pInput, &dwInput))
+			{
+				kprintf(L"OK\n");
+				kprintf(L" * Original size  : %u\n", dwInput);
+				if(kull_m_memory_quick_compress(pInput, dwInput, &pOutput, &dwOutput))
+				{
+					kprintf(L" * Compressed size: %u (%.2f%%)\n", dwOutput, 100 * ((float) dwOutput / (float) dwInput));
+					kprintf(L"Writing: ");
+					if(kull_m_file_writeData(szOutput, pOutput, dwOutput))
+						kprintf(L"OK\n");
+					else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+					LocalFree(pOutput);
+				}
+			}
+			else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 		}
-		LocalFree(data);
+		else PRINT_ERROR(L"An /output:file is needed\n");
 	}
+	else PRINT_ERROR(L"An /input:file is needed\n");
 	return STATUS_SUCCESS;
 }
 

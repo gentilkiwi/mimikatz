@@ -42,7 +42,9 @@ typedef enum _KIWI_OS_INDEX {
 	KiwiOsIndex_10_1803	= 12,
 	KiwiOsIndex_10_1809	= 13,
 	KiwiOsIndex_10_1903	= 14,
-	KiwiOsIndex_MAX		= 15,
+	KiwiOsIndex_10_1909	= 15,
+	KiwiOsIndex_10_2004	= 16,
+	KiwiOsIndex_MAX		= 17,
 } KIWI_OS_INDEX, *PKIWI_OS_INDEX;
 
 #if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64

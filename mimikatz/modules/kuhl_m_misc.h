@@ -26,7 +26,7 @@ NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
 //NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_compress(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_mflt(int argc, wchar_t * argv[]);
