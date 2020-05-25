@@ -5,6 +5,23 @@
 */
 #include "kuhl_m_kerberos.h"
 
+#ifdef __MINGW32__
+typedef struct KERB_CRYPTO_KEY32 {
+    LONG KeyType;
+    ULONG Length;
+    ULONG Offset;
+} KERB_CRYPTO_KEY32, *PKERB_CRYPTO_KEY32;
+
+typedef struct _KERB_SUBMIT_TKT_REQUEST {
+    KERB_PROTOCOL_MESSAGE_TYPE MessageType;
+    LUID LogonId;
+    ULONG Flags;
+    KERB_CRYPTO_KEY32 Key; // key to decrypt KERB_CRED
+    ULONG KerbCredSize;
+    ULONG KerbCredOffset;
+} KERB_SUBMIT_TKT_REQUEST, *PKERB_SUBMIT_TKT_REQUEST;  
+#endif
+
 STRING	kerberosPackageName = {8, 9, MICROSOFT_KERBEROS_NAME_A};
 DWORD	g_AuthenticationPackageId_Kerberos = 0;
 BOOL	g_isAuthPackageKerberos = FALSE;

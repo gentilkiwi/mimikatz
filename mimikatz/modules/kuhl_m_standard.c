@@ -5,6 +5,16 @@
 */
 #include "kuhl_m_standard.h"
 
+#ifdef __MINGW32__
+#define _CPP_COMPILER_NAME "mingw"
+#define _CPP_COMPILER_VER  __MINGW_GCC_VERSION
+#define _CPP_BUILD         0
+#else
+#define _CPP_COMPILER_NAME "msvc"
+#define _CPP_COMPILER_VER  _MSC_FULL_VER
+#define _CPP_BUILD         _MSC_BUILD
+#endif
+
 const KUHL_M_C kuhl_m_c_standard[] = {
 	//{kuhl_m_standard_test,		L"test",	L"Test routine (you don\'t want to see this !)"},
 	{kuhl_m_standard_exit,		L"exit",		L"Quit mimikatz"},
@@ -118,8 +128,8 @@ NTSTATUS kuhl_m_standard_version(int argc, wchar_t * argv[])
 		kprintf(
 			L"\n" MIMIKATZ L" " MIMIKATZ_VERSION L" (arch " MIMIKATZ_ARCH L")\n"
 			L"Windows NT %u.%u build %u (arch x%s)\n"
-			L"msvc %u %u\n",
-			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _MSC_FULL_VER, _MSC_BUILD
+			_CPP_COMPILER_NAME L" %u %u\n",
+			MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER, isWow64 ? L"64" : L"86", _CPP_COMPILER_VER, _CPP_BUILD
 			);
 	}
 	#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64

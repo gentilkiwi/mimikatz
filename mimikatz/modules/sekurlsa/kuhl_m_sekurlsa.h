@@ -67,13 +67,10 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _KIWI_CREDENTIAL_KEY * key, LPCWSTR sid);
 VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
-VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
 void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport);
 #if !defined(_M_ARM64)
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
 #endif
-void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
-void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
 #if !defined(_M_ARM64)
@@ -220,5 +217,9 @@ typedef struct _ENC_LSAISO_DATA_BLOB {
 	BYTE unkData2[16];
 	BYTE data[ANYSIZE_ARRAY];
 } ENC_LSAISO_DATA_BLOB, *PENC_LSAISO_DATA_BLOB;
+
+VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
+void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
+void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
 
 #include "../dpapi/kuhl_m_dpapi_oe.h"

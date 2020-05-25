@@ -15,7 +15,7 @@ typedef struct _ms_pac_MIDL_TYPE_FORMAT_STRING {
 	UCHAR Format[_ms_pac_MIDL_TYPE_FORMAT_STRING_SIZE];
 } ms_pac_MIDL_TYPE_FORMAT_STRING;
 
-extern const ms_pac_MIDL_TYPE_FORMAT_STRING ms_pac__MIDL_TypeFormatString;
+static const ms_pac_MIDL_TYPE_FORMAT_STRING ms_pac__MIDL_TypeFormatString;
 static const RPC_CLIENT_INTERFACE msKrbPac___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x00000001, 0x0001, 0x0000, {0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x71}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static const MIDL_TYPE_PICKLING_INFO __MIDL_TypePicklingInfo = {0x33205054, 0x3, 0, 0, 0,};
 static RPC_BINDING_HANDLE msKrbPac__MIDL_AutoBindHandle;

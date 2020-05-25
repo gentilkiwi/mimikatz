@@ -20,9 +20,9 @@ typedef struct _mimicom_MIDL_PROC_FORMAT_STRING {
 	UCHAR Format[PROC_FORMAT_STRING_SIZE];
 } mimicom_MIDL_PROC_FORMAT_STRING;
 
-extern const mimicom_MIDL_TYPE_FORMAT_STRING mimicom__MIDL_TypeFormatString;
-extern const mimicom_MIDL_PROC_FORMAT_STRING mimicom__MIDL_ProcFormatString;
-extern const MIDL_SERVER_INFO MimiCom_ServerInfo;
+static const mimicom_MIDL_TYPE_FORMAT_STRING mimicom__MIDL_TypeFormatString;
+static const mimicom_MIDL_PROC_FORMAT_STRING mimicom__MIDL_ProcFormatString;
+static const MIDL_SERVER_INFO MimiCom_ServerInfo;
 
 static const RPC_DISPATCH_FUNCTION MimiCom_table[] = {NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, 0};
 static const RPC_DISPATCH_TABLE MimiCom_v1_0_DispatchTable = {4, (RPC_DISPATCH_FUNCTION *) MimiCom_table};

@@ -5,6 +5,10 @@
 */
 #include "kull_m_xml.h"
 
+#ifdef __MINGW32__
+const GUID CLSID_DOMDocument = {0xF6D90F11, 0x9C73, 0x11D3,{ 0xB3, 0x2E, 0x00,0xC0, 0x4F, 0x99,0x0B, 0xB4} };
+#endif
+
 IXMLDOMDocument * kull_m_xml_CreateAndInitDOM()
 {
 	IXMLDOMDocument *pDoc = NULL;
