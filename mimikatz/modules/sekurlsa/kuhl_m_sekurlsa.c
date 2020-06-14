@@ -1385,6 +1385,7 @@ VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential)
 					default:
 						kprintf(L"[?] ?");
 					}
+					CredFree(Credential);
 				}
 				else PRINT_ERROR_AUTO(L"CredUnmarshalCredential");
 			}

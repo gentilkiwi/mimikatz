@@ -524,7 +524,7 @@ void kuhl_m_vault_cred_tryEncrypted(PCREDENTIAL pCredential)
 	else if(wcsstr(pCredential->TargetName, L"AppSense_DataNow_"))
 	{
 		kprintf(L"* Ivanti FileDirector credential blob *\n");
-		if(pCredential->CredentialBlobSize >= FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
+		if(pCredential->CredentialBlobSize >= (DWORD) FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
 		{
 			pAppDN = (PKULL_M_CRED_APPSENSE_DN) pCredential->CredentialBlob;
 			if(!strcmp("AppN_DN_Win", pAppDN->type))
