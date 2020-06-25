@@ -6,11 +6,11 @@
 #include "kuhl_m_standard.h"
 
 #ifdef __MINGW32__
-#define _CPP_COMPILER_NAME "mingw"
+#define _CPP_COMPILER_NAME L"mingw"
 #define _CPP_COMPILER_VER  __MINGW_GCC_VERSION
 #define _CPP_BUILD         0
 #else
-#define _CPP_COMPILER_NAME "msvc"
+#define _CPP_COMPILER_NAME L"msvc"
 #define _CPP_COMPILER_VER  _MSC_FULL_VER
 #define _CPP_BUILD         _MSC_BUILD
 #endif
