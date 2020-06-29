@@ -30,6 +30,42 @@
 	#define MIMIKATZ_ARCH L"x86"
 #endif
 
+#ifdef __MINGW32__
+#define __try
+#define __except if
+
+#define SERVICE_CONTROL_PRESHUTDOWN 0x0000000F
+
+#define KERB_CHECKSUM_HMAC_SHA1_96_AES128         15
+#define KERB_CHECKSUM_HMAC_SHA1_96_AES128_Ki      -150
+#define KERB_CHECKSUM_HMAC_SHA1_96_AES256         16
+#define KERB_CHECKSUM_HMAC_SHA1_96_AES256_Ki      -151
+#define KERB_CHECKSUM_SHA1_NEW                    14
+
+#define KERB_ETYPE_AES128_CTS_HMAC_SHA1_96        17
+#define KERB_ETYPE_AES128_CTS_HMAC_SHA1_96_PLAIN  -148
+#define KERB_ETYPE_AES256_CTS_HMAC_SHA1_96        18
+#define KERB_ETYPE_AES256_CTS_HMAC_SHA1_96_PLAIN  -149
+
+// Missing from ntsecapi.h on Mingw :(
+#define KerbSubmitTicketMesage           21
+#define KerbAddExtraCredentialsExMessage 22
+
+// Fucking typos, really? Thanks mingw
+#define KerbSubmitTicketMessage KerbSubmitTicketMesage
+
+#define SCARD_PROVIDER_KSP 3
+
+#ifndef CRYPT_DEFAULT_CONTAINER_OPTIONAL
+#define CRYPT_DEFAULT_CONTAINER_OPTIONAL 0x00000080
+#endif
+
+#ifndef NTE_NO_MORE_ITEMS
+#define NTE_NO_MORE_ITEMS ((HRESULT)0x8009002AL)
+#endif
+
+#endif
+
 #define MIMIKATZ				L"mimikatz"
 #define MIMIKATZ_VERSION		L"2.2.0"
 #define MIMIKATZ_CODENAME		L"A La Vie, A L\'Amour"
@@ -40,6 +76,8 @@
 #define MIMIKATZ_DRIVER			L"mimidrv"
 #define MIMIKATZ_KERBEROS_EXT	L"kirbi"
 #define MIMIKATZ_SERVICE		MIMIKATZ L"svc"
+
+#define _exception_code() 0
 
 #if defined(_WINDLL)
 	#define MIMIKATZ_AUTO_COMMAND_START		0

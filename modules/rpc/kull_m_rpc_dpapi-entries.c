@@ -13,7 +13,7 @@ typedef struct _dpapi2Dentries_MIDL_TYPE_FORMAT_STRING {
 	UCHAR Format[_dpapi2Dentries_MIDL_TYPE_FORMAT_STRING_SIZE];
 } dpapi2Dentries_MIDL_TYPE_FORMAT_STRING;
 
-extern const dpapi2Dentries_MIDL_TYPE_FORMAT_STRING dpapi2Dentries__MIDL_TypeFormatString;
+static const dpapi2Dentries_MIDL_TYPE_FORMAT_STRING dpapi2Dentries__MIDL_TypeFormatString;
 static const RPC_CLIENT_INTERFACE DPAPIEntries___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xa89c7745, 0x786b, 0x4d4e, {0x8d, 0x34, 0xc6, 0x8e, 0x8e, 0xc6, 0xc5, 0xfb}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static const MIDL_TYPE_PICKLING_INFO __MIDL_TypePicklingInfo = {0x33205054, 0x3, 0, 0, 0,};
 static RPC_BINDING_HANDLE DPAPIEntries__MIDL_AutoBindHandle;

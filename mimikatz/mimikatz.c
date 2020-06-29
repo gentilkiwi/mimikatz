@@ -252,7 +252,7 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 }
 
 #if defined(_POWERKATZ)
-__declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
+wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
 {
 	int argc = 0;
 	wchar_t ** argv;

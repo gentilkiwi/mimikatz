@@ -13,7 +13,7 @@ typedef struct _Claims_MIDL_TYPE_FORMAT_STRING {
 	UCHAR Format[_Claims_MIDL_TYPE_FORMAT_STRING_SIZE];
 } Claims_MIDL_TYPE_FORMAT_STRING;
 
-extern const Claims_MIDL_TYPE_FORMAT_STRING Claims__MIDL_TypeFormatString;
+static const Claims_MIDL_TYPE_FORMAT_STRING Claims__MIDL_TypeFormatString;
 static const RPC_CLIENT_INTERFACE Claims___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xbba9cb76, 0xeb0c, 0x462c, {0xaa, 0x1b, 0x5d, 0x8c, 0x34, 0x41, 0x57, 0x01}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static const MIDL_TYPE_PICKLING_INFO __MIDL_TypePicklingInfo = {0x33205054, 0x3, 0, 0, 0,};
 static RPC_BINDING_HANDLE Claims__MIDL_AutoBindHandle;

@@ -24,9 +24,9 @@ typedef struct _ms2Ddrsr_MIDL_PROC_FORMAT_STRING {
 static const unsigned short drsuapi_FormatStringOffsetTable[] = {0, 58, 100, 128, 194, 248, 302, 356, 384, 450, 478, 506, 534, 600, 628, 656, 684, 750};
 #endif
 
-extern const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
-extern const ms2Ddrsr_MIDL_PROC_FORMAT_STRING ms2Ddrsr__MIDL_ProcFormatString;
-extern const MIDL_SERVER_INFO drsuapi_ServerInfo;
+static const ms2Ddrsr_MIDL_TYPE_FORMAT_STRING ms2Ddrsr__MIDL_TypeFormatString;
+static const ms2Ddrsr_MIDL_PROC_FORMAT_STRING ms2Ddrsr__MIDL_ProcFormatString;
+static const MIDL_SERVER_INFO drsuapi_ServerInfo;
 
 static const RPC_DISPATCH_FUNCTION drsuapi_table[] = {NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, NdrServerCall2, 0};
 static const RPC_DISPATCH_TABLE drsuapi_v4_0_DispatchTable = {18, (RPC_DISPATCH_FUNCTION *) drsuapi_table};

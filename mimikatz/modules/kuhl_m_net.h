@@ -9,7 +9,7 @@
 #include "../../modules/kull_m_ldap.h"
 #include "../../modules/kull_m_net.h"
 #include "../../modules/kull_m_token.h"
-#include <WinDNS.h>
+#include <windns.h>
 
 const KUHL_M kuhl_m_net;
 

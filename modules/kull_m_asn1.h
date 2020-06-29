@@ -6,7 +6,7 @@
 #pragma once
 #include "globals.h"
 #include <Winldap.h>
-#include <Winber.h>
+#include <winber.h>
 #include <msasn1.h>
 #include "kull_m_string.h"
 

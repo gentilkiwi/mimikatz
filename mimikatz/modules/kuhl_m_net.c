@@ -104,7 +104,7 @@ NTSTATUS kuhl_m_net_user(int argc, wchar_t * argv[])
 													{
 														for(k = 0; k < aliasCountRetourned; k++)
 														{
-															kprintf(L"\n |´%-5u ", alias[k]);
+															kprintf(L"\n |'%-5u ", alias[k]);
 															kuhl_m_net_simpleLookup(hBuiltinHandle, alias[k]);
 														}
 														SamFreeMemory(alias);

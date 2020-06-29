@@ -40,6 +40,10 @@ Revision History:
 extern "C" {
 #endif
 
+#ifdef __MINGW32__
+#define DISCARD(x)
+#define DISCARD2(x,y)
+#endif
 
 //
 // Ensure PCtxtHandle is defined

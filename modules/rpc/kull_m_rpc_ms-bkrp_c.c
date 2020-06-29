@@ -17,8 +17,8 @@ typedef struct _ms2Dbkrp_MIDL_PROC_FORMAT_STRING {
 	CHAR Format[73];
 } ms2Dbkrp_MIDL_PROC_FORMAT_STRING;
 
-extern const ms2Dbkrp_MIDL_TYPE_FORMAT_STRING ms2Dbkrp__MIDL_TypeFormatString;
-extern const ms2Dbkrp_MIDL_PROC_FORMAT_STRING ms2Dbkrp__MIDL_ProcFormatString;
+static const ms2Dbkrp_MIDL_TYPE_FORMAT_STRING ms2Dbkrp__MIDL_TypeFormatString;
+static const ms2Dbkrp_MIDL_PROC_FORMAT_STRING ms2Dbkrp__MIDL_ProcFormatString;
 static const RPC_CLIENT_INTERFACE BackupKey___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x3dde7c30, 0x165d, 0x11d1, {0xab, 0x8f, 0x00, 0x80, 0x5f, 0x14, 0xdb, 0x40}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static RPC_BINDING_HANDLE BackupKey__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC BackupKey_StubDesc = {(void *) &BackupKey___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &BackupKey__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Dbkrp__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
@@ -49,8 +49,8 @@ typedef struct _ms2Dbkrp_MIDL_PROC_FORMAT_STRING {
 	UCHAR Format[71];
 } ms2Dbkrp_MIDL_PROC_FORMAT_STRING;
 
-extern const ms2Dbkrp_MIDL_TYPE_FORMAT_STRING ms2Dbkrp__MIDL_TypeFormatString;
-extern const ms2Dbkrp_MIDL_PROC_FORMAT_STRING ms2Dbkrp__MIDL_ProcFormatString;
+static const ms2Dbkrp_MIDL_TYPE_FORMAT_STRING ms2Dbkrp__MIDL_TypeFormatString;
+static const ms2Dbkrp_MIDL_PROC_FORMAT_STRING ms2Dbkrp__MIDL_ProcFormatString;
 static const RPC_CLIENT_INTERFACE BackupKey___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x3dde7c30, 0x165d, 0x11d1, {0xab, 0x8f, 0x00, 0x80, 0x5f, 0x14, 0xdb, 0x40}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static RPC_BINDING_HANDLE BackupKey__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC BackupKey_StubDesc = {(void *) &BackupKey___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &BackupKey__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Dbkrp__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};

@@ -53,7 +53,7 @@ NTSTATUS mimikatz_doLocal(wchar_t * input);
 NTSTATUS mimikatz_dispatchCommand(wchar_t * input);
 
 #if defined(_POWERKATZ)
-__declspec(dllexport) wchar_t * powershell_reflective_mimikatz(LPCWSTR input);
+wchar_t * powershell_reflective_mimikatz(LPCWSTR input);
 #elif defined(_WINDLL)
 void reatachIoHandle(DWORD nStdHandle, int flags, const char *Mode, FILE *file);
 void CALLBACK mimikatz_dll(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int nCmdShow);

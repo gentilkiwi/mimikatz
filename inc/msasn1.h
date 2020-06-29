@@ -10,6 +10,11 @@
 extern "C" {
 #endif
 
+#ifdef __MINGW32__
+#define DISCARD(x)
+#define DISCARD2(x,y)
+#endif
+
 /* ------ Basic integer types ------ */
 
 typedef unsigned char   ASN1uint8_t;
