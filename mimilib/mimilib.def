@@ -21,3 +21,6 @@ EXPORTS
 
 	Msv1_0SubAuthenticationRoutine	= ksub_Msv1_0SubAuthenticationRoutine
 	Msv1_0SubAuthenticationFilter	= ksub_Msv1_0SubAuthenticationRoutine
+
+	NPLogonNotify			= knp_NPLogonNotify
+	NPGetCaps				= knp_NPGetCaps

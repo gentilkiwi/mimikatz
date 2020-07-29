@@ -62,6 +62,7 @@ NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_c_cert_to_hw(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_crypto_keyutil(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_crypto_platforminfo(int argc, wchar_t * argv[]);
 
 BOOL WINAPI kuhl_m_crypto_l_stores_enumCallback_print(const void *pvSystemStore, DWORD dwFlags, PCERT_SYSTEM_STORE_INFO pStoreInfo, void *pvReserved, void *pvArg);
 void kuhl_m_crypto_certificate_descr(PCCERT_CONTEXT pCertContext);

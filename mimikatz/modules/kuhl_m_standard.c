@@ -32,7 +32,7 @@ NTSTATUS kuhl_m_standard_test(int argc, wchar_t * argv[])
 NTSTATUS kuhl_m_standard_exit(int argc, wchar_t * argv[])
 {
 	kprintf(L"Bye!\n");
-	return STATUS_FATAL_APP_EXIT;
+	return argc ? STATUS_THREAD_IS_TERMINATING : STATUS_PROCESS_IS_TERMINATING;
 }
 
 NTSTATUS kuhl_m_standard_cls(int argc, wchar_t * argv[])

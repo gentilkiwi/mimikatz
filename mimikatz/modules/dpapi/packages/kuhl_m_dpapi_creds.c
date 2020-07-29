@@ -185,7 +185,7 @@ void kuhl_m_dpapi_cred_tryEncrypted(LPCWSTR target, LPCBYTE data, DWORD dataLen,
 	else if(wcsstr(target, L"AppSense_DataNow_"))
 	{
 		kprintf(L"\n* Ivanti FileDirector credential blob *\n");
-		if(dataLen >= FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
+		if(dataLen >= (DWORD) FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
 		{
 			pAppDN = (PKULL_M_CRED_APPSENSE_DN) data;
 			if(!strcmp("AppN_DN_Win", pAppDN->type))

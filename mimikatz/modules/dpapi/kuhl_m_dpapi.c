@@ -14,6 +14,7 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	
 	{kuhl_m_dpapi_keys_capi,	L"capi",		L"CAPI key test"},
 	{kuhl_m_dpapi_keys_cng,		L"cng",			L"CNG key test"},
+	{kuhl_m_dpapi_keys_tpm,		L"tpm",			L"TPM key test"},
 	{kuhl_m_dpapi_cred,			L"cred",		L"CRED test"},
 	{kuhl_m_dpapi_vault,		L"vault",		L"VAULT test"},
 	{kuhl_m_dpapi_wifi,			L"wifi",		L"WiFi test"},

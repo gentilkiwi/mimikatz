@@ -7,7 +7,7 @@ Licence : https://creativecommons.org/licenses/by/4.0/
 
 RPC_BINDING_HANDLE hBinding;
 CRITICAL_SECTION outputCritical;
-BOOL isFinish;
+NTSTATUS isFinish;
 MIMI_HANDLE hMimi;
 PKIWI_DH clientKey;
 
@@ -27,7 +27,7 @@ NTSTATUS kuhl_m_c_rpc_init()
 	hMimi = NULL;
 	hBinding = NULL;
 	clientKey = NULL;
-	isFinish = FALSE;
+	isFinish = STATUS_SUCCESS;
 	InitializeCriticalSection(&outputCritical);
 	return STATUS_SUCCESS;
 }
@@ -258,8 +258,8 @@ DWORD WINAPI kuhl_m_rpc_server_start(LPVOID lpThreadParameter)
 		LocalFree(inf->szService);
 	LocalFree(inf);
 
-	if(isFinish)
-		mimikatz_end();
+	if(!NT_SUCCESS(isFinish))
+		mimikatz_end(isFinish);
 	return ERROR_SUCCESS;
 }
 
@@ -289,7 +289,7 @@ NTSTATUS kuhl_m_rpc_server(int argc, wchar_t * argv[])
 	}
 	else
 	{
-		isFinish = FALSE;
+		isFinish = STATUS_SUCCESS;
 		status = RpcMgmtStopServerListening(NULL);
 		if(status != RPC_S_OK)
 			PRINT_ERROR(L"RpcMgmtStopServerListening: %08x\n", status);
@@ -451,9 +451,9 @@ NTSTATUS SRV_MimiCommand(MIMI_HANDLE phMimi, DWORD szEncCommand, BYTE *encComman
 	}
 	else status = RPC_X_SS_CONTEXT_DAMAGED;
 	LeaveCriticalSection(&outputCritical);
-	if(status == STATUS_FATAL_APP_EXIT)
+	if((status == STATUS_PROCESS_IS_TERMINATING) || (status == STATUS_THREAD_IS_TERMINATING))
 	{
-		isFinish = TRUE;
+		isFinish = status;
 		RpcMgmtStopServerListening(NULL);
 	}
 	return status;
@@ -479,9 +479,9 @@ NTSTATUS SRV_MimiClear(handle_t rpc_handle, wchar_t *command, DWORD *size, wchar
 		outputBufferElements = outputBufferElementsPosition = 0;
 	}
 	LeaveCriticalSection(&outputCritical);
-	if(status == STATUS_FATAL_APP_EXIT)
+	if((status == STATUS_PROCESS_IS_TERMINATING) || (status == STATUS_THREAD_IS_TERMINATING))
 	{
-		isFinish = TRUE;
+		isFinish = status;
 		RpcMgmtStopServerListening(NULL);
 	}
 	return status;

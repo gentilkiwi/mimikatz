@@ -31,7 +31,7 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 {
 	HANDLE hDataSystem, hDataSam;
 	PKULL_M_REGISTRY_HANDLE hRegistry, hRegistry2;
-	HKEY hBase;
+	HKEY hSystem, hSam;
 	BYTE sysKey[SYSKEY_LENGTH];
 	LPCWSTR szSystem = NULL, szSam = NULL;
 
@@ -69,18 +69,18 @@ NTSTATUS kuhl_m_lsadump_sam(int argc, wchar_t * argv[])
 	{
 		if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, FALSE, &hRegistry))
 		{
-			if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_LOCAL_MACHINE, L"SYSTEM", 0, KEY_READ, &hBase))
+			if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_LOCAL_MACHINE, L"SYSTEM", 0, KEY_READ, &hSystem))
 			{
-				if(kuhl_m_lsadump_getComputerAndSyskey(hRegistry, hBase, sysKey))
+				if(kuhl_m_lsadump_getComputerAndSyskey(hRegistry, hSystem, sysKey))
 				{
-					if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_LOCAL_MACHINE, L"SAM", 0, KEY_READ, &hBase))
+					if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_LOCAL_MACHINE, L"SAM", 0, KEY_READ, &hSam))
 					{
-						kuhl_m_lsadump_getUsersAndSamKey(hRegistry, hBase, sysKey);
-						kull_m_registry_RegCloseKey(hRegistry, hBase);
+						kuhl_m_lsadump_getUsersAndSamKey(hRegistry, hSam, sysKey);
+						kull_m_registry_RegCloseKey(hRegistry, hSam);
 					}
 					else PRINT_ERROR_AUTO(L"kull_m_registry_RegOpenKeyEx (SAM)");
 				}
-				kull_m_registry_RegCloseKey(hRegistry, hBase);
+				kull_m_registry_RegCloseKey(hRegistry, hSystem);
 			}
 			kull_m_registry_close(hRegistry);
 		}

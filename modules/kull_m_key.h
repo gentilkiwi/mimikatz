@@ -86,3 +86,59 @@ BOOL kull_m_key_cng_properties_create(PVOID data, DWORD size, PKULL_M_KEY_CNG_PR
 void kull_m_key_cng_properties_delete(PKULL_M_KEY_CNG_PROPERTY *properties, DWORD count);
 void kull_m_key_cng_properties_descr(DWORD level, PKULL_M_KEY_CNG_PROPERTY *properties, DWORD count);
 //
+
+#if !defined(BCRYPT_PCP_KEY_MAGIC)
+#define BCRYPT_PCP_KEY_MAGIC 'MPCP' // Platform Crypto Provider Magic
+
+#define PCPTYPE_TPM12 (0x00000001)
+#define PCPTYPE_TPM20 (0x00000002)
+
+typedef enum PCP_KEY_FLAGS_WIN8 {
+	PCP_KEY_FLAGS_WIN8_authRequired = 0x00000001
+} PCP_KEY_FLAGS_WIN8;
+
+typedef enum PCP_KEY_FLAGS {
+	PCP_KEY_FLAGS_authRequired = 0x00000001
+} PCP_KEY_FLAGS;
+
+typedef struct PCP_KEY_BLOB_WIN8 { // Storage structure for 2.0 keys
+	DWORD   magic;
+	DWORD   cbHeader;
+	DWORD   pcpType;
+	DWORD   flags;
+	ULONG   cbPublic;
+	ULONG   cbPrivate;
+	ULONG   cbMigrationPublic;
+	ULONG   cbMigrationPrivate;
+	ULONG   cbPolicyDigestList;
+	ULONG   cbPCRBinding;
+	ULONG   cbPCRDigest;
+	ULONG   cbEncryptedSecret;
+	ULONG   cbTpm12HostageBlob;
+} PCP_KEY_BLOB_WIN8, *PPCP_KEY_BLOB_WIN8;
+
+typedef struct PCP_20_KEY_BLOB { // Storage structure for 2.0 keys
+	DWORD   magic;
+	DWORD   cbHeader;
+	DWORD   pcpType;
+	DWORD   flags;
+	ULONG   cbPublic;
+	ULONG   cbPrivate; 
+	ULONG   cbMigrationPublic;
+	ULONG   cbMigrationPrivate;
+	ULONG   cbPolicyDigestList;
+	ULONG   cbPCRBinding;
+	ULONG   cbPCRDigest;
+	ULONG   cbEncryptedSecret;
+	ULONG   cbTpm12HostageBlob;
+	USHORT  pcrAlgId;
+} PCP_20_KEY_BLOB, *PPCP_20_KEY_BLOB;
+
+typedef struct PCP_KEY_BLOB {
+	DWORD   magic;
+	DWORD   cbHeader;
+	DWORD   pcpType;
+	DWORD   flags;
+	ULONG   cbTpmKey;
+} PCP_KEY_BLOB, *PPCP_KEY_BLOB;
+#endif

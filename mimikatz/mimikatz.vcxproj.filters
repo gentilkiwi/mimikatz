@@ -296,6 +296,9 @@
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.c">
       <Filter>local modules\sekurlsa</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter_c.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -610,6 +613,9 @@
     </ClInclude>
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.h">
       <Filter>local modules\sekurlsa</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter.h">
+      <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
