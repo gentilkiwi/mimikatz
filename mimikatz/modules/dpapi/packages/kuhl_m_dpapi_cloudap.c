@@ -48,7 +48,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 			{
 				if(kull_m_string_stringToHexBuffer(szKeyValue, (LPBYTE *) &pDataOut, &dwDataOutLen))
 				{
-					kprintf(L"Clear key   : ");
+					kprintf(L"Clear key  : ");
 					kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
 					kprintf(L"\n");
 					isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_software(&bufferDesc, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
