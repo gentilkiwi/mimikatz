@@ -10,6 +10,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_crypto,
 	&kuhl_m_sekurlsa,
 	&kuhl_m_kerberos,
+	&kuhl_m_ngc,
 	&kuhl_m_privilege,
 	&kuhl_m_process,
 	&kuhl_m_service,

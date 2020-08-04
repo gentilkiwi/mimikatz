@@ -130,6 +130,7 @@ PCWCHAR WPRINTF_TYPES[] =
 	L"%02x ",		// WPRINTF_HEX_SPACE
 	L"0x%02x, ",	// WPRINTF_HEX_C
 	L"\\x%02x",		// WPRINTF_HEX_PYTHON
+	L"%02X",		// WPRINTF_HEX_SHORT_CAP
 };
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)

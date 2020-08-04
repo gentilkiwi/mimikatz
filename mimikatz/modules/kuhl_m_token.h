@@ -27,6 +27,7 @@ typedef struct _KUHL_M_TOKEN_ELEVATE_DATA {
 	BOOL elevateIt;
 	BOOL runIt;
 	PCWSTR pCommandLine;
+	BOOL isSidDirectUser;
 
 	//KUHL_M_TOKEN_ELEVATE_DATA_TYPE_FILTER filter;
 	//BOOL isNeeded;

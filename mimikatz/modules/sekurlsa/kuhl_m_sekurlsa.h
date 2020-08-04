@@ -22,6 +22,7 @@
 #include "packages/kuhl_m_sekurlsa_wdigest.h"
 #include "packages/kuhl_m_sekurlsa_dpapi.h"
 #include "packages/kuhl_m_sekurlsa_credman.h"
+#include "packages/kuhl_m_sekurlsa_cloudap.h"
 
 #include "../kerberos/kuhl_m_kerberos_ticket.h"
 #include "../kuhl_m_lsadump.h"
@@ -40,6 +41,8 @@
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS			0x00400000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE				0x00800000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607	0x00010000
+
+#define KUHL_SEKURLSA_CREDS_DISPLAY_CLOUDAP_PRT			0x00001000
 
 #define KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT			0x10000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_WPASSONLY			0x20000000

@@ -299,6 +299,12 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter_c.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="modules\ngc\kuhl_m_ngc.c">
+      <Filter>local modules\ngc</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_cloudap.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -617,6 +623,12 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
+    <ClInclude Include="modules\ngc\kuhl_m_ngc.h">
+      <Filter>local modules\ngc</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_cloudap.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -653,6 +665,9 @@
     </Filter>
     <Filter Include="local modules\lsadump">
       <UniqueIdentifier>{3b2bcf11-3674-4ee4-949c-491c8c5efd34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\ngc">
+      <UniqueIdentifier>{5880e511-0496-4c66-95c3-39c70baac28b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

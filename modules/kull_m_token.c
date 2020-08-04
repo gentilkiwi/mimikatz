@@ -205,22 +205,31 @@ BOOL kull_m_token_equal(IN HANDLE First, IN HANDLE Second)
 	return status;
 }
 
-PWSTR kull_m_token_getSidFromToken(HANDLE hToken)
+PTOKEN_USER kull_m_token_getUserFromToken(HANDLE hToken)
 {
-	PWSTR Sid = NULL;
-	PTOKEN_USER pTokenUser;
+	PTOKEN_USER pTokenUser = NULL;
 	DWORD szNeeded;
 	if(!GetTokenInformation(hToken, TokenUser, NULL, 0, &szNeeded) && (GetLastError() == ERROR_INSUFFICIENT_BUFFER))
 	{
 		if(pTokenUser = (PTOKEN_USER) LocalAlloc(LPTR, szNeeded))
 		{
-			if(GetTokenInformation(hToken, TokenUser, pTokenUser, szNeeded, &szNeeded))
-			{
-				if(!ConvertSidToStringSid(pTokenUser->User.Sid, &Sid))
-					Sid = NULL;
-			}
-			LocalFree(pTokenUser);
+			if(!GetTokenInformation(hToken, TokenUser, pTokenUser, szNeeded, &szNeeded))
+				pTokenUser = (PTOKEN_USER) LocalFree(pTokenUser);
 		}
+	}
+	return pTokenUser;
+}
+
+PWSTR kull_m_token_getSidFromToken(HANDLE hToken)
+{
+	PWSTR Sid = NULL;
+	PTOKEN_USER pTokenUser;
+
+	if(pTokenUser = kull_m_token_getUserFromToken(hToken))
+	{
+		if(!ConvertSidToStringSid(pTokenUser->User.Sid, &Sid))
+			Sid = NULL;
+		LocalFree(pTokenUser);
 	}
 	return Sid;
 }
