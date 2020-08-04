@@ -167,6 +167,7 @@
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.c" />
@@ -275,6 +276,7 @@
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.h" />
