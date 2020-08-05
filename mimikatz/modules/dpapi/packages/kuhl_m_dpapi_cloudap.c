@@ -7,13 +7,11 @@
 
 NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 {
-	LPCWSTR szKeyValue, szContext, szLabel;
+	LPCWSTR szKeyValue, szContext, szLabel, szKeyName;
 	BOOL isValidContext = FALSE, isDerivedKey = FALSE;
-
 	PKIWI_POPKEY pKeyValue;
-	DWORD cbKeyValue;
 	LPVOID pDataOut;
-	DWORD dwDataOutLen;
+	DWORD cbKeyValue, dwDataOutLen;
 	PKIWI_POPKEY_HARD pHard;
 	BYTE Context[24], DerivedKey[32];
 	NCryptBuffer buffer[] = {
@@ -36,24 +34,38 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 	if(buffer[0].pvBuffer = kull_m_string_unicode_to_ansi(szLabel))
 	{
 		buffer[0].cbBuffer = lstrlenA((LPCSTR) buffer[0].pvBuffer);
-
-		kprintf(L"Label      : %.*S\n", buffer[0].cbBuffer, buffer[0].pvBuffer);
-		kprintf(L"Context    : ");
+		kprintf(L"Label      : %.*S\nContext    : ", buffer[0].cbBuffer, buffer[0].pvBuffer);
 		kull_m_string_wprintf_hex(buffer[1].pvBuffer, buffer[1].cbBuffer, 0);
 		kprintf(L"\n");
-
 		if(kull_m_string_args_byName(argc, argv, L"keyvalue", &szKeyValue, NULL))
 		{
 			if(lstrlen(szKeyValue) == (32 * 2))
 			{
 				if(kull_m_string_stringToHexBuffer(szKeyValue, (LPBYTE *) &pDataOut, &dwDataOutLen))
 				{
-					kprintf(L"Clear key  : ");
+					kprintf(L"Key type   : Software (RAW)\nClear key  : ");
 					kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
 					kprintf(L"\n");
 					isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_software(&bufferDesc, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
 					LocalFree(pDataOut);
 				}
+				else PRINT_ERROR(L"Unable to convert from hex\n");
+			}
+			else if(lstrlen(szKeyValue) == (178 * 2))
+			{
+				if(kull_m_string_stringToHexBuffer(szKeyValue, (LPBYTE *) &pDataOut, &dwDataOutLen))
+				{
+					if(kull_m_string_args_byName(argc, argv, L"keyname", &szKeyName, NULL))
+					{
+						kprintf(L"Key type   : TPM protected (RAW)\nKey Name   : %s\nOpaque key : ", szKeyName);
+						kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
+						kprintf(L"\n");
+						isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(&bufferDesc, szKeyName, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
+					}
+					else PRINT_ERROR(L"An opaque key need a /keyname:SK-... to import it\n");
+					LocalFree(pDataOut);
+				}
+				else PRINT_ERROR(L"Unable to convert from hex\n");
 			}
 			else if(kull_m_string_quick_urlsafe_base64_to_Binary(szKeyValue, (PBYTE *) &pKeyValue, &cbKeyValue))
 			{
@@ -63,20 +75,18 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 					switch(pKeyValue->type)
 					{
 					case 1:
-						kprintf(L"software\n");
-						kprintf(L"Key value  : ");
+						kprintf(L"Software (DPAPI)\nClear key  : ");
 						kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
 						kprintf(L"\n");
 						isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_software(&bufferDesc, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
 						break;
-
 					case 2:
-						kprintf(L"TPM protected\n");
 						pHard = (PKIWI_POPKEY_HARD) pDataOut;
-						kprintf(L"Key Name   : %.*s\n", pHard->cbName / sizeof(wchar_t), pHard->data);
+						kprintf(L"TPM protected (DPAPI)\nKey Name   : %.*s\nOpaque key : ", pHard->cbName / sizeof(wchar_t), pHard->data);
+						kull_m_string_wprintf_hex(pHard->data + pHard->cbName, pHard->cbKey, 0);
+						kprintf(L"\n");
 						isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(&bufferDesc, (LPCWSTR) pHard->data, pHard->data + pHard->cbName, pHard->cbKey, DerivedKey, sizeof(DerivedKey));
 						break;
-
 					default:
 						PRINT_ERROR(L"KeyValue type is not supported (%u)\n", pKeyValue->type);
 					}
@@ -92,7 +102,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 				kprintf(L"\n");
 			}
 		}
-		else PRINT_ERROR(L"a /keyvalue:base64data (or raw 32 bytes in hex) must be present");
+		else PRINT_ERROR(L"a /keyvalue:base64data (or raw 32/178 bytes in hex) must be present");
 	}
 	return STATUS_SUCCESS;
 }
