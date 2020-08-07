@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "../kuhl_m_dpapi.h"
+#include <time.h>
 
 typedef struct _KIWI_POPKEY {
 	DWORD version;
@@ -24,3 +25,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[]);
 BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_software(PNCryptBufferDesc bufferDesc, LPCBYTE Key, DWORD cbKey, PBYTE DerivedKey, DWORD cbDerivedKey);
 typedef SECURITY_STATUS	(WINAPI * PNCRYPTKEYDERIVATION) (NCRYPT_KEY_HANDLE hKey, NCryptBufferDesc *pParameterList, PUCHAR pbDerivedKey, DWORD cbDerivedKey, DWORD *pcbResult, ULONG dwFlags); // tofix
 BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(PNCryptBufferDesc bufferDesc, LPCWSTR TransportKeyName, LPCBYTE Key, DWORD cbKey, PBYTE DerivedKey, DWORD cbDerivedKey);
+
+PSTR generate_simpleHeader(PCSTR Alg, LPCBYTE Context, DWORD cbContext);
+PSTR generate_simplePayload(PCWSTR PrimaryRefreshToken, __time32_t *iat);
+PSTR generate_simpleSignature(LPCBYTE Context, DWORD cbContext, PCWSTR PrimaryRefreshToken, __time32_t *iat, LPCBYTE Key, DWORD cbKey);

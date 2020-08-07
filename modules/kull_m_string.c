@@ -427,6 +427,44 @@ BOOL kull_m_string_quick_urlsafe_base64_to_Binary(PCWSTR badBase64, PBYTE *data,
 	return status;
 }
 
+BOOL kull_m_string_quick_binary_to_base64A(const BYTE *pbData, const DWORD cbData, LPSTR *base64)
+{
+	BOOL status = FALSE;
+	DWORD dwBytesWritten = 0;
+	if(CryptBinaryToStringA(pbData, cbData, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &dwBytesWritten))
+	{
+		if(*base64 = (LPSTR) LocalAlloc(LPTR, dwBytesWritten))
+		{
+			status = CryptBinaryToStringA(pbData, cbData, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, *base64, &dwBytesWritten);
+			if(!status)
+				*base64 = (LPSTR) LocalFree(*base64);
+		}
+	}
+	return status;
+}
+
+BOOL kull_m_string_quick_binary_to_urlsafe_base64A(const BYTE *pbData, const DWORD cbData, LPSTR *badBase64)
+{
+	BOOL status = FALSE;
+	DWORD cbLen, i;
+	
+	status = kull_m_string_quick_binary_to_base64A(pbData, cbData, badBase64);
+	if(status)
+	{
+		cbLen = lstrlenA(*badBase64);
+		for(i = 0; i < cbLen; i++)
+		{
+			if((*badBase64)[i] == '+')
+				(*badBase64)[i] = '-';
+			else if((*badBase64)[i] == '/')
+				(*badBase64)[i] = '_';
+			else if((*badBase64)[i] == '=')
+				(*badBase64)[i] = '\0';
+		}
+	}
+	return status;
+}
+
 BOOL kull_m_string_EncodeB64_headersA(LPCSTR type, const PBYTE pbData, const DWORD cbData, LPSTR *out)
 {
 	BOOL status = FALSE;

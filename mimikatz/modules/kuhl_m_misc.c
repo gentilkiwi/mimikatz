@@ -23,8 +23,9 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_wp,		L"wp",			NULL},
 	{kuhl_m_misc_mflt,		L"mflt",		NULL},
 	{kuhl_m_misc_easyntlmchall,	L"easyntlmchall", NULL},
-	{kuhl_m_misc_clip,		L"clip",		 NULL},
-	{kuhl_m_misc_xor,		L"xor",		 NULL},
+	{kuhl_m_misc_clip,		L"clip",		NULL},
+	{kuhl_m_misc_xor,		L"xor",			NULL},
+	{kuhl_m_misc_aadcookie,	L"aadcookie",	NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -1229,3 +1230,43 @@ NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[])
 	else PRINT_ERROR(L"An /input:file is needed\n");
 	return STATUS_SUCCESS;
 }
+
+const CLSID CLSID_ProofOfPossessionCookieInfoManager = {0xa9927f85, 0xa304, 0x4390, {0x8b, 0x23, 0xa7, 0x5f, 0x1c, 0x66, 0x86, 0x00}};
+const IID IID_IProofOfPossessionCookieInfoManager = {0xcdaece56, 0x4edf, 0x43df, {0xb1, 0x13, 0x88, 0xe4, 0x55, 0x6f, 0xa1, 0xbb}};
+NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[])
+{
+	LPCWSTR szURI;
+	IProofOfPossessionCookieInfoManager *pPOPCookieInfoManager = NULL;
+	DWORD cookieInfoCount, i;
+	ProofOfPossessionCookieInfo *cookieInfo;
+	HRESULT hr;
+
+	kull_m_string_args_byName(argc, argv, L"uri", &szURI, L"https://login.microsoftonline.com");
+	hr = CoCreateInstance(&CLSID_ProofOfPossessionCookieInfoManager, NULL, CLSCTX_INPROC_SERVER, &IID_IProofOfPossessionCookieInfoManager, (void **) &pPOPCookieInfoManager);
+	if(hr == S_OK)
+	{
+		kprintf(L"URI: %s\n\n", szURI);
+		hr = IProofOfPossessionCookieInfoManager_GetCookieInfoForUri(pPOPCookieInfoManager, szURI, &cookieInfoCount, &cookieInfo);
+		if(hr == S_OK)
+		{
+			kprintf(L"Cookie count: %2u\n----------------\n", cookieInfoCount);
+			for(i = 0; i < cookieInfoCount; i++)
+			{
+				kprintf(L"\nCookie %u\n", i);
+				kprintf(L"  name     : %s\n", cookieInfo[i].name);
+				kprintf(L"  data     : %s\n", cookieInfo[i].data);
+				kprintf(L"  flags    : 0x%08x (%u)\n", cookieInfo[i].flags, cookieInfo[i].flags);
+				kprintf(L"  p3pHeader: %s\n", cookieInfo[i].p3pHeader);
+
+				CoTaskMemFree(cookieInfo[i].name);      
+				CoTaskMemFree(cookieInfo[i].data);      
+				CoTaskMemFree(cookieInfo[i].p3pHeader); 
+			}
+			CoTaskMemFree(cookieInfo);                  
+		}
+		else PRINT_ERROR(L"GetCookieInfoForUri: 0x%08x\n", hr);
+		IProofOfPossessionCookieInfoManager_Release(pPOPCookieInfoManager);
+	}
+	else PRINT_ERROR(L"CoCreateInstance: 0x%08x\n", hr);
+	return STATUS_SUCCESS;
+} 

