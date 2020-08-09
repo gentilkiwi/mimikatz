@@ -5,27 +5,12 @@
 */
 #pragma once
 #include "../kuhl_m_dpapi.h"
+#include "../../../../modules/kull_m_crypto_ngc.h"
 #include <time.h>
 
-typedef struct _KIWI_POPKEY {
-	DWORD version;
-	DWORD type; // 1 soft, 2 hard
-	BYTE key[ANYSIZE_ARRAY];
-} KIWI_POPKEY, *PKIWI_POPKEY;
-
-typedef struct _KIWI_POPKEY_HARD {
-	DWORD version;
-	DWORD cbName;
-	DWORD cbKey;
-	BYTE data[ANYSIZE_ARRAY];
-} KIWI_POPKEY_HARD, *PKIWI_POPKEY_HARD;
-
 NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[]);
-
-BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_software(PNCryptBufferDesc bufferDesc, LPCBYTE Key, DWORD cbKey, PBYTE DerivedKey, DWORD cbDerivedKey);
-typedef SECURITY_STATUS	(WINAPI * PNCRYPTKEYDERIVATION) (NCRYPT_KEY_HANDLE hKey, NCryptBufferDesc *pParameterList, PUCHAR pbDerivedKey, DWORD cbDerivedKey, DWORD *pcbResult, ULONG dwFlags); // tofix
-BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(PNCryptBufferDesc bufferDesc, LPCWSTR TransportKeyName, LPCBYTE Key, DWORD cbKey, PBYTE DerivedKey, DWORD cbDerivedKey);
+NTSTATUS kuhl_m_dpapi_cloudap_fromreg(int argc, wchar_t * argv[]);
 
 PSTR generate_simpleHeader(PCSTR Alg, LPCBYTE Context, DWORD cbContext);
 PSTR generate_simplePayload(PCWSTR PrimaryRefreshToken, __time32_t *iat);
-PSTR generate_simpleSignature(LPCBYTE Context, DWORD cbContext, PCWSTR PrimaryRefreshToken, __time32_t *iat, LPCBYTE Key, DWORD cbKey);
+PSTR generate_simpleSignature(LPCBYTE Context, DWORD cbContext, PCWSTR PrimaryRefreshToken, __time32_t *iat, LPCBYTE Key, DWORD cbKey, OPTIONAL LPCBYTE SeedLabel, OPTIONAL DWORD cbSeedLabel);

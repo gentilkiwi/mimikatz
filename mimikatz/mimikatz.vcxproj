@@ -119,6 +119,7 @@
     <ClCompile Include="..\modules\kull_m_cabinet.c" />
     <ClCompile Include="..\modules\kull_m_cred.c" />
     <ClCompile Include="..\modules\kull_m_crypto.c" />
+    <ClCompile Include="..\modules\kull_m_crypto_ngc.c" />
     <ClCompile Include="..\modules\kull_m_crypto_sk.c" />
     <ClCompile Include="..\modules\kull_m_dpapi.c" />
     <ClCompile Include="..\modules\kull_m_file.c" />
@@ -228,6 +229,7 @@
     <ClInclude Include="..\modules\kull_m_cabinet.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
+    <ClInclude Include="..\modules\kull_m_crypto_ngc.h" />
     <ClInclude Include="..\modules\kull_m_crypto_sk.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
     <ClInclude Include="..\modules\kull_m_dpapi.h" />

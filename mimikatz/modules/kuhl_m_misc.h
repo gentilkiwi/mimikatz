@@ -12,6 +12,7 @@
 #include "../modules/kull_m_net.h"
 #include "../modules/kull_m_remotelib.h"
 #include "../modules/kull_m_crypto_system.h"
+#include "../modules/kull_m_crypto_ngc.h"
 #include <fltUser.h>
 
 const KUHL_M kuhl_m_misc;
@@ -34,6 +35,7 @@ NTSTATUS kuhl_m_misc_easyntlmchall(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_clip(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[]);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 BOOL CALLBACK kuhl_m_misc_detours_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);

@@ -403,6 +403,23 @@ BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szD
 	return status;
 }
 
+BOOL kull_m_string_quick_base64_to_BinaryA(PCSTR base64, PBYTE *data, DWORD *szData)
+{
+	BOOL status = FALSE;
+	*data = NULL;
+	*szData = 0;
+	if(CryptStringToBinaryA(base64, 0, CRYPT_STRING_BASE64, NULL, szData, NULL, NULL))
+	{
+		if(*data = (PBYTE) LocalAlloc(LPTR, *szData))
+		{
+			status = CryptStringToBinaryA(base64, 0, CRYPT_STRING_BASE64, *data, szData, NULL, NULL);
+			if(!status)
+				*data = (PBYTE) LocalFree(*data);
+		}
+	}
+	return status;
+}
+
 BOOL kull_m_string_quick_urlsafe_base64_to_Binary(PCWSTR badBase64, PBYTE *data, DWORD *szData)
 {
 	BOOL status = FALSE;
@@ -422,6 +439,31 @@ BOOL kull_m_string_quick_urlsafe_base64_to_Binary(PCWSTR badBase64, PBYTE *data,
 				fixedB64[i] = L'=';
 		}
 		status = kull_m_string_quick_base64_to_Binary(fixedB64, data, szData);
+		LocalFree(fixedB64);
+	}
+	return status;
+}
+
+
+BOOL kull_m_string_quick_urlsafe_base64_to_BinaryA(PCSTR badBase64, PBYTE *data, DWORD *szData)
+{
+	BOOL status = FALSE;
+	DWORD cbLen = lstrlenA(badBase64), cbPad = cbLen % 4, i;
+	PSTR fixedB64;
+
+	if(fixedB64 = (PSTR) LocalAlloc(LPTR, (cbLen + cbPad + 1)))
+	{
+		RtlCopyMemory(fixedB64, badBase64, cbLen);
+		for(i = 0; i < cbLen; i++)
+		{
+			if(fixedB64[i] == '-')
+				fixedB64[i] = '+';
+			else if(fixedB64[i] == '_')
+				fixedB64[i] = '/';
+			else if(fixedB64[i] == '\0')
+				fixedB64[i] = '=';
+		}
+		status = kull_m_string_quick_base64_to_BinaryA(fixedB64, data, szData);
 		LocalFree(fixedB64);
 	}
 	return status;
