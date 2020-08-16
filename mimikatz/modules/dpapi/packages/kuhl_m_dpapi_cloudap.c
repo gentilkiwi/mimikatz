@@ -113,7 +113,7 @@ NTSTATUS kuhl_m_dpapi_cloudap_keyvalue_derived(int argc, wchar_t * argv[])
 		{
 			if(kull_m_string_args_byName(argc, argv, L"iat", &szIat, NULL))
 				time32 = wcstol(szIat, NULL, 0);
-			else _time32(&time32);
+			else kull_m_string_get_time32(&time32);
 			kprintf(L"Issued at  : %ld\n", time32);
 
 			if(isDerivedKey)
@@ -215,7 +215,7 @@ PSTR generate_simplePayload(PCWSTR PrimaryRefreshToken, __time32_t *iat)
 
 	if(iat)
 		time32 = *iat;
-	else _time32(&time32);
+	else kull_m_string_get_time32(&time32);
 
 	if(kull_m_string_quick_urlsafe_base64_to_Binary(PrimaryRefreshToken, &data, &cbData))
 	{

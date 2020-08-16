@@ -155,6 +155,17 @@ void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
 		kprintf(L"\n};\n");
 }
 
+__time32_t kull_m_string_get_time32(__time32_t * _Time)
+{
+	__time32_t ret;
+	FILETIME SystemTimeAsFileTime;
+	GetSystemTimeAsFileTime(&SystemTimeAsFileTime);
+	ret = (__time32_t) (*(PLONGLONG) &SystemTimeAsFileTime - 116444736000000000) / 10000000;
+	if(_Time)
+		*_Time = ret;
+	return ret;
+}
+
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime)
 {
 	SYSTEMTIME st;

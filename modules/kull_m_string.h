@@ -80,6 +80,7 @@ BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size)
 BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWORD *size);
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags);
+__time32_t kull_m_string_get_time32(__time32_t * _Time);
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime);
 void kull_m_string_displayLocalFileTime(IN PFILETIME pFileTime);
 BOOL kull_m_string_FileTimeToString(IN PFILETIME pFileTime, OUT WCHAR string[14 + 1]);
