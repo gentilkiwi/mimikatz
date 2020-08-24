@@ -9,6 +9,7 @@
 #include "../modules/kull_m_token.h"
 #include "../modules/kull_m_patch.h"
 #include "../modules/kull_m_cred.h"
+#include "../modules/kull_m_crypto_ngc.h"
 
 const KUHL_M kuhl_m_vault;
 
@@ -27,6 +28,7 @@ typedef struct _VAULT_GUID_STRING {
 } VAULT_GUID_STRING, *PVAULT_GUID_STRING;
 
 void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8); 
+void CALLBACK kuhl_m_vault_list_descItem_ngc(const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8);
 typedef void (CALLBACK * PSCHEMA_HELPER_FUNC) (const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8);
 
 typedef struct _VAULT_SCHEMA_HELPER {

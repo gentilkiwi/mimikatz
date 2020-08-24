@@ -187,3 +187,109 @@ BOOL kull_m_crypto_ngc_signature_pop(PBYTE pbKey, DWORD cbKey, PBYTE pbLabel, DW
 	else PRINT_ERROR_AUTO(L"LoadLibrary");
 	return status;
 }
+
+PBYTE kull_m_crypto_ngc_pin_BinaryPinToPinProperty(LPCBYTE pbBinary, DWORD cbBinary, DWORD *pcbResult)
+{
+	PWSTR data = NULL;
+	DWORD i, cbBuffer = cbBinary * 2 + 1;
+
+	if(data = (PWSTR) LocalAlloc(LPTR, cbBuffer * sizeof(wchar_t)))
+	{
+		for(i = 0; i < cbBinary; i++)
+			swprintf_s(data + i * 2, cbBuffer - i * 2, L"%02.2X", pbBinary[i]);
+		if(pcbResult)
+			*pcbResult = cbBuffer * sizeof(wchar_t);
+	}
+	return (PBYTE) data;
+}
+
+SECURITY_STATUS kull_m_crypto_ngc_hardware_unseal(NCRYPT_PROV_HANDLE hProv, LPCBYTE pbPin, DWORD cbPin, LPCBYTE pbInput, DWORD cbInput, PBYTE *ppOutput, DWORD *pcbOutput)
+{
+	SECURITY_STATUS status;
+	NCRYPT_KEY_HANDLE hSealKey;
+	UNK_PIN uPin = {cbPin, 0x46, (PWSTR) pbPin};
+	UNK_PADDING uPadding = {0, 1, &uPin};
+	DWORD cbResult;
+
+	status = NCryptOpenKey(hProv, &hSealKey, TPM_RSA_SRK_SEAL_KEY, 0, NCRYPT_SILENT_FLAG);
+	if(status == ERROR_SUCCESS)
+	{
+		status = NCryptDecrypt(hSealKey, (PBYTE) pbInput, cbInput, &uPadding, NULL, 0, &cbResult, NCRYPT_SEALING_FLAG);
+		if(status == ERROR_SUCCESS)
+		{
+			if(*ppOutput = (PBYTE) LocalAlloc(LPTR, cbResult))
+			{
+				status = NCryptDecrypt(hSealKey, (PBYTE) pbInput, cbInput, &uPadding, *ppOutput, cbResult, pcbOutput, NCRYPT_SEALING_FLAG);
+				if(status != ERROR_SUCCESS)
+				{
+					PRINT_ERROR(L"NCryptDecrypt(data): 0x%08x\n", status);
+					*ppOutput = (PBYTE) LocalFree(*ppOutput);
+					*pcbOutput = 0;
+				}
+			}
+			else status = NTE_NO_MEMORY;
+		}
+		else PRINT_ERROR(L"NCryptDecrypt(init): 0x%08x\n", status);
+		NCryptFreeObject(hSealKey);
+	}
+	else PRINT_ERROR(L"NCryptOpenKey(seal): 0x%08x\n", status);
+	return status;
+}
+
+SECURITY_STATUS kull_m_crypto_ngc_software_decrypt(NCRYPT_PROV_HANDLE hProv, LPCWSTR szKeyName, LPCBYTE pbPin, DWORD cbPin, LPCBYTE pbInput, DWORD cbInput, PBYTE *ppOutput, DWORD *pcbOutput)
+{
+	SECURITY_STATUS status;
+	NCRYPT_KEY_HANDLE hKey;
+	DWORD cbResult, dwSalt, dwIterations, dwSmartCardPin;
+	BYTE DerivedKey[32] = {0}, *SmartCardPin;
+
+	status = NCryptOpenKey(hProv, &hKey, szKeyName, 0, 0x4000); // ?
+	if(status == ERROR_SUCCESS)
+	{
+		status = NCryptGetProperty(hKey, L"NgcSoftwareKeyPbkdf2Salt", (PBYTE) &dwSalt, sizeof(dwSalt), &cbResult, 0x40000000 | NCRYPT_SILENT_FLAG); // ?
+		if(status == ERROR_SUCCESS)
+		{
+			status = NCryptGetProperty(hKey, L"NgcSoftwareKeyPbkdf2Round", (PBYTE) &dwIterations, sizeof(dwIterations), &cbResult, 0x40000000 | NCRYPT_SILENT_FLAG); // ?
+			if(status == ERROR_SUCCESS)
+			{
+				status = BCryptDeriveKeyPBKDF2(BCRYPT_HMAC_SHA256_ALG_HANDLE, (PUCHAR) pbPin, cbPin - sizeof(wchar_t), (PUCHAR) &dwSalt, sizeof(dwSalt), dwIterations, DerivedKey, sizeof(DerivedKey), 0);
+				if(status == ERROR_SUCCESS)
+				{
+					if(SmartCardPin = kull_m_crypto_ngc_pin_BinaryPinToPinProperty(DerivedKey, sizeof(DerivedKey), &dwSmartCardPin))
+					{
+						status = NCryptSetProperty(hKey, NCRYPT_PIN_PROPERTY, SmartCardPin, dwSmartCardPin - sizeof(wchar_t), NCRYPT_SILENT_FLAG);
+						if(status == ERROR_SUCCESS)
+						{
+							status = NCryptDecrypt(hKey, (PBYTE) pbInput, cbInput, NULL, NULL, 0, &cbResult, NCRYPT_PAD_PKCS1_FLAG | NCRYPT_SILENT_FLAG);
+							if(status == ERROR_SUCCESS)
+							{
+								if(*ppOutput = (PBYTE) LocalAlloc(LPTR, cbResult))
+								{
+									status = NCryptDecrypt(hKey, (PBYTE) pbInput, cbInput, NULL, *ppOutput, cbResult, pcbOutput, NCRYPT_PAD_PKCS1_FLAG | NCRYPT_SILENT_FLAG);
+									if(status != ERROR_SUCCESS)
+									{
+										PRINT_ERROR(L"NCryptDecrypt(data): 0x%08x\n", status);
+										*ppOutput = (PBYTE) LocalFree(*ppOutput);
+										*pcbOutput = 0;
+									}
+								}
+								else status = NTE_NO_MEMORY;
+							}
+							else PRINT_ERROR(L"NCryptDecrypt(init): 0x%08x\n", status);
+						}
+						else PRINT_ERROR(L"NCryptSetProperty(NCRYPT_PIN_PROPERTY): 0x%08x\n", status);
+						LocalFree(SmartCardPin);
+					}
+					else status = NTE_NO_MEMORY;
+				}
+				else PRINT_ERROR(L"BCryptDeriveKeyPBKDF2: 0x%08x\n", status);
+			}
+			else PRINT_ERROR(L"NCryptGetProperty(NgcSoftwareKeyPbkdf2Round): 0x%08x\n", status);
+		}
+		else PRINT_ERROR(L"NCryptGetProperty(NgcSoftwareKeyPbkdf2Salt): 0x%08x\n", status);
+		NCryptFreeObject(hKey);
+	}
+	else PRINT_ERROR(L"NCryptOpenKey(0x4000): 0x%08x\n", status);
+
+	return status;
+}

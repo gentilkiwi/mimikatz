@@ -9,12 +9,16 @@
 #include "../../../modules/kull_m_service.h"
 #include "../../../modules/kull_m_remotelib.h"
 #include "../../../modules/kull_m_file.h"
+#include "../../../modules/kull_m_crypto_ngc.h"
+#include "../../../modules/kull_m_token.h"
 
 const KUHL_M kuhl_m_ngc;
 
 NTSTATUS kuhl_m_ngc_logondata(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_ngc_pin(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_ngc_sign(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_ngc_decrypt(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_ngc_enum(int argc, wchar_t * argv[]);
 
 typedef struct _Node {
 	struct _Node *Left;
@@ -98,18 +102,6 @@ typedef struct _structL {
 	structToDecode d1; // wut ?
 	structToDecode d2; // pin here ?
 } structL, *PstructL;
-
-typedef struct _UNK_PIN {
-	DWORD cbData;
-	DWORD unk0;
-	PWSTR pData;
-} UNK_PIN, *PUNK_PIN;
-
-typedef struct _UNK_PADDING {
-	DWORD unk0;
-	DWORD unk1;
-	PUNK_PIN pin;
-} UNK_PADDING, *PUNK_PADDING;
 
 typedef struct _UNK_RAW_PIN {
 	DWORD cbPin0;

@@ -928,7 +928,7 @@ NTSTATUS kuhl_m_crypto_system(int argc, wchar_t * argv[])
 		if(PathIsDirectory(infile))
 		{
 			kprintf(L"* Directory: \'%s\'\n", infile);
-			kull_m_file_Find(infile, NULL, FALSE, 0, FALSE, kuhl_m_crypto_system_directory, &isExport);
+			kull_m_file_Find(infile, NULL, FALSE, 0, FALSE, FALSE, kuhl_m_crypto_system_directory, &isExport);
 		}
 		else kuhl_m_crypto_system_directory(0, infile, PathFindFileName(infile), &isExport);
 	}

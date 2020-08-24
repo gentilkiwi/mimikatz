@@ -139,7 +139,7 @@ PWCHAR kull_m_file_fullPath(PCWCHAR fileName)
 	return buffer;
 }
 
-BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO*/, DWORD level, BOOL isPrintInfos, PKULL_M_FILE_FIND_CALLBACK callback, PVOID pvArg)
+BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO*/, DWORD level, BOOL isPrintInfos, BOOL isWithDir, PKULL_M_FILE_FIND_CALLBACK callback, PVOID pvArg)
 {
 	BOOL status = FALSE;
 	DWORD dwAttrib;
@@ -181,13 +181,13 @@ BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO
 											{
 												if(isPrintInfos)
 													kprintf(L"%*s" L"%3u %c|'%s\'\n", level << 1, L"", level, (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? L'D' : L'F' , fData.cFileName);
-												if(!(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+												if(isWithDir || !(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 												{
 													if(callback)
 														status = callback(level, fullpath, fullpath + dwAttrib, pvArg);
 												}
 												else if(isRecursive && fData.cFileName)
-													status = kull_m_file_Find(fullpath, filter, TRUE, level + 1, isPrintInfos, callback, pvArg);
+													status = kull_m_file_Find(fullpath, filter, TRUE, level + 1, isPrintInfos, isWithDir, callback, pvArg);
 											}
 										}
 									}
@@ -198,8 +198,8 @@ BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO
 					}
 				}
 			}
+			LocalFree(fullpath);
 		}
-		LocalFree(fullpath);
 	}
 	return status;
 }

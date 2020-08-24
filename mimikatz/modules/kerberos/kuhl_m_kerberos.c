@@ -63,7 +63,7 @@ NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[])
 		if(PathIsDirectory(argv[i]))
 		{
 			kprintf(L"* Directory: \'%s\'\n", argv[i]);
-			kull_m_file_Find(argv[i], L"*.kirbi", FALSE, 0, FALSE, kuhl_m_kerberos_ptt_directory, NULL);
+			kull_m_file_Find(argv[i], L"*.kirbi", FALSE, 0, FALSE, FALSE, kuhl_m_kerberos_ptt_directory, NULL);
 		}
 		else kuhl_m_kerberos_ptt_directory(0, argv[i], PathFindFileName(argv[i]), NULL);
 	}
