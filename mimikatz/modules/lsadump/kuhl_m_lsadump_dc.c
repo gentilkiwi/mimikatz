@@ -34,11 +34,11 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	RPC_BINDING_HANDLE hBinding;
 	DRS_HANDLE hDrs = NULL;
 	DSNAME dsName = {0};
-	DWORD dwOutVersion = 0, i, strLen, userCount = 0, userFileSize = 0;
+	DWORD dwOutVersion = 0, i, strLen, userCount = 1, userFileSize = 0;
 	DRS_MSG_GETCHGREPLY getChRep;
 	ULONG drsStatus;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL, szService, szFile = NULL;
-	LPWSTR szTmpDc = NULL, szTmpUser, szCurUser, *szUserList = NULL;
+	LPWSTR szTmpDc = NULL, szTmpUser, szCurUser = NULL, *szUserList = NULL;
 	DRS_EXTENSIONS_INT DrsExtensionsInt;
 	BOOL someExport = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL), allData = kull_m_string_args_byName(argc, argv, L"all", NULL, NULL), csvOutput = kull_m_string_args_byName(argc, argv, L"csv", NULL, NULL), withDeleted = kull_m_string_args_byName(argc, argv, L"deleted", NULL, NULL), decodeUAC = kull_m_string_args_byName(argc, argv, L"uac", NULL, NULL);
 	PBYTE data = NULL;
@@ -91,7 +91,6 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 					}
 				}
 				else {
-					userCount += 1;
 					szUserList = malloc(1 * sizeof(wchar_t *));
 					szUserList[0] = (LPWSTR)szUser;
 				}
@@ -104,8 +103,12 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 
 					if (kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szDc, NULL, szService, TRUE, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
 					{
-						szCurUser = szUserList[k];
-						kprintf(L"[DC] \'%s\' will be the user account\n", szCurUser);
+						
+						if (szUserList) {
+							szCurUser = szUserList[k];
+							kprintf(L"[DC] \'%s\' will be the user account\n", szCurUser);
+						}
+
 						if (kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szCurUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
 						{
 							if (DrsExtensionsInt.dwReplEpoch)
