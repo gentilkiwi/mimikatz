@@ -15,6 +15,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
 #include "../modules/kull_m_net.h"
+#include "../../modules/rpc/kull_m_rpc_ms-nrpc.h"
 #include "lsadump/kuhl_m_lsadump_dc.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
@@ -69,6 +70,7 @@ NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_packages(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_mbc(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
 BOOL kuhl_m_lsadump_getComputerAndSyskey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase, OUT LPBYTE sysKey);
@@ -500,27 +502,6 @@ BOOL kuhl_m_lsadump_sec_aes256(PNT6_HARD_SECRET hardSecretBlob, DWORD hardSecret
 PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, USHORT Count, PCWSTR title);
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
 void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, DWORD rid, PVOID Buffer, DWORD BufferSize);
-
-typedef wchar_t * LOGONSRV_HANDLE;
-typedef struct _NETLOGON_CREDENTIAL {
-	CHAR data[8]; 
-} NETLOGON_CREDENTIAL, *PNETLOGON_CREDENTIAL; 
-
-typedef struct _NETLOGON_AUTHENTICATOR {
-	NETLOGON_CREDENTIAL Credential;
-	DWORD Timestamp;
-} NETLOGON_AUTHENTICATOR, *PNETLOGON_AUTHENTICATOR;
-
-typedef  enum _NETLOGON_SECURE_CHANNEL_TYPE{
-	NullSecureChannel = 0,
-	MsvApSecureChannel = 1,
-	WorkstationSecureChannel = 2,
-	TrustedDnsDomainSecureChannel = 3,
-	TrustedDomainSecureChannel = 4,
-	UasServerSecureChannel = 5,
-	ServerSecureChannel = 6,
-	CdcServerSecureChannel = 7
-} NETLOGON_SECURE_CHANNEL_TYPE;
 
 #define SECRET_SET_VALUE	0x00000001L
 #define SECRET_QUERY_VALUE	0x00000002L

@@ -311,6 +311,9 @@
     <ClCompile Include="..\modules\kull_m_crypto_ngc.c">
       <Filter>common modules</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-nrpc_c.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -640,6 +643,9 @@
     </ClInclude>
     <ClInclude Include="..\modules\kull_m_crypto_ngc.h">
       <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-nrpc.h">
+      <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
