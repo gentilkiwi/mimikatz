@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -77,9 +77,9 @@ void mimikatz_begin()
 		L"  .#####.   " MIMIKATZ_FULL L"\n"
 		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo)\n"
 		L" ## / \\ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
-		L" ## \\ / ##       > http://blog.gentilkiwi.com/mimikatz\n"
+		L" ## \\ / ##       > https://blog.gentilkiwi.com/mimikatz\n"
 		L" '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )\n"
-		L"  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/\n");
+		L"  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/\n");
 	mimikatz_initOrClean(TRUE);
 }
 

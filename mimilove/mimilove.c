@@ -1,5 +1,5 @@
 ﻿/*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -17,7 +17,7 @@ int wmain(int argc, wchar_t *argv[])
 		L" .## ^ ##.  " MIMILOVE_SECOND L"\n"
 		L" ## / \\ ##  /* * *\n"
 		L" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
-		L" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
+		L" '## v ##'   https://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
 		L"  '#####'    " MIMILOVE_SPECIAL L"* * */\n\n");
 
 	RtlZeroMemory(&osInfo, sizeof(OSVERSIONINFO));

