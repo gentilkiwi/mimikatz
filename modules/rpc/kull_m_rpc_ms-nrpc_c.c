@@ -20,7 +20,7 @@ static const RPC_CLIENT_INTERFACE logon___RpcClientInterface = {sizeof(RPC_CLIEN
 RPC_IF_HANDLE logon_v1_0_c_ifspec = (RPC_IF_HANDLE) &logon___RpcClientInterface;
 handle_t hLogon;
 static const GENERIC_BINDING_ROUTINE_PAIR BindingRoutines[] = {{(GENERIC_BINDING_ROUTINE) LOGONSRV_HANDLE_bind, (GENERIC_UNBIND_ROUTINE) LOGONSRV_HANDLE_unbind}};
-static const MIDL_STUB_DESC logon_StubDesc = {(void *) & logon___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &hLogon, 0, BindingRoutines, 0, 0, netlogon__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
+static const MIDL_STUB_DESC logon_StubDesc = {(void *) &logon___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &hLogon, 0, BindingRoutines, 0, 0, netlogon__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
 
 #if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 NTSTATUS NetrServerReqChallenge(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t *ComputerName, IN PNETLOGON_CREDENTIAL ClientChallenge, OUT PNETLOGON_CREDENTIAL ServerChallenge)

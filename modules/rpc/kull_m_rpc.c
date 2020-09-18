@@ -150,9 +150,9 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 
 	if(szRemote)
 	{
-		kull_m_string_args_byName(argc, argv, L"remote", szRemote, NULL);
-		if(!*szRemote)
-			kull_m_string_args_byName(argc, argv, L"server", szRemote, NULL);
+		if(!kull_m_string_args_byName(argc, argv, L"remote", szRemote, NULL))
+			if(!kull_m_string_args_byName(argc, argv, L"server", szRemote, NULL))
+				kull_m_string_args_byName(argc, argv, L"target", szRemote, NULL);
 		if(printIt)
 			kprintf(L"Remote   : %s\n", *szRemote);
 	}
@@ -162,7 +162,6 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 		kull_m_string_args_byName(argc, argv, L"protseq", szProtSeq, L"ncacn_ip_tcp");
 		if(printIt)
 			kprintf(L"ProtSeq  : %s\n", *szProtSeq);
-
 	}
 	
 	if(szEndpoint)
@@ -188,6 +187,8 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 			*AuthnSvc = RPC_C_AUTHN_WINNT;;
 		if(kull_m_string_args_byName(argc, argv, L"kerberos", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_GSS_KERBEROS;
+		if(kull_m_string_args_byName(argc, argv, L"negotiate", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_GSS_NEGOTIATE;
 		if(printIt)
 			kprintf(L"AuthnSvc : %s\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc));
 	}
@@ -333,5 +334,87 @@ BOOL kull_m_rpc_Generic_Encode(PVOID pObject, PVOID *data, DWORD *size, PGENERIC
 		MesHandleFree(pHandle);
 	}
 	else PRINT_ERROR(L"MesEncodeIncrementalHandleCreate: %08x\n", rpcStatus);
+	return status;
+}
+
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
+const BYTE KULL_M_RPC_FIND_STUB_PATTERN[] = {0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};//, 0x00, 0x00, 0x02};
+#elif defined(_M_IX86)
+const BYTE KULL_M_RPC_FIND_STUB_PATTERN[] = {0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+#endif 
+PMIDL_STUB_DESC kull_m_rpc_find_stub(LPCWSTR szModuleName, const RPC_SYNTAX_IDENTIFIER *pInterfaceId)
+{
+	PMIDL_STUB_DESC pReturnStub = NULL, pCandidateStub;
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information;
+	KULL_M_MEMORY_ADDRESS aToSearch = {(LPVOID) KULL_M_RPC_FIND_STUB_PATTERN, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	KULL_M_MEMORY_SEARCH sMemory;
+
+	if(kull_m_process_getVeryBasicModuleInformationsForName(&KULL_M_MEMORY_GLOBAL_OWN_HANDLE, szModuleName, &information))
+	{
+		sMemory.kull_m_memoryRange.kull_m_memoryAdress = information.DllBase;
+		sMemory.kull_m_memoryRange.size = information.SizeOfImage;
+		while(kull_m_memory_search(&aToSearch, sizeof(KULL_M_RPC_FIND_STUB_PATTERN), &sMemory, FALSE))
+		{
+			pCandidateStub = (PMIDL_STUB_DESC) ((PBYTE) sMemory.result - (FIELD_OFFSET(MIDL_STUB_DESC, MIDLVersion) + 3));
+			if(pCandidateStub->RpcInterfaceInformation && ((PBYTE) pCandidateStub->RpcInterfaceInformation >= (PBYTE) information.DllBase.address) && ((PBYTE) pCandidateStub->RpcInterfaceInformation < ((PBYTE) information.DllBase.address + information.SizeOfImage)))
+			{
+				if(RtlEqualMemory(pInterfaceId, &((PRPC_CLIENT_INTERFACE) pCandidateStub->RpcInterfaceInformation)->InterfaceId, sizeof(RPC_SYNTAX_IDENTIFIER)))
+				{
+					pReturnStub = pCandidateStub;
+					break;
+				}
+			}
+			sMemory.kull_m_memoryRange.size -= ((PBYTE) sMemory.result + sizeof(KULL_M_RPC_FIND_STUB_PATTERN)) - (PBYTE) sMemory.kull_m_memoryRange.kull_m_memoryAdress.address;
+			sMemory.kull_m_memoryRange.kull_m_memoryAdress.address = (PBYTE) sMemory.result + sizeof(KULL_M_RPC_FIND_STUB_PATTERN);
+		}
+	}
+	else PRINT_ERROR(L"kull_m_process_getVeryBasicModuleInformationsForName for %s\n", szModuleName);
+
+	return pReturnStub;
+}
+
+BOOL kull_m_rpc_replace_first_routine_pair_direct(const GENERIC_BINDING_ROUTINE_PAIR *pOriginalBindingPair, const GENERIC_BINDING_ROUTINE_PAIR *pNewBindingPair)
+{
+	BOOL status = FALSE;
+	DWORD dwOldProtect;
+
+	if(VirtualProtect((LPVOID) pOriginalBindingPair, sizeof(GENERIC_BINDING_ROUTINE_PAIR), PAGE_EXECUTE_READWRITE, &dwOldProtect))
+	{
+		((PGENERIC_BINDING_ROUTINE_PAIR) pOriginalBindingPair)[0] = *pNewBindingPair;
+		status = TRUE;
+		if(!VirtualProtect((LPVOID) pOriginalBindingPair, sizeof(GENERIC_BINDING_ROUTINE_PAIR), dwOldProtect, &dwOldProtect))
+		{
+			PRINT_ERROR_AUTO(L"VirtualProtect(post)");
+		}
+	}
+	else PRINT_ERROR_AUTO(L"VirtualProtect(pre)");
+
+	return status;
+}
+
+BOOL kull_m_rpc_replace_first_routine_pair(LPCWSTR szModuleName, const RPC_SYNTAX_IDENTIFIER *pInterfaceId, const GENERIC_BINDING_ROUTINE_PAIR *pNewBindingPair, PGENERIC_BINDING_ROUTINE_PAIR pOriginalBindingPair, const GENERIC_BINDING_ROUTINE_PAIR **ppOriginalBindingPair)
+{
+	BOOL status = FALSE;
+	PMIDL_STUB_DESC pStub;
+
+	pStub = kull_m_rpc_find_stub(szModuleName, pInterfaceId);
+	if(pStub)
+	{
+		if(pStub->aGenericBindingRoutinePairs)
+		{
+			if(ppOriginalBindingPair)
+			{
+				*ppOriginalBindingPair = pStub->aGenericBindingRoutinePairs;
+			}
+			if(pOriginalBindingPair)
+			{
+				*pOriginalBindingPair = pStub->aGenericBindingRoutinePairs[0];
+			}
+			status = kull_m_rpc_replace_first_routine_pair_direct(pStub->aGenericBindingRoutinePairs, pNewBindingPair);
+		}
+		else PRINT_ERROR(L"No GenericBindingRoutinePairs\n");
+	}
+	else PRINT_ERROR(L"Stub not found\n");
+
 	return status;
 }

