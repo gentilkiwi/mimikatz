@@ -74,7 +74,6 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 					{
 						secIdentity.DomainLength = lstrlen((LPCWSTR) secIdentity.Domain);
 					}
-					secIdentity.UserLength = lstrlen((LPCWSTR) secIdentity.User);
 					if(kull_m_string_args_byName(argc, argv, L"authpassword", (const wchar_t **) &secIdentity.Password, L""))
 					{
 						secIdentity.PasswordLength = lstrlen((LPCWSTR) secIdentity.Password);

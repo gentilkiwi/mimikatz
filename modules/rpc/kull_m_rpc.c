@@ -36,7 +36,6 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 	RPC_STATUS rpcStatus;
 	RPC_WSTR StringBinding = NULL;
 	RPC_SECURITY_QOS SecurityQOS = {RPC_C_SECURITY_QOS_VERSION, RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH, RPC_C_QOS_IDENTITY_STATIC, ImpersonationType};
-	DWORD szServer, szPrefix;
 	LPWSTR fullServer = NULL;
 
 	*hBinding = NULL;
@@ -52,18 +51,11 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 				{
 					if(addServiceToNetworkAddr)
 					{
-						if(NetworkAddr && Service)
+						if(Service && NetworkAddr)
 						{
-							szServer = lstrlen(NetworkAddr) * sizeof(wchar_t);
-							szPrefix = lstrlen(Service) * sizeof(wchar_t);
-							if(fullServer = (LPWSTR) LocalAlloc(LPTR, szPrefix + sizeof(wchar_t) + szServer + sizeof(wchar_t)))
-							{
-								RtlCopyMemory(fullServer, Service, szPrefix);
-								RtlCopyMemory((PBYTE) fullServer + szPrefix + sizeof(wchar_t), NetworkAddr, szServer);
-								((PBYTE) fullServer)[szPrefix] = L'/';
-							}
+							kull_m_string_sprintf(&fullServer, L"%s/%s", Service, NetworkAddr);
 						}
-						else PRINT_ERROR(L"Cannot add NetworkAddr & Service if NULL\n");
+						else PRINT_ERROR(L"Cannot add Service to NetworkAddr if NULL\n");
 					}
 
 					if(!addServiceToNetworkAddr || fullServer)
@@ -99,6 +91,12 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 		RpcStringFree(&StringBinding);
 	}
 	else PRINT_ERROR(L"RpcStringBindingCompose: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+
+	if(fullServer)
+	{
+		LocalFree(fullServer);
+	}
+
 	return status;
 }
 
@@ -143,7 +141,7 @@ RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterfa
     return RPC_S_OK;
 }
 
-void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, GUID *altGuid, BOOL printIt)
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, SEC_WINNT_AUTH_IDENTITY *pAuthIdentity, GUID *altGuid, BOOL printIt)
 {
 	PCWSTR data;
 	UNICODE_STRING us;
@@ -154,28 +152,28 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 			if(!kull_m_string_args_byName(argc, argv, L"server", szRemote, NULL))
 				kull_m_string_args_byName(argc, argv, L"target", szRemote, NULL);
 		if(printIt)
-			kprintf(L"Remote   : %s\n", *szRemote);
+			kprintf(L"[rpc] Remote   : %s\n", *szRemote);
 	}
 
 	if(szProtSeq)
 	{
 		kull_m_string_args_byName(argc, argv, L"protseq", szProtSeq, L"ncacn_ip_tcp");
 		if(printIt)
-			kprintf(L"ProtSeq  : %s\n", *szProtSeq);
+			kprintf(L"[rpc] ProtSeq  : %s\n", *szProtSeq);
 	}
 	
 	if(szEndpoint)
 	{
 		kull_m_string_args_byName(argc, argv, L"endpoint", szEndpoint, NULL);
 		if(printIt)
-			kprintf(L"Endpoint : %s\n", *szEndpoint);
+			kprintf(L"[rpc] Endpoint : %s\n", *szEndpoint);
 	}
 	
 	if(szService)
 	{
 		kull_m_string_args_byName(argc, argv, L"service", szService, NULL);
 		if(printIt)
-			kprintf(L"Service  : %s\n", *szService);
+			kprintf(L"[rpc] Service  : %s\n", *szService);
 	}
 	
 	if(AuthnSvc)
@@ -190,14 +188,31 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 		if(kull_m_string_args_byName(argc, argv, L"negotiate", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_GSS_NEGOTIATE;
 		if(printIt)
-			kprintf(L"AuthnSvc : %s\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc));
+			kprintf(L"[rpc] AuthnSvc : %s (%u)\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc), *AuthnSvc);
 	}
 
 	if(isNullSession)
 	{
 		*isNullSession = kull_m_string_args_byName(argc, argv, L"null", NULL, NULL);
 		if(printIt)
-			kprintf(L"NULL Sess: %s\n", (*isNullSession) ? L"yes" : L"no");
+			kprintf(L"[rpc] NULL Sess: %s\n", (*isNullSession) ? L"yes" : L"no");
+	}
+
+	if(pAuthIdentity && (!isNullSession || !*isNullSession))
+	{
+		pAuthIdentity->Flags = SEC_WINNT_AUTH_IDENTITY_UNICODE;
+
+		kull_m_string_args_byName(argc, argv, L"authuser", (const wchar_t **) &pAuthIdentity->User, L"");
+		pAuthIdentity->UserLength = lstrlen((LPCWSTR) pAuthIdentity->User);
+		kull_m_string_args_byName(argc, argv, L"authdomain", (const wchar_t **) &pAuthIdentity->Domain, L"");
+		pAuthIdentity->DomainLength = lstrlen((LPCWSTR) pAuthIdentity->Domain);
+		kull_m_string_args_byName(argc, argv, L"authpassword", (const wchar_t **) &pAuthIdentity->Password, L"");
+		pAuthIdentity->PasswordLength = lstrlen((LPCWSTR) pAuthIdentity->Password);
+
+		if(pAuthIdentity->UserLength)
+		{
+			kprintf(L"[rpc] Username : %s\n[rpc] Domain   : %s\n[rpc] Password : %s\n", pAuthIdentity->User, pAuthIdentity->Domain, pAuthIdentity->Password);
+		}
 	}
 
 	if(altGuid)
@@ -207,7 +222,7 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 			RtlInitUnicodeString(&us, data);
 			if(NT_SUCCESS(RtlGUIDFromString(&us, altGuid)) && printIt)
 			{
-				kprintf(L"Alt GUID : ");
+				kprintf(L"[rpc] Alt GUID : ");
 				kull_m_string_displayGUID(altGuid);
 				kprintf(L"\n");
 			}

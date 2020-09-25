@@ -314,6 +314,9 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-nrpc_c.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-rprn.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -645,6 +648,9 @@
       <Filter>common modules</Filter>
     </ClInclude>
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-nrpc.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-rprn.h">
       <Filter>common modules\rpc</Filter>
     </ClInclude>
   </ItemGroup>

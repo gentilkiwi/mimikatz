@@ -2475,7 +2475,7 @@ NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 			type = (NETLOGON_SECURE_CHANNEL_TYPE) wcstoul(szType, NULL, 0);
 		bExploit = kull_m_string_args_byName(argc, argv, L"exploit", NULL, NULL);
 
-		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_NONE, &bIsNullSession, NULL, TRUE);
+		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_NONE, &bIsNullSession, NULL, NULL, TRUE);
 		kprintf(L"\nTarget : %s\nAccount: %s\nType   : %u (%s)\nMode   : %s\n\n", szRemote, szAccount, type, (type < ARRAYSIZE(SecureChannelTypes)) ? SecureChannelTypes[type] : L"?", bExploit ? L"exploit" : L"detect");
 		if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, L"RPC", TRUE, AuthnSvc, bIsNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hLogonNetLogon, NULL))
 		{
