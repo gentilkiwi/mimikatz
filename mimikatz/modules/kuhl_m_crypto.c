@@ -790,7 +790,7 @@ NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[])
 
 	RtlInitUnicodeString(&uPassword, szPassword);
 	RtlInitUnicodeString(&uUsername, szUsername);
-	if(NT_SUCCESS(RtlDigestNTLM(&uPassword, hash)))
+	if(NT_SUCCESS(RtlCalculateNtOwfPassword(&uPassword, hash)))
 	{
 		kprintf(L"NTLM: "); kull_m_string_wprintf_hex(hash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 		if(szUsername)
@@ -821,7 +821,7 @@ NTSTATUS kuhl_m_crypto_hash(int argc, wchar_t * argv[])
 
 	if(NT_SUCCESS(RtlUpcaseUnicodeStringToOemString(&oTmp, &uPassword, TRUE)))
 	{
-		if(NT_SUCCESS(RtlDigestLM(oTmp.Buffer, hash)))
+		if(NT_SUCCESS(RtlCalculateLmOwfPassword(oTmp.Buffer, hash)))
 		{
 			kprintf(L"LM  : "); kull_m_string_wprintf_hex(hash, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
 		}

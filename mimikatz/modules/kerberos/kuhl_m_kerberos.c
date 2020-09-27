@@ -566,7 +566,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 			{
 				if(modulo = *outputSize % pCSystem->BlockSize)
 					*outputSize += pCSystem->BlockSize - modulo;
-				*outputSize += pCSystem->Size;
+				*outputSize += pCSystem->HeaderSize;
 			}
 			if(*output = LocalAlloc(LPTR, *outputSize))
 			{

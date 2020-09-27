@@ -23,6 +23,9 @@ LPCWSTR KULL_M_RPC_AUTHNSVC(DWORD AuthnSvc)
 	case RPC_C_AUTHN_GSS_KERBEROS:
 		szAuthnSvc = L"GSS_KERBEROS";
 		break;
+	case RPC_C_AUTHN_DEFAULT:
+		szAuthnSvc = L"DEFAULT";
+		break;
 	default:
 		szAuthnSvc = L"?";
 	}
@@ -141,7 +144,7 @@ RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterfa
     return RPC_S_OK;
 }
 
-void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, SEC_WINNT_AUTH_IDENTITY *pAuthIdentity, GUID *altGuid, BOOL printIt)
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, LPCWSTR szDefaultService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, SEC_WINNT_AUTH_IDENTITY *pAuthIdentity, GUID *altGuid, BOOL printIt)
 {
 	PCWSTR data;
 	UNICODE_STRING us;
@@ -171,22 +174,23 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 	
 	if(szService)
 	{
-		kull_m_string_args_byName(argc, argv, L"service", szService, NULL);
+		if(!kull_m_string_args_byName(argc, argv, L"service", szService, NULL))
+			kull_m_string_args_byName(argc, argv, L"altservice", szService, szDefaultService);
 		if(printIt)
 			kprintf(L"[rpc] Service  : %s\n", *szService);
 	}
 	
 	if(AuthnSvc)
 	{
-		*AuthnSvc = defAuthnSvc;
 		if(kull_m_string_args_byName(argc, argv, L"noauth", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_NONE;
-		if(kull_m_string_args_byName(argc, argv, L"ntlm", NULL, NULL))
-			*AuthnSvc = RPC_C_AUTHN_WINNT;;
-		if(kull_m_string_args_byName(argc, argv, L"kerberos", NULL, NULL))
+		else if(kull_m_string_args_byName(argc, argv, L"ntlm", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_WINNT;
+		else if(kull_m_string_args_byName(argc, argv, L"kerberos", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_GSS_KERBEROS;
-		if(kull_m_string_args_byName(argc, argv, L"negotiate", NULL, NULL))
+		else if(kull_m_string_args_byName(argc, argv, L"negotiate", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_GSS_NEGOTIATE;
+		else *AuthnSvc = defAuthnSvc;
 		if(printIt)
 			kprintf(L"[rpc] AuthnSvc : %s (%u)\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc), *AuthnSvc);
 	}
