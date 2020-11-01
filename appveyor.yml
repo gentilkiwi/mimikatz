@@ -10,12 +10,10 @@ build:
   verbosity: normal
 after_build:
 - cmd: >-
-    7z a -t7z -mx -ms=on mimikatz_trunk.7z -xr@notrunk.lst @trunk.lst
+    7z a -t7z -mx -ms=on mimikatz_trunk_$(PLATFORM).7z -xr@notrunk.lst .\$(PLATFORM) README.md kiwi_passwords.yar mimicom.idl
 
-    7z a -tzip -mx -mm=deflate -mpass=15 mimikatz_trunk.zip -xr@notrunk.lst @trunk.lst
+    7z a -tzip -mx -mm=deflate -mpass=15 mimikatz_trunk_$(PLATFORM).zip -xr@notrunk.lst .\$(PLATFORM) README.md kiwi_passwords.yar mimicom.idl
 
-    7z a -pmimikatz -mhe=on -t7z -mx -ms=on mimikatz_trunk_password.7z -xr@notrunk.lst @trunk.lst
+    7z a -pmimikatz -mhe=on -t7z -mx -ms=on mimikatz_trunk_password_$(PLATFORM).7z -xr@notrunk.lst .\$(PLATFORM) README.md kiwi_passwords.yar mimicom.idl
 artifacts:
-- path: mimikatz_trunk.7z
-- path: mimikatz_trunk.zip
-- path: mimikatz_trunk_password.7z
+- path: mimikatz_trunk_*
