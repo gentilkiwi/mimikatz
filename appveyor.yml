@@ -1,0 +1,21 @@
+version: 2.2.0-ci-{branch}-{build}
+image: Visual Studio 2013
+configuration: Release
+platform:
+- x64
+- Win32
+shallow_clone: true
+build:
+  parallel: true
+  verbosity: normal
+after_build:
+- cmd: >-
+    7z a -t7z -mx -ms=on mimikatz_trunk.7z -xr@notrunk.lst @trunk.lst
+
+    7z a -tzip -mx -mm=deflate -mpass=15 mimikatz_trunk.zip -xr@notrunk.lst @trunk.lst
+
+    7z a -pmimikatz -mhe=on -t7z -mx -ms=on mimikatz_trunk_password.7z -xr@notrunk.lst @trunk.lst
+artifacts:
+- path: mimikatz_trunk.7z
+- path: mimikatz_trunk.zip
+- path: mimikatz_trunk_password.7z

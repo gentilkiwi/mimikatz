@@ -5,9 +5,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimikatz", "mimikatz\mimika
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global files", "{1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		kiwi_passwords.yar = kiwi_passwords.yar
 		mimicom.idl = mimicom.idl
+		notrunk.lst = notrunk.lst
 		README.md = README.md
+		trunk.lst = trunk.lst
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF6-4DCA-9A60-6F4036929AEE}"

@@ -1,0 +1,14 @@
+*.obj
+*.lib
+*.exp
+*.kirbi
+*.log
+*.hiv
+*.key
+*.reg
+*.pfx
+*.cer
+*.pvk
+*.ndr
+*.der
+*.dmp
