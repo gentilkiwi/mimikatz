@@ -118,6 +118,11 @@ Follow instructions:
 * https://blog.gentilkiwi.com/programmation/executables-runtime-defaut-systeme
 * _https://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader_
 
+## Continuous Integration
+`mimikatz` project is available on AppVeyor - https://ci.appveyor.com/project/gentilkiwi/mimikatz
+
+Its status is: ![AppVeyor CI status](https://ci.appveyor.com/api/projects/status/github/gentilkiwi/mimikatz?svg=true&retina=true)
+
 ## Licence
 CC BY 4.0 licence - https://creativecommons.org/licenses/by/4.0/
 
