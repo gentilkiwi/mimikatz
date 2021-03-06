@@ -167,6 +167,7 @@ typedef enum {
 #define szOID_objectclass					"2.5.4.0"
 #define szOID_hasMasterNCs					"1.2.840.113556.1.2.14"
 #define szOID_dMDLocation					"1.2.840.113556.1.2.36"
+#define szOID_isDeleted						"1.2.840.113556.1.2.48"
 #define szOID_invocationId					"1.2.840.113556.1.2.115"
 
 #define szOID_ANSI_name						"1.2.840.113556.1.4.1"
@@ -201,6 +202,7 @@ typedef enum {
 #define szOID_msDS_ReplicationEpoch			"1.2.840.113556.1.4.1720"
 #define szOID_msDS_HasDomainNCs				"1.2.840.113556.1.4.1820"
 #define szOID_msDS_hasMasterNCs				"1.2.840.113556.1.4.1836"
+#define szOID_isRecycled					"1.2.840.113556.1.4.2058"
 
 #define szOID_ANSI_nTDSDSA					"1.2.840.113556.1.5.7000.47"
 

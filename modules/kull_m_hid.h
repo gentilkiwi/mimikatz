@@ -50,9 +50,9 @@ extern BOOLEAN __stdcall HidD_SetFeature(__in HANDLE HidDeviceObject, __in PVOID
 extern BOOLEAN __stdcall HidD_GetFeature(__in HANDLE HidDeviceObject, __out PVOID ReportBuffer, __in ULONG ReportBufferLength);
 #include <poppack.h>
 
-#ifdef _WIN64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 #include <pshpack8.h>   // Assume 8-byte (64-bit) packing throughout
-#else
+#elif defined(_M_IX86)
 #include <pshpack1.h>   // Assume byte packing throughout (32-bit processor)
 #endif
 #define DIGCF_DEFAULT           0x00000001  // only valid with DIGCF_DEVICEINTERFACE

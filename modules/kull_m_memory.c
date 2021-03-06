@@ -400,3 +400,49 @@ void kull_m_memory_reverseBytes(PVOID start, SIZE_T size)
 		*hi-- = swap;
 	}
 }
+#if defined(_M_ARM64)
+PVOID kull_m_memory_arm64_AddrFromInstr(PVOID cur, ULONG i1, ULONG i2)
+{
+	PVOID addr = NULL;
+	ULONG_PTR curAddr = (ULONG_PTR)cur, page;
+	LONG offset;
+	//kprintf(L"Cur  @: %p (%p)\n", curAddr, (curAddr & ~((ULONG_PTR) 0xfff)));
+	page = (curAddr & ~((ULONG_PTR)0xfff)) + (LONGLONG)(((i1 << 9) & 0x1ffffc000) | ((i1 >> 17) & 0x3000));
+	//kprintf(L"Page @: %p\n", page);
+
+	if ((i2 & 0xb9400000) == 0xb9400000)
+	{
+		//kprintf(L"{LDR (immediate -- unsigned offset)}\n");
+		offset = (i2 >> 10 & 0xfff) << ((i2 >> 30) & 0x3);
+	}
+	else if ((i2 & 0x91000000) == 0x91000000)
+	{
+		//kprintf(L"{ADD (immediate -- 64 bit variant, 0 shift)}\n");
+		offset = i2 >> 10 & 0xfff;
+	}
+	else
+	{
+		PRINT_ERROR(L"i2: %08x\n", i2);
+		return NULL;
+	}
+	//kprintf(L"Offset: 0x%08x\n", offset);
+	addr = (PVOID)(page + offset);
+	//kprintf(L"Addr @: %p\n", addr);
+	return addr;
+}
+
+PVOID kull_m_memory_arm64_getRealAddress(PKULL_M_MEMORY_ADDRESS Address, LONG off)
+{
+	PVOID ret = NULL;
+	ULONG data0, data1;
+	KULL_M_MEMORY_ADDRESS aBuffer = *Address, aLocalMemory = {&data0, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	if (kull_m_memory_copy(&aLocalMemory, &aBuffer, sizeof(data0)))
+	{
+		aBuffer.address = (PBYTE) Address->address + off;
+		aLocalMemory.address = &data1;
+		if(kull_m_memory_copy(&aLocalMemory, &aBuffer, sizeof(data1)))
+			ret = kull_m_memory_arm64_AddrFromInstr(Address->address, data0, data1);
+	}
+	return ret;
+}
+#endif

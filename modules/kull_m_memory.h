@@ -97,3 +97,7 @@ BOOL kull_m_memory_quick_compress(IN PVOID data, IN DWORD size, IN OUT PVOID *co
 BOOL kull_m_memory_quick_decompress(IN PVOID data, IN DWORD size, IN OPTIONAL DWORD originalSize, IN OUT PVOID *decompressedData, IN OUT PDWORD decompressedSize);
 
 void kull_m_memory_reverseBytes(PVOID start, SIZE_T size);
+#if defined(_M_ARM64)
+PVOID kull_m_memory_arm64_AddrFromInstr(PVOID cur, ULONG i1, ULONG i2);
+PVOID kull_m_memory_arm64_getRealAddress(PKULL_M_MEMORY_ADDRESS Address, LONG off);
+#endif

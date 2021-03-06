@@ -18,7 +18,7 @@ const KUHL_M_C kuhl_m_c_kerberos[] = {
 	{kuhl_m_kerberos_purge,		L"purge",		L"Purge ticket(s)"},
 	{kuhl_m_kerberos_golden,	L"golden",		L"Willy Wonka factory"},
 	{kuhl_m_kerberos_hash,		L"hash",		L"Hash password to keys"},
-#ifdef KERBEROS_TOOLS
+#if defined(KERBEROS_TOOLS)
 	{kuhl_m_kerberos_decode,	L"decrypt",		L"Decrypt encoded ticket"},
 	{kuhl_m_kerberos_pac_info,	L"pacinfo",		L"Some infos on PAC file"},
 #endif
@@ -760,7 +760,7 @@ NTSTATUS kuhl_m_kerberos_hash(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-#ifdef KERBEROS_TOOLS
+#if defined(KERBEROS_TOOLS)
 NTSTATUS kuhl_m_kerberos_decode(int argc, wchar_t * argv[])
 {
 	NTSTATUS status;

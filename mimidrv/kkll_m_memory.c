@@ -20,9 +20,9 @@ NTSTATUS kkll_m_memory_genericPointerSearch(PUCHAR *addressePointeur, const PUCH
 	if(NT_SUCCESS(status))
 	{
 		*addressePointeur += offsetTo;
-		#ifdef _M_X64
+		#if defined(_M_X64)
 			*addressePointeur += sizeof(LONG) + *(PLONG)(*addressePointeur);
-		#elif defined _M_IX86
+		#elif defined(_M_IX86)
 			*addressePointeur = *(PUCHAR *)(*addressePointeur);
 		#endif
 		

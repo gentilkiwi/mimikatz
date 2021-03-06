@@ -96,7 +96,7 @@ BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for 
 		if(!(reussite = kull_m_string_quick_base64_to_Binary(fileName, data, lenght)))
 			PRINT_ERROR_AUTO(L"kull_m_string_quick_base64_to_Binary");
 	}
-	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
+	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
 	{
 		if(GetFileSizeEx(hFile, &filesize) && !filesize.HighPart)
 		{

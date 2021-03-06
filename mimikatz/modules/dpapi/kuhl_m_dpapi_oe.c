@@ -20,23 +20,35 @@ PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY kuhl_m_dpapi_oe_masterkey_get(LPCGUID guid)
 	return NULL;
 }
 
-BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID keyHash, DWORD keyLen)
+BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID key, DWORD keyLen)
 {
 	BOOL status = FALSE;
 	PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry;
 	BYTE digest[SHA_DIGEST_LENGTH];
 
-	if(guid && keyHash && keyLen)
+	if(guid && key && keyLen)
 	{
 		if(!kuhl_m_dpapi_oe_masterkey_get(guid))
 		{
-			if(keyLen != SHA_DIGEST_LENGTH)
-				kull_m_crypto_hash(CALG_SHA1, keyHash, keyLen, digest, sizeof(digest));
-
 			if(entry = (PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_MASTERKEY_ENTRY)))
 			{
 				RtlCopyMemory(&entry->data.guid, guid, sizeof(GUID));
-				RtlCopyMemory(entry->data.keyHash, (keyLen == SHA_DIGEST_LENGTH) ? keyHash : digest, SHA_DIGEST_LENGTH);
+				if(keyLen == SHA_DIGEST_LENGTH)
+				{
+					RtlCopyMemory(entry->data.keyHash, key, SHA_DIGEST_LENGTH);
+					status = TRUE;
+				}
+				else
+				{
+					kull_m_crypto_hash(CALG_SHA1, key, keyLen, digest, sizeof(digest));
+					RtlCopyMemory(entry->data.keyHash, digest, sizeof(digest));
+					if(entry->data.key = (BYTE *) LocalAlloc(LPTR, keyLen))
+					{
+						RtlCopyMemory(entry->data.key, key, keyLen);
+						entry->data.keyLen = keyLen;
+						status = TRUE;
+					}
+				}
 				entry->navigator.Blink = gDPAPI_Masterkeys.Blink;
 				entry->navigator.Flink = &gDPAPI_Masterkeys;
 				((PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY) gDPAPI_Masterkeys.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
@@ -55,6 +67,9 @@ void kuhl_m_dpapi_oe_masterkey_delete(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry)
 	{
 		((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Blink)->navigator.Flink = entry->navigator.Flink;
 		((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) entry->navigator.Flink)->navigator.Blink = entry->navigator.Blink;
+
+		if(entry->data.key)
+			LocalFree(entry->data.key);
 		LocalFree(entry);
 	}
 }
@@ -69,7 +84,7 @@ void kuhl_m_dpapi_oe_masterkey_descr(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry)
 		
 		kprintf(L"KeyHash:");
 		kull_m_string_wprintf_hex(entry->data.keyHash, sizeof(entry->data.keyHash), 0);
-		kprintf(L"\n");
+		kprintf(L";Key:%savailable\n", entry->data.key ? L"": L"not ");
 	}
 }
 
@@ -182,19 +197,22 @@ BOOL kuhl_m_dpapi_oe_credential_add(LPCWSTR sid, LPCGUID guid, LPCVOID md4hash, 
 
 	if(sid)
 	{
-		if(!(entry = kuhl_m_dpapi_oe_credential_get(sid, guid)))
+		if(kuhl_m_dpapi_oe_is_sid_valid_ForCacheOrAuto(NULL, sid, FALSE))
 		{
-			if(entry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_CREDENTIAL_ENTRY)))
+			if(!(entry = kuhl_m_dpapi_oe_credential_get(sid, guid)))
 			{
-				entry->data.sid = _wcsdup(sid);
-				entry->navigator.Blink = gDPAPI_Credentials.Blink;
-				entry->navigator.Flink = &gDPAPI_Credentials;
-				((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
-				gDPAPI_Credentials.Blink= (PLIST_ENTRY) entry;
+				if(entry = (PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) LocalAlloc(LPTR, sizeof(KUHL_M_DPAPI_OE_CREDENTIAL_ENTRY)))
+				{
+					entry->data.sid = _wcsdup(sid);
+					entry->navigator.Blink = gDPAPI_Credentials.Blink;
+					entry->navigator.Flink = &gDPAPI_Credentials;
+					((PKUHL_M_DPAPI_OE_CREDENTIAL_ENTRY) gDPAPI_Credentials.Blink)->navigator.Flink = (PLIST_ENTRY) entry;
+					gDPAPI_Credentials.Blink= (PLIST_ENTRY) entry;
+				}
 			}
+			if(entry)
+				status = kuhl_m_dpapi_oe_credential_addtoEntry(entry, guid, md4hash, sha1hash, md4protectedhash, password);
 		}
-		if(entry)
-			status = kuhl_m_dpapi_oe_credential_addtoEntry(entry, guid, md4hash, sha1hash, md4protectedhash, password);
 	}
 	else PRINT_ERROR(L"No SID?");
 	return status;
@@ -386,6 +404,53 @@ NTSTATUS kuhl_m_dpapi_oe_cache(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
+const DWORD invalidAuthorityForAuto[] = {18, 19, 20};
+const DWORD invalidAuthorityForCache[] = {18, 19, 20, 80, 82, 83, 90, 96};
+BOOL kuhl_m_dpapi_oe_is_sid_valid_ForCacheOrAuto(PSID sid, LPCWSTR szSid, BOOL AutoOrCache)
+{
+	BOOL status = FALSE;
+	PUCHAR count;
+	PSID tmpSid = NULL;
+	DWORD s0, i, maxAuth;
+	const DWORD *pAuth;
+
+	if(szSid)
+		ConvertStringSidToSid(szSid, &tmpSid);
+	else tmpSid = sid;
+	
+	if(AutoOrCache)
+	{
+		pAuth = invalidAuthorityForAuto;
+		maxAuth = ARRAYSIZE(invalidAuthorityForAuto);
+	}
+	else
+	{
+		pAuth = invalidAuthorityForCache;
+		maxAuth = ARRAYSIZE(invalidAuthorityForCache);
+	}
+
+	if(IsValidSid(tmpSid))
+	{
+		if(count = GetSidSubAuthorityCount(tmpSid))
+		{
+			if(*count >= 1)
+			{
+				s0 = *GetSidSubAuthority(tmpSid, 0);
+				status = TRUE;
+				for(i = 0; i < maxAuth; i++)
+				{
+					if(pAuth[i] == s0)
+					{
+						status = FALSE;
+						break;
+					}
+				}
+			}
+		}
+	}
+	return status;
+}
+
 BOOL kuhl_m_dpapi_oe_autosid(LPCWSTR filename, LPWSTR * pSid)
 {
 	BOOL status = FALSE;
@@ -400,10 +465,12 @@ BOOL kuhl_m_dpapi_oe_autosid(LPCWSTR filename, LPWSTR * pSid)
 			{
 				if(ConvertStringSidToSid(++pE, &tmpSid))
 				{
-					if(status = ConvertSidToStringSid(tmpSid, pSid))
+					if(kuhl_m_dpapi_oe_is_sid_valid_ForCacheOrAuto(tmpSid, NULL, TRUE))
 					{
-						kprintf(L"Auto SID from path seems to be: %s\n", *pSid);
+						if(status = ConvertSidToStringSid(tmpSid, pSid))
+							kprintf(L"Auto SID from path seems to be: %s\n", *pSid);
 					}
+					else kprintf(L"SID detected in path but not relevant, can be forced with /sid:S-1-...\n");
 					LocalFree(tmpSid);
 				}
 			}
@@ -478,7 +545,7 @@ BOOL kuhl_m_dpapi_oe_LoadFromFile(LPCWSTR filename)
 		if(kull_m_dpapi_oe_DecodeDpapiEntries(dataIn, dwDataIn, &entries))
 		{
 			for(i = 0, j = 0; i < entries.MasterKeyCount; i++)
-				if(kuhl_m_dpapi_oe_masterkey_add(&entries.MasterKeys[i]->guid, entries.MasterKeys[i]->keyHash, sizeof(entries.MasterKeys[i]->keyHash)))
+				if(kuhl_m_dpapi_oe_masterkey_add(&entries.MasterKeys[i]->guid, entries.MasterKeys[i]->keyLen ? entries.MasterKeys[i]->key : entries.MasterKeys[i]->keyHash, entries.MasterKeys[i]->keyLen ?  entries.MasterKeys[i]->keyLen : sizeof(entries.MasterKeys[i]->keyHash)))
 					j++;
 			kprintf(L" * %3u/%3u MasterKey(s) imported\n", j, entries.MasterKeyCount);
 

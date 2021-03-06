@@ -17,15 +17,45 @@ typedef struct _KULL_M_PATCH_PATTERN {
 
 typedef struct _KULL_M_PATCH_OFFSETS {
 	LONG off0;
+#if defined(_M_ARM64)
+	LONG armOff0;
+#endif
 	LONG off1;
+#if defined(_M_ARM64)
+	LONG armOff1;
+#endif
 	LONG off2;
+#if defined(_M_ARM64)
+	LONG armOff2;
+#endif
 	LONG off3;
+#if defined(_M_ARM64)
+	LONG armOff3;
+#endif
 	LONG off4;
+#if defined(_M_ARM64)
+	LONG armOff4;
+#endif
 	LONG off5;
+#if defined(_M_ARM64)
+	LONG armOff5;
+#endif
 	LONG off6;
+#if defined(_M_ARM64)
+	LONG armOff6;
+#endif
 	LONG off7;
+#if defined(_M_ARM64)
+	LONG armOff7;
+#endif
 	LONG off8;
+#if defined(_M_ARM64)
+	LONG armOff8;
+#endif
 	LONG off9;
+#if defined(_M_ARM64)
+	LONG armOff9;
+#endif
 } KULL_M_PATCH_OFFSETS, *PKULL_M_PATCH_OFFSETS;
 
 typedef struct _KULL_M_PATCH_GENERIC {

@@ -16,7 +16,7 @@
 #define AES_128_KEY_LENGTH	16
 #define AES_256_KEY_LENGTH	32
 
-#ifndef IPSEC_FLAG_CHECK
+#if !defined(IPSEC_FLAG_CHECK)
 #define IPSEC_FLAG_CHECK 0xf42a19b6
 #endif
 
@@ -122,17 +122,17 @@ extern NTSTATUS WINAPI RtlEncryptDecryptRC4(IN OUT PCRYPTO_BUFFER data, IN PCCRY
 extern NTSTATUS WINAPI SystemFunction034(IN RPC_BINDING_HANDLE hRPC, IN OUT OPTIONAL HANDLE hUnk0, OUT LPBYTE output);
 extern BOOL WINAPI RtlCheckSignatureInFile(IN LPCWSTR filename);
 
-#ifndef RtlGenRandom
+#if !defined(RtlGenRandom)
 #define RtlGenRandom				SystemFunction036
 extern BOOL WINAPI RtlGenRandom(OUT LPBYTE output, IN DWORD length);
 #endif
 
-#ifndef RtlEncryptMemory
+#if !defined(RtlEncryptMemory)
 #define RtlEncryptMemory			SystemFunction040
 extern NTSTATUS WINAPI RtlEncryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
 #endif 
 
-#ifndef RtlDecryptMemory
+#if !defined(RtlDecryptMemory)
 #define RtlDecryptMemory			SystemFunction041
 extern NTSTATUS WINAPI RtlDecryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
 #endif

@@ -3,8 +3,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 VS_VERSION_INFO VERSIONINFO
 
-FILEVERSION			2,1,1,0
-PRODUCTVERSION		2,1,1,0
+FILEVERSION			2,2,0,0
+PRODUCTVERSION		2,2,0,0
 FILEFLAGS			VS_FF_PRERELEASE|VS_FF_SPECIALBUILD|VS_FF_PRIVATEBUILD
 FILEFLAGSMASK		VS_FFI_FILEFLAGSMASK
 FILEOS				VOS_NT
@@ -16,15 +16,15 @@ BLOCK "StringFileInfo"
 		BLOCK "040904b0"
 		BEGIN
 			VALUE "ProductName", "mimikatz"
-			VALUE "ProductVersion", "2.1.1.0"
+			VALUE "ProductVersion", "2.2.0.0"
 			VALUE "CompanyName", "gentilkiwi (Benjamin DELPY)"
 			VALUE "FileDescription", "mimikatz for Windows"
-			VALUE "FileVersion", "2.1.1.0"
+			VALUE "FileVersion", "2.2.0.0"
 			VALUE "InternalName", "mimikatz"
-			VALUE "LegalCopyright", "Copyright (c) 2007 - 2018 gentilkiwi (Benjamin DELPY)"
+			VALUE "LegalCopyright", "Copyright (c) 2007 - 2020 gentilkiwi (Benjamin DELPY)"
 			VALUE "OriginalFilename", "mimikatz.exe"
 			VALUE "PrivateBuild", "Build with love for POC only"
-			VALUE "SpecialBuild", "lil :)"
+			VALUE "SpecialBuild", ":)"
 		END
 	END
 	BLOCK "VarFileInfo"

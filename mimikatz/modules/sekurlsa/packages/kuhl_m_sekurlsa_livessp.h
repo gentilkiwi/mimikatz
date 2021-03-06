@@ -5,7 +5,7 @@
 */
 #pragma once
 #include "../kuhl_m_sekurlsa.h"
-
+#if !defined(_M_ARM64)
 KUHL_M_SEKURLSA_PACKAGE kuhl_m_sekurlsa_livessp_package;
 
 NTSTATUS kuhl_m_sekurlsa_livessp(int argc, wchar_t * argv[]);
@@ -34,3 +34,4 @@ typedef struct _KIWI_LIVESSP_LIST_ENTRY
 	PVOID	unk7;
 	PKIWI_LIVESSP_PRIMARY_CREDENTIAL suppCreds;
 } KIWI_LIVESSP_LIST_ENTRY, *PKIWI_LIVESSP_LIST_ENTRY;
+#endif

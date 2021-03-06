@@ -90,11 +90,15 @@ void kull_m_string_ptr_replace(PVOID ptr, DWORD64 size);
 
 BOOL kull_m_string_args_byName(const int argc, const wchar_t * argv[], const wchar_t * name, const wchar_t ** theArgs, const wchar_t * defaultValue);
 BOOL kull_m_string_args_bool_byName(int argc, wchar_t * argv[], LPCWSTR name, PBOOL value);
+BOOL kull_m_string_copy_len(LPWSTR *dst, LPCWSTR src, size_t size);
 BOOL kull_m_string_copy(LPWSTR *dst, LPCWSTR src);
+BOOL kull_m_string_copyA_len(LPSTR *dst, LPCSTR src, size_t size);
 BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src);
 BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);
+BOOL kull_m_string_EncodeB64_headersA(LPCSTR type, const PBYTE pbData, const DWORD cbData, LPSTR *out);
 #endif
 BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...);
+BOOL kull_m_string_sprintfA(PSTR *outBuffer, PCSTR format, ...);
 BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime);

@@ -28,6 +28,6 @@ PKERB_VALIDATION_INFO kuhl_m_pac_infoToValidationInfo(PFILETIME authtime, LPCWST
 BOOL kuhl_m_pac_stringToGroups(PCWSTR szGroups, PGROUP_MEMBERSHIP *groups, DWORD *cbGroups);
 BOOL kuhl_m_pac_stringToSids(PCWSTR szSids, PKERB_SID_AND_ATTRIBUTES *sids, DWORD *cbSids);
 
-#ifdef KERBEROS_TOOLS
+#if defined(KERBEROS_TOOLS)
 NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[]);
 #endif

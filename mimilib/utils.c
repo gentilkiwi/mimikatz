@@ -24,10 +24,18 @@ void klog_password(FILE * logfile, PUNICODE_STRING pPassword)
 	{
 		if(IsTextUnicode(pPassword->Buffer, pPassword->Length, &i))
 			klog(logfile, L"%wZ", pPassword);
-		else
-			for(i = 0; i < pPassword->Length; i++)
-				klog(logfile, L"%02x ", ((LPCBYTE) pPassword->Buffer)[i]);
+		else klog_hash(logfile, pPassword, TRUE);
+			//for(i = 0; i < pPassword->Length; i++)
+			//	klog(logfile, L"%02x ", ((LPCBYTE) pPassword->Buffer)[i]);
 	}
+}
+
+void klog_hash(FILE * logfile, PUNICODE_STRING pHash, BOOLEAN withSpace)
+{
+	USHORT i;
+	if(pHash->Buffer)
+		for(i = 0; i < pHash->Length; i++)
+			klog(logfile, L"%02x%s", ((LPCBYTE) pHash->Buffer)[i], withSpace ? " " : "");
 }
 
 void klog_sid(FILE * logfile, PSID pSid)

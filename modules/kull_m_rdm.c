@@ -209,7 +209,7 @@ BOOL rdm_devices_get(PRDM_DEVICE *devices, DWORD *count)
 											{
 												if(GetLastError() != ERROR_ACCESS_DENIED)
 													PRINT_ERROR_AUTO(L"CreateFile (hDevice)");
-												LocalFree(*next);
+												*next = (PRDM_DEVICE) LocalFree(*next);
 											}
 										}
 									}

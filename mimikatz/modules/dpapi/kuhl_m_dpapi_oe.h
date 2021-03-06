@@ -33,6 +33,7 @@ typedef struct _KUHL_M_DPAPI_OE_DOMAINKEY_ENTRY {
 
 NTSTATUS kuhl_m_dpapi_oe_clean();
 NTSTATUS kuhl_m_dpapi_oe_cache(int argc, wchar_t * argv[]);
+BOOL kuhl_m_dpapi_oe_is_sid_valid_ForCacheOrAuto(PSID sid, LPCWSTR szSid, BOOL AutoOrCache);
 BOOL kuhl_m_dpapi_oe_autosid(LPCWSTR filename, LPWSTR * pSid);
 
 LIST_ENTRY gDPAPI_Masterkeys;
@@ -40,7 +41,7 @@ LIST_ENTRY gDPAPI_Credentials;
 LIST_ENTRY gDPAPI_Domainkeys;
 
 PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY kuhl_m_dpapi_oe_masterkey_get(LPCGUID guid);
-BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID keyHash, DWORD keyLen);
+BOOL kuhl_m_dpapi_oe_masterkey_add(LPCGUID guid, LPCVOID key, DWORD keyLen);
 void kuhl_m_dpapi_oe_masterkey_delete(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry);
 void kuhl_m_dpapi_oe_masterkey_descr(PKUHL_M_DPAPI_OE_MASTERKEY_ENTRY entry);
 void kuhl_m_dpapi_oe_masterkeys_delete();

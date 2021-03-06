@@ -37,7 +37,7 @@ typedef struct _PAC_CREDENTIAL_INFO {
 	UCHAR SerializedData[ANYSIZE_ARRAY];
 } PAC_CREDENTIAL_INFO, *PPAC_CREDENTIAL_INFO;
 
-#ifndef _NTSECPKG_
+#if !defined(_NTSECPKG_)
 typedef struct _SECPKG_SUPPLEMENTAL_CRED {
 	RPC_UNICODE_STRING PackageName;
 	ULONG CredentialSize;

@@ -19,6 +19,7 @@ NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[]);
 void kuhl_m_vault_list_descVault(HANDLE hVault);
 void kuhl_m_vault_list_descItemData(struct _VAULT_ITEM_DATA * pData);
 NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[]);
+void kuhl_m_vault_cred_tryEncrypted(PCREDENTIAL pCredential);
 
 typedef struct _VAULT_GUID_STRING {
 	const GUID guid;
@@ -114,7 +115,7 @@ typedef struct _VAULT_BYTE_BUFFER {
 typedef struct _VAULT_CREDENTIAL_ATTRIBUTEW {
     LPWSTR  Keyword;
     DWORD Flags;
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	DWORD badAlign;
 #endif
     DWORD ValueSize;

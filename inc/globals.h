@@ -20,19 +20,19 @@
 #include "../modules/kull_m_output.h"
 //#define KERBEROS_TOOLS
 //#define SERVICE_INCONTROL
-//#define LSASS_DECRYPT
 #define NET_MODULE
-#define SQLITE3_OMIT
-#ifdef _M_X64
+#if defined(_M_ARM64)
+	#define MIMIKATZ_ARCH L"arm64"
+#elif defined(_M_X64)
 	#define MIMIKATZ_ARCH L"x64"
-#else ifdef _M_IX86
+#elif defined(_M_IX86)
 	#define MIMIKATZ_ARCH L"x86"
 #endif
 
 #define MIMIKATZ				L"mimikatz"
-#define MIMIKATZ_VERSION		L"2.1.1"
+#define MIMIKATZ_VERSION		L"2.2.0"
 #define MIMIKATZ_CODENAME		L"A La Vie, A L\'Amour"
-#define MIMIKATZ_MAX_WINBUILD	L"17763"
+#define MIMIKATZ_MAX_WINBUILD	L"19041"
 #define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") #" MIMIKATZ_MAX_WINBUILD L" " TEXT(__DATE__) L" " TEXT(__TIME__)
 #define MIMIKATZ_SECOND			L"\"" MIMIKATZ_CODENAME L"\""
 #define MIMIKATZ_DEFAULT_LOG	MIMIKATZ L".log"
@@ -40,41 +40,49 @@
 #define MIMIKATZ_KERBEROS_EXT	L"kirbi"
 #define MIMIKATZ_SERVICE		MIMIKATZ L"svc"
 
-#ifdef _WINDLL
+#if defined(_WINDLL)
 	#define MIMIKATZ_AUTO_COMMAND_START		0
 #else
 	#define MIMIKATZ_AUTO_COMMAND_START		1
 #endif
 
-#ifdef _POWERKATZ
+#if defined(_POWERKATZ)
 	#define MIMIKATZ_AUTO_COMMAND_STRING	L"powershell"
 #else
 	#define MIMIKATZ_AUTO_COMMAND_STRING	L"commandline"
 #endif
 
-#ifndef NT_SUCCESS
+#if !defined(NT_SUCCESS)
 #define NT_SUCCESS(Status) ((NTSTATUS)(Status) >= 0)
 #endif
 
-#ifndef PRINT_ERROR
+#if !defined(PRINT_ERROR)
 #define PRINT_ERROR(...) (kprintf(L"ERROR " TEXT(__FUNCTION__) L" ; " __VA_ARGS__))
 #endif
 
-#ifndef PRINT_ERROR_AUTO
+#if !defined(PRINT_ERROR_AUTO)
 #define PRINT_ERROR_AUTO(func) (kprintf(L"ERROR " TEXT(__FUNCTION__) L" ; " func L" (0x%08x)\n", GetLastError()))
 #endif
 
-#ifndef W00T
+#if !defined(W00T)
 #define W00T(...) (kprintf(TEXT(__FUNCTION__) L" w00t! ; " __VA_ARGS__))
 #endif
 
 DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NUMBER;
 
-#ifndef MS_ENH_RSA_AES_PROV_XP
+#if !defined(MS_ENH_RSA_AES_PROV_XP)
 #define MS_ENH_RSA_AES_PROV_XP	L"Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)"
 #endif
 
-#ifndef SCARD_PROVIDER_CARD_MODULE
+#if !defined(MS_PLATFORM_CRYPTO_PROVIDER)
+#define MS_PLATFORM_CRYPTO_PROVIDER	L"Microsoft Platform Crypto Provider"
+#endif
+
+#if !defined(NCRYPT_PCP_PLATFORM_TYPE_PROPERTY)
+#define NCRYPT_PCP_PLATFORM_TYPE_PROPERTY    L"PCP_PLATFORM_TYPE"
+#endif
+
+#if !defined(SCARD_PROVIDER_CARD_MODULE)
 #define SCARD_PROVIDER_CARD_MODULE 0x80000001
 #endif
 
@@ -98,6 +106,9 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_BUILD_10_1709	16299
 #define KULL_M_WIN_BUILD_10_1803	17134
 #define KULL_M_WIN_BUILD_10_1809	17763
+#define KULL_M_WIN_BUILD_10_1903	18362
+#define KULL_M_WIN_BUILD_10_1909	18363
+#define KULL_M_WIN_BUILD_10_2004	19041
 
 
 #define KULL_M_WIN_MIN_BUILD_XP		2500

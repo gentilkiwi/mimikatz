@@ -237,7 +237,7 @@ BOOL sr98_devices_get(PSR98_DEVICE *devices, DWORD *count)
 											else
 											{
 												PRINT_ERROR_AUTO(L"CreateFile (hDevice)");
-												LocalFree(*next);
+												*next = (PSR98_DEVICE) LocalFree(*next);
 											}
 										}
 									}

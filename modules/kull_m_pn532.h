@@ -5,6 +5,7 @@
 */
 #pragma once
 #include "globals.h"
+#include "kull_m_mifare.h"
 #include "kull_m_string.h"
 
 #define PN532_MAX_LEN					265
@@ -61,7 +62,6 @@
 #define PN532_CMD_Diagnose_AttentionRequestTest		0x06
 #define PN532_CMD_Diagnose_SelfAntennaTest			0x07
 
-
 typedef BOOL (CALLBACK * PKULL_M_PN532_COMM_CALLBACK) (const BYTE *pbData, const UINT16 cbData, BYTE *pbResult, UINT16 *cbResult, LPVOID suppdata);
 
 typedef struct _PN532_TARGET_TYPE_A {
@@ -88,6 +88,19 @@ typedef struct _KULL_M_PN532_COMM {
 	BOOL descr;
 } KULL_M_PN532_COMM, *PKULL_M_PN532_COMM;
 
+#pragma pack(push, 1)
+typedef struct _PN532_MIFARE_CMD {
+	BYTE Cmd;
+	BYTE Addr;
+	BYTE Data[16];
+} PN532_MIFARE_CMD, *PPN532_MIFARE_CMD;
+
+typedef struct _PN532_DATA_EXCHANGE_MIFARE {
+	BYTE Tg;
+	PN532_MIFARE_CMD DataOut;
+} PN532_DATA_EXCHANGE_MIFARE, *PPN532_DATA_EXCHANGE_MIFARE;
+#pragma pack(pop)
+
 void kull_m_pn532_init(PKULL_M_PN532_COMM_CALLBACK communicator, LPVOID suppdata, BOOL descr, PKULL_M_PN532_COMM comm);
 BOOL kull_m_pn532_Diagnose(PKULL_M_PN532_COMM comm /*, ...*/);
 BOOL kull_m_pn532_GetFirmware(PKULL_M_PN532_COMM comm, BYTE firmwareInfo[4]);
@@ -100,3 +113,8 @@ void kull_m_pn532_TgInitAsTarget(PKULL_M_PN532_COMM comm);
 void kull_m_pn532_TgGetInitiatorCommand(PKULL_M_PN532_COMM comm);
 void kull_m_pn532_TgResponseToInitiator(PKULL_M_PN532_COMM comm);
 void kull_m_pn532_TgGetData(PKULL_M_PN532_COMM comm);
+
+BOOL kull_m_pn532_Mifare_Classic_AuthBlock(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE authKey, const BYTE blockId, const BYTE key[MIFARE_CLASSIC_KEY_SIZE]);
+BOOL kull_m_pn532_Mifare_Classic_ReadBlock(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE blockId, PMIFARE_CLASSIC_RAW_BLOCK block);
+BOOL kull_m_pn532_Mifare_Classic_ReadSector(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE sectorId, PMIFARE_CLASSIC_RAW_SECTOR sector);
+BOOL kull_m_pn532_Mifare_Classic_ReadSectorWithKey(PKULL_M_PN532_COMM comm, PPN532_TARGET_TYPE_A target, const BYTE sectorId, const BYTE authKey, const BYTE key[MIFARE_CLASSIC_KEY_SIZE], PMIFARE_CLASSIC_RAW_SECTOR sector);

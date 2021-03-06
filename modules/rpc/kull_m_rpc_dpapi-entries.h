@@ -4,19 +4,21 @@
 
 typedef struct _KUHL_M_DPAPI_MASTERKEY_ENTRY {
 	GUID guid;
-	BYTE keyHash[ SHA_DIGEST_LENGTH ];
+	BYTE keyHash[SHA_DIGEST_LENGTH];
+	DWORD keyLen;
+    BYTE *key;
 } KUHL_M_DPAPI_MASTERKEY_ENTRY, *PKUHL_M_DPAPI_MASTERKEY_ENTRY;
 
 typedef struct _KUHL_M_DPAPI_CREDENTIAL_ENTRY {
 	DWORD flags;
 	GUID guid;
 	WCHAR *sid;
-	BYTE md4hash[ LM_NTLM_HASH_LENGTH ];
-	BYTE md4hashDerived[ SHA_DIGEST_LENGTH ];
-	BYTE sha1hash[ SHA_DIGEST_LENGTH ];
-	BYTE sha1hashDerived[ SHA_DIGEST_LENGTH ];
-	BYTE md4protectedhash[ LM_NTLM_HASH_LENGTH ];
-	BYTE md4protectedhashDerived[ SHA_DIGEST_LENGTH ];
+	BYTE md4hash[LM_NTLM_HASH_LENGTH];
+	BYTE md4hashDerived[SHA_DIGEST_LENGTH];
+	BYTE sha1hash[SHA_DIGEST_LENGTH];
+	BYTE sha1hashDerived[SHA_DIGEST_LENGTH];
+	BYTE md4protectedhash[LM_NTLM_HASH_LENGTH];
+	BYTE md4protectedhashDerived[SHA_DIGEST_LENGTH];
 } KUHL_M_DPAPI_CREDENTIAL_ENTRY, *PKUHL_M_DPAPI_CREDENTIAL_ENTRY;
 
 typedef struct _KUHL_M_DPAPI_DOMAINKEY_ENTRY {
@@ -26,7 +28,7 @@ typedef struct _KUHL_M_DPAPI_DOMAINKEY_ENTRY {
 	BYTE *key;
 } KUHL_M_DPAPI_DOMAINKEY_ENTRY, *PKUHL_M_DPAPI_DOMAINKEY_ENTRY;
 
-typedef /* [decode][encode] */ struct _KUHL_M_DPAPI_ENTRIES {
+typedef struct _KUHL_M_DPAPI_ENTRIES {
 	DWORD MasterKeyCount;
 	PKUHL_M_DPAPI_MASTERKEY_ENTRY *MasterKeys;
 	DWORD CredentialCount;

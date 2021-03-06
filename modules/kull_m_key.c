@@ -122,7 +122,7 @@ BOOL kull_m_key_capi_write(PKULL_M_KEY_CAPI_BLOB capiKey, PVOID *data, DWORD *si
 	return status;
 }
 
-BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID decrypted, DWORD decryptedLen, PRSA_GENERICKEY_BLOB *blob, DWORD *blobLen)
+BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID publickey, DWORD publickeyLen, LPCVOID decrypted, DWORD decryptedLen, ALG_ID keyAlg, PRSA_GENERICKEY_BLOB *blob, DWORD *blobLen, DWORD *dwProviderType)
 {
 	BOOL status = FALSE;
 	DWORD keyLen;
@@ -138,7 +138,7 @@ BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID decrypted, DWORD decryptedLen, 
 			(*blob)->Header.bType = PRIVATEKEYBLOB;
 			(*blob)->Header.bVersion = CUR_BLOB_VERSION;
 			(*blob)->Header.reserved = 0;
-			(*blob)->Header.aiKeyAlg = CALG_RSA_KEYX;
+			(*blob)->Header.aiKeyAlg = keyAlg;
 
 			(*blob)->RsaKey.magic = ((PDWORD) decrypted)[0];
 			(*blob)->RsaKey.bitlen = keyLen;
@@ -166,6 +166,26 @@ BOOL kull_m_key_capi_decryptedkey_to_raw(LPCVOID decrypted, DWORD decryptedLen, 
 			ptrDestination += keyLen / 16;
 			ptrSource += (keyLen / 16) + 4;
 			RtlCopyMemory(ptrDestination, ptrSource, keyLen / 8);
+
+			*dwProviderType = PROV_RSA_FULL;
+		}
+	}
+	else
+	{
+		if(publickey && publickeyLen)
+		{
+			if((((PDSS_GENERICKEY3_BLOB) publickey)->Header.bType == PRIVATEKEYBLOB) && (((PDSS_GENERICKEY3_BLOB) publickey)->Header.bVersion == (CUR_BLOB_VERSION + 1)) && (((PDSS_GENERICKEY3_BLOB) publickey)->DsaKey.magic == '4SSD'))
+			{
+				*blobLen = publickeyLen + decryptedLen;
+				if(*blob = (PRSA_GENERICKEY_BLOB) LocalAlloc(LPTR, *blobLen))
+				{
+					status = TRUE;
+					RtlCopyMemory(*blob, publickey, publickeyLen);
+					RtlCopyMemory(((PBYTE) *blob) + publickeyLen, decrypted, decryptedLen);
+					((PDSS_GENERICKEY3_BLOB) *blob)->DsaKey.bitlenX = decryptedLen * 8;
+					*dwProviderType = PROV_DSS;
+				}
+			}
 		}
 	}
 	return status;

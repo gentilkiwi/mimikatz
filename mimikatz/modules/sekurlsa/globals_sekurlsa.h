@@ -9,7 +9,6 @@
 #include "../modules/kull_m_process.h"
 #include "../modules/kull_m_handle.h"
 #include "../modules/rpc/kull_m_rpc.h"
-#include "../dpapi/kuhl_m_dpapi_oe.h"
 
 typedef struct _RTL_BALANCED_LINKS {
 	struct _RTL_BALANCED_LINKS *Parent;
@@ -64,8 +63,8 @@ typedef struct _KUHL_M_SEKURLSA_LOCAL_HELPER {
 	PKUHL_M_SEKURLSA_INIT initLocalLib;
 	PKUHL_M_SEKURLSA_INIT cleanLocalLib;
 	PKUHL_M_SEKURLSA_ACQUIRE_KEYS_FUNCS AcquireKeys;
-	PLSA_PROTECT_MEMORY * pLsaProtectMemory;
-	PLSA_PROTECT_MEMORY * pLsaUnprotectMemory;
+	const PLSA_PROTECT_MEMORY * pLsaProtectMemory;
+	const PLSA_PROTECT_MEMORY * pLsaUnprotectMemory;
 } KUHL_M_SEKURLSA_LOCAL_HELPER, *PKUHL_M_SEKURLSA_LOCAL_HELPER;
 
 typedef struct _KIWI_BASIC_SECURITY_LOGON_SESSION_DATA {

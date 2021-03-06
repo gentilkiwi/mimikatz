@@ -9,14 +9,18 @@
 #include "kull_m_memory.h"
 #include "kull_m_string.h"
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64)
 	#define	MmSystemRangeStart	((PBYTE) 0xffff080000000000)
-#elif defined _M_IX86
+#elif defined(_M_IX86)
 	#define MmSystemRangeStart	((PBYTE) 0x80000000)
 #endif
 
+#if !defined(__MACHINE)
 #define __MACHINE(X)	X;
+#endif
+#if !defined(__MACHINEX86)
 #define __MACHINEX86	__MACHINE
+#endif
 __MACHINEX86(unsigned long __readfsdword(unsigned long))
 
 typedef enum _SYSTEM_INFORMATION_CLASS {
@@ -189,7 +193,7 @@ typedef enum _KWAIT_REASON {
 } KWAIT_REASON;
 
 typedef struct _SYSTEM_THREAD {
-#ifndef _M_X64
+#if !defined(_M_X64) || !defined(_M_ARM64) // TODO:ARM64
 	LARGE_INTEGER KernelTime;
 #endif
 	LARGE_INTEGER UserTime;
@@ -202,7 +206,7 @@ typedef struct _SYSTEM_THREAD {
 	ULONG ContextSwitchCount;
 	ULONG State;
 	KWAIT_REASON WaitReason;
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	LARGE_INTEGER unk;
 #endif
 } SYSTEM_THREAD, *PSYSTEM_THREAD;
@@ -276,7 +280,7 @@ typedef struct _PEB {
 	/// ...
 } PEB, *PPEB;
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 typedef struct _LSA_UNICODE_STRING_F32 {
 	USHORT Length;
 	USHORT MaximumLength;

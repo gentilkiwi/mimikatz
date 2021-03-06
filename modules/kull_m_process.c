@@ -65,7 +65,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 	NTSTATUS status = STATUS_DLL_NOT_FOUND;
 	PLDR_DATA_TABLE_ENTRY pLdrEntry;
 	PEB Peb; PEB_LDR_DATA LdrData; LDR_DATA_TABLE_ENTRY LdrEntry;
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	PLDR_DATA_TABLE_ENTRY_F32 pLdrEntry32;
 	PEB_F32 Peb32; PEB_LDR_DATA_F32 LdrData32; LDR_DATA_TABLE_ENTRY_F32 LdrEntry32;
 #endif
@@ -99,7 +99,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 				}
 				status = STATUS_SUCCESS;
 		}
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 		moduleInformation.NameDontUseOutsideCallback = &moduleName;
 		if(continueCallback && NT_SUCCESS(status) && kull_m_process_peb(memory, (PPEB) &Peb32, TRUE))
 		{
@@ -158,7 +158,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 				status = STATUS_SUCCESS;
 			}
 		}
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 		if(continueCallback && NT_SUCCESS(status) && kull_m_process_peb(memory, (PPEB) &Peb32, TRUE))
 		{
 			status = STATUS_PARTIAL_COPY;
@@ -200,7 +200,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 
 	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
 		moduleInformation.NameDontUseOutsideCallback = &moduleName;
-		if(pMinidumpModuleList = (PMINIDUMP_MODULE_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, ModuleListStream))
+		if(pMinidumpModuleList = (PMINIDUMP_MODULE_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, ModuleListStream, NULL))
 		{
 			for(i = 0; (i < pMinidumpModuleList->NumberOfModules) && continueCallback; i++)
 			{
@@ -316,7 +316,7 @@ NTSTATUS kull_m_process_getMemoryInformations(PKULL_M_MEMORY_HANDLE memory, PKUL
 		status = STATUS_SUCCESS;
 		break;
 	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
-		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, MemoryInfoListStream))
+		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, MemoryInfoListStream, NULL))
 		{
 			for(i = 0; (i < maListeInfo->NumberOfEntries) && continueCallback; i++)
 			{
@@ -351,7 +351,7 @@ BOOL kull_m_process_peb(PKULL_M_MEMORY_HANDLE memory, PPEB pPeb, BOOL isWOW)
 	ULONG szPeb, szBuffer, szInfos;
 	LPVOID buffer;
 
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	if(isWOW)
 	{
 		info = ProcessWow64Information;
@@ -366,13 +366,13 @@ BOOL kull_m_process_peb(PKULL_M_MEMORY_HANDLE memory, PPEB pPeb, BOOL isWOW)
 		szBuffer = sizeof(processInformations);
 		buffer = &processInformations;
 		szPeb = sizeof(PEB);
-#ifdef _M_X64
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 	}
 #endif
 
 	switch(memory->type)
 	{
-#ifndef MIMIKATZ_W2000_SUPPORT
+#if !defined(MIMIKATZ_W2000_SUPPORT)
 	case KULL_M_MEMORY_TYPE_OWN:
 		if(!isWOW)
 		{
