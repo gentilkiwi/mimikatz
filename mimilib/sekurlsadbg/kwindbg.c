@@ -216,7 +216,7 @@ DECLARE_API(kdbg_mimikatz)
 				}
 				else dprintf("[ERROR] [LSA] Symbols\n%p - lsasrv!LogonSessionListCount\n%p - lsasrv!LogonSessionList\n", pLogonSessionListCount, pLogonSessionList);
 			}
-			else dprintf("[ERROR] [CRYPTO] Acquire keys");
+			else dprintf("[ERROR] [CRYPTO] Acquire keys\n");
 		}
 		else dprintf("[ERROR] [CRYPTO] Symbols\n%p - lsasrv!InitializationVector\n%p - lsasrv!hAesKey\n%p - lsasrv!h3DesKey\n", pInitializationVector, phAesKey, ph3DesKey);
 		kuhl_m_sekurlsa_nt6_LsaCleanupProtectedMemory();

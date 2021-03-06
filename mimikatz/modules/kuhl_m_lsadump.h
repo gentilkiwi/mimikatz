@@ -453,6 +453,26 @@ typedef struct _KIWI_LSA_PRIVATE_DATA {
 	// LmHistoryArray
 } KIWI_LSA_PRIVATE_DATA, *PKIWI_LSA_PRIVATE_DATA;
 
+typedef struct _TBAL_UNICODE_STRING_F32 {
+	DWORD  Buffer;
+	USHORT Length;
+	USHORT MaximumLength;
+} TBAL_UNICODE_STRING_F32, *PTBAL_UNICODE_STRING_F32;
+
+typedef struct _KIWI_TBAL_MSV {
+	DWORD unk0;
+	DWORD structLen;
+	DWORD flags;
+	DWORD unkD; // why not ?
+	BYTE NtOwfPassword[LM_NTLM_HASH_LENGTH];
+	BYTE LmOwfPassword[LM_NTLM_HASH_LENGTH];
+	BYTE ShaOwPassword[SHA_DIGEST_LENGTH]; 
+	BYTE DPAPIProtected[LM_NTLM_HASH_LENGTH];
+	DWORD unk1;
+	TBAL_UNICODE_STRING_F32 DomainName;
+	TBAL_UNICODE_STRING_F32 UserName;
+} KIWI_TBAL_MSV, *PKIWI_TBAL_MSV;
+
 BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);

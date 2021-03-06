@@ -79,6 +79,8 @@ typedef struct _DCSHADOW_OBJECT_ATTRIBUTE {
 #define REPLICATION_UID_SET		(1)
 #define REPLICATION_USN_SET		(1 << 1)
 #define REPLICATION_TIME_SET	(1 << 2)
+#define OBJECT_TO_ADD			(1)
+#define OBJECT_DYNAMIC			(1 << 1)
 
 typedef struct _DCSHADOW_OBJECT_ATTRIBUTE_METADATA {
 	DWORD dwFlag;
@@ -86,6 +88,7 @@ typedef struct _DCSHADOW_OBJECT_ATTRIBUTE_METADATA {
 	DWORD usnOriginating;
 	FILETIME usnTimeChanged;
 	DWORD curRevision;
+	FILETIME curTimeChanged;
 } DCSHADOW_OBJECT_ATTRIBUTE_METADATA, *PDCSHADOW_OBJECT_ATTRIBUTE_METADATA;
 
 typedef struct _DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE {
@@ -96,15 +99,15 @@ typedef struct _DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE {
 } DCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE, *PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE;
 
 typedef struct _DCSHADOW_PUSH_REQUEST_OBJECT {
-	// set automatically when reading replication metadata
-	BOOL fAdd;
 	PWSTR szObjectDN;
 	// mandatory for object creation and/or password encoding
 	NT4SID pSid;
 	// mandatory for object creation
 	GUID ObjectGUID;
+	GUID ParentGuid;
 	ULONG cbAttributes;
 	PDCSHADOW_PUSH_REQUEST_OBJECT_ATTRIBUTE pAttributes;
+	DWORD dwFlag;
 } DCSHADOW_PUSH_REQUEST_OBJECT, *PDCSHADOW_PUSH_REQUEST_OBJECT;
 
 typedef struct _DCSHADOW_PUSH_REQUEST {
@@ -124,6 +127,7 @@ typedef struct _DCSHADOW_DOMAIN_DC_INFO {
 #define DOMAIN_INFO_PUSH_FLAGS_ROOT		1
 #define DOMAIN_INFO_PUSH_FLAGS_CONFIG	2
 #define DOMAIN_INFO_PUSH_FLAGS_SCHEMA	4
+#define DOMAIN_INFO_PUSH_REMOTE_MODIFY  8
 
 typedef struct _DCSHADOW_DOMAIN_INFO {
 	// dns name - arg or local assigned var freed
@@ -139,6 +143,7 @@ typedef struct _DCSHADOW_DOMAIN_INFO {
 	PWSTR szSchemaNamingContext;
 	// The site (first-or-default in general)
 	PWSTR szDsServiceName;
+	PWSTR szDCDsServiceName;
 	DWORD dwDomainControllerFunctionality;
 	DWORD dwReplEpoch;
 	DWORD maxDCUsn;
@@ -147,6 +152,7 @@ typedef struct _DCSHADOW_DOMAIN_INFO {
 	DWORD dwPushFlags;
 	DCSHADOW_DOMAIN_DC_INFO realDc;
 	DCSHADOW_DOMAIN_DC_INFO mimiDc;
+	LDAP* ld;
 	HANDLE hGetNCChangeCalled;
 	// the only attribute which can be there in a next call
 	PDCSHADOW_PUSH_REQUEST request;

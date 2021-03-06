@@ -21,6 +21,7 @@ const KUHL_M_C kuhl_m_c_dpapi[] = {
 	{kuhl_m_dpapi_chrome,		L"chrome",		L"Chrome test"},
 #endif
 	{kuhl_m_dpapi_ssh,			L"ssh",		L"SSH Agent registry cache"},
+	{kuhl_m_dpapi_rdg,			L"rdg",		L"RDG saved passwords"},
 	{kuhl_m_dpapi_oe_cache,		L"cache", NULL},
 };
 const KUHL_M kuhl_m_dpapi = {

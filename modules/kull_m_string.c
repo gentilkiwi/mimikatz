@@ -490,7 +490,6 @@ BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime)
 		}
 	}
 
-
 	if(status)
 	{
 		status = FALSE;
