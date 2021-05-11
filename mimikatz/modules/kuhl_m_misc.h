@@ -15,6 +15,12 @@
 #include "../../modules/kull_m_crypto_ngc.h"
 #include "../../modules/rpc/kull_m_rpc_ms-rprn.h"
 #include <fltUser.h>
+#include <sql.h>
+#pragma warning(push)
+#pragma warning(disable:4201)
+#include <sqlext.h>
+#pragma warning(pop)
+#include <sqltypes.h>
 
 const KUHL_M kuhl_m_misc;
 
@@ -38,6 +44,7 @@ NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 BOOL CALLBACK kuhl_m_misc_detours_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);

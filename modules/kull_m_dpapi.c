@@ -828,41 +828,41 @@ BOOL kull_m_dpapi_protect_masterkey_with_shaDerivedkey(PKULL_M_DPAPI_MASTERKEY m
 	return status;
 }
 
-//BOOL kull_m_dpapi_unprotect_backupkey_with_secret(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR sid, LPCVOID secret, DWORD secretLen, PVOID *output, DWORD *outputLen)
-//{
-//	BOOL status = FALSE, isDPAPISecret = flags & 1;
-//	LPCBYTE ptrSecret = (LPCBYTE) secret;
-//	PVOID data, hash;
-//	ALG_ID algID = (masterkey->algHash == CALG_SHA_512) ? CALG_SHA_512 : CALG_SHA1;
-//	DWORD sidLen = (DWORD) (wcslen(sid) + 1) * sizeof(wchar_t), hashSize = kull_m_crypto_hash_len(algID), dataSize = sidLen;
-//
-//	if(!isDPAPISecret || (isDPAPISecret && ptrSecret && secretLen))
-//	{
-//		if(secretLen == 2 * SHA_DIGEST_LENGTH + sizeof(DWORD))
-//		{
-//			ptrSecret += sizeof(DWORD);
-//			secretLen -= sizeof(DWORD);
-//		}
-//		if(isDPAPISecret)
-//			dataSize += secretLen;
-//		if(data = (PBYTE) LocalAlloc(LPTR, dataSize))
-//		{
-//			RtlCopyMemory(data, sid, sidLen);
-//			if(isDPAPISecret)
-//				RtlCopyMemory((PBYTE) data + sidLen, ptrSecret, secretLen);
-//
-//			if(hash = LocalAlloc(LPTR, hashSize))
-//			{
-//				if(kull_m_crypto_hash(algID, data, dataSize, hash, hashSize))
-//					status = kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkey, hash, hashSize, output, outputLen);
-//				LocalFree(hash);
-//			}
-//			LocalFree(data);
-//		}
-//	}
-//	else PRINT_ERROR(L"This backup key need DPAPI_SYSTEM secret\n");
-//	return status;
-//}
+BOOL kull_m_dpapi_unprotect_backupkey_with_secret(DWORD flags, PKULL_M_DPAPI_MASTERKEY masterkey, PCWSTR sid, LPCVOID secret, DWORD secretLen, PVOID *output, DWORD *outputLen)
+{
+	BOOL status = FALSE, isDPAPISecret = flags & 1;
+	LPCBYTE ptrSecret = (LPCBYTE) secret;
+	PVOID data, hash;
+	ALG_ID algID = (masterkey->algHash == CALG_SHA_512) ? CALG_SHA_512 : CALG_SHA1;
+	DWORD sidLen = (DWORD) (wcslen(sid) + 1) * sizeof(wchar_t), hashSize = kull_m_crypto_hash_len(algID), dataSize = sidLen;
+
+	if(!isDPAPISecret || (isDPAPISecret && ptrSecret && secretLen))
+	{
+		if(secretLen == 2 * SHA_DIGEST_LENGTH + sizeof(DWORD))
+		{
+			ptrSecret += sizeof(DWORD);
+			secretLen -= sizeof(DWORD);
+		}
+		if(isDPAPISecret)
+			dataSize += secretLen;
+		if(data = (PBYTE) LocalAlloc(LPTR, dataSize))
+		{
+			RtlCopyMemory(data, sid, sidLen);
+			if(isDPAPISecret)
+				RtlCopyMemory((PBYTE) data + sidLen, ptrSecret, secretLen);
+
+			if(hash = LocalAlloc(LPTR, hashSize))
+			{
+				if(kull_m_crypto_hash(algID, data, dataSize, hash, hashSize))
+					status = kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkey, hash, hashSize, output, outputLen);
+				LocalFree(hash);
+			}
+			LocalFree(data);
+		}
+	}
+	else PRINT_ERROR(L"This backup key need DPAPI_SYSTEM secret\n");
+	return status;
+}
 
 BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY domainkey, LPCVOID key, DWORD keyLen, PVOID *output, DWORD *outputLen, PSID *sid)
 {
@@ -885,11 +885,11 @@ BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY
 				RtlCopyMemory(rsa_buffer, domainkey->pbSecret, cbOutput);
 				if(CryptDecrypt(hKey, 0, TRUE, 0, (PBYTE) rsa_buffer, &cbOutput))
 				{
-					//kprintf(L"\nRSA decrypt is a success\n");
-					//kprintf(L" * MasterKey len: %u\n", rsa_buffer->cbMasterKey);
-					//kull_m_string_wprintf_hex(rsa_buffer->buffer, rsa_buffer->cbMasterKey, 1 | (16 << 16));
-					//kprintf(L" * SuppKey   len: %u\n", rsa_buffer->cbSuppKey);
-					//kull_m_string_wprintf_hex(rsa_buffer->buffer + rsa_buffer->cbMasterKey, rsa_buffer->cbSuppKey, 1 | (16 << 16));
+					kprintf(L"\nRSA decrypt is a success\n");
+					kprintf(L" * MasterKey len: %u\n", rsa_buffer->cbMasterKey);
+					kull_m_string_wprintf_hex(rsa_buffer->buffer, rsa_buffer->cbMasterKey, 1 | (16 << 16));
+					kprintf(L" * SuppKey   len: %u\n", rsa_buffer->cbSuppKey);
+					kull_m_string_wprintf_hex(rsa_buffer->buffer + rsa_buffer->cbMasterKey, rsa_buffer->cbSuppKey, 1 | (16 << 16));
 					if(kull_m_crypto_hkey(hProv, CALG_3DES, rsa_buffer->buffer + rsa_buffer->cbMasterKey, 192 / 8, 0, &hSessionKey, &hSessionProv))
 					{
 						if(CryptSetKeyParam(hSessionKey, KP_IV, rsa_buffer->buffer + rsa_buffer->cbMasterKey + 192 / 8, 0))
@@ -903,14 +903,14 @@ BOOL kull_m_dpapi_unprotect_domainkey_with_key(PKULL_M_DPAPI_MASTERKEY_DOMAINKEY
 								if(CryptDecrypt(hSessionKey, 0, FALSE, 0, (PBYTE) des_buffer, &cbOutput))
 								{
 									pSid = (PSID) (des_buffer->data + des_buffer->dataLen);
-									//kprintf(L"\n3DES decrypt is a success too\n");
-									////kull_m_string_wprintf_hex(des_buffer, outSize, 1 | (16 << 16)); kprintf(L"\n");
-									//kprintf(L" * nonce    : "); kull_m_string_wprintf_hex(des_buffer->data, des_buffer->dataLen, 0); kprintf(L"\n"); // try to leave it as is =)
-									//kprintf(L" * SID      : "); kull_m_string_displaySID(pSid); kprintf(L"\n");
-									//kprintf(L" * SHA1     : "); kull_m_string_wprintf_hex((PBYTE) des_buffer + cbOutput - SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+									kprintf(L"\n3DES decrypt is a success too\n");
+									kull_m_string_wprintf_hex(des_buffer, cbOutput, 1 | (16 << 16)); kprintf(L"\n");
+									kprintf(L" * nonce    : "); kull_m_string_wprintf_hex(des_buffer->data, des_buffer->dataLen, 0); kprintf(L"\n"); // try to leave it as is =)
+									kprintf(L" * SID      : "); kull_m_string_displaySID(pSid); kprintf(L"\n");
+									kprintf(L" * SHA1     : "); kull_m_string_wprintf_hex((PBYTE) des_buffer + cbOutput - SHA_DIGEST_LENGTH, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
 									if(kull_m_crypto_hash(CALG_SHA1, des_buffer, cbOutput - SHA_DIGEST_LENGTH, digest, SHA_DIGEST_LENGTH))
 									{
-										//kprintf(L" > Calc SHA1: "); kull_m_string_wprintf_hex(digest, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
+										kprintf(L" > Calc SHA1: "); kull_m_string_wprintf_hex(digest, SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
 										if(RtlEqualMemory((PBYTE) des_buffer + cbOutput - SHA_DIGEST_LENGTH, digest, SHA_DIGEST_LENGTH))
 										{
 											*outputLen = rsa_buffer->cbMasterKey;

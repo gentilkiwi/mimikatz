@@ -1,9 +1,9 @@
 #pragma once
 #include "kull_m_rpc.h"
-
+/*
 #define PRINTER_CHANGE_ADD_JOB	0x00000100
 #define PRINTER_CHANGE_ALL		0x7777FFFF
-
+*/
 #define PRINTER_NOTIFY_CATEGORY_ALL	0x00010000
 
 typedef void *PRINTER_HANDLE;

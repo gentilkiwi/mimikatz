@@ -357,7 +357,7 @@ BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD 
 		if(CryptAcquireContext(hSessionProv, container, NULL, PROV_RSA_AES, CRYPT_NEWKEYSET))
 		{
 			hPrivateKey = 0;
-			if(CryptGenKey(*hSessionProv, AT_KEYEXCHANGE, CRYPT_EXPORTABLE | RSA1024BIT_KEY, &hPrivateKey)) // 1024
+			if(CryptGenKey(*hSessionProv, AT_KEYEXCHANGE, CRYPT_EXPORTABLE | (RSA1024BIT_KEY / 2), &hPrivateKey)) // 1024
 			{
 				if(CryptExportKey(hPrivateKey, 0, PRIVATEKEYBLOB, 0, NULL, &dwkeyblob))
 				{
@@ -384,7 +384,7 @@ BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD 
 
 							if(CryptImportKey(*hSessionProv, keyblob, dwkeyblob, 0, 0, &hPrivateKey))
 							{
-								dwkeyblob = (1024 / 8) + sizeof(ALG_ID) + sizeof(BLOBHEADER); // 1024
+								dwkeyblob = (1024 / 2 / 8) + sizeof(ALG_ID) + sizeof(BLOBHEADER); // 1024
 								if(pbSessionBlob = (LPBYTE)LocalAlloc(LPTR, dwkeyblob))
 								{
 									((BLOBHEADER *) pbSessionBlob)->bType = SIMPLEBLOB;
@@ -401,6 +401,7 @@ BOOL kull_m_crypto_hkey_session(ALG_ID calgid, LPCVOID key, DWORD keyLen, DWORD 
 									for (i = 0; i < dwkeyblob - (sizeof(ALG_ID) + sizeof(BLOBHEADER) + keyLen + 3); i++)
 										if (ptr[i] == 0) ptr[i] = 0x42;
 									pbSessionBlob[dwkeyblob - 2] = 2;
+
 									status = CryptImportKey(*hSessionProv, pbSessionBlob, dwkeyblob, hPrivateKey, flags, hSessionKey);
 									LocalFree(pbSessionBlob);
 								}
@@ -1300,5 +1301,34 @@ BOOL kull_m_crypto_dh_simpleDecrypt(HCRYPTKEY key, LPVOID data, DWORD dataLen, L
 		}
 		CryptDestroyKey(hTmp);
 	}
+	return status;
+}
+
+BOOL kull_m_crypto_StringToBinaryA(LPCSTR pszString, DWORD cchString, DWORD dwFlags, PBYTE* ppbBinary, PDWORD pcbBinary)
+{
+	BOOL status = FALSE;
+
+	*ppbBinary = NULL;
+	*pcbBinary = 0;
+
+	if (CryptStringToBinaryA(pszString, cchString, dwFlags, NULL, pcbBinary, NULL, NULL))
+	{
+		*ppbBinary = (PBYTE)LocalAlloc(LPTR, *pcbBinary);
+		if (*ppbBinary)
+		{
+			if (CryptStringToBinaryA(pszString, cchString, dwFlags, *ppbBinary, pcbBinary, NULL, NULL))
+			{
+				status = TRUE;
+			}
+			else
+			{
+				PRINT_ERROR_AUTO(L"CryptStringToBinaryA(data)");
+				*ppbBinary = (PBYTE)LocalFree(*ppbBinary);
+				*pcbBinary = 0;
+			}
+		}
+	}
+	else PRINT_ERROR_AUTO(L"CryptStringToBinaryA(init)");
+
 	return status;
 }

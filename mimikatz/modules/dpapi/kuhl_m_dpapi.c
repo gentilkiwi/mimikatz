@@ -290,20 +290,20 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 					}
 				}
 				
-				//if(masterkeys->BackupKey && masterkeys->dwBackupKeyLen && convertedSid && (!(masterkeys->dwFlags & 1) || (pSystem && cbSystem)))
-				//{
-				//	kprintf(L"\n[backupkey] %s DPAPI_SYSTEM: ", pSystem ? L"with" : L"without");
-				//	if(pSystem)
-				//	{
-				//		kull_m_string_wprintf_hex(pSystem, cbSystem, 0);
-				//		if(!(masterkeys->dwFlags & 1))
-				//			kprintf(L" (but is not needed)");
-				//	}
-				//	kprintf(L"\n");
-				//	if(kull_m_dpapi_unprotect_backupkey_with_secret(masterkeys->dwFlags, masterkeys->BackupKey, convertedSid, pSystem, cbSystem, &output, &cbOutput))
-				//		kuhl_m_dpapi_display_MasterkeyInfosAndFree(NULL, output, cbOutput, NULL);
-				//	else PRINT_ERROR(L"kull_m_dpapi_unprotect_backupkey_with_secret\n");
-				//}
+				if(masterkeys->BackupKey && masterkeys->dwBackupKeyLen && convertedSid && (!(masterkeys->dwFlags & 1) || (pSystem && cbSystem)))
+				{
+					kprintf(L"\n[backupkey] %s DPAPI_SYSTEM: ", pSystem ? L"with" : L"without");
+					if(pSystem)
+					{
+						kull_m_string_wprintf_hex(pSystem, cbSystem, 0);
+						if(!(masterkeys->dwFlags & 1))
+							kprintf(L" (but is not needed)");
+					}
+					kprintf(L"\n");
+					if(kull_m_dpapi_unprotect_backupkey_with_secret(masterkeys->dwFlags, masterkeys->BackupKey, convertedSid, pSystem, cbSystem, &output, &cbOutput))
+						kuhl_m_dpapi_display_MasterkeyInfosAndFree(NULL, output, cbOutput, NULL);
+					else PRINT_ERROR(L"kull_m_dpapi_unprotect_backupkey_with_secret\n");
+				}
 
 				if(masterkeys->DomainKey && masterkeys->dwDomainKeyLen)
 				{
