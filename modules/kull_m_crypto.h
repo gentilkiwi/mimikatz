@@ -199,7 +199,9 @@ PKIWI_DH kull_m_crypto_dh_Create(ALG_ID targetSessionKeyType);
 BOOL kull_m_crypto_dh_CreateSessionKey(PKIWI_DH dh, PMIMI_PUBLICKEY publicKey);
 BOOL kull_m_crypto_dh_simpleEncrypt(HCRYPTKEY key, LPVOID data, DWORD dataLen, LPVOID *out, DWORD *outLen);
 BOOL kull_m_crypto_dh_simpleDecrypt(HCRYPTKEY key, LPVOID data, DWORD dataLen, LPVOID *out, DWORD *outLen);
+
 BOOL kull_m_crypto_StringToBinaryA(LPCSTR pszString, DWORD cchString, DWORD dwFlags, PBYTE* ppbBinary, PDWORD pcbBinary);
+BOOL kull_m_crypto_StringToBinaryW(LPCWSTR pszString, DWORD cchString, DWORD dwFlags, PBYTE* ppbBinary, PDWORD pcbBinary);
 
 #define IOCTL_GET_FEATURE_REQUEST			SCARD_CTL_CODE(3400)
 #define IOCTL_CCID_ESCAPE					SCARD_CTL_CODE(3500)

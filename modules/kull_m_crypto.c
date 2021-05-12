@@ -1332,3 +1332,32 @@ BOOL kull_m_crypto_StringToBinaryA(LPCSTR pszString, DWORD cchString, DWORD dwFl
 
 	return status;
 }
+
+BOOL kull_m_crypto_StringToBinaryW(LPCWSTR pszString, DWORD cchString, DWORD dwFlags, PBYTE* ppbBinary, PDWORD pcbBinary)
+{
+	BOOL status = FALSE;
+
+	*ppbBinary = NULL;
+	*pcbBinary = 0;
+
+	if (CryptStringToBinaryW(pszString, cchString, dwFlags, NULL, pcbBinary, NULL, NULL))
+	{
+		*ppbBinary = (PBYTE)LocalAlloc(LPTR, *pcbBinary);
+		if (*ppbBinary)
+		{
+			if (CryptStringToBinaryW(pszString, cchString, dwFlags, *ppbBinary, pcbBinary, NULL, NULL))
+			{
+				status = TRUE;
+			}
+			else
+			{
+				PRINT_ERROR_AUTO(L"CryptStringToBinaryW(data)");
+				*ppbBinary = (PBYTE)LocalFree(*ppbBinary);
+				*pcbBinary = 0;
+			}
+		}
+	}
+	else PRINT_ERROR_AUTO(L"CryptStringToBinaryW(init)");
+
+	return status;
+}

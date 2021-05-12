@@ -317,6 +317,9 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-rprn.c">
       <Filter>common modules\rpc</Filter>
     </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_sccm.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mimikatz.h" />
@@ -652,6 +655,9 @@
     </ClInclude>
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-rprn.h">
       <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_sccm.h">
+      <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
