@@ -201,11 +201,6 @@ extern BOOLEAN WINAPI WinStationSetInformationW(IN HANDLE hServer, IN ULONG Sess
 extern LPWSTR NTAPI RtlIpv4AddressToStringW(IN const IN_ADDR *Addr, OUT LPWSTR S);
 extern LPWSTR NTAPI RtlIpv6AddressToStringW(IN const PVOID /*IN6_ADDR **/Addr, OUT LPWSTR S);
 
-typedef struct _STRUCT_DATASEARCH {
-	PKULL_M_MEMORY_HANDLE hMemory;
-	KULL_M_MEMORY_ADDRESS aPattern;
-} STRUCT_DATASEARCH, *PSTRUCT_DATASEARCH;
-
 #define WTS_DOMAIN_LENGTH            255
 #define WTS_USERNAME_LENGTH          255
 #define WTS_PASSWORD_LENGTH          255
@@ -222,39 +217,3 @@ typedef struct _WTS_KIWI {
 	WCHAR Password[WTS_PASSWORD_LENGTH + 1];
 } WTS_KIWI, *PWTS_KIWI;
 #pragma pack(pop)
-
-/*
-typedef struct _STRUCT_MYSEARCH {
-	LPCSTR pCRDPWDUMXStack; // "CRDPWDUMXStack"
-	DWORD unk0; // 0xdbcaabcd
-	DWORD unk1; // 0x00000001
-} STRUCT_MYSEARCH, *PSTRUCT_MYSEARCH;
-
-typedef struct _UNK_STRUCT0 { // 0x2f8
-	PVOID unkp0; // &CTSAsyncResultImpl::`vftable'{for `INonDelegatingUnknown'};
-	PVOID unkp1; // &CTSUnknownCrossModule::`vftable'{for `CTSObject'};
-	LPCSTR pCRDPWDUMXStack; // "CRDPWDUMXStack"
-	DWORD unk0; // 0xdbcaabcd
-	DWORD unk1; // 0x00000001
-	PVOID unkThis0; // this
-	DWORD unk2; // 0, 2 ?
-	PVOID unkp2; // &CTSUnknownCrossModule::`vftable'
-	PVOID ImageBase; //
-	PVOID unkp3; // &CRDPWDUMXStack::`vftable'{for `IRDPWDUMX_StackEx'};
-	PVOID unkp4; // &CRDPWDUMXStack::`vftable'{for `IRDPENCNetStreamEvents'};
-	PVOID unkp5; // &CRDPWDUMXStack::`vftable'{for `IRDPNetworkDetectTransport'};
-	DWORD unk3; // 1 ?
-	DWORD unk4; // ?
-	DWORD unk5; // 1 ?
-	DWORD unk6; // 59 ? 
-	DWORD unk7; //
-	// align
-	PVOID unkp6; //
-	PVOID unkp7; //
-	PVOID unkp8;
-	PVOID unkp9;
-	PVOID unkp10; /// :)
-	PVOID unkp11;
-	PVOID unkp12;
-} UNK_STRUCT0, *PUNK_STRUCT0;
-*/

