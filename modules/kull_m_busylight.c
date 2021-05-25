@@ -136,7 +136,7 @@ BOOL kull_m_busylight_devices_get(PBUSYLIGHT_DEVICE *devices, DWORD *count, DWOR
 								}
 								CloseHandle(deviceHandle);
 							}
-							else PRINT_ERROR_AUTO(L"CreateFile (deviceHandle)");
+							//else PRINT_ERROR_AUTO(L"CreateFile (deviceHandle)");
 						}
 						LocalFree(DeviceInterfaceDetailData);
 					}

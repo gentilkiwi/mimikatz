@@ -703,3 +703,20 @@ BOOL kull_m_process_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source)
 	}
 	return status;
 }
+
+PWSTR kull_m_process_get_wstring_without_end(PKULL_M_MEMORY_ADDRESS base, DWORD cbMaxChar)
+{
+	wchar_t sEnd = L'\0';
+	SIZE_T size;
+	KULL_M_MEMORY_ADDRESS aStringBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aNullBuffer = {&sEnd, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	KULL_M_MEMORY_SEARCH sMemory = {{{base->address, base->hMemory}, cbMaxChar * sizeof(wchar_t)}, NULL};
+
+	if(kull_m_memory_search(&aNullBuffer, sizeof(sEnd), &sMemory, FALSE))
+	{
+		size = (PBYTE) sMemory.result - (PBYTE) base->address + sizeof(wchar_t);
+		if(aStringBuffer.address = LocalAlloc(LPTR, size))
+			if(!kull_m_memory_copy(&aStringBuffer, base, size))
+				aStringBuffer.address = LocalFree(aStringBuffer.address);
+	}
+	return (PWSTR) aStringBuffer.address;
+}
