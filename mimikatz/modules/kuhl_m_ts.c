@@ -272,28 +272,37 @@ NTSTATUS kuhl_m_ts_mstsc(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-DECLARE_CONST_UNICODE_STRING(uMstscExe, L"mstsc.exe");
 BOOL CALLBACK kuhl_m_ts_mstsc_enumProcess(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg)
 {
 	HANDLE hProcess;
 	DWORD dwPid = PtrToUlong(pSystemProcessInformation->UniqueProcessId);
 	PKUHL_M_TS_MSTSC_ARG pmyArgs;
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information;
+#if defined(_M_X64)
+	BOOL bIsWow64;
+#endif
 
-	if(RtlEqualUnicodeString(&pSystemProcessInformation->ImageName, &uMstscExe, TRUE))
+	hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, dwPid);
+	if(hProcess)
 	{
-		hProcess = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, dwPid);
-		if(hProcess)
+#if defined(_M_X64)
+		if(IsWow64Process(hProcess, &bIsWow64) && !bIsWow64)
 		{
+#endif
 			pmyArgs = (PKUHL_M_TS_MSTSC_ARG) pvArg;
-
 			if(kull_m_memory_open(KULL_M_MEMORY_TYPE_PROCESS, hProcess, &pmyArgs->hMemory))
 			{
-				kprintf(L"\n| PID %u\n", dwPid);
-				kull_m_process_getMemoryInformations(pmyArgs->hMemory, kuhl_m_ts_mstsc_MemoryAnalysis, pvArg);
+				if(kull_m_process_getVeryBasicModuleInformationsForName(pmyArgs->hMemory, L"mstscax.dll", &information))
+				{
+					kprintf(L"\n| PID %u\t%wZ (module @ 0x%p)\n", dwPid, &pSystemProcessInformation->ImageName, information.DllBase);
+					kull_m_process_getMemoryInformations(pmyArgs->hMemory, kuhl_m_ts_mstsc_MemoryAnalysis, pvArg);
+				}
 				kull_m_memory_close(pmyArgs->hMemory);
 			}
-			CloseHandle(hProcess);
+#if defined(_M_X64)
 		}
+#endif
+		CloseHandle(hProcess);
 	}
 
 	return TRUE;
@@ -347,7 +356,7 @@ void kuhl_m_ts_mstsc_MemoryAnalysis_property(PKULL_M_MEMORY_HANDLE hMemory, PVOI
 {
 	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {pvProperties, hMemory}, aDataBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PTS_PROPERTY_KIWI pProperties;
-	BOOL bToDisplay;
+	BOOL bToDisplay, bIsAlreadyPrinted = FALSE;
 	DWORD i;
 	PSTR szPropertyName;
 	PWSTR szPropertyValue;
@@ -386,6 +395,12 @@ void kuhl_m_ts_mstsc_MemoryAnalysis_property(PKULL_M_MEMORY_HANDLE hMemory, PVOI
 
 						if(bToDisplay)
 						{
+							if(!bIsAlreadyPrinted)
+							{
+								kprintf(L"\n");
+								bIsAlreadyPrinted = TRUE;
+							}
+
 							kprintf(L"%-40S  ", szPropertyName);
 
 							switch(pProperties[i].dwType)
