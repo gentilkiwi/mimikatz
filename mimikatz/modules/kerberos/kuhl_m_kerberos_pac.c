@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -16,7 +16,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
-		szSignature += pCheckSum->Size;
+		szSignature += pCheckSum->CheckSumSize;
 		szSignatureAligned = SIZE_ALIGN(szSignature, 8);
 
 		if(kull_m_pac_EncodeValidationInformation(&validationInfo, &pLogonInfo, &szLogonInfo))
@@ -99,7 +99,7 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LONG SignatureT
 			if((pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_SRV) || (pacType->Buffers[i].ulType == PACINFO_TYPE_CHECKSUM_KDC))
 			{
 				pSignatureData = (PPAC_SIGNATURE_DATA) ((PBYTE) pacType + pacType->Buffers[i].Offset);
-				RtlZeroMemory(pSignatureData->Signature, pCheckSum->Size);
+				RtlZeroMemory(pSignatureData->Signature, pCheckSum->CheckSumSize);
 				if(pacType->Buffers[i].ulType ==  PACINFO_TYPE_CHECKSUM_SRV)
 					checksumSrv = pSignatureData->Signature;
 				else
@@ -117,7 +117,7 @@ NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LONG SignatureT
 				status = pCheckSum->InitializeEx(key, keySize, KERB_NON_KERB_CKSUM_SALT, &Context);
 				if(NT_SUCCESS(status))
 				{
-					pCheckSum->Sum(Context, pCheckSum->Size, checksumSrv);
+					pCheckSum->Sum(Context, pCheckSum->CheckSumSize, checksumSrv);
 					pCheckSum->Finalize(Context, checksumpKdc);
 					pCheckSum->Finish(&Context);
 				}

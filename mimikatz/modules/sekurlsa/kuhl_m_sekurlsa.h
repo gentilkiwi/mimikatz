@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -22,6 +22,7 @@
 #include "packages/kuhl_m_sekurlsa_wdigest.h"
 #include "packages/kuhl_m_sekurlsa_dpapi.h"
 #include "packages/kuhl_m_sekurlsa_credman.h"
+#include "packages/kuhl_m_sekurlsa_cloudap.h"
 
 #include "../kerberos/kuhl_m_kerberos_ticket.h"
 #include "../kuhl_m_lsadump.h"
@@ -40,6 +41,8 @@
 #define KUHL_SEKURLSA_CREDS_DISPLAY_CREDMANPASS			0x00400000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_PINCODE				0x00800000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_KERBEROS_10_1607	0x00010000
+
+#define KUHL_SEKURLSA_CREDS_DISPLAY_CLOUDAP_PRT			0x00001000
 
 #define KUHL_SEKURLSA_CREDS_DISPLAY_NODECRYPT			0x10000000
 #define KUHL_SEKURLSA_CREDS_DISPLAY_WPASSONLY			0x20000000
@@ -66,11 +69,14 @@ VOID kuhl_m_sekurlsa_pth_luid(PSEKURLSA_PTH_DATA data);
 VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCreds, PKIWI_BASIC_SECURITY_LOGON_SESSION_DATA pData, ULONG flags);
 VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential);
 VOID kuhl_m_sekurlsa_genericKeyOutput(struct _KIWI_CREDENTIAL_KEY * key, LPCWSTR sid);
-VOID kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob);
+BOOL kuhl_m_sekurlsa_genericLsaIsoOutput(struct _LSAISO_DATA_BLOB * blob, LPBYTE *output, DWORD *cbOutput);
+VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
 void kuhl_m_sekurlsa_bkey(PKUHL_M_SEKURLSA_CONTEXT cLsass, PKUHL_M_SEKURLSA_LIB pLib, PKULL_M_PATCH_GENERIC generics, SIZE_T cbGenerics, BOOL isExport);
 #if !defined(_M_ARM64)
 void kuhl_m_sekurlsa_krbtgt_keys(PVOID addr, PCWSTR prefix);
 #endif
+void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
+void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
 
 NTSTATUS kuhl_m_sekurlsa_all(int argc, wchar_t * argv[]);
 #if !defined(_M_ARM64)
@@ -205,11 +211,15 @@ typedef struct _LSAISO_DATA_BLOB {
 	DWORD unk2;
 	DWORD unk3;
 	DWORD unk4;
-	BYTE unkKeyData[3*16];
-	BYTE unkData2[16];
-	DWORD unk5;
-	DWORD origSize;
-	BYTE data[ANYSIZE_ARRAY];
+	BYTE KdfContext[32];
+	BYTE Tag[16];
+	DWORD unk5; // AuthData start
+	DWORD unk6;
+	DWORD unk7;
+	DWORD unk8;
+	DWORD unk9;
+	DWORD szEncrypted; // AuthData ends + type
+	BYTE data[ANYSIZE_ARRAY]; // Type then Encrypted
 } LSAISO_DATA_BLOB, *PLSAISO_DATA_BLOB;
 
 typedef struct _ENC_LSAISO_DATA_BLOB {
@@ -218,8 +228,5 @@ typedef struct _ENC_LSAISO_DATA_BLOB {
 	BYTE data[ANYSIZE_ARRAY];
 } ENC_LSAISO_DATA_BLOB, *PENC_LSAISO_DATA_BLOB;
 
-VOID kuhl_m_sekurlsa_genericEncLsaIsoOutput(struct _ENC_LSAISO_DATA_BLOB * blob, DWORD size);
-void kuhl_m_sekurlsa_trust_domainkeys(struct _KDC_DOMAIN_KEYS_INFO * keysInfo, PCWSTR prefix, BOOL incoming, PCUNICODE_STRING domain);
-void kuhl_m_sekurlsa_trust_domaininfo(struct _KDC_DOMAIN_INFO * info);
-
 #include "../dpapi/kuhl_m_dpapi_oe.h"
+#include "kuhl_m_sekurlsa_sk.h"

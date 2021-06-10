@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-http://blog.gentilkiwi.com
+https://blog.gentilkiwi.com
 benjamin@gentilkiwi.com
 Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -7,7 +7,7 @@ Licence : https://creativecommons.org/licenses/by/4.0/
 
 RPC_BINDING_HANDLE hBinding;
 CRITICAL_SECTION outputCritical;
-BOOL isFinish;
+NTSTATUS isFinish;
 MIMI_HANDLE hMimi;
 PKIWI_DH clientKey;
 
@@ -27,7 +27,7 @@ NTSTATUS kuhl_m_c_rpc_init()
 	hMimi = NULL;
 	hBinding = NULL;
 	clientKey = NULL;
-	isFinish = FALSE;
+	isFinish = STATUS_SUCCESS;
 	InitializeCriticalSection(&outputCritical);
 	return STATUS_SUCCESS;
 }
@@ -131,7 +131,7 @@ NTSTATUS kuhl_m_rpc_enum(int argc, wchar_t * argv[])
 	PCWSTR szRemote, szProtSeq;
 	DWORD AuthnSvc;
 	
-	kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, NULL, TRUE);
+	kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, NULL, NULL, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, NULL, NULL, TRUE);
 	if(kull_m_rpc_createBinding(NULL, szProtSeq, szRemote, NULL, NULL, FALSE, AuthnSvc, isNullSession ? KULL_M_RPC_AUTH_IDENTITY_HANDLE_NULLSESSION : NULL, RPC_C_IMP_LEVEL_DEFAULT, &Binding, NULL))
 	{
 		status = RpcMgmtEpEltInqBegin(Binding, RPC_C_EP_ALL_ELTS, NULL, 0, NULL, &InquiryContext);
@@ -258,8 +258,8 @@ DWORD WINAPI kuhl_m_rpc_server_start(LPVOID lpThreadParameter)
 		LocalFree(inf->szService);
 	LocalFree(inf);
 
-	if(isFinish)
-		mimikatz_end();
+	if(!NT_SUCCESS(isFinish))
+		mimikatz_end(isFinish);
 	return ERROR_SUCCESS;
 }
 
@@ -272,7 +272,7 @@ NTSTATUS kuhl_m_rpc_server(int argc, wchar_t * argv[])
 	{
 		if(inf = (PKUHL_M_RPC_SERVER_INF) LocalAlloc(LPTR, sizeof(KUHL_M_RPC_SERVER_INF)))
 		{
-			kull_m_rpc_getArgs(argc, argv, NULL, &szProtSeq, &szEndpoint, &szService, &inf->AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, &((PRPC_SERVER_INTERFACE) MimiCom_v1_0_s_ifspec)->InterfaceId.SyntaxGUID, TRUE);
+			kull_m_rpc_getArgs(argc, argv, NULL, &szProtSeq, &szEndpoint, &szService, NULL, &inf->AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, NULL, &((PRPC_SERVER_INTERFACE) MimiCom_v1_0_s_ifspec)->InterfaceId.SyntaxGUID, TRUE);
 			kull_m_string_copy(&inf->szProtSeq, szProtSeq);
 			if(szEndpoint)
 				kull_m_string_copy(&inf->szEndpoint, szEndpoint);
@@ -289,7 +289,7 @@ NTSTATUS kuhl_m_rpc_server(int argc, wchar_t * argv[])
 	}
 	else
 	{
-		isFinish = FALSE;
+		isFinish = STATUS_SUCCESS;
 		status = RpcMgmtStopServerListening(NULL);
 		if(status != RPC_S_OK)
 			PRINT_ERROR(L"RpcMgmtStopServerListening: %08x\n", status);
@@ -308,7 +308,7 @@ NTSTATUS kuhl_m_rpc_connect(int argc, wchar_t * argv[])
 
 	if(!hBinding)
 	{
-		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, &szEndpoint, &szService, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, &((PRPC_CLIENT_INTERFACE) MimiCom_v1_0_c_ifspec)->InterfaceId.SyntaxGUID, TRUE);
+		kull_m_rpc_getArgs(argc, argv, &szRemote, &szProtSeq, &szEndpoint, &szService, NULL, &AuthnSvc, RPC_C_AUTHN_GSS_NEGOTIATE, &isNullSession, NULL, &((PRPC_CLIENT_INTERFACE) MimiCom_v1_0_c_ifspec)->InterfaceId.SyntaxGUID, TRUE);
 		kull_m_string_args_byName(argc, argv, L"alg", &szAlg, L"3DES");
 		alg = kull_m_crypto_name_to_algid(szAlg);
 		if(!(alg & ALG_CLASS_DATA_ENCRYPT))
@@ -451,9 +451,9 @@ NTSTATUS SRV_MimiCommand(MIMI_HANDLE phMimi, DWORD szEncCommand, BYTE *encComman
 	}
 	else status = RPC_X_SS_CONTEXT_DAMAGED;
 	LeaveCriticalSection(&outputCritical);
-	if(status == STATUS_FATAL_APP_EXIT)
+	if((status == STATUS_PROCESS_IS_TERMINATING) || (status == STATUS_THREAD_IS_TERMINATING))
 	{
-		isFinish = TRUE;
+		isFinish = status;
 		RpcMgmtStopServerListening(NULL);
 	}
 	return status;
@@ -479,9 +479,9 @@ NTSTATUS SRV_MimiClear(handle_t rpc_handle, wchar_t *command, DWORD *size, wchar
 		outputBufferElements = outputBufferElementsPosition = 0;
 	}
 	LeaveCriticalSection(&outputCritical);
-	if(status == STATUS_FATAL_APP_EXIT)
+	if((status == STATUS_PROCESS_IS_TERMINATING) || (status == STATUS_THREAD_IS_TERMINATING))
 	{
-		isFinish = TRUE;
+		isFinish = status;
 		RpcMgmtStopServerListening(NULL);
 	}
 	return status;

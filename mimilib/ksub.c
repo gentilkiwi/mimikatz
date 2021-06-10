@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 
 	Vincent LE TOUX

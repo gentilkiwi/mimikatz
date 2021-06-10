@@ -101,7 +101,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;cabinet.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wbemuuid.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;cabinet.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;odbc32.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wbemuuid.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
@@ -119,6 +119,9 @@
     <ClCompile Include="..\modules\kull_m_cabinet.c" />
     <ClCompile Include="..\modules\kull_m_cred.c" />
     <ClCompile Include="..\modules\kull_m_crypto.c" />
+    <ClCompile Include="..\modules\kull_m_crypto_ngc.c" />
+    <ClCompile Include="..\modules\kull_m_crypto_remote.c" />
+    <ClCompile Include="..\modules\kull_m_crypto_sk.c" />
     <ClCompile Include="..\modules\kull_m_dpapi.c" />
     <ClCompile Include="..\modules\kull_m_file.c" />
     <ClCompile Include="..\modules\kull_m_handle.c" />
@@ -146,14 +149,17 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-bkrp_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-claims.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-nrpc_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
     <ClCompile Include="..\modules\kull_m_xml.c" />
-    <ClCompile Include="..\modules\sqlite3_omit.c">
-      <PreprocessorDefinitions>SQLITE_TEMP_STORE=3;SQLITE_DISABLE_INTRINSIC;SQLITE_DISABLE_LFS;SQLITE_DISABLE_DIRSYNC;SQLITE_DISABLE_FTS3_UNICODE;SQLITE_DISABLE_FTS4_DEFERRED;SQLITE_DISABLE_PAGECACHE_OVERFLOW_STATS;SQLITE_OMIT_TRIGGER;SQLITE_OMIT_WAL;SQLITE_OMIT_VIRTUALTABLE;SQLITE_OMIT_PRAGMA;SQLITE_OMIT_FOREIGN_KEY;SQLITE_OMIT_AUTOVACUUM;SQLITE_OMIT_SUBQUERY;SQLITE_OMIT_COMPOUND_SELECT;SQLITE_OMIT_EXPLAIN;SQLITE_OMIT_DATETIME_FUNCS;SQLITE_OMIT_INTEGRITY_CHECK;SQLITE_OMIT_ATTACH;SQLITE_OMIT_UTF16;SQLITE_OMIT_SHARED_CACHE;SQLITE_OMIT_INCRBLOB;SQLITE_OMIT_ANALYZE;SQLITE_OMIT_AUTHORIZATION;SQLITE_OMIT_VACUUM;SQLITE_OMIT_PAGER_PRAGMAS;SQLITE_OMIT_OR_OPTIMIZATION;SQLITE_OMIT_BUILTIN_TEST;SQLITE_OMIT_XFER_OPT;SQLITE_OMIT_AUTOINCREMENT;SQLITE_OMIT_SCHEMA_PRAGMAS;SQLITE_OMIT_TRACE;SQLITE_OMIT_LOAD_EXTENSION;SQLITE_OMIT_AUTOMATIC_INDEX;SQLITE_OMIT_LIKE_OPTIMIZATION;SQLITE_OMIT_REINDEX;SQLITE_OMIT_GET_TABLE;SQLITE_OMIT_COMPLETE;SQLITE_OMIT_TEMPDB;SQLITE_OMIT_BTREECOUNT;SQLITE_OMIT_LOCALTIME;SQLITE_OMIT_COMPILEOPTION_DIAGS;SQLITE_OMIT_FLAG_PRAGMAS;SQLITE_OMIT_QUICKBALANCE;SQLITE_OMIT_CAST;SQLITE_OMIT_CHECK;SQLITE_OMIT_MEMORYDB;SQLITE_OMIT_BLOB_LITERAL;SQLITE_OMIT_SCHEMA_VERSION_PRAGMAS;SQLITE_OMIT_LOOKASIDE;SQLITE_OMIT_AUTOINIT;SQLITE_OMIT_DECLTYPE;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_BETWEEN_OPTIMIZATION;SQLITE_OMIT_PROGRESS_CALLBACK;SQLITE_OMIT_TRUNCATE_OPTIMIZATION;SQLITE_OMIT_TCL_VARIABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-rprn.c" />
+    <ClCompile Include="..\modules\sqlite3.c">
+      <PreprocessorDefinitions>SQLITE_UNTESTABLE;SQLITE_DISABLE_INTRINSIC;SQLITE_OMIT_LOCALTIME;SQLITE_DQS=0;SQLITE_THREADSAFE=0;SQLITE_DEFAULT_MEMSTATUS=0;SQLITE_DEFAULT_WAL_SYNCHRONOUS=1;SQLITE_LIKE_DOESNT_MATCH_BLOBS;SQLITE_MAX_EXPR_DEPTH=0;SQLITE_OMIT_DECLTYPE;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_PROGRESS_CALLBACK;SQLITE_OMIT_SHARED_CACHE;SQLITE_USE_ALLOCA;SQLITE_OMIT_OR_OPTIMIZATION;SQLITE_OMIT_LIKE_OPTIMIZATION;SQLITE_OMIT_BETWEEN_OPTIMIZATION;SQLITE_OMIT_TRUNCATE_OPTIMIZATION;SQLITE_OMIT_TCL_VARIABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level2</WarningLevel>
     </ClCompile>
@@ -165,10 +171,13 @@
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_sccm.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.c" />
     <ClCompile Include="modules\kerberos\kuhl_m_kerberos.c" />
@@ -201,10 +210,13 @@
     <ClCompile Include="modules\kuhl_m_vault.c" />
     <ClCompile Include="modules\kuhl_m_minesweeper.c" />
     <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c" />
+    <ClCompile Include="modules\ngc\kuhl_m_ngc.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa.c" />
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.c" />
     <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.c" />
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_cloudap.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.c" />
     <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.c" />
@@ -221,6 +233,9 @@
     <ClInclude Include="..\modules\kull_m_cabinet.h" />
     <ClInclude Include="..\modules\kull_m_cred.h" />
     <ClInclude Include="..\modules\kull_m_crypto.h" />
+    <ClInclude Include="..\modules\kull_m_crypto_ngc.h" />
+    <ClInclude Include="..\modules\kull_m_crypto_remote.h" />
+    <ClInclude Include="..\modules\kull_m_crypto_sk.h" />
     <ClInclude Include="..\modules\kull_m_crypto_system.h" />
     <ClInclude Include="..\modules\kull_m_dpapi.h" />
     <ClInclude Include="..\modules\kull_m_file.h" />
@@ -250,15 +265,18 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_mimicom.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-claims.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-nrpc.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
     <ClInclude Include="..\modules\kull_m_service.h" />
     <ClInclude Include="..\modules\kull_m_string.h" />
     <ClInclude Include="..\modules\kull_m_token.h" />
     <ClInclude Include="..\modules\kull_m_xml.h" />
-    <ClInclude Include="..\modules\sqlite3_omit.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-rprn.h" />
+    <ClInclude Include="..\modules\sqlite3.h" />
     <ClInclude Include="mimikatz.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_extractor.h" />
     <ClInclude Include="modules\crypto\kuhl_m_crypto_patch.h" />
@@ -267,10 +285,13 @@
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_rdg.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_sccm.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_ssh.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_wlan.h" />
     <ClInclude Include="modules\kerberos\kuhl_m_kerberos.h" />
@@ -304,11 +325,14 @@
     <ClInclude Include="modules\kuhl_m_vault.h" />
     <ClInclude Include="modules\kuhl_m_minesweeper.h" />
     <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h" />
+    <ClInclude Include="modules\ngc\kuhl_m_ngc.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
     <ClInclude Include="modules\sekurlsa\globals_sekurlsa.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa.h" />
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.h" />
     <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_utils.h" />
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_cloudap.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_credman.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_dpapi.h" />
     <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_kerberos.h" />

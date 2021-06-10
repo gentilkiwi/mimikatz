@@ -185,9 +185,6 @@
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c">
       <Filter>local modules\dpapi\packages</Filter>
     </ClCompile>
-    <ClCompile Include="..\modules\sqlite3_omit.c">
-      <Filter>common modules</Filter>
-    </ClCompile>
     <ClCompile Include="..\modules\kull_m_xml.c">
       <Filter>common modules</Filter>
     </ClCompile>
@@ -286,6 +283,45 @@
     </ClCompile>
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.c">
       <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\sqlite3.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_crypto_sk.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.c">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter_c.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\ngc\kuhl_m_ngc.c">
+      <Filter>local modules\ngc</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_cloudap.c">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_crypto_ngc.c">
+      <Filter>common modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-nrpc_c.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-rprn.c">
+      <Filter>common modules\rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_sccm.c">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClCompile>
+    <ClCompile Include="..\modules\kull_m_crypto_remote.c">
+      <Filter>common modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -488,9 +524,6 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h">
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
-    <ClInclude Include="..\modules\sqlite3_omit.h">
-      <Filter>common modules</Filter>
-    </ClInclude>
     <ClInclude Include="..\modules\kull_m_xml.h">
       <Filter>common modules</Filter>
     </ClInclude>
@@ -593,6 +626,45 @@
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_powershell.h">
       <Filter>local modules\dpapi\packages</Filter>
     </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_lunahsm.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\sqlite3.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_crypto_sk.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\kuhl_m_sekurlsa_sk.h">
+      <Filter>local modules\sekurlsa</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\ngc\kuhl_m_ngc.h">
+      <Filter>local modules\ngc</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\sekurlsa\packages\kuhl_m_sekurlsa_cloudap.h">
+      <Filter>local modules\sekurlsa\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_crypto_ngc.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-nrpc.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-rprn.h">
+      <Filter>common modules\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_sccm.h">
+      <Filter>local modules\dpapi\packages</Filter>
+    </ClInclude>
+    <ClInclude Include="..\modules\kull_m_crypto_remote.h">
+      <Filter>common modules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="local modules">
@@ -629,6 +701,9 @@
     </Filter>
     <Filter Include="local modules\lsadump">
       <UniqueIdentifier>{3b2bcf11-3674-4ee4-949c-491c8c5efd34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="local modules\ngc">
+      <UniqueIdentifier>{5880e511-0496-4c66-95c3-39c70baac28b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

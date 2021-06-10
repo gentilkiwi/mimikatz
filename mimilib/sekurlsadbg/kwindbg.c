@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -30,7 +30,7 @@ VOID WDBGAPI kdbg_WinDbgExtensionDllInit(PWINDBG_EXTENSION_APIS lpExtensionApis,
 		" .## ^ ##.  " MIMIKATZ_SECOND_A " - Windows build %hu\n"
 		" ## / \\ ##  /* * *\n"
 		" ## \\ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
-		" '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
+		" '## v ##'   https://blog.gentilkiwi.com/mimikatz             (oe.eo)\n"
 		"  '#####'                                  WinDBG extension ! * * */\n\n"
 		"===================================\n"
 		"#         * Kernel mode *         #\n"

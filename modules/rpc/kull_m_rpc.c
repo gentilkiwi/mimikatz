@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -23,6 +23,9 @@ LPCWSTR KULL_M_RPC_AUTHNSVC(DWORD AuthnSvc)
 	case RPC_C_AUTHN_GSS_KERBEROS:
 		szAuthnSvc = L"GSS_KERBEROS";
 		break;
+	case RPC_C_AUTHN_DEFAULT:
+		szAuthnSvc = L"DEFAULT";
+		break;
 	default:
 		szAuthnSvc = L"?";
 	}
@@ -36,7 +39,6 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 	RPC_STATUS rpcStatus;
 	RPC_WSTR StringBinding = NULL;
 	RPC_SECURITY_QOS SecurityQOS = {RPC_C_SECURITY_QOS_VERSION, RPC_C_QOS_CAPABILITIES_MUTUAL_AUTH, RPC_C_QOS_IDENTITY_STATIC, ImpersonationType};
-	DWORD szServer, szPrefix;
 	LPWSTR fullServer = NULL;
 
 	*hBinding = NULL;
@@ -52,23 +54,16 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 				{
 					if(addServiceToNetworkAddr)
 					{
-						if(NetworkAddr && Service)
+						if(Service && NetworkAddr)
 						{
-							szServer = lstrlen(NetworkAddr) * sizeof(wchar_t);
-							szPrefix = lstrlen(Service) * sizeof(wchar_t);
-							if(fullServer = (LPWSTR) LocalAlloc(LPTR, szPrefix + sizeof(wchar_t) + szServer + sizeof(wchar_t)))
-							{
-								RtlCopyMemory(fullServer, Service, szPrefix);
-								RtlCopyMemory((PBYTE) fullServer + szPrefix + sizeof(wchar_t), NetworkAddr, szServer);
-								((PBYTE) fullServer)[szPrefix] = L'/';
-							}
+							kull_m_string_sprintf(&fullServer, L"%s/%s", Service, NetworkAddr);
 						}
-						else PRINT_ERROR(L"Cannot add NetworkAddr & Service if NULL\n");
+						else PRINT_ERROR(L"Cannot add Service to NetworkAddr if NULL\n");
 					}
 
 					if(!addServiceToNetworkAddr || fullServer)
 					{
-						rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) (fullServer ? fullServer : (Service ? Service : MIMIKATZ)), RPC_C_AUTHN_LEVEL_PKT_PRIVACY, AuthnSvc, hAuth, 0, &SecurityQOS);
+						rpcStatus = RpcBindingSetAuthInfoEx(*hBinding, (RPC_WSTR) (fullServer ? fullServer : (Service ? Service : MIMIKATZ)), RPC_C_AUTHN_LEVEL_PKT_PRIVACY, AuthnSvc, hAuth, RPC_C_AUTHZ_NONE, &SecurityQOS);
 						if(rpcStatus == RPC_S_OK)
 						{
 							if(RpcSecurityCallback)
@@ -99,6 +94,12 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 		RpcStringFree(&StringBinding);
 	}
 	else PRINT_ERROR(L"RpcStringBindingCompose: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+
+	if(fullServer)
+	{
+		LocalFree(fullServer);
+	}
+
 	return status;
 }
 
@@ -143,60 +144,79 @@ RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterfa
     return RPC_S_OK;
 }
 
-void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, GUID *altGuid, BOOL printIt)
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, LPCWSTR szDefaultService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, SEC_WINNT_AUTH_IDENTITY *pAuthIdentity, GUID *altGuid, BOOL printIt)
 {
 	PCWSTR data;
 	UNICODE_STRING us;
 
 	if(szRemote)
 	{
-		kull_m_string_args_byName(argc, argv, L"remote", szRemote, NULL);
-		if(!*szRemote)
-			kull_m_string_args_byName(argc, argv, L"server", szRemote, NULL);
+		if(!kull_m_string_args_byName(argc, argv, L"remote", szRemote, NULL))
+			if(!kull_m_string_args_byName(argc, argv, L"server", szRemote, NULL))
+				kull_m_string_args_byName(argc, argv, L"target", szRemote, NULL);
 		if(printIt)
-			kprintf(L"Remote   : %s\n", *szRemote);
+			kprintf(L"[rpc] Remote   : %s\n", *szRemote);
 	}
 
 	if(szProtSeq)
 	{
 		kull_m_string_args_byName(argc, argv, L"protseq", szProtSeq, L"ncacn_ip_tcp");
 		if(printIt)
-			kprintf(L"ProtSeq  : %s\n", *szProtSeq);
-
+			kprintf(L"[rpc] ProtSeq  : %s\n", *szProtSeq);
 	}
 	
 	if(szEndpoint)
 	{
 		kull_m_string_args_byName(argc, argv, L"endpoint", szEndpoint, NULL);
 		if(printIt)
-			kprintf(L"Endpoint : %s\n", *szEndpoint);
+			kprintf(L"[rpc] Endpoint : %s\n", *szEndpoint);
 	}
 	
 	if(szService)
 	{
-		kull_m_string_args_byName(argc, argv, L"service", szService, NULL);
+		if(!kull_m_string_args_byName(argc, argv, L"service", szService, NULL))
+			kull_m_string_args_byName(argc, argv, L"altservice", szService, szDefaultService);
 		if(printIt)
-			kprintf(L"Service  : %s\n", *szService);
+			kprintf(L"[rpc] Service  : %s\n", *szService);
 	}
 	
 	if(AuthnSvc)
 	{
-		*AuthnSvc = defAuthnSvc;
 		if(kull_m_string_args_byName(argc, argv, L"noauth", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_NONE;
-		if(kull_m_string_args_byName(argc, argv, L"ntlm", NULL, NULL))
-			*AuthnSvc = RPC_C_AUTHN_WINNT;;
-		if(kull_m_string_args_byName(argc, argv, L"kerberos", NULL, NULL))
+		else if(kull_m_string_args_byName(argc, argv, L"ntlm", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_WINNT;
+		else if(kull_m_string_args_byName(argc, argv, L"kerberos", NULL, NULL))
 			*AuthnSvc = RPC_C_AUTHN_GSS_KERBEROS;
+		else if(kull_m_string_args_byName(argc, argv, L"negotiate", NULL, NULL))
+			*AuthnSvc = RPC_C_AUTHN_GSS_NEGOTIATE;
+		else *AuthnSvc = defAuthnSvc;
 		if(printIt)
-			kprintf(L"AuthnSvc : %s\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc));
+			kprintf(L"[rpc] AuthnSvc : %s (%u)\n", KULL_M_RPC_AUTHNSVC(*AuthnSvc), *AuthnSvc);
 	}
 
 	if(isNullSession)
 	{
 		*isNullSession = kull_m_string_args_byName(argc, argv, L"null", NULL, NULL);
 		if(printIt)
-			kprintf(L"NULL Sess: %s\n", (*isNullSession) ? L"yes" : L"no");
+			kprintf(L"[rpc] NULL Sess: %s\n", (*isNullSession) ? L"yes" : L"no");
+	}
+
+	if(pAuthIdentity && (!isNullSession || !*isNullSession))
+	{
+		pAuthIdentity->Flags = SEC_WINNT_AUTH_IDENTITY_UNICODE;
+
+		kull_m_string_args_byName(argc, argv, L"authuser", (const wchar_t **) &pAuthIdentity->User, L"");
+		pAuthIdentity->UserLength = lstrlen((LPCWSTR) pAuthIdentity->User);
+		kull_m_string_args_byName(argc, argv, L"authdomain", (const wchar_t **) &pAuthIdentity->Domain, L"");
+		pAuthIdentity->DomainLength = lstrlen((LPCWSTR) pAuthIdentity->Domain);
+		kull_m_string_args_byName(argc, argv, L"authpassword", (const wchar_t **) &pAuthIdentity->Password, L"");
+		pAuthIdentity->PasswordLength = lstrlen((LPCWSTR) pAuthIdentity->Password);
+
+		if(pAuthIdentity->UserLength)
+		{
+			kprintf(L"[rpc] Username : %s\n[rpc] Domain   : %s\n[rpc] Password : %s\n", pAuthIdentity->User, pAuthIdentity->Domain, pAuthIdentity->Password);
+		}
 	}
 
 	if(altGuid)
@@ -206,7 +226,7 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 			RtlInitUnicodeString(&us, data);
 			if(NT_SUCCESS(RtlGUIDFromString(&us, altGuid)) && printIt)
 			{
-				kprintf(L"Alt GUID : ");
+				kprintf(L"[rpc] Alt GUID : ");
 				kull_m_string_displayGUID(altGuid);
 				kprintf(L"\n");
 			}
@@ -333,5 +353,87 @@ BOOL kull_m_rpc_Generic_Encode(PVOID pObject, PVOID *data, DWORD *size, PGENERIC
 		MesHandleFree(pHandle);
 	}
 	else PRINT_ERROR(L"MesEncodeIncrementalHandleCreate: %08x\n", rpcStatus);
+	return status;
+}
+
+#if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
+const BYTE KULL_M_RPC_FIND_STUB_PATTERN[] = {0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};//, 0x00, 0x00, 0x02};
+#elif defined(_M_IX86)
+const BYTE KULL_M_RPC_FIND_STUB_PATTERN[] = {0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+#endif 
+PMIDL_STUB_DESC kull_m_rpc_find_stub(LPCWSTR szModuleName, const RPC_SYNTAX_IDENTIFIER *pInterfaceId)
+{
+	PMIDL_STUB_DESC pReturnStub = NULL, pCandidateStub;
+	KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information;
+	KULL_M_MEMORY_ADDRESS aToSearch = {(LPVOID) KULL_M_RPC_FIND_STUB_PATTERN, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	KULL_M_MEMORY_SEARCH sMemory;
+
+	if(kull_m_process_getVeryBasicModuleInformationsForName(&KULL_M_MEMORY_GLOBAL_OWN_HANDLE, szModuleName, &information))
+	{
+		sMemory.kull_m_memoryRange.kull_m_memoryAdress = information.DllBase;
+		sMemory.kull_m_memoryRange.size = information.SizeOfImage;
+		while(kull_m_memory_search(&aToSearch, sizeof(KULL_M_RPC_FIND_STUB_PATTERN), &sMemory, FALSE))
+		{
+			pCandidateStub = (PMIDL_STUB_DESC) ((PBYTE) sMemory.result - (FIELD_OFFSET(MIDL_STUB_DESC, MIDLVersion) + 3));
+			if(pCandidateStub->RpcInterfaceInformation && ((PBYTE) pCandidateStub->RpcInterfaceInformation >= (PBYTE) information.DllBase.address) && ((PBYTE) pCandidateStub->RpcInterfaceInformation < ((PBYTE) information.DllBase.address + information.SizeOfImage)))
+			{
+				if(RtlEqualMemory(pInterfaceId, &((PRPC_CLIENT_INTERFACE) pCandidateStub->RpcInterfaceInformation)->InterfaceId, sizeof(RPC_SYNTAX_IDENTIFIER)))
+				{
+					pReturnStub = pCandidateStub;
+					break;
+				}
+			}
+			sMemory.kull_m_memoryRange.size -= ((PBYTE) sMemory.result + sizeof(KULL_M_RPC_FIND_STUB_PATTERN)) - (PBYTE) sMemory.kull_m_memoryRange.kull_m_memoryAdress.address;
+			sMemory.kull_m_memoryRange.kull_m_memoryAdress.address = (PBYTE) sMemory.result + sizeof(KULL_M_RPC_FIND_STUB_PATTERN);
+		}
+	}
+	else PRINT_ERROR(L"kull_m_process_getVeryBasicModuleInformationsForName for %s\n", szModuleName);
+
+	return pReturnStub;
+}
+
+BOOL kull_m_rpc_replace_first_routine_pair_direct(const GENERIC_BINDING_ROUTINE_PAIR *pOriginalBindingPair, const GENERIC_BINDING_ROUTINE_PAIR *pNewBindingPair)
+{
+	BOOL status = FALSE;
+	DWORD dwOldProtect;
+
+	if(VirtualProtect((LPVOID) pOriginalBindingPair, sizeof(GENERIC_BINDING_ROUTINE_PAIR), PAGE_EXECUTE_READWRITE, &dwOldProtect))
+	{
+		((PGENERIC_BINDING_ROUTINE_PAIR) pOriginalBindingPair)[0] = *pNewBindingPair;
+		status = TRUE;
+		if(!VirtualProtect((LPVOID) pOriginalBindingPair, sizeof(GENERIC_BINDING_ROUTINE_PAIR), dwOldProtect, &dwOldProtect))
+		{
+			PRINT_ERROR_AUTO(L"VirtualProtect(post)");
+		}
+	}
+	else PRINT_ERROR_AUTO(L"VirtualProtect(pre)");
+
+	return status;
+}
+
+BOOL kull_m_rpc_replace_first_routine_pair(LPCWSTR szModuleName, const RPC_SYNTAX_IDENTIFIER *pInterfaceId, const GENERIC_BINDING_ROUTINE_PAIR *pNewBindingPair, PGENERIC_BINDING_ROUTINE_PAIR pOriginalBindingPair, const GENERIC_BINDING_ROUTINE_PAIR **ppOriginalBindingPair)
+{
+	BOOL status = FALSE;
+	PMIDL_STUB_DESC pStub;
+
+	pStub = kull_m_rpc_find_stub(szModuleName, pInterfaceId);
+	if(pStub)
+	{
+		if(pStub->aGenericBindingRoutinePairs)
+		{
+			if(ppOriginalBindingPair)
+			{
+				*ppOriginalBindingPair = pStub->aGenericBindingRoutinePairs;
+			}
+			if(pOriginalBindingPair)
+			{
+				*pOriginalBindingPair = pStub->aGenericBindingRoutinePairs[0];
+			}
+			status = kull_m_rpc_replace_first_routine_pair_direct(pStub->aGenericBindingRoutinePairs, pNewBindingPair);
+		}
+		else PRINT_ERROR(L"No GenericBindingRoutinePairs\n");
+	}
+	else PRINT_ERROR(L"Stub not found\n");
+
 	return status;
 }

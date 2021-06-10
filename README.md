@@ -9,7 +9,7 @@ It's now well known to extract plaintexts passwords, hash, PIN code and kerberos
  .## ^ ##.
  ## / \ ##  /* * *
  ## \ / ##   Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
- '## v ##'   http://blog.gentilkiwi.com/mimikatz             (oe.eo)
+ '## v ##'   https://blog.gentilkiwi.com/mimikatz             (oe.eo)
   '#####'                                    with  13 modules * * */
 
 
@@ -36,7 +36,7 @@ SID               : S-1-5-21-1982681256-1210654043-1600862990-1000
          * Password : waza1234/
 ...
 ```
-But that's not all! `Crypto`, `Terminal Server`, `Events`, ... lots of informations in the GitHub Wiki https://github.com/gentilkiwi/mimikatz/wiki or on http://blog.gentilkiwi.com (in French, _yes_).
+But that's not all! `Crypto`, `Terminal Server`, `Events`, ... lots of informations in the GitHub Wiki https://github.com/gentilkiwi/mimikatz/wiki or on https://blog.gentilkiwi.com (in French, _yes_).
 
 If you don't want to build it, binaries are availables on https://github.com/gentilkiwi/mimikatz/releases
 
@@ -115,8 +115,13 @@ With this optional MSBuild platform, you can use the WinDDK build tools, and the
 For this optional platform, Windows Driver Kit **7.1** (WinDDK) - http://www.microsoft.com/download/details.aspx?id=11800 and Visual Studio **2010** are mandatory, even if you plan to use Visual Studio 2012 or 2013 after.
 
 Follow instructions:
-* http://blog.gentilkiwi.com/programmation/executables-runtime-defaut-systeme
-* _http://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader_
+* https://blog.gentilkiwi.com/programmation/executables-runtime-defaut-systeme
+* _https://blog.gentilkiwi.com/cryptographie/api-systemfunction-windows#winheader_
+
+## Continuous Integration
+`mimikatz` project is available on AppVeyor - https://ci.appveyor.com/project/gentilkiwi/mimikatz
+
+Its status is: ![AppVeyor CI status](https://ci.appveyor.com/api/projects/status/github/gentilkiwi/mimikatz?svg=true&retina=true)
 
 ## Licence
 CC BY 4.0 licence - https://creativecommons.org/licenses/by/4.0/

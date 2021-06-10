@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -20,6 +20,7 @@
 #include <string.h>
 #include "../kull_m_string.h"
 #include "../kull_m_crypto.h"
+#include "../kull_m_process.h"
 
 typedef DWORD NET_API_STATUS;
 typedef UNICODE_STRING RPC_UNICODE_STRING;
@@ -34,7 +35,10 @@ BOOL kull_m_rpc_createBinding(LPCWSTR uuid, LPCWSTR ProtSeq, LPCWSTR NetworkAddr
 BOOL kull_m_rpc_deleteBinding(RPC_BINDING_HANDLE *hBinding);
 RPC_STATUS CALLBACK kull_m_rpc_nice_SecurityCallback(RPC_IF_HANDLE hInterface, void* pBindingHandle);
 RPC_STATUS CALLBACK kull_m_rpc_nice_verb_SecurityCallback(RPC_IF_HANDLE hInterface, void* pBindingHandle);
-void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, GUID *altGuid, BOOL printIt);
+void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *szProtSeq, LPCWSTR *szEndpoint, LPCWSTR *szService, LPCWSTR szDefaultService, DWORD *AuthnSvc, DWORD defAuthnSvc, BOOL *isNullSession, SEC_WINNT_AUTH_IDENTITY *pAuthIdentity, GUID *altGuid, BOOL printIt);
+PMIDL_STUB_DESC kull_m_rpc_find_stub(LPCWSTR szModuleName, const RPC_SYNTAX_IDENTIFIER *pInterfaceId);
+BOOL kull_m_rpc_replace_first_routine_pair_direct(const GENERIC_BINDING_ROUTINE_PAIR *pOriginalBindingPair, const GENERIC_BINDING_ROUTINE_PAIR *pNewBindingPair);
+BOOL kull_m_rpc_replace_first_routine_pair(LPCWSTR szModuleName, const RPC_SYNTAX_IDENTIFIER *pInterfaceId, const GENERIC_BINDING_ROUTINE_PAIR *pNewBindingPair, PGENERIC_BINDING_ROUTINE_PAIR pOriginalBindingPair, const GENERIC_BINDING_ROUTINE_PAIR **ppOriginalBindingPair);
 
 typedef struct _KULL_M_RPC_FCNSTRUCT {
 	PVOID addr;

@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -86,6 +86,11 @@ BOOL kull_m_file_writeData(PCWCHAR fileName, LPCVOID data, DWORD lenght)
 
 BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for ""little"" files !
 {
+	return kull_m_file_readGeneric(fileName, data, lenght, 0);
+}
+
+BOOL kull_m_file_readGeneric(PCWCHAR fileName, PBYTE * data, PDWORD lenght, DWORD flags)
+{
 	BOOL reussite = FALSE;
 	DWORD dwBytesReaded;
 	LARGE_INTEGER filesize;
@@ -97,7 +102,7 @@ BOOL kull_m_file_readData(PCWCHAR fileName, PBYTE * data, PDWORD lenght)	// for 
 		if(!(reussite = kull_m_string_quick_base64_to_Binary(fileName, data, lenght)))
 			PRINT_ERROR_AUTO(L"kull_m_string_quick_base64_to_Binary");
 	}
-	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) && hFile != INVALID_HANDLE_VALUE)
+	else if((hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, flags, NULL)) && hFile != INVALID_HANDLE_VALUE)
 	{
 		if(GetFileSizeEx(hFile, &filesize) && !filesize.HighPart)
 		{
@@ -135,7 +140,7 @@ PWCHAR kull_m_file_fullPath(PCWCHAR fileName)
 	return buffer;
 }
 
-BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO*/, DWORD level, BOOL isPrintInfos, PKULL_M_FILE_FIND_CALLBACK callback, PVOID pvArg)
+BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO*/, DWORD level, BOOL isPrintInfos, BOOL isWithDir, PKULL_M_FILE_FIND_CALLBACK callback, PVOID pvArg)
 {
 	BOOL status = FALSE;
 	DWORD dwAttrib;
@@ -177,13 +182,13 @@ BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO
 											{
 												if(isPrintInfos)
 													kprintf(L"%*s" L"%3u %c|'%s\'\n", level << 1, L"", level, (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? L'D' : L'F' , fData.cFileName);
-												if(!(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+												if(isWithDir || !(fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 												{
 													if(callback)
 														status = callback(level, fullpath, fullpath + dwAttrib, pvArg);
 												}
 												else if(isRecursive && fData.cFileName)
-													status = kull_m_file_Find(fullpath, filter, TRUE, level + 1, isPrintInfos, callback, pvArg);
+													status = kull_m_file_Find(fullpath, filter, TRUE, level + 1, isPrintInfos, isWithDir, callback, pvArg);
 											}
 										}
 									}
@@ -194,8 +199,8 @@ BOOL kull_m_file_Find(PCWCHAR directory, PCWCHAR filter, BOOL isRecursive /*TODO
 					}
 				}
 			}
+			LocalFree(fullpath);
 		}
-		LocalFree(fullpath);
 	}
 	return status;
 }

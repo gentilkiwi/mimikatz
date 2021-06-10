@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -21,7 +21,6 @@
 //#define KERBEROS_TOOLS
 //#define SERVICE_INCONTROL
 #define NET_MODULE
-#define SQLITE3_OMIT
 #if defined(_M_ARM64)
 	#define MIMIKATZ_ARCH L"arm64"
 #elif defined(_M_X64)
@@ -69,7 +68,7 @@
 #define MIMIKATZ				L"mimikatz"
 #define MIMIKATZ_VERSION		L"2.2.0"
 #define MIMIKATZ_CODENAME		L"A La Vie, A L\'Amour"
-#define MIMIKATZ_MAX_WINBUILD	L"18362"
+#define MIMIKATZ_MAX_WINBUILD	L"19041"
 #define MIMIKATZ_FULL			MIMIKATZ L" " MIMIKATZ_VERSION L" (" MIMIKATZ_ARCH L") #" MIMIKATZ_MAX_WINBUILD L" " TEXT(__DATE__) L" " TEXT(__TIME__)
 #define MIMIKATZ_SECOND			L"\"" MIMIKATZ_CODENAME L"\""
 #define MIMIKATZ_DEFAULT_LOG	MIMIKATZ L".log"
@@ -113,6 +112,22 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define MS_ENH_RSA_AES_PROV_XP	L"Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)"
 #endif
 
+#if !defined(MS_PLATFORM_CRYPTO_PROVIDER)
+#define MS_PLATFORM_CRYPTO_PROVIDER	L"Microsoft Platform Crypto Provider"
+#endif
+
+#if !defined(NCRYPT_PCP_PLATFORM_TYPE_PROPERTY)
+#define NCRYPT_PCP_PLATFORM_TYPE_PROPERTY    L"PCP_PLATFORM_TYPE"
+#endif
+
+#if !defined(TPM_RSA_SRK_SEAL_KEY)
+#define TPM_RSA_SRK_SEAL_KEY			L"MICROSOFT_PCP_KSP_RSA_SEAL_KEY_3BD1C4BF-004E-4E2F-8A4D-0BF633DCB074"
+#endif
+
+#if !defined(NCRYPT_SEALING_FLAG)
+#define NCRYPT_SEALING_FLAG				0x00000100
+#endif
+
 #if !defined(SCARD_PROVIDER_CARD_MODULE)
 #define SCARD_PROVIDER_CARD_MODULE 0x80000001
 #endif
@@ -138,6 +153,9 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_BUILD_10_1803	17134
 #define KULL_M_WIN_BUILD_10_1809	17763
 #define KULL_M_WIN_BUILD_10_1903	18362
+#define KULL_M_WIN_BUILD_10_1909	18363
+#define KULL_M_WIN_BUILD_10_2004	19041
+#define KULL_M_WIN_BUILD_10_20H2	19042
 
 
 #define KULL_M_WIN_MIN_BUILD_XP		2500

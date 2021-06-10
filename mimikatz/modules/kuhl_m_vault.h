@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -9,6 +9,7 @@
 #include "../modules/kull_m_token.h"
 #include "../modules/kull_m_patch.h"
 #include "../modules/kull_m_cred.h"
+#include "../modules/kull_m_crypto_ngc.h"
 
 const KUHL_M kuhl_m_vault;
 
@@ -18,6 +19,7 @@ NTSTATUS kuhl_m_vault_clean();
 NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[]);
 void kuhl_m_vault_list_descVault(HANDLE hVault);
 NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[]);
+void kuhl_m_vault_cred_tryEncrypted(PCREDENTIAL pCredential);
 
 typedef struct _VAULT_GUID_STRING {
 	const GUID guid;
@@ -25,6 +27,7 @@ typedef struct _VAULT_GUID_STRING {
 } VAULT_GUID_STRING, *PVAULT_GUID_STRING;
 
 void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8); 
+void CALLBACK kuhl_m_vault_list_descItem_ngc(const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8);
 typedef void (CALLBACK * PSCHEMA_HELPER_FUNC) (const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8);
 
 typedef struct _VAULT_SCHEMA_HELPER {

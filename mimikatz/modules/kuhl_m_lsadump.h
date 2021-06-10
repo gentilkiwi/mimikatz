@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -15,6 +15,7 @@
 #include "../modules/kull_m_string.h"
 #include "../modules/kull_m_samlib.h"
 #include "../modules/kull_m_net.h"
+#include "../../modules/rpc/kull_m_rpc_ms-nrpc.h"
 #include "lsadump/kuhl_m_lsadump_dc.h"
 #include "kuhl_m_lsadump_remote.h"
 #include "kuhl_m_crypto.h"
@@ -69,15 +70,18 @@ NTSTATUS kuhl_m_lsadump_changentlm(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_netsync(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_packages(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_mbc(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_zerologon(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_lsadump_update_dc_password(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_lsadump_getSids(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN LPCWSTR littleKey, IN LPCWSTR prefix);
 BOOL kuhl_m_lsadump_getComputerAndSyskey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSystemBase, OUT LPBYTE sysKey);
-BOOL kuhl_m_lsadump_getUsersAndSamKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSAMBase, IN LPBYTE sysKey);
+BOOL kuhl_m_lsadump_getUsersAndSamKey(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hSAMBase, IN LPCBYTE sysKey);
 
 BOOL kuhl_m_lsadump_getCurrentControlSet(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hSystemBase, PHKEY phCurrentControlSet);
 BOOL kuhl_m_lsadump_getSyskey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hLSA, LPBYTE sysKey);
 BOOL kuhl_m_lsadump_getSamKey(PKULL_M_REGISTRY_HANDLE hRegistry, HKEY hAccount, LPCBYTE sysKey, LPBYTE samKey);
 BOOL kuhl_m_lsadump_getHash(PSAM_SENTRY pSamHash, LPCBYTE pStartOfData, LPCBYTE samKey, DWORD rid, BOOL isNtlm, BOOL isHistory);
+BOOL kuhl_m_lsadump_getSupplementalCreds(IN PKULL_M_REGISTRY_HANDLE hRegistry, IN HKEY hUser, IN const BYTE samKey[SAM_KEY_DATA_KEY_LENGTH]);
 
 void kuhl_m_lsadump_lsa_user(SAMPR_HANDLE DomainHandle, PSID DomainSid, DWORD rid, PUNICODE_STRING name, PKULL_M_MEMORY_ADDRESS aRemoteThread);
 BOOL kuhl_m_lsadump_lsa_getHandle(PKULL_M_MEMORY_HANDLE * hMemory, DWORD Flags);
@@ -477,6 +481,15 @@ typedef struct _KIWI_TBAL_MSV {
 	TBAL_UNICODE_STRING_F32 UserName;
 } KIWI_TBAL_MSV, *PKIWI_TBAL_MSV;
 
+typedef struct _KIWI_ENCRYPTED_SUPPLEMENTAL_CREDENTIALS {
+	DWORD unk0;
+	DWORD unkSize;
+	DWORD unk1; // flags ?
+	DWORD originalSize;
+	BYTE iv[LAZY_IV_SIZE];
+	BYTE encrypted[ANYSIZE_ARRAY];
+} KIWI_ENCRYPTED_SUPPLEMENTAL_CREDENTIALS, *PKIWI_ENCRYPTED_SUPPLEMENTAL_CREDENTIALS;
+
 BOOL kuhl_m_lsadump_getLsaKeyAndSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hSecurityBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, IN LPBYTE sysKey, IN BOOL secretsOrCache, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);
 BOOL kuhl_m_lsadump_getSecrets(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN PKULL_M_REGISTRY_HANDLE hSystem, IN HKEY hSystemBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique);
 BOOL kuhl_m_lsadump_getNLKMSecretAndCache(IN PKULL_M_REGISTRY_HANDLE hSecurity, IN HKEY hPolicyBase, IN HKEY hSecurityBase, PNT6_SYSTEM_KEYS lsaKeysStream, PNT5_SYSTEM_KEY lsaKeyUnique, IN PKUHL_LSADUMP_DCC_CACHE_DATA pCacheData);
@@ -491,27 +504,6 @@ PKERB_KEY_DATA kuhl_m_lsadump_lsa_keyDataInfo(PVOID base, PKERB_KEY_DATA keys, U
 PKERB_KEY_DATA_NEW kuhl_m_lsadump_lsa_keyDataNewInfo(PVOID base, PKERB_KEY_DATA_NEW keys, USHORT Count, PCWSTR title);
 void kuhl_m_lsadump_lsa_DescrBuffer(DWORD type, DWORD rid, PVOID Buffer, DWORD BufferSize);
 
-typedef wchar_t * LOGONSRV_HANDLE;
-typedef struct _NETLOGON_CREDENTIAL {
-	CHAR data[8]; 
-} NETLOGON_CREDENTIAL, *PNETLOGON_CREDENTIAL; 
-
-typedef struct _NETLOGON_AUTHENTICATOR {
-	NETLOGON_CREDENTIAL Credential;
-	DWORD Timestamp;
-} NETLOGON_AUTHENTICATOR, *PNETLOGON_AUTHENTICATOR;
-
-typedef  enum _NETLOGON_SECURE_CHANNEL_TYPE{
-	NullSecureChannel = 0,
-	MsvApSecureChannel = 1,
-	WorkstationSecureChannel = 2,
-	TrustedDnsDomainSecureChannel = 3,
-	TrustedDomainSecureChannel = 4,
-	UasServerSecureChannel = 5,
-	ServerSecureChannel = 6,
-	CdcServerSecureChannel = 7
-} NETLOGON_SECURE_CHANNEL_TYPE;
-
 #define SECRET_SET_VALUE	0x00000001L
 #define SECRET_QUERY_VALUE	0x00000002L
 
@@ -523,9 +515,11 @@ typedef  enum _NETLOGON_SECURE_CHANNEL_TYPE{
 extern NTSTATUS WINAPI I_NetServerReqChallenge(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * ComputerName, IN PNETLOGON_CREDENTIAL ClientChallenge, OUT PNETLOGON_CREDENTIAL ServerChallenge);
 extern NTSTATUS WINAPI I_NetServerAuthenticate2(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t * ComputerName, IN PNETLOGON_CREDENTIAL ClientCredential, OUT PNETLOGON_CREDENTIAL ServerCredential, IN OUT ULONG * NegotiateFlags);
 extern NTSTATUS WINAPI I_NetServerTrustPasswordsGet(IN LOGONSRV_HANDLE TrustedDcName, IN wchar_t* AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t* ComputerName, IN PNETLOGON_AUTHENTICATOR Authenticator, OUT PNETLOGON_AUTHENTICATOR ReturnAuthenticator, OUT PENCRYPTED_NT_OWF_PASSWORD EncryptedNewOwfPassword, OUT PENCRYPTED_NT_OWF_PASSWORD EncryptedOldOwfPassword);
+extern NTSTATUS WINAPI I_NetServerPasswordSet2(IN LOGONSRV_HANDLE PrimaryName, IN wchar_t * AccountName, IN NETLOGON_SECURE_CHANNEL_TYPE SecureChannelType, IN wchar_t * ComputerName, IN PNETLOGON_AUTHENTICATOR Authenticator, OUT PNETLOGON_AUTHENTICATOR ReturnAuthenticator, IN PNL_TRUST_PASSWORD ClearNewPassword);
 extern NTSTATUS NTAPI LsaOpenSecret(__in LSA_HANDLE PolicyHandle, __in PLSA_UNICODE_STRING SecretName, __in ACCESS_MASK DesiredAccess, __out PLSA_HANDLE SecretHandle);
 extern NTSTATUS NTAPI LsaSetSecret(__in LSA_HANDLE SecretHandle, __in_opt PLSA_UNICODE_STRING CurrentValue, __in_opt PLSA_UNICODE_STRING OldValue);
 extern NTSTATUS NTAPI LsaQuerySecret(__in LSA_HANDLE SecretHandle, __out_opt OPTIONAL PLSA_UNICODE_STRING *CurrentValue, __out_opt PLARGE_INTEGER CurrentValueSetTime, __out_opt PLSA_UNICODE_STRING *OldValue, __out_opt PLARGE_INTEGER OldValueSetTime);
+extern NTSTATUS NTAPI LsaDeleteSecret(__in LSA_HANDLE SecretHandle);
 
 NTSTATUS kuhl_m_lsadump_netsync_NlComputeCredentials(PBYTE input, PBYTE output, PBYTE key);
 void kuhl_m_lsadump_netsync_AddTimeStampForAuthenticator(PNETLOGON_CREDENTIAL Credential, DWORD TimeStamp, PNETLOGON_AUTHENTICATOR Authenticator, BYTE sessionKey[MD5_DIGEST_LENGTH]);
@@ -541,3 +535,4 @@ typedef struct _KUHL_M_LSADUMP_CHANGENTLM_DATA {
 
 typedef NTSTATUS (CALLBACK * PKUHL_M_LSADUMP_DOMAINUSER) (SAMPR_HANDLE hUser, PVOID pvArg);
 NTSTATUS kuhl_m_lsadump_enumdomains_users(int argc, wchar_t * argv[], DWORD dwUserAccess, PKUHL_M_LSADUMP_DOMAINUSER callback, PVOID pvArg);
+NTSTATUS kuhl_m_lsadump_enumdomains_users_data(PLSA_UNICODE_STRING uServerName, PLSA_UNICODE_STRING uUserName, DWORD rid, DWORD dwUserAccess, PKUHL_M_LSADUMP_DOMAINUSER callback, PVOID pvArg);

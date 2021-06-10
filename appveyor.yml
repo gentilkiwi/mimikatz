@@ -1,0 +1,21 @@
+version: 2.2.0-ci-{branch}-{build}
+image: Visual Studio 2013
+configuration: Release
+platform:
+- x64
+- Win32
+shallow_clone: true
+build:
+  parallel: true
+  verbosity: normal
+after_build:
+- cmd: >-
+    7z a -t7z -mx -ms=on %APPVEYOR_PROJECT_NAME%_trunk_%PLATFORM%.7z -xr@notrunk.lst .\%PLATFORM% README.md kiwi_passwords.yar mimicom.idl
+
+    7z a -tzip -mx -mm=deflate -mpass=15 %APPVEYOR_PROJECT_NAME%_trunk_%PLATFORM%.zip -xr@notrunk.lst .\%PLATFORM% README.md kiwi_passwords.yar mimicom.idl
+
+    7z a -p%APPVEYOR_PROJECT_NAME% -mhe=on -t7z -mx -ms=on %APPVEYOR_PROJECT_NAME%_trunk_password_%PLATFORM%.7z -xr@notrunk.lst .\%PLATFORM% README.md kiwi_passwords.yar mimicom.idl
+
+    7z a -p%APPVEYOR_PROJECT_NAME% -tzip -mx -mm=deflate -mpass=15 %APPVEYOR_PROJECT_NAME%_trunk_password_%PLATFORM%.zip -xr@notrunk.lst .\%PLATFORM% README.md kiwi_passwords.yar mimicom.idl
+artifacts:
+- path: mimikatz_trunk_*
