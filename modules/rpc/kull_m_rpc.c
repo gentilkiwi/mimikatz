@@ -234,7 +234,11 @@ void kull_m_rpc_getArgs(int argc, wchar_t * argv[], LPCWSTR *szRemote, LPCWSTR *
 	}
 }
 
-void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes)
+#ifdef __MINGW32__
+void __RPC_FAR* __RPC_USER MIDL_user_allocate(SIZE_T cBytes)
+#else
+void __RPC_FAR* __RPC_USER MIDL_user_allocate(size_t cBytes)
+#endif
 {
 	return LocalAlloc(LPTR, cBytes);
 }

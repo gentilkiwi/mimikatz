@@ -18,8 +18,8 @@ typedef struct _ms2Drprn_MIDL_PROC_FORMAT_STRING {
 #endif
 } ms2Drprn_MIDL_PROC_FORMAT_STRING;
 
-extern const ms2Drprn_MIDL_TYPE_FORMAT_STRING ms2Drprn__MIDL_TypeFormatString;
-extern const ms2Drprn_MIDL_PROC_FORMAT_STRING ms2Drprn__MIDL_ProcFormatString;
+static const ms2Drprn_MIDL_TYPE_FORMAT_STRING ms2Drprn__MIDL_TypeFormatString;
+static const ms2Drprn_MIDL_PROC_FORMAT_STRING ms2Drprn__MIDL_ProcFormatString;
 static const RPC_PROTSEQ_ENDPOINT __RpcProtseqEndpoint[] = {{(unsigned char *) "ncacn_np", (unsigned char *) "\\pipe\\spoolss"}};
 static const RPC_CLIENT_INTERFACE winspool___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x12345678, 0x1234, 0xabcd, {0xef, 0x00, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 1, (RPC_PROTSEQ_ENDPOINT *)__RpcProtseqEndpoint, 0, 0, 0x00000000};
 RPC_IF_HANDLE winspool_v1_0_c_ifspec = (RPC_IF_HANDLE) &winspool___RpcClientInterface;

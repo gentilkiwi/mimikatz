@@ -14,8 +14,8 @@ typedef struct _netlogon_MIDL_PROC_FORMAT_STRING {
 #endif
 } netlogon_MIDL_PROC_FORMAT_STRING;
 
-extern const netlogon_MIDL_TYPE_FORMAT_STRING netlogon__MIDL_TypeFormatString;
-extern const netlogon_MIDL_PROC_FORMAT_STRING netlogon__MIDL_ProcFormatString;
+static const netlogon_MIDL_TYPE_FORMAT_STRING netlogon__MIDL_TypeFormatString;
+static const netlogon_MIDL_PROC_FORMAT_STRING netlogon__MIDL_ProcFormatString;
 static const RPC_CLIENT_INTERFACE logon___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x12345678, 0x1234, 0xabcd, {0xef, 0x00, 0x01, 0x23, 0x45, 0x67, 0xcf, 0xfb}}, {1, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 RPC_IF_HANDLE logon_v1_0_c_ifspec = (RPC_IF_HANDLE) &logon___RpcClientInterface;
 handle_t hLogon;

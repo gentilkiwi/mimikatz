@@ -45,7 +45,6 @@ typedef struct _KULL_M_RPC_FCNSTRUCT {
 	size_t size;
 } KULL_M_RPC_FCNSTRUCT, *PKULL_M_RPC_FCNSTRUCT;
 
-void __RPC_FAR * __RPC_USER midl_user_allocate(size_t cBytes);
 void __RPC_USER midl_user_free(void __RPC_FAR * p);
 void __RPC_USER ReadFcn(void *State, char **pBuffer, unsigned int *pSize);
 void __RPC_USER WriteFcn(void *State, char *Buffer, unsigned int Size);

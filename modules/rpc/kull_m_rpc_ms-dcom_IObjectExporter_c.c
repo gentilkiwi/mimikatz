@@ -17,8 +17,8 @@ typedef struct _IObjectExporter_MIDL_PROC_FORMAT_STRING {
 	unsigned char  Format[PROC_FORMAT_STRING_SIZE];
 } IObjectExporter_MIDL_PROC_FORMAT_STRING;
 
-extern const IObjectExporter_MIDL_TYPE_FORMAT_STRING IObjectExporter__MIDL_TypeFormatString;
-extern const IObjectExporter_MIDL_PROC_FORMAT_STRING IObjectExporter__MIDL_ProcFormatString;
+static const IObjectExporter_MIDL_TYPE_FORMAT_STRING IObjectExporter__MIDL_TypeFormatString;
+static const IObjectExporter_MIDL_PROC_FORMAT_STRING IObjectExporter__MIDL_ProcFormatString;
 static const RPC_CLIENT_INTERFACE IObjectExporter___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0x99fcfec4, 0x5260, 0x101b, {0xbb, 0xcb, 0x00, 0xaa, 0x00, 0x21, 0x34, 0x7a}}, {0, 0}}, {{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8, 0x08, 0x00, 0x2b, 0x10, 0x48, 0x60}}, {2, 0}}, 0, 0, 0, 0, 0, 0x00000000};
 static RPC_BINDING_HANDLE IObjectExporter__MIDL_AutoBindHandle;
 static const MIDL_STUB_DESC IObjectExporter_StubDesc = {(void *) &IObjectExporter___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &IObjectExporter__MIDL_AutoBindHandle, 0, 0, 0, 0, IObjectExporter__MIDL_TypeFormatString.Format, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
