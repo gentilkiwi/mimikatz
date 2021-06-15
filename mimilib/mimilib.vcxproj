@@ -79,7 +79,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AssemblyDebug>false</AssemblyDebug>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;delayimp.lib;ntdll.min.lib;rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;delayimp.lib;ntdll.min.lib;rpcrt4.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -104,6 +104,7 @@
     <ClCompile Include="knp.c" />
     <ClCompile Include="kssp.c" />
     <ClCompile Include="ksub.c" />
+    <ClCompile Include="kcredentialprovider.c" />
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.c" />
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_packages.c" />
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_utils.c" />
@@ -119,6 +120,7 @@
     <ClInclude Include="knp.h" />
     <ClInclude Include="kssp.h" />
     <ClInclude Include="ksub.h" />
+    <ClInclude Include="kcredentialprovider.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_packages.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_utils.h" />
