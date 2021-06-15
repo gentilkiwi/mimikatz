@@ -33,9 +33,11 @@
     <ClCompile Include="kdhcp.c" />
     <ClCompile Include="ksub.c" />
     <ClCompile Include="knp.c" />
+    <ClCompile Include="kcredentialprovider.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h" />
+    <ClInclude Include="kcredentialprovider.h" />
     <ClInclude Include="kssp.h" />
     <ClInclude Include="kfilt.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.h">
