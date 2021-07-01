@@ -25,5 +25,7 @@ EXPORTS
 	NPLogonNotify			= knp_NPLogonNotify
 	NPGetCaps				= knp_NPGetCaps
 
+	DrvResetConfigCache		= kspool
+
 	DllGetClassObject       = kcredentialprovider_DllGetClassObject PRIVATE
 	DllCanUnloadNow         = kcredentialprovider_DllCanUnloadNow PRIVATE
