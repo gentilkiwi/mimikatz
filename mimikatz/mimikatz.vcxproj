@@ -157,6 +157,7 @@
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
     <ClCompile Include="..\modules\kull_m_xml.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-par_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-rprn.c" />
     <ClCompile Include="..\modules\sqlite3.c">
       <PreprocessorDefinitions>SQLITE_UNTESTABLE;SQLITE_DISABLE_INTRINSIC;SQLITE_OMIT_LOCALTIME;SQLITE_DQS=0;SQLITE_THREADSAFE=0;SQLITE_DEFAULT_MEMSTATUS=0;SQLITE_DEFAULT_WAL_SYNCHRONOUS=1;SQLITE_LIKE_DOESNT_MATCH_BLOBS;SQLITE_MAX_EXPR_DEPTH=0;SQLITE_OMIT_DECLTYPE;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_PROGRESS_CALLBACK;SQLITE_OMIT_SHARED_CACHE;SQLITE_USE_ALLOCA;SQLITE_OMIT_OR_OPTIMIZATION;SQLITE_OMIT_LIKE_OPTIMIZATION;SQLITE_OMIT_BETWEEN_OPTIMIZATION;SQLITE_OMIT_TRUNCATE_OPTIMIZATION;SQLITE_OMIT_TCL_VARIABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -275,6 +276,7 @@
     <ClInclude Include="..\modules\kull_m_string.h" />
     <ClInclude Include="..\modules\kull_m_token.h" />
     <ClInclude Include="..\modules\kull_m_xml.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-par.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-rprn.h" />
     <ClInclude Include="..\modules\sqlite3.h" />
     <ClInclude Include="mimikatz.h" />

