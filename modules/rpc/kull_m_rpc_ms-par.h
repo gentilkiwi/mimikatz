@@ -42,5 +42,6 @@ DWORD RpcAsyncOpenPrinter(handle_t hRemoteBinding, wchar_t *pPrinterName, PRINTE
 DWORD RpcAsyncClosePrinter(PRINTER_HANDLE *phPrinter);
 DWORD RpcAsyncAddPrinterDriver(handle_t hRemoteBinding, wchar_t *pName, DRIVER_CONTAINER *pDriverContainer, DWORD dwFileCopyFlags);
 DWORD RpcAsyncEnumPrinterDrivers(handle_t hRemoteBinding, wchar_t *pName, wchar_t *pEnvironment, DWORD Level, unsigned char *pDrivers, DWORD cbBuf, DWORD *pcbNeeded, DWORD *pcReturned);
+DWORD RpcAsyncDeletePrinterDriverEx(handle_t hRemoteBinding, wchar_t *pName, wchar_t *pEnvironment, wchar_t *pDriverName, DWORD dwDeleteFlag, DWORD dwVersionNum);
 
 extern RPC_IF_HANDLE IRemoteWinspool_v1_0_c_ifspec;

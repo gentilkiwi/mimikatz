@@ -6,4 +6,7 @@
   <ItemGroup>
     <ClInclude Include="mimispool.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="mimispool.rc" />
+  </ItemGroup>
 </Project>

