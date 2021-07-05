@@ -83,6 +83,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimidrv", "mimidrv\mimidrv.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimilove", "mimilove\mimilove.vcxproj", "{60D02E32-1711-4D9E-9AC2-10627C52EB40}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimispool", "mimispool\mimispool.vcxproj", "{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -147,6 +149,19 @@ Global
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|Win32.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|x64.ActiveCfg = Release|x64
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Release|ARM64.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Release|Win32.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Release|Win32.Build.0 = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Release|x64.ActiveCfg = Release|x64
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Release|x64.Build.0 = Release|x64
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Second_Release_PowerShell|Win32.Build.0 = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Second_Release_PowerShell|x64.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Simple_DLL|Win32.ActiveCfg = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Simple_DLL|Win32.Build.0 = Release|Win32
+		{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}.Simple_DLL|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

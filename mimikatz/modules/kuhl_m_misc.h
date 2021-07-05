@@ -49,7 +49,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver);
-DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(handle_t hRemoteBinding, LPCWSTR szSystem32, PDRIVER_INFO_2 pInfo2, DWORD dwStep, LPCWSTR pConfigFile);
+DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 BOOL CALLBACK kuhl_m_misc_detours_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
