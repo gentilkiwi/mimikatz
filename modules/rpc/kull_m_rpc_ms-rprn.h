@@ -121,11 +121,12 @@ typedef struct _DRIVER_CONTAINER {
 } DRIVER_CONTAINER;
 
 DWORD RpcOpenPrinter(STRING_HANDLE pPrinterName, PRINTER_HANDLE *pHandle,wchar_t *pDatatype, DEVMODE_CONTAINER *pDevModeContainer, DWORD AccessRequired);
+DWORD RpcEnumPrinterDrivers(STRING_HANDLE pName,wchar_t *pEnvironment, DWORD Level, BYTE *pDrivers, DWORD cbBuf, DWORD *pcbNeeded, DWORD *pcReturned);
 DWORD RpcClosePrinter(PRINTER_HANDLE *phPrinter);
 DWORD RpcFindClosePrinterChangeNotification(PRINTER_HANDLE hPrinter);
 DWORD RpcRemoteFindFirstPrinterChangeNotification(PRINTER_HANDLE hPrinter, DWORD fdwFlags, DWORD fdwOptions, wchar_t *pszLocalMachine, DWORD dwPrinterLocal, DWORD cbBuffer, BYTE *pBuffer);
+DWORD RpcDeletePrinterDriverEx(STRING_HANDLE pName, wchar_t *pEnvironment, wchar_t *pDriverName, DWORD dwDeleteFlag, DWORD dwVersionNum);
 DWORD RpcAddPrinterDriverEx(STRING_HANDLE pName, DRIVER_CONTAINER *pDriverContainer, DWORD dwFileCopyFlags);
-DWORD RpcEnumPrinterDrivers(STRING_HANDLE pName,wchar_t *pEnvironment, DWORD Level, BYTE *pDrivers, DWORD cbBuf, DWORD *pcbNeeded, DWORD *pcReturned);
 
 extern RPC_IF_HANDLE winspool_v1_0_c_ifspec;
 
