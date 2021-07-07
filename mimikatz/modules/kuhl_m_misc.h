@@ -48,11 +48,11 @@ NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 
+BOOL kuhl_m_misc_printnightmare_normalize_library(LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary);
 void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete);
 BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver);
 DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_par(handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile);
 BOOL kuhl_m_misc_printnightmare_CallEnumPrinters_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned);
-
 void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_rprn(LPCWSTR szEnvironment, BOOL bIsDelete);
 BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_rprn(LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver);
 DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_rprn(PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile);

