@@ -85,6 +85,7 @@
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <ModuleDefinitionFile>mimispool.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
@@ -96,5 +97,8 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="mimispool.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mimispool.def" />
   </ItemGroup>
 </Project>

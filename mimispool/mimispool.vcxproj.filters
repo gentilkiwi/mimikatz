@@ -9,4 +9,7 @@
   <ItemGroup>
     <ResourceCompile Include="mimispool.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="mimispool.def" />
+  </ItemGroup>
 </Project>

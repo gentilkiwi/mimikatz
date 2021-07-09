@@ -5,6 +5,7 @@
 #define PRINTER_CHANGE_ALL		0x7777FFFF
 */
 #define PRINTER_NOTIFY_CATEGORY_ALL	0x00010000
+#define APD_INSTALL_WARNED_DRIVER	0x00008000
 
 typedef void *PRINTER_HANDLE;
 
@@ -122,6 +123,7 @@ typedef struct _DRIVER_CONTAINER {
 
 DWORD RpcOpenPrinter(STRING_HANDLE pPrinterName, PRINTER_HANDLE *pHandle,wchar_t *pDatatype, DEVMODE_CONTAINER *pDevModeContainer, DWORD AccessRequired);
 DWORD RpcEnumPrinterDrivers(STRING_HANDLE pName,wchar_t *pEnvironment, DWORD Level, BYTE *pDrivers, DWORD cbBuf, DWORD *pcbNeeded, DWORD *pcReturned);
+DWORD RpcGetPrinterDriverDirectory(STRING_HANDLE pName, wchar_t *pEnvironment, DWORD Level, BYTE *pDriverDirectory, DWORD cbBuf, DWORD *pcbNeeded);
 DWORD RpcClosePrinter(PRINTER_HANDLE *phPrinter);
 DWORD RpcFindClosePrinterChangeNotification(PRINTER_HANDLE hPrinter);
 DWORD RpcRemoteFindFirstPrinterChangeNotification(PRINTER_HANDLE hPrinter, DWORD fdwFlags, DWORD fdwOptions, wchar_t *pszLocalMachine, DWORD dwPrinterLocal, DWORD cbBuffer, BYTE *pBuffer);

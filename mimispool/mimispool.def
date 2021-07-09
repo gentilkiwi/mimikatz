@@ -1,0 +1,7 @@
+LIBRARY
+EXPORTS
+	DrvQueryDriverInfo
+	DrvEnableDriver
+	DrvDisableDriver
+
+	DrvResetConfigCache

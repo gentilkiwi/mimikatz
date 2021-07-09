@@ -49,14 +49,10 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 
 BOOL kuhl_m_misc_printnightmare_normalize_library(LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary);
-void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete);
-BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver);
-DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_par(handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile);
-BOOL kuhl_m_misc_printnightmare_CallEnumPrinters_par(handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned);
-void kuhl_m_misc_printnightmare_CallEnumPrintersAndMaybeDelete_rprn(LPCWSTR szEnvironment, BOOL bIsDelete);
-BOOL kuhl_m_misc_printnightmare_CallEnumPrintersAndFindSuitablePath_rprn(LPCWSTR szEnvironment, LPWSTR *szSystem32, LPWSTR *szDriver);
-DWORD kuhl_m_misc_printnightmare_CallAddPrinterDriverEx_rprn(PDRIVER_INFO_2 pInfo2, LPCWSTR szSystem32, LPCWSTR pConfigFile);
-BOOL kuhl_m_misc_printnightmare_CallEnumPrinters_rprn(LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned);
+BOOL kuhl_m_misc_printnightmare_FillStructure(PDRIVER_INFO_2 pInfo2, BOOL bIsX64, BOOL bIsDynamic, LPCWSTR szForce, BOOL bIsPar, handle_t hRemoteBinding);
+void kuhl_m_misc_printnightmare_ListPrintersAndMaybeDelete(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete);
+void kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, DWORD dwFlags);
+BOOL kuhl_m_misc_printnightmare_EnumPrinters(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 BOOL CALLBACK kuhl_m_misc_detours_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);

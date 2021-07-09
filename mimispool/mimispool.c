@@ -7,22 +7,89 @@
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-	BOOL ret;
+	BOOL ret = TRUE;
+	
+	switch( ul_reason_for_call ) 
+    { 
+        case DLL_PROCESS_ATTACH:
+			kspool(TEXT(__FUNCTION__) L"-PROCESS_ATTACH");
+			ret = FALSE; 
+			// FALSE avoid to keep library in memory
+			// TRUE will mimic "real" driver/config -- to use/test with /useown on local (remote is not compatible with GetFileVersionInfo*)
+            break;
 
-	if(ul_reason_for_call == DLL_PROCESS_ATTACH)
-	{
-		kspool();
-		ret = FALSE;
-	}
-	else
-	{
-		ret = TRUE;
-	}
+        case DLL_THREAD_ATTACH:
+			kspool(TEXT(__FUNCTION__) L"-THREAD_ATTACH");
+            break;
+
+        case DLL_THREAD_DETACH:
+			kspool(TEXT(__FUNCTION__) L"-THREAD_DETACH");
+            break;
+
+        case DLL_PROCESS_DETACH:
+			kspool(TEXT(__FUNCTION__) L"-PROCESS_DETACH");
+            break;
+    }
 
 	return ret;
 }
 
-void kspool()
+BOOL APIENTRY APIENTRY DrvQueryDriverInfo(DWORD dwMode, PVOID pBuffer, DWORD cbBuf, PDWORD pcbNeeded)
+{
+	BOOL status = FALSE;
+
+	kspool(TEXT(__FUNCTION__));
+
+	if ( dwMode == DRVQUERY_USERMODE)
+	{
+		*pcbNeeded = sizeof(DWORD);
+		if (pBuffer && (cbBuf >= sizeof(DWORD)))
+		{
+			status = TRUE;
+			*(DWORD *)pBuffer = TRUE;
+		}
+		SetLastError(ERROR_INSUFFICIENT_BUFFER);
+	}
+	else
+	{
+		SetLastError(ERROR_INVALID_PARAMETER);
+	}
+
+	return status;
+}
+
+BOOL APIENTRY DrvEnableDriver(ULONG iEngineVersion, ULONG cj, DRVENABLEDATA *pded)
+{
+	BOOL status = FALSE;
+
+	kspool(TEXT(__FUNCTION__));
+
+	if((iEngineVersion < 0x20000) || (cj < 0x10))
+	{
+		SetLastError(ERROR_BAD_DRIVER_LEVEL);
+	}
+	else
+	{
+		pded->iDriverVersion = 0x20000;
+		pded->pdrvfn = NULL;
+		pded->c = 0;
+		status = TRUE;
+	}
+
+	return status;
+}
+
+VOID APIENTRY DrvDisableDriver()
+{
+	kspool(TEXT(__FUNCTION__));
+}
+
+VOID APIENTRY DrvResetConfigCache()
+{
+	kspool(TEXT(__FUNCTION__));
+}
+
+void kspool(LPCWSTR szFrom)
 {
 	FILE * kspool_logfile;
 	WCHAR Buffer[256 + 1];
@@ -33,11 +100,9 @@ void kspool()
 	if(kspool_logfile = _wfopen(L"mimispool.log", L"a"))
 #pragma warning(pop)
 	{
-		klog(kspool_logfile, L"Hello!\n");
-		
 		if(GetUserName(Buffer, &cbBuffer))
 		{
-			klog(kspool_logfile, L"I\'m running with \'%s\' (and I like it :)\n", Buffer);
+			klog(kspool_logfile, L"[" PLATFORM L"] [%s] I\'m running with \'%s\' (and I like it :)\n", szFrom, Buffer);
 		}
 
 		fclose(kspool_logfile);
