@@ -260,24 +260,23 @@ void CALLBACK mimikatz_dll(HWND hwnd, HINSTANCE hinst, LPWSTR lpszCmdLine, int n
 {
 	int argc = 0;
 	wchar_t ** argv;
-	if(AllocConsole())
-	{
+
+	AllocConsole();
 #pragma warning(push)
 #pragma warning(disable:4996)
-		freopen("CONOUT$", "w", stdout);
-		freopen("CONOUT$", "w", stderr);
-		freopen("CONIN$", "r", stdin);
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
+	freopen("CONIN$", "r", stdin);
 #pragma warning(pop)
-		if(lpszCmdLine && lstrlenW(lpszCmdLine))
+	if(lpszCmdLine && lstrlenW(lpszCmdLine))
+	{
+		if(argv = CommandLineToArgvW(lpszCmdLine, &argc))
 		{
-			if(argv = CommandLineToArgvW(lpszCmdLine, &argc))
-			{
-				wmain(argc, argv);
-				LocalFree(argv);
-			}
+			wmain(argc, argv);
+			LocalFree(argv);
 		}
-		else wmain(0, NULL);
 	}
+	else wmain(0, NULL);
 }
 #endif
 
