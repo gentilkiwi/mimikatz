@@ -346,8 +346,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <ResourceCompile Include="mimikatz.rc" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <None Include="mimikatz.ico" />
   </ItemGroup>
 </Project>
