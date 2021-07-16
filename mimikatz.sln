@@ -1,13 +1,16 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mimikatz", "mimikatz\mimikatz.vcxproj", "{FB9B5E61-7C34-4280-A211-E979E1D6977F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "global files", "global files", "{1ADABD33-DEBE-4095-8EAE-9B6ED51DB68E}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		kiwi_passwords.yar = kiwi_passwords.yar
 		mimicom.idl = mimicom.idl
+		notrunk.lst = notrunk.lst
 		README.md = README.md
+		trunk.lst = trunk.lst
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF6-4DCA-9A60-6F4036929AEE}"
@@ -30,6 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "inc", "inc", "{282B4B77-BFF
 		inc\WDBGEXTS.H = inc\WDBGEXTS.H
 		inc\WinBer.h = inc\WinBer.h
 		inc\wincred.h = inc\wincred.h
+		inc\WinDNS.h = inc\WinDNS.h
 		inc\Winldap.h = inc\Winldap.h
 	EndProjectSection
 EndProject
@@ -84,69 +88,65 @@ Global
 		Svn-Managed = True
 		Manager = AnkhSVN - Subversion Support for Visual Studio
 	EndGlobalSection
-	Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|ARM64 = Release|ARM64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
-		Release|ARM64 = Release|ARM64
+		Second_Release_PowerShell|ARM64 = Second_Release_PowerShell|ARM64
 		Second_Release_PowerShell|Win32 = Second_Release_PowerShell|Win32
 		Second_Release_PowerShell|x64 = Second_Release_PowerShell|x64
-		Second_Release_PowerShell|ARM64 = Second_Release_PowerShell|ARM64
+		Simple_DLL|ARM64 = Simple_DLL|ARM64
 		Simple_DLL|Win32 = Simple_DLL|Win32
 		Simple_DLL|x64 = Simple_DLL|x64
-		Simple_DLL|ARM64 = Simple_DLL|ARM64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|ARM64.ActiveCfg = Release|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|Win32.ActiveCfg = Release|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|Win32.Build.0 = Release|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|x64.ActiveCfg = Release|x64
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|x64.Build.0 = Release|x64
-		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|ARM64.ActiveCfg = Release|ARM64
-		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Release|ARM64.Build.0 = Release|ARM64
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|ARM64.ActiveCfg = Second_Release_PowerShell|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|Win32.ActiveCfg = Second_Release_PowerShell|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|Win32.Build.0 = Second_Release_PowerShell|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|x64.ActiveCfg = Second_Release_PowerShell|x64
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|x64.Build.0 = Second_Release_PowerShell|x64
-		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Second_Release_PowerShell|ARM64.ActiveCfg = Second_Release_PowerShell|Win32
+		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|ARM64.ActiveCfg = Simple_DLL|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|Win32.ActiveCfg = Simple_DLL|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|Win32.Build.0 = Simple_DLL|Win32
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|x64.ActiveCfg = Simple_DLL|x64
 		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|x64.Build.0 = Simple_DLL|x64
-		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|ARM64.ActiveCfg = Simple_DLL|ARM64
-		{FB9B5E61-7C34-4280-A211-E979E1D6977F}.Simple_DLL|ARM64.Build.0 = Simple_DLL|ARM64
+		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|ARM64.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|Win32.Build.0 = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.ActiveCfg = Release|x64
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|x64.Build.0 = Release|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|ARM64.ActiveCfg = Release|ARM64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Release|ARM64.Build.0 = Release|ARM64
+		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
+		{E049487C-C5BD-471E-99AE-C756E70B6520}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Simple_DLL|Win32.ActiveCfg = Release|Win32
 		{E049487C-C5BD-471E-99AE-C756E70B6520}.Simple_DLL|x64.ActiveCfg = Release|x64
-		{E049487C-C5BD-471E-99AE-C756E70B6520}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|ARM64.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|Win32.Build.0 = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.ActiveCfg = Release|x64
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|x64.Build.0 = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Release|ARM64.ActiveCfg = Release|Win32
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
+		{86FF6D04-208C-442F-B27C-E4255DD39402}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Simple_DLL|Win32.ActiveCfg = Release|Win32
 		{86FF6D04-208C-442F-B27C-E4255DD39402}.Simple_DLL|x64.ActiveCfg = Release|x64
-		{86FF6D04-208C-442F-B27C-E4255DD39402}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|ARM64.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|Win32.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|Win32.Build.0 = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|x64.ActiveCfg = Release|x64
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Release|ARM64.ActiveCfg = Release|Win32
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|Win32.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|x64.ActiveCfg = Release|x64
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Second_Release_PowerShell|ARM64.ActiveCfg = Release|Win32
+		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|Win32.ActiveCfg = Release|Win32
 		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|x64.ActiveCfg = Release|x64
-		{60D02E32-1711-4D9E-9AC2-10627C52EB40}.Simple_DLL|ARM64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

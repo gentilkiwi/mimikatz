@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -202,7 +202,7 @@ BOOL kuhl_m_dpapi_ssh_getRSAfromRAW(LPCBYTE data, DWORD szData)
 	BCRYPT_ALG_HANDLE hAlg;
 	BCRYPT_KEY_HANDLE hKey;
 	DATA_BLOB Asn1Blob;
-	LPWSTR b64Out;
+	LPSTR b64Out;
 
 	kuhl_m_dpapi_ssh_ParseKeyElement(&pData, NULL, NULL); // avoid RSA header
 	kuhl_m_dpapi_ssh_ParseKeyElement(&pData, &pModulus, &StaticRsaBlob.cbModulus); // n - modulus
@@ -243,12 +243,12 @@ BOOL kuhl_m_dpapi_ssh_getRSAfromRAW(LPCBYTE data, DWORD szData)
 							{
 								if(kuhl_m_crypto_c_sc_auth_quickEncode(CNG_RSA_PRIVATE_KEY_BLOB, pFullRsaBlob, &Asn1Blob)) // yeah, it needs BCRYPT_RSAFULLPRIVATE_BLOB
 								{
-									if(status = kuhl_m_dpapi_ssh_EncodeB64_headers(L"RSA PRIVATE KEY", &Asn1Blob, &b64Out))
+									if(status = kull_m_string_EncodeB64_headersA("RSA PRIVATE KEY", Asn1Blob.pbData, Asn1Blob.cbData, &b64Out))
 									{
-										kprintf(b64Out);
+										kprintf(L"%S", b64Out);
 										LocalFree(b64Out);
 									}
-									else PRINT_ERROR_AUTO(L"EncodeB64_headers");
+									else PRINT_ERROR_AUTO(L"kull_m_string_EncodeB64_headers");
 									LocalFree(Asn1Blob.pbData);
 								}
 							}
@@ -281,21 +281,4 @@ void kuhl_m_dpapi_ssh_ParseKeyElement(PBYTE *pRaw, PBYTE *pData, DWORD *pszData)
 	if(pData)
 		*pData = *pRaw;
 	*pRaw += szCur;
-}
-
-BOOL kuhl_m_dpapi_ssh_EncodeB64_headers(LPCWSTR type, DATA_BLOB *data, LPWSTR *out)
-{
-	BOOL status = FALSE;
-	DWORD dwBytesWritten = 0;
-	LPWSTR base64;
-	if(CryptBinaryToString(data->pbData, data->cbData, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCR, NULL, &dwBytesWritten))
-	{
-		if(base64 = (LPWSTR) LocalAlloc(LPTR, dwBytesWritten * sizeof(wchar_t)))
-		{
-			if(CryptBinaryToString(data->pbData, data->cbData, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCR, base64, &dwBytesWritten))
-				status = kull_m_string_sprintf(out, L"-----BEGIN %s-----\n%s-----END %s-----\n", type, base64, type);
-			LocalFree(base64);
-		}
-	}
-	return status;
 }

@@ -43,6 +43,7 @@ extern "C" {
 #ifdef __MINGW32__
 #define DISCARD(x)
 #define DISCARD2(x,y)
+#define __inout_ecount(x)
 #endif
 
 //

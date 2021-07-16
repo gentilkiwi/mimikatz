@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -200,7 +200,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 
 	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
 		moduleInformation.NameDontUseOutsideCallback = &moduleName;
-		if(pMinidumpModuleList = (PMINIDUMP_MODULE_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, ModuleListStream))
+		if(pMinidumpModuleList = (PMINIDUMP_MODULE_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, ModuleListStream, NULL))
 		{
 			for(i = 0; (i < pMinidumpModuleList->NumberOfModules) && continueCallback; i++)
 			{
@@ -316,7 +316,7 @@ NTSTATUS kull_m_process_getMemoryInformations(PKULL_M_MEMORY_HANDLE memory, PKUL
 		status = STATUS_SUCCESS;
 		break;
 	case KULL_M_MEMORY_TYPE_PROCESS_DMP:
-		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, MemoryInfoListStream))
+		if(maListeInfo = (PMINIDUMP_MEMORY_INFO_LIST) kull_m_minidump_stream(memory->pHandleProcessDmp->hMinidump, MemoryInfoListStream, NULL))
 		{
 			for(i = 0; (i < maListeInfo->NumberOfEntries) && continueCallback; i++)
 			{
@@ -702,4 +702,21 @@ BOOL kull_m_process_getSid(IN PSID * pSid, IN PKULL_M_MEMORY_HANDLE source)
 		}
 	}
 	return status;
+}
+
+PWSTR kull_m_process_get_wstring_without_end(PKULL_M_MEMORY_ADDRESS base, DWORD cbMaxChar)
+{
+	wchar_t sEnd = L'\0';
+	SIZE_T size;
+	KULL_M_MEMORY_ADDRESS aStringBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aNullBuffer = {&sEnd, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
+	KULL_M_MEMORY_SEARCH sMemory = {{{base->address, base->hMemory}, cbMaxChar * sizeof(wchar_t)}, NULL};
+
+	if(kull_m_memory_search(&aNullBuffer, sizeof(sEnd), &sMemory, FALSE))
+	{
+		size = (PBYTE) sMemory.result - (PBYTE) base->address + sizeof(wchar_t);
+		if(aStringBuffer.address = LocalAlloc(LPTR, size))
+			if(!kull_m_memory_copy(&aStringBuffer, base, size))
+				aStringBuffer.address = LocalFree(aStringBuffer.address);
+	}
+	return (PWSTR) aStringBuffer.address;
 }

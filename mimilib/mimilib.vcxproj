@@ -1,9 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
-	<ProjectConfiguration Include="Release|ARM64"><Configuration>Release</Configuration><Platform>ARM64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E049487C-C5BD-471E-99AE-C756E70B6520}</ProjectGuid>
@@ -13,7 +22,7 @@
     <SccAuxPath>Svn</SccAuxPath>
     <SccLocalPath>Svn</SccLocalPath>
     <SccProvider>SubversionScc</SccProvider>
-	<WindowsTargetPlatformVersion Condition="'$(Platform)' == 'ARM64'">10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion Condition="'$(Platform)' == 'ARM64'">10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
@@ -92,6 +101,7 @@
     <ClCompile Include="kdhcp.c" />
     <ClCompile Include="kdns.c" />
     <ClCompile Include="kfilt.c" />
+    <ClCompile Include="knp.c" />
     <ClCompile Include="kssp.c" />
     <ClCompile Include="ksub.c" />
     <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.c" />
@@ -106,6 +116,7 @@
     <ClInclude Include="kdhcp.h" />
     <ClInclude Include="kdns.h" />
     <ClInclude Include="kfilt.h" />
+    <ClInclude Include="knp.h" />
     <ClInclude Include="kssp.h" />
     <ClInclude Include="ksub.h" />
     <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.h" />

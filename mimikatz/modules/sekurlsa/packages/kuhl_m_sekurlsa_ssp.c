@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -14,10 +14,12 @@ KULL_M_PATCH_GENERIC SspReferences[] = {
 BYTE PTRN_WIN5_SspCredentialList[]	= {0xc7, 0x43, 0x24, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
 BYTE PTRN_WIN6_SspCredentialList[]	= {0xc7, 0x47, 0x24, 0x43, 0x72, 0x64, 0x41, 0x48, 0x89, 0x47, 0x78, 0xff, 0x15};
 BYTE PTRN_WIN10_SspCredentialList[]	= {0x24, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};
+BYTE PTRN_W2004_SspCredentialList[]	= {0x24, 0x43, 0x72, 0x64, 0x41, 0x48, 0xff, 0x15};
 KULL_M_PATCH_GENERIC SspReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_SspCredentialList),	PTRN_WIN5_SspCredentialList},	{0, NULL}, {16}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_SspCredentialList),	PTRN_WIN6_SspCredentialList},	{0, NULL}, {20}},
 	{KULL_M_WIN_BUILD_10_1507,		{sizeof(PTRN_WIN10_SspCredentialList),	PTRN_WIN10_SspCredentialList},	{0, NULL}, {14}},
+	{KULL_M_WIN_BUILD_10_2004,		{sizeof(PTRN_W2004_SspCredentialList),	PTRN_W2004_SspCredentialList},	{0, NULL}, {20}},
 };
 #elif defined(_M_IX86)
 BYTE PTRN_WALL_SspCredentialList[]	= {0x1c, 0x43, 0x72, 0x64, 0x41, 0xff, 0x15};

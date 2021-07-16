@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -10,6 +10,7 @@ const KUHL_M * mimikatz_modules[] = {
 	&kuhl_m_crypto,
 	&kuhl_m_sekurlsa,
 	&kuhl_m_kerberos,
+	&kuhl_m_ngc,
 	&kuhl_m_privilege,
 	&kuhl_m_process,
 	&kuhl_m_service,
@@ -43,13 +44,13 @@ int wmain(int argc, wchar_t * argv[])
 	wchar_t input[0xffff];
 #endif
 	mimikatz_begin();
-	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_FATAL_APP_EXIT) ; i++)
+	for(i = MIMIKATZ_AUTO_COMMAND_START ; (i < argc) && (status != STATUS_PROCESS_IS_TERMINATING) && (status != STATUS_THREAD_IS_TERMINATING) ; i++)
 	{
 		kprintf(L"\n" MIMIKATZ L"(" MIMIKATZ_AUTO_COMMAND_STRING L") # %s\n", argv[i]);
 		status = mimikatz_dispatchCommand(argv[i]);
 	}
 #if !defined(_POWERKATZ)
-	while (status != STATUS_FATAL_APP_EXIT)
+	while ((status != STATUS_PROCESS_IS_TERMINATING) && (status != STATUS_THREAD_IS_TERMINATING))
 	{
 		kprintf(L"\n" MIMIKATZ L" # "); fflush(stdin);
 		if(fgetws(input, ARRAYSIZE(input), stdin) && (len = wcslen(input)) && (input[0] != L'\n'))
@@ -61,7 +62,7 @@ int wmain(int argc, wchar_t * argv[])
 		}
 	}
 #endif
-	mimikatz_end();
+	mimikatz_end(status);
 	return STATUS_SUCCESS;
 }
 
@@ -76,13 +77,13 @@ void mimikatz_begin()
 		L"  .#####.   " MIMIKATZ_FULL L"\n"
 		L" .## ^ ##.  " MIMIKATZ_SECOND L" - (oe.eo)\n"
 		L" ## / \\ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )\n"
-		L" ## \\ / ##       > http://blog.gentilkiwi.com/mimikatz\n"
+		L" ## \\ / ##       > https://blog.gentilkiwi.com/mimikatz\n"
 		L" '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )\n"
-		L"  '#####'        > http://pingcastle.com / http://mysmartlogon.com   ***/\n");
+		L"  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/\n");
 	mimikatz_initOrClean(TRUE);
 }
 
-void mimikatz_end()
+void mimikatz_end(NTSTATUS status)
 {
 	mimikatz_initOrClean(FALSE);
 #if !defined(_POWERKATZ)
@@ -90,7 +91,9 @@ void mimikatz_end()
 #endif
 	kull_m_output_clean();
 #if !defined(_WINDLL)
-	ExitProcess(STATUS_SUCCESS);
+	if(status == STATUS_THREAD_IS_TERMINATING)
+		ExitThread(STATUS_SUCCESS);
+	else ExitProcess(STATUS_SUCCESS);
 #endif
 }
 

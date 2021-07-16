@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -80,7 +80,7 @@ NTSTATUS kuhl_m_kerberos_ptt(int argc, wchar_t * argv[])
 		if(PathIsDirectory(argv[i]))
 		{
 			kprintf(L"* Directory: \'%s\'\n", argv[i]);
-			kull_m_file_Find(argv[i], L"*.kirbi", FALSE, 0, FALSE, kuhl_m_kerberos_ptt_directory, NULL);
+			kull_m_file_Find(argv[i], L"*.kirbi", FALSE, 0, FALSE, FALSE, kuhl_m_kerberos_ptt_directory, NULL);
 		}
 		else kuhl_m_kerberos_ptt_directory(0, argv[i], PathFindFileName(argv[i]), NULL);
 	}
@@ -583,7 +583,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 			{
 				if(modulo = *outputSize % pCSystem->BlockSize)
 					*outputSize += pCSystem->BlockSize - modulo;
-				*outputSize += pCSystem->Size;
+				*outputSize += pCSystem->HeaderSize;
 			}
 			if(*output = LocalAlloc(LPTR, *outputSize))
 			{

@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -62,7 +62,7 @@ NTSTATUS kuhl_m_token_run(int argc, wchar_t * argv[])
 
 NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate, BOOL runIt)
 {
-	KUHL_M_TOKEN_ELEVATE_DATA pData = {NULL, NULL, 0, elevate, runIt, NULL};
+	KUHL_M_TOKEN_ELEVATE_DATA pData = {NULL, NULL, 0, elevate, runIt, NULL, FALSE};
 	WELL_KNOWN_SID_TYPE type = WinNullSid;
 	PWSTR name, domain;
 	PCWSTR strTokenId;
@@ -82,6 +82,16 @@ NTSTATUS kuhl_m_token_list_or_elevate(int argc, wchar_t * argv[], BOOL elevate, 
 		type = WinAccountEnterpriseAdminsSid;
 	else if(kull_m_string_args_byName(argc, argv, L"admin", NULL, NULL))
 		type = WinBuiltinAdministratorsSid;
+	else if(kull_m_string_args_byName(argc, argv, L"localservice", NULL, NULL))
+	{
+		type = WinLocalServiceSid;
+		pData.isSidDirectUser = TRUE;
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"networkservice", NULL, NULL))
+	{
+		type = WinNetworkServiceSid;
+		pData.isSidDirectUser = TRUE;
+	}
 	else if((elevate && !pData.pUsername) || kull_m_string_args_byName(argc, argv, L"system", NULL, NULL))
 	{
 		type = WinLocalSystemSid;
@@ -251,6 +261,7 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 	PWSTR name, domainName;
 	TOKEN_TYPE ttTarget;
 	SECURITY_IMPERSONATION_LEVEL ilTarget;
+	PTOKEN_USER pUser;
 
 	if(ptid != GetCurrentProcessId())
 	{
@@ -270,7 +281,15 @@ BOOL CALLBACK kuhl_m_token_list_or_elevate_callback(HANDLE hToken, DWORD ptid, P
 			else if(pData->pSid)
 			{
 				isUserOK = FALSE;
-				kull_m_token_CheckTokenMembership(hToken, pData->pSid, &isUserOK);
+				if(pData->isSidDirectUser)
+				{
+					if(pUser = kull_m_token_getUserFromToken(hToken))
+					{
+						isUserOK = EqualSid(pUser->User.Sid, pData->pSid);
+						LocalFree(pUser);
+					}
+				}
+				else kull_m_token_CheckTokenMembership(hToken, pData->pSid, &isUserOK);
 			}
 
 			if(isUserOK)

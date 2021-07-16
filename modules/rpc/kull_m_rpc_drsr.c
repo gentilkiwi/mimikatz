@@ -1,4 +1,4 @@
-/*	Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com / http://blog.gentilkiwi.com )
+/*	Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com / https://blog.gentilkiwi.com )
 	Vincent LE TOUX ( vincent.letoux@gmail.com / http://www.mysmartlogon.com )
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -36,6 +36,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 	DRS_HANDLE hDrs = NULL;
 	DRS_MSG_DCINFOREQ dcInfoReq = {0};
 	DWORD dcOutVersion = 0;
+	DS_NAME_FORMAT NameFormat;
 	DRS_MSG_DCINFOREPLY dcInfoRep = {0};
 	LPWSTR sGuid;
 	LPWSTR sSid;
@@ -80,10 +81,32 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 			}
 			else if(User)
 			{
-				if(kull_m_rpc_drsr_CrackName(hDrs, wcschr(User, L'\\') ? DS_NT4_ACCOUNT_NAME : wcschr(User, L'=') ? DS_FQDN_1779_NAME : wcschr(User, L'@') ? DS_USER_PRINCIPAL_NAME : DS_NT4_ACCOUNT_NAME_SANS_DOMAIN, User, DS_UNIQUE_ID_NAME, &sGuid, NULL))
+				if(wcsstr(User, L"S-1-5-21-") == User)
+				{
+					NameFormat = DS_SID_OR_SID_HISTORY_NAME;
+				}
+				else if(wcschr(User, L'@'))
+				{
+					NameFormat = DS_USER_PRINCIPAL_NAME;
+				}
+				else if(wcschr(User, L'='))
+				{
+					NameFormat = DS_FQDN_1779_NAME;
+				}
+				else if(wcschr(User, L'\\'))
+				{
+					NameFormat = DS_NT4_ACCOUNT_NAME;
+				}
+				else
+				{
+					NameFormat = DS_NT4_ACCOUNT_NAME_SANS_DOMAIN;
+				}
+
+				if(kull_m_rpc_drsr_CrackName(hDrs, NameFormat, User, DS_UNIQUE_ID_NAME, &sGuid, NULL))
 				{
 					RtlInitUnicodeString(&uGuid, sGuid);
 					ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+					LocalFree(sGuid);
 				}
 			}
 			else
@@ -96,6 +119,7 @@ BOOL kull_m_rpc_drsr_getDomainAndUserInfos(RPC_BINDING_HANDLE *hBinding, LPCWSTR
 						{
 							RtlInitUnicodeString(&uGuid, sGuid);
 							ObjectGUIDfound = NT_SUCCESS(RtlGUIDFromString(&uGuid, UserGuid));
+							LocalFree(sGuid);
 						}
 						LocalFree(pSid);
 					}
@@ -185,8 +209,15 @@ BOOL kull_m_rpc_drsr_CrackName(DRS_HANDLE hDrs, DS_NAME_FORMAT NameFormat, LPCWS
 					drsStatus = nameCrackRep.V1.pResult->rItems[0].status;
 					if(status = (drsStatus == DS_NAME_NO_ERROR))
 					{
-						kull_m_string_copy(CrackedName, nameCrackRep.V1.pResult->rItems[0].pName);
-						kull_m_string_copy(CrackedDomain, nameCrackRep.V1.pResult->rItems[0].pDomain);
+						if(CrackedName)
+						{
+							kull_m_string_copy(CrackedName, nameCrackRep.V1.pResult->rItems[0].pName);
+						}
+
+						if(CrackedDomain)
+						{
+							kull_m_string_copy(CrackedDomain, nameCrackRep.V1.pResult->rItems[0].pDomain);
+						}
 					}
 					else PRINT_ERROR(L"CrackNames (name status): 0x%08x (%u) - %s\n", drsStatus, drsStatus, (drsStatus < ARRAYSIZE(KULL_M_RPC_DRSR_CrackNames_Error)) ? KULL_M_RPC_DRSR_CrackNames_Error[drsStatus] : L"?");
 				}
@@ -255,7 +286,9 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContex
 	PSecPkgContext_SessionKey pKey = SessionKey ? SessionKey : &kull_m_rpc_drsr_g_sKey;
 	PENCRYPTED_PAYLOAD encrypted = (PENCRYPTED_PAYLOAD) val->pVal;
 	MD5_CTX md5ctx;
-	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest}, cryptoData;
+	DATA_KEY cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	CRYPT_BUFFER cryptoData;
+
 	DWORD realLen, calcChecksum;
 	PVOID toFree;
 	
@@ -269,7 +302,7 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContex
 			MD5Final(&md5ctx);
 			cryptoData.Length = cryptoData.MaximumLength = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, CheckSum);
 			cryptoData.Buffer = (PBYTE) &encrypted->CheckSum;
-			if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
+			if(NT_SUCCESS(RtlDecryptData2(&cryptoData, &cryptoKey)))
 			{
 				realLen = val->valLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData);
 				if(kull_m_crypto_hash(CALG_CRC32, encrypted->EncryptedData, realLen, &calcChecksum, sizeof(calcChecksum)))
@@ -289,7 +322,7 @@ BOOL kull_m_rpc_drsr_ProcessGetNCChangesReply_decrypt(ATTRVAL *val, SecPkgContex
 				}
 				else PRINT_ERROR(L"Unable to calculate CRC32\n");
 			}
-			else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+			else PRINT_ERROR(L"RtlDecryptData2\n");
 		}
 		else PRINT_ERROR(L"No valid data\n");
 	}
@@ -303,7 +336,8 @@ BOOL kull_m_rpc_drsr_CreateGetNCChangesReply_encrypt(ATTRVAL *val, SecPkgContext
 	PSecPkgContext_SessionKey pKey = SessionKey ? SessionKey : &kull_m_rpc_drsr_g_sKey;
 	PENCRYPTED_PAYLOAD encrypted;
 	MD5_CTX md5ctx;
-	CRYPTO_BUFFER cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest}, cryptoData;
+	DATA_KEY cryptoKey = {MD5_DIGEST_LENGTH, MD5_DIGEST_LENGTH, md5ctx.digest};
+	CRYPT_BUFFER cryptoData;
 	DWORD realLen = val->valLen + FIELD_OFFSET(ENCRYPTED_PAYLOAD, EncryptedData);
 	PVOID toFree;
 
@@ -324,14 +358,14 @@ BOOL kull_m_rpc_drsr_CreateGetNCChangesReply_encrypt(ATTRVAL *val, SecPkgContext
 					MD5Final(&md5ctx);
 					cryptoData.Length = cryptoData.MaximumLength = realLen - FIELD_OFFSET(ENCRYPTED_PAYLOAD, CheckSum);
 					cryptoData.Buffer = (PBYTE) &encrypted->CheckSum;
-					if(NT_SUCCESS(RtlEncryptDecryptRC4(&cryptoData, &cryptoKey)))
+					if(NT_SUCCESS(RtlEncryptData2(&cryptoData, &cryptoKey)))
 					{
 						toFree = val->pVal;
 						val->pVal = (PBYTE) encrypted;
 						val->valLen = realLen;
 						status = TRUE;
 					}
-					else PRINT_ERROR(L"RtlEncryptDecryptRC4\n");
+					else PRINT_ERROR(L"RtlEncryptData2\n");
 				}
 				else PRINT_ERROR(L"Unable to calculate CRC32\n");
 				MIDL_user_free(toFree);

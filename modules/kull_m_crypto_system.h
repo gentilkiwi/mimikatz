@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -45,137 +45,151 @@ typedef struct _SHA_DIGEST {
 	BYTE digest[SHA_DIGEST_LENGTH];
 } SHA_DIGEST, *PSHA_DIGEST;
 
-typedef struct _CRYPTO_BUFFER {
+typedef struct _CRYPT_BUFFER {
 	DWORD Length;
 	DWORD MaximumLength;
-	PBYTE Buffer;
-} CRYPTO_BUFFER, *PCRYPTO_BUFFER;
-typedef CONST CRYPTO_BUFFER *PCCRYPTO_BUFFER;
+	PVOID Buffer;
+} CRYPT_BUFFER, *PCRYPT_BUFFER, DATA_KEY, *PDATA_KEY, CLEAR_DATA, *PCLEAR_DATA, CYPHER_DATA, *PCYPHER_DATA;
 
-extern VOID WINAPI MD4Init(PMD4_CTX pCtx);
-extern VOID WINAPI MD4Update(PMD4_CTX pCtx, LPCVOID data, DWORD cbData);
-extern VOID WINAPI MD4Final(PMD4_CTX pCtx);
+VOID WINAPI MD4Init(PMD4_CTX pCtx);
+VOID WINAPI MD4Update(PMD4_CTX pCtx, LPCVOID data, DWORD cbData);
+VOID WINAPI MD4Final(PMD4_CTX pCtx);
 
-extern VOID WINAPI MD5Init(PMD5_CTX pCtx);
-extern VOID WINAPI MD5Update(PMD5_CTX pCtx, LPCVOID data, DWORD cbData);
-extern VOID WINAPI MD5Final(PMD5_CTX pCtx);
+VOID WINAPI MD5Init(PMD5_CTX pCtx);
+VOID WINAPI MD5Update(PMD5_CTX pCtx, LPCVOID data, DWORD cbData);
+VOID WINAPI MD5Final(PMD5_CTX pCtx);
 
-extern VOID WINAPI A_SHAInit(PSHA_CTX pCtx);
-extern VOID WINAPI A_SHAUpdate(PSHA_CTX pCtx, LPCVOID data, DWORD cbData);
-extern VOID WINAPI A_SHAFinal(PSHA_CTX pCtx, PSHA_DIGEST pDigest);
+VOID WINAPI A_SHAInit(PSHA_CTX pCtx);
+VOID WINAPI A_SHAUpdate(PSHA_CTX pCtx, LPCVOID data, DWORD cbData);
+VOID WINAPI A_SHAFinal(PSHA_CTX pCtx, PSHA_DIGEST pDigest);
 
-#define RtlEncryptDES1block1key		SystemFunction001
-#define RtlDecryptDES1block1key		SystemFunction002
-#define RtlEncryptDESMagicBlock1key	SystemFunction003
-#define RtlEncryptDESblocksECB		SystemFunction004
-#define RtlDecryptDESblocksECB		SystemFunction005
-#define RtlDigestLM					SystemFunction006
-#define RtlDigestNTLM				SystemFunction007
-#define RtlLMResponseToChallenge	SystemFunction008
-//	=								SystemFunction009 (SystemFunction008 - RtlLMResponseToChallenge)
-#define RtlDigestMD4only16Bytes		SystemFunction010
-//	=								SystemFunction011 (SystemFunction010 - RtlDigest16BytesMD4)
-#define RtlEncryptDES2blocks2keys	SystemFunction012
-#define RtlDecryptDES2blocks2keys	SystemFunction013
-//	=								SystemFunction014 (SystemFunction012 - RtlEncryptDES2blocks2keys)
-//	=								SystemFunction015 (SystemFunction013 - RtlDecryptDES2blocks2keys)
-#define RtlEncryptDES2blocks1key	SystemFunction016
-#define RtlDecryptDES2blocks1key	SystemFunction017
-//	=								SystemFunction018 (SystemFunction016 - RtlEncryptDES2blocks1key)
-//	=								SystemFunction019 (SystemFunction017 - RtlDecryptDES2blocks1key)
-//	=								SystemFunction020 (SystemFunction012 - RtlEncryptDES2blocks2keys)
-//	=								SystemFunction021 (SystemFunction013 - RtlDecryptDES2blocks2keys)
-//	=								SystemFunction022 (SystemFunction012 - RtlEncryptDES2blocks2keys)
-//	=								SystemFunction023 (SystemFunction013 - RtlDecryptDES2blocks2keys)
-#define RtlEncryptDES2blocks1DWORD	SystemFunction024
-#define RtlDecryptDES2blocks1DWORD	SystemFunction025
-//	=								SystemFunction026 (SystemFunction024 - RtlEncryptDES2blocks1DWORD)
-//	=								SystemFunction027 (SystemFunction025 - RtlDecryptDES2blocks1DWORD)
-//	?	Session Key through RPC		SystemFunction028
-//	?	Session Key through RPC		SystemFunction029
-#define RtlEqualMemory16Bytes		SystemFunction030
-//	=								SystemFunction031 (SystemFunction030 - RtlEqualMemory16Bytes)
-#define RtlEncryptDecryptRC4		SystemFunction032
-//	=								SystemFunction033 (SystemFunction032 - RtlEncryptDecryptARC4)
-//	?	Session Key through RPC		SystemFunction034
-#define RtlCheckSignatureInFile		SystemFunction035
+#define RtlEncryptBlock						SystemFunction001 // DES
+#define RtlDecryptBlock						SystemFunction002 // DES
+#define RtlEncryptStdBlock					SystemFunction003 // DES with key "KGS!@#$%" for LM hash
+#define RtlEncryptData						SystemFunction004 // DES/ECB
+#define RtlDecryptData						SystemFunction005 // DES/ECB
+#define RtlCalculateLmOwfPassword			SystemFunction006
+#define RtlCalculateNtOwfPassword			SystemFunction007
+#define RtlCalculateLmResponse				SystemFunction008
+#define RtlCalculateNtResponse				SystemFunction009
+#define RtlCalculateUserSessionKeyLm		SystemFunction010
+#define RtlCalculateUserSessionKeyNt		SystemFunction011
+#define RtlEncryptLmOwfPwdWithLmOwfPwd		SystemFunction012
+#define RtlDecryptLmOwfPwdWithLmOwfPwd		SystemFunction013
+#define RtlEncryptNtOwfPwdWithNtOwfPwd		SystemFunction014
+#define RtlDecryptNtOwfPwdWithNtOwfPwd		SystemFunction015
+#define RtlEncryptLmOwfPwdWithLmSesKey		SystemFunction016
+#define RtlDecryptLmOwfPwdWithLmSesKey		SystemFunction017
+#define RtlEncryptNtOwfPwdWithNtSesKey		SystemFunction018
+#define RtlDecryptNtOwfPwdWithNtSesKey		SystemFunction019
+#define RtlEncryptLmOwfPwdWithUserKey		SystemFunction020
+#define RtlDecryptLmOwfPwdWithUserKey		SystemFunction021
+#define RtlEncryptNtOwfPwdWithUserKey		SystemFunction022
+#define RtlDecryptNtOwfPwdWithUserKey		SystemFunction023
+#define RtlEncryptLmOwfPwdWithIndex			SystemFunction024
+#define RtlDecryptLmOwfPwdWithIndex			SystemFunction025
+#define RtlEncryptNtOwfPwdWithIndex			SystemFunction026
+#define RtlDecryptNtOwfPwdWithIndex			SystemFunction027
+#define RtlGetUserSessionKeyClient			SystemFunction028
+#define RtlGetUserSessionKeyServer			SystemFunction029
+#define RtlEqualLmOwfPassword				SystemFunction030
+#define RtlEqualNtOwfPassword				SystemFunction031
+#define RtlEncryptData2						SystemFunction032 // RC4
+#define RtlDecryptData2						SystemFunction033 // RC4
+#define RtlGetUserSessionKeyClientBinding	SystemFunction034
+#define RtlCheckSignatureInFile				SystemFunction035
 
-extern NTSTATUS WINAPI RtlEncryptDES1block1key(IN LPCBYTE data, IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlDecryptDES1block1key(IN LPCBYTE data, IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlEncryptDESMagicBlock1key(IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlEncryptDESblocksECB(IN PCCRYPTO_BUFFER data, IN PCCRYPTO_BUFFER key, OUT PCRYPTO_BUFFER output);
-extern NTSTATUS WINAPI RtlDecryptDESblocksECB(IN PCCRYPTO_BUFFER data, IN PCCRYPTO_BUFFER key, OUT PCRYPTO_BUFFER output);
-extern NTSTATUS WINAPI RtlDigestLM(IN LPCSTR data, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlDigestNTLM(IN PCUNICODE_STRING data, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlLMResponseToChallenge(IN LPCBYTE challenge, IN LPCBYTE hash, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlDigestMD4only16Bytes(IN LPVOID unk0, IN LPCBYTE data, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlEncryptDES2blocks2keys(IN LPCBYTE data, IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlDecryptDES2blocks2keys(IN LPCBYTE data, IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlEncryptDES2blocks1key(IN LPCBYTE data, IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlDecryptDES2blocks1key(IN LPCBYTE data, IN LPCBYTE key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlEncryptDES2blocks1DWORD(IN LPCBYTE data, IN LPDWORD key, OUT LPBYTE output);
-extern NTSTATUS WINAPI RtlDecryptDES2blocks1DWORD(IN LPCBYTE data, IN LPDWORD key, OUT LPBYTE output);
-extern NTSTATUS WINAPI SystemFunction028(IN NDR_CCONTEXT CContext, OUT LPBYTE output);
-extern RPC_STATUS WINAPI SystemFunction029(IN LPVOID unk0, OUT LPBYTE output);
-extern BOOL WINAPI RtlEqualMemory16Bytes(IN LPCBYTE data1, IN LPCBYTE data2);
-extern NTSTATUS WINAPI RtlEncryptDecryptRC4(IN OUT PCRYPTO_BUFFER data, IN PCCRYPTO_BUFFER key);
-extern NTSTATUS WINAPI SystemFunction034(IN RPC_BINDING_HANDLE hRPC, IN OUT OPTIONAL HANDLE hUnk0, OUT LPBYTE output);
-extern BOOL WINAPI RtlCheckSignatureInFile(IN LPCWSTR filename);
+NTSTATUS WINAPI RtlEncryptBlock(IN LPCBYTE ClearBlock, IN LPCBYTE BlockKey, OUT LPBYTE CypherBlock);
+NTSTATUS WINAPI RtlDecryptBlock(IN LPCBYTE CypherBlock, IN LPCBYTE BlockKey, OUT LPBYTE ClearBlock);
+NTSTATUS WINAPI RtlEncryptStdBlock(IN LPCBYTE BlockKey, OUT LPBYTE CypherBlock);
+NTSTATUS WINAPI RtlEncryptData(IN PCLEAR_DATA ClearData, IN PDATA_KEY DataKey, OUT PCYPHER_DATA CypherData);
+NTSTATUS WINAPI RtlDecryptData(IN PCYPHER_DATA CypherData, IN PDATA_KEY DataKey, OUT PCLEAR_DATA ClearData);
+NTSTATUS WINAPI RtlCalculateLmOwfPassword(IN LPCSTR data, OUT LPBYTE output);
+NTSTATUS WINAPI RtlCalculateNtOwfPassword(IN PCUNICODE_STRING data, OUT LPBYTE output);
+NTSTATUS WINAPI RtlCalculateLmResponse(IN LPCBYTE LmChallenge, IN LPCBYTE LmOwfPassword, OUT LPBYTE LmResponse);
+NTSTATUS WINAPI RtlCalculateNtResponse(IN LPCBYTE NtChallenge, IN LPCBYTE NtOwfPassword, OUT LPBYTE NtResponse);
+NTSTATUS WINAPI RtlCalculateUserSessionKeyLm(IN LPCBYTE LmResponse, IN LPCBYTE LmOwfPassword, OUT LPBYTE UserSessionKey);
+NTSTATUS WINAPI RtlCalculateUserSessionKeyNt(IN LPCBYTE NtResponse, IN LPCBYTE NtOwfPassword, OUT LPBYTE UserSessionKey);
+NTSTATUS WINAPI RtlEncryptLmOwfPwdWithLmOwfPwd(IN LPCBYTE DataLmOwfPassword, IN LPCBYTE KeyLmOwfPassword, OUT LPBYTE EncryptedLmOwfPassword);
+NTSTATUS WINAPI RtlDecryptLmOwfPwdWithLmOwfPwd(IN LPCBYTE EncryptedLmOwfPassword, IN LPCBYTE KeyLmOwfPassword, OUT LPBYTE DataLmOwfPassword);
+NTSTATUS WINAPI RtlEncryptNtOwfPwdWithNtOwfPwd(IN LPCBYTE DataNtOwfPassword, IN LPCBYTE KeyNtOwfPassword, OUT LPBYTE EncryptedNtOwfPassword);
+NTSTATUS WINAPI RtlDecryptNtOwfPwdWithNtOwfPwd(IN LPCBYTE EncryptedNtOwfPassword, IN LPCBYTE KeyNtOwfPassword, OUT LPBYTE DataNtOwfPassword);
+NTSTATUS WINAPI RtlEncryptLmOwfPwdWithLmSesKey(IN LPCBYTE LmOwfPassword, IN LPCBYTE LmSessionKey, OUT LPBYTE EncryptedLmOwfPassword);
+NTSTATUS WINAPI RtlDecryptLmOwfPwdWithLmSesKey(IN LPCBYTE EncryptedLmOwfPassword, IN LPCBYTE LmSessionKey, OUT LPBYTE LmOwfPassword);
+NTSTATUS WINAPI RtlEncryptNtOwfPwdWithNtSesKey(IN LPCBYTE NtOwfPassword, IN LPCBYTE NtSessionKey, OUT LPBYTE EncryptedNtOwfPassword);
+NTSTATUS WINAPI RtlDecryptNtOwfPwdWithNtSesKey(IN LPCBYTE EncryptedNtOwfPassword, IN LPCBYTE NtSessionKey, OUT LPBYTE NtOwfPassword);
+NTSTATUS WINAPI RtlEncryptLmOwfPwdWithUserKey(IN LPCBYTE LmOwfPassword, IN LPCBYTE UserSessionKey, OUT LPBYTE EncryptedLmOwfPassword);
+NTSTATUS WINAPI RtlDecryptLmOwfPwdWithUserKey(IN LPCBYTE EncryptedLmOwfPassword, IN LPCBYTE UserSessionKey, OUT LPBYTE LmOwfPassword);
+NTSTATUS WINAPI RtlEncryptNtOwfPwdWithUserKey(IN LPCBYTE NtOwfPassword, IN LPCBYTE UserSessionKey, OUT LPBYTE EncryptedNtOwfPassword);
+NTSTATUS WINAPI RtlDecryptNtOwfPwdWithUserKey(IN LPCBYTE EncryptedNtOwfPassword, IN LPCBYTE UserSessionKey, OUT LPBYTE NtOwfPassword);
+NTSTATUS WINAPI RtlEncryptLmOwfPwdWithIndex(IN LPCBYTE LmOwfPassword, IN LPDWORD Index, OUT LPBYTE EncryptedLmOwfPassword);
+NTSTATUS WINAPI RtlDecryptLmOwfPwdWithIndex(IN LPCBYTE EncryptedLmOwfPassword, IN LPDWORD Index, OUT LPBYTE LmOwfPassword);
+NTSTATUS WINAPI RtlEncryptNtOwfPwdWithIndex(IN LPCBYTE NtOwfPassword, IN LPDWORD Index, OUT LPBYTE EncryptedNtOwfPassword);
+NTSTATUS WINAPI RtlDecryptNtOwfPwdWithIndex(IN LPCBYTE EncryptedNtOwfPassword, IN LPDWORD Index, OUT LPBYTE NtOwfPassword);
+NTSTATUS WINAPI RtlGetUserSessionKeyClient(IN PVOID RpcContextHandle, OUT LPBYTE UserSessionKey);
+NTSTATUS WINAPI RtlGetUserSessionKeyServer(IN PVOID RpcContextHandle OPTIONAL, OUT LPBYTE UserSessionKey);
+BOOLEAN WINAPI RtlEqualLmOwfPassword(IN LPCBYTE LmOwfPassword1, IN LPCBYTE LmOwfPassword2);
+BOOLEAN WINAPI RtlEqualNtOwfPassword(IN LPCBYTE NtOwfPassword1, IN LPCBYTE NtOwfPassword2);
+NTSTATUS WINAPI RtlEncryptData2(IN OUT PCRYPT_BUFFER pData, IN PDATA_KEY pkey);
+NTSTATUS WINAPI RtlDecryptData2(IN OUT PCRYPT_BUFFER pData, IN PDATA_KEY pkey);
+NTSTATUS WINAPI RtlGetUserSessionKeyClientBinding(IN PVOID RpcBindingHandle, OUT HANDLE *RedirHandle, OUT LPBYTE UserSessionKey);
+ULONG WINAPI RtlCheckSignatureInFile(IN LPCWSTR filename);
 
 #if !defined(RtlGenRandom)
 #define RtlGenRandom				SystemFunction036
-extern BOOL WINAPI RtlGenRandom(OUT LPBYTE output, IN DWORD length);
+BOOL WINAPI RtlGenRandom(OUT LPBYTE output, IN DWORD length);
 #endif
 
 #if !defined(RtlEncryptMemory)
 #define RtlEncryptMemory			SystemFunction040
-extern NTSTATUS WINAPI RtlEncryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
+NTSTATUS WINAPI RtlEncryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
 #endif 
 
 #if !defined(RtlDecryptMemory)
 #define RtlDecryptMemory			SystemFunction041
-extern NTSTATUS WINAPI RtlDecryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
+NTSTATUS WINAPI RtlDecryptMemory(IN OUT LPBYTE data, DWORD length, DWORD flags);
 #endif
 
 #define KERB_NON_KERB_SALT					16
 #define KERB_NON_KERB_CKSUM_SALT			17
 
-typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZE) (DWORD unk0, PVOID * pContext);
-typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_SUM) (PVOID pContext, DWORD Size, LPCVOID Buffer);
-typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_FINALIZE) (PVOID pContext, PVOID Buffer);
-typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_FINISH) (PVOID * pContext);
-typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZEEX) (LPCVOID Key, DWORD KeySize, DWORD KeyUsage, PVOID * pContext);
+typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZE) (ULONG dwSeed, PVOID *pContext);
+typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_SUM) (PVOID pContext, ULONG cbData, LPCVOID pbData);
+typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_FINALIZE) (PVOID pContext, PVOID pbSum);
+typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_FINISH) (PVOID *pContext);
+typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZEEX) (LPCVOID Key, ULONG KeySize, ULONG MessageType, PVOID *pContext);
+typedef NTSTATUS (WINAPI * PKERB_CHECKSUM_INITIALIZEEX2)(LPCVOID Key, ULONG KeySize, LPCVOID ChecksumToVerify, ULONG MessageType, PVOID *pContext);
 
 typedef struct _KERB_CHECKSUM {
-	LONG Type;
-	DWORD Size;
-	DWORD Flag;
+	ULONG CheckSumType;
+	ULONG CheckSumSize;
+	ULONG Attributes;
 	PKERB_CHECKSUM_INITIALIZE Initialize;
 	PKERB_CHECKSUM_SUM Sum;
 	PKERB_CHECKSUM_FINALIZE Finalize;
 	PKERB_CHECKSUM_FINISH Finish;
 	PKERB_CHECKSUM_INITIALIZEEX InitializeEx;
-	PVOID unk0_null;
+	PKERB_CHECKSUM_INITIALIZEEX2 InitializeEx2;
 } KERB_CHECKSUM, *PKERB_CHECKSUM;
 
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_INITIALIZE) (LPCVOID Key, DWORD KeySize, DWORD KeyUsage, PVOID * pContext);
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_ENCRYPT) (PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize);
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_DECRYPT) (PVOID pContext, LPCVOID Data, DWORD DataSize, PVOID Output, DWORD * OutputSize);
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_FINISH) (PVOID * pContext);
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT5) (PCUNICODE_STRING String, PVOID Output);
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT6) (PCUNICODE_STRING Password, PCUNICODE_STRING Salt, DWORD Count, PVOID Output);
-typedef NTSTATUS (WINAPI * PKERB_ECRYPT_RANDOMKEY) (LPCVOID Key, DWORD KeySize, PVOID Output);
-// Control
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_INITIALIZE) (LPCVOID pbKey, ULONG KeySize, ULONG MessageType, PVOID *pContext);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_ENCRYPT) (PVOID pContext, LPCVOID pbInput, ULONG cbInput, PVOID pbOutput, ULONG *cbOutput);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_DECRYPT) (PVOID pContext, LPCVOID pbInput, ULONG cbInput, PVOID pbOutput, ULONG *cbOutput);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_FINISH) (PVOID *pContext);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT5) (PCUNICODE_STRING Password, PVOID pbKey);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_HASHPASSWORD_NT6) (PCUNICODE_STRING Password, PCUNICODE_STRING Salt, ULONG Count, PVOID pbKey);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_RANDOMKEY) (LPCVOID Seed, ULONG SeedLength, PVOID pbKey);
+typedef NTSTATUS (WINAPI * PKERB_ECRYPT_CONTROL) (ULONG Function, PVOID pContext, PUCHAR InputBuffer, ULONG InputBufferSize);
 
 typedef struct _KERB_ECRYPT {
-	LONG Type0;
-	DWORD BlockSize;
-	LONG Type1;
-	DWORD KeySize;
-	DWORD Size;
-	DWORD unk2;
-	DWORD unk3;
-	PCWSTR AlgName;
+	ULONG EncryptionType;
+	ULONG BlockSize;
+	ULONG ExportableEncryptionType;
+	ULONG KeySize;
+	ULONG HeaderSize;
+	ULONG PreferredCheckSum;
+	ULONG Attributes;
+	PCWSTR Name;
 	PKERB_ECRYPT_INITIALIZE Initialize;
 	PKERB_ECRYPT_ENCRYPT Encrypt;
 	PKERB_ECRYPT_DECRYPT Decrypt;
@@ -185,22 +199,22 @@ typedef struct _KERB_ECRYPT {
 		PKERB_ECRYPT_HASHPASSWORD_NT6 HashPassword_NT6;
 	};
 	PKERB_ECRYPT_RANDOMKEY RandomKey;
-	PVOID Control;
+	PKERB_ECRYPT_CONTROL Control;
 	PVOID unk0_null;
 	PVOID unk1_null;
 	PVOID unk2_null;
 } KERB_ECRYPT, *PKERB_ECRYPT;
 
-typedef NTSTATUS (WINAPI * PKERB_RNGFN) (PVOID Buffer, DWORD Size);
+typedef NTSTATUS (WINAPI * PKERB_RNGFN) (PVOID pbBuffer, ULONG cbBuffer);
 
 typedef struct _KERB_RNG {
-	LONG Type;
-	DWORD unk0;
-	DWORD unk1;
+	ULONG GeneratorId;
+	ULONG Attributes;
+	ULONG Seed;
 	PKERB_RNGFN RngFn;
 } KERB_RNG, *PKERB_RNG;
 
-extern NTSTATUS WINAPI CDLocateCSystem(LONG type, PKERB_ECRYPT * pCSystem);
-extern NTSTATUS WINAPI CDLocateCheckSum(LONG type, PKERB_CHECKSUM * pCheckSum);
-extern NTSTATUS WINAPI CDLocateRng(LONG type, PKERB_RNG * pRng);
-extern NTSTATUS WINAPI CDGenerateRandomBits(LPVOID Buffer, DWORD Size);
+NTSTATUS WINAPI CDLocateCSystem(ULONG Type, PKERB_ECRYPT *ppCSystem);
+NTSTATUS WINAPI CDLocateCheckSum(ULONG Type, PKERB_CHECKSUM *ppCheckSum);
+NTSTATUS WINAPI CDLocateRng(ULONG Id, PKERB_RNG *ppRng);
+NTSTATUS WINAPI CDGenerateRandomBits(LPVOID pbBuffer, ULONG cbBuffer);

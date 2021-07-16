@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -27,6 +27,7 @@ typedef struct _KUHL_M_TOKEN_ELEVATE_DATA {
 	BOOL elevateIt;
 	BOOL runIt;
 	PCWSTR pCommandLine;
+	BOOL isSidDirectUser;
 
 	//KUHL_M_TOKEN_ELEVATE_DATA_TYPE_FILTER filter;
 	//BOOL isNeeded;

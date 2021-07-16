@@ -1,18 +1,26 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
 #pragma once
 #include "kuhl_m.h"
-#include "../modules/kull_m_process.h"
-#include "../modules/kull_m_memory.h"
-#include "../modules/kull_m_patch.h"
-#include "../modules/kull_m_file.h"
-#include "../modules/kull_m_net.h"
-#include "../modules/kull_m_remotelib.h"
-#include "../modules/kull_m_crypto_system.h"
+#include "../../modules/kull_m_process.h"
+#include "../../modules/kull_m_memory.h"
+#include "../../modules/kull_m_patch.h"
+#include "../../modules/kull_m_file.h"
+#include "../../modules/kull_m_net.h"
+#include "../../modules/kull_m_remotelib.h"
+#include "../../modules/kull_m_crypto_system.h"
+#include "../../modules/kull_m_crypto_ngc.h"
+#include "../../modules/rpc/kull_m_rpc_ms-rprn.h"
 #include "fltUser.h"
+#include <sql.h>
+#pragma warning(push)
+#pragma warning(disable:4201)
+#include <sqlext.h>
+#pragma warning(pop)
+#include <sqltypes.h>
 
 const KUHL_M kuhl_m_misc;
 
@@ -26,13 +34,17 @@ NTSTATUS kuhl_m_misc_detours(int argc, wchar_t * argv[]);
 //NTSTATUS kuhl_m_misc_addsid(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_memssp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_skeleton(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_misc_compressme(int argc, wchar_t * argv[]);
-NTSTATUS kuhl_m_misc_wifi(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_compress(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_lock(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_wp(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_mflt(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_easyntlmchall(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_clip(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 BOOL CALLBACK kuhl_m_misc_detours_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
@@ -59,48 +71,6 @@ NTDSAPI DWORD WINAPI DsBindW(IN OPTIONAL LPCWSTR DomainControllerName, IN OPTION
 NTDSAPI DWORD WINAPI DsAddSidHistoryW(IN HANDLE hDS, IN DWORD Flags, IN LPCWSTR SrcDomain, IN LPCWSTR SrcPrincipal, IN OPTIONAL LPCWSTR SrcDomainController, IN OPTIONAL RPC_AUTH_IDENTITY_HANDLE SrcDomainCreds, IN LPCWSTR DstDomain, IN LPCWSTR DstPrincipal);
 NTDSAPI DWORD WINAPI DsUnBindW(IN HANDLE *phDS);
 
-typedef enum _WLAN_INTERFACE_STATE { 
-	wlan_interface_state_not_ready              = 0,
-	wlan_interface_state_connected              = 1,
-	wlan_interface_state_ad_hoc_network_formed  = 2,
-	wlan_interface_state_disconnecting          = 3,
-	wlan_interface_state_disconnected           = 4,
-	wlan_interface_state_associating            = 5,
-	wlan_interface_state_discovering            = 6,
-	wlan_interface_state_authenticating         = 7
-} WLAN_INTERFACE_STATE, *PWLAN_INTERFACE_STATE;
-
-typedef struct _WLAN_INTERFACE_INFO {
-	GUID                 InterfaceGuid;
-	WCHAR                strInterfaceDescription[256];
-	WLAN_INTERFACE_STATE isState;
-} WLAN_INTERFACE_INFO, *PWLAN_INTERFACE_INFO;
-
-typedef struct _WLAN_INTERFACE_INFO_LIST {
-	DWORD               dwNumberOfItems;
-	DWORD               dwIndex;
-	WLAN_INTERFACE_INFO InterfaceInfo[];
-} WLAN_INTERFACE_INFO_LIST, *PWLAN_INTERFACE_INFO_LIST;
-
-typedef struct _WLAN_PROFILE_INFO {
-	WCHAR strProfileName[256];
-	DWORD dwFlags;
-} WLAN_PROFILE_INFO, *PWLAN_PROFILE_INFO;
-
-typedef struct _WLAN_PROFILE_INFO_LIST {
-	DWORD             dwNumberOfItems;
-	DWORD             dwIndex;
-	WLAN_PROFILE_INFO ProfileInfo[1];
-} WLAN_PROFILE_INFO_LIST, *PWLAN_PROFILE_INFO_LIST;
-
-#define WLAN_PROFILE_GET_PLAINTEXT_KEY	4
-
-typedef DWORD	(WINAPI * PWLANOPENHANDLE)		(IN DWORD dwClientVersion, IN PVOID pReserved, OUT PDWORD pdwNegotiatedVersion, OUT PHANDLE phClientHandle);
-typedef DWORD	(WINAPI * PWLANCLOSEHANDLE)		(IN HANDLE hClientHandle, IN PVOID pReserved);
-typedef DWORD	(WINAPI * PWLANENUMINTERFACES)	(IN HANDLE hClientHandle, IN PVOID pReserved, OUT PWLAN_INTERFACE_INFO_LIST *ppInterfaceList);
-typedef DWORD	(WINAPI * PWLANGETPROFILELIST)	(IN HANDLE hClientHandle, IN LPCGUID pInterfaceGuid, IN PVOID pReserved, OUT PWLAN_PROFILE_INFO_LIST *ppProfileList);
-typedef DWORD	(WINAPI * PWLANGETPROFILE)		(IN HANDLE hClientHandle, IN LPCGUID pInterfaceGuid, IN LPCWSTR strProfileName, IN PVOID pReserved, IN LPWSTR *pstrProfileXml, IN OUT OPTIONAL DWORD *pdwFlags, OUT OPTIONAL PDWORD pdwGrantedAccess);
-typedef VOID	(WINAPI * PWLANFREEMEMORY)		(IN PVOID pMemory);
 typedef BOOL	(WINAPI * PLOCKWORKSTATION) (VOID);
 typedef BOOL	(WINAPI * PSYSTEMPARAMETERSINFOW) (__in UINT uiAction, __in UINT uiParam, __inout_opt PVOID pvParam, __in UINT fWinIni);
 typedef DWORD	(WINAPI * PGETLASTERROR) (VOID);
@@ -118,3 +88,38 @@ void kuhl_m_misc_mflt_display(PFILTER_AGGREGATE_BASIC_INFORMATION info);
 
 BOOL WINAPI kuhl_misc_clip_WinHandlerRoutine(DWORD dwCtrlType);
 LRESULT APIENTRY kuhl_m_misc_clip_MainWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+#ifndef __proofofpossessioncookieinfo_h__
+#define __proofofpossessioncookieinfo_h__
+
+#ifndef __IProofOfPossessionCookieInfoManager_FWD_DEFINED__
+#define __IProofOfPossessionCookieInfoManager_FWD_DEFINED__
+typedef interface IProofOfPossessionCookieInfoManager IProofOfPossessionCookieInfoManager;
+#endif
+
+typedef struct ProofOfPossessionCookieInfo {
+	LPWSTR name;
+	LPWSTR data;
+	DWORD flags;
+	LPWSTR p3pHeader;
+} ProofOfPossessionCookieInfo;
+
+typedef struct IProofOfPossessionCookieInfoManagerVtbl {
+	BEGIN_INTERFACE
+	HRESULT (STDMETHODCALLTYPE *QueryInterface)(IProofOfPossessionCookieInfoManager * This, REFIID riid, __RPC__deref_out  void **ppvObject);
+	ULONG (STDMETHODCALLTYPE *AddRef)(__RPC__in IProofOfPossessionCookieInfoManager * This);
+	ULONG (STDMETHODCALLTYPE *Release)(__RPC__in IProofOfPossessionCookieInfoManager * This);
+	HRESULT (STDMETHODCALLTYPE *GetCookieInfoForUri)(__RPC__in IProofOfPossessionCookieInfoManager * This, __RPC__in LPCWSTR uri, __RPC__out DWORD *cookieInfoCount, __RPC__deref_out_ecount_full_opt(*cookieInfoCount) ProofOfPossessionCookieInfo **cookieInfo);
+	END_INTERFACE
+} IProofOfPossessionCookieInfoManagerVtbl;
+
+interface IProofOfPossessionCookieInfoManager {
+	CONST_VTBL struct IProofOfPossessionCookieInfoManagerVtbl *lpVtbl;
+};
+
+#define IProofOfPossessionCookieInfoManager_QueryInterface(This,riid,ppvObject)							( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) )
+#define IProofOfPossessionCookieInfoManager_AddRef(This)												( (This)->lpVtbl -> AddRef(This) )
+#define IProofOfPossessionCookieInfoManager_Release(This)												( (This)->lpVtbl -> Release(This) )
+#define IProofOfPossessionCookieInfoManager_GetCookieInfoForUri(This,uri,cookieInfoCount,cookieInfo)	( (This)->lpVtbl -> GetCookieInfoForUri(This,uri,cookieInfoCount,cookieInfo) )
+
+#endif

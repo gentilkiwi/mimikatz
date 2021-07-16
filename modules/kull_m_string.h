@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -80,6 +80,7 @@ BOOL kull_m_string_stringToHex(IN LPCWCHAR string, IN LPBYTE hex, IN DWORD size)
 BOOL kull_m_string_stringToHexBuffer(IN LPCWCHAR string, IN LPBYTE *hex, IN DWORD *size);
 
 void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags);
+__time32_t kull_m_string_get_time32(__time32_t * _Time);
 void kull_m_string_displayFileTime(IN PFILETIME pFileTime);
 void kull_m_string_displayLocalFileTime(IN PFILETIME pFileTime);
 BOOL kull_m_string_FileTimeToString(IN PFILETIME pFileTime, OUT WCHAR string[14 + 1]);
@@ -97,6 +98,13 @@ BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src);
 BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst);
 #if !defined(MIMIKATZ_W2000_SUPPORT)
 BOOL kull_m_string_quick_base64_to_Binary(PCWSTR base64, PBYTE *data, DWORD *szData);
+BOOL kull_m_string_quick_base64_to_BinaryA(PCSTR base64, PBYTE *data, DWORD *szData);
+BOOL kull_m_string_quick_urlsafe_base64_to_Binary(PCWSTR badBase64, PBYTE *data, DWORD *szData);
+BOOL kull_m_string_quick_urlsafe_base64_to_BinaryA(PCSTR badBase64, PBYTE *data, DWORD *szData);
+BOOL kull_m_string_quick_binary_to_base64A(const BYTE *pbData, const DWORD cbData, LPSTR *base64);
+BOOL kull_m_string_quick_binary_to_urlsafe_base64A(const BYTE *pbData, const DWORD cbData, LPSTR *badBase64);
+BOOL kull_m_string_EncodeB64_headersA(LPCSTR type, const PBYTE pbData, const DWORD cbData, LPSTR *out);
 #endif
 BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...);
+BOOL kull_m_string_sprintfA(PSTR *outBuffer, PCSTR format, ...);
 BOOL kull_m_string_stringToFileTime(LPCWSTR string, PFILETIME filetime);

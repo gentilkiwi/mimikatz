@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -161,6 +161,17 @@ typedef struct _SERVER_INFO_102 {
 	LMSTR          sv102_userpath;
 } SERVER_INFO_102, *PSERVER_INFO_102, *LPSERVER_INFO_102;
 
+typedef struct _SHARE_INFO_2 {
+	LMSTR shi2_netname;
+	DWORD shi2_type;
+	LMSTR shi2_remark;
+	DWORD shi2_permissions;
+	DWORD shi2_max_uses;
+	DWORD shi2_current_uses;
+	LMSTR shi2_path;
+	LMSTR shi2_passwd;
+} SHARE_INFO_2, *PSHARE_INFO_2, *LPSHARE_INFO_2;
+
 #define SV_TYPE_WORKSTATION         0x00000001
 #define SV_TYPE_SERVER              0x00000002
 #define SV_TYPE_SQLSERVER           0x00000004
@@ -200,4 +211,5 @@ NET_API_STATUS NET_API_FUNCTION NetWkstaUserEnum(IN LMSTR servername, IN DWORD l
 NET_API_STATUS NET_API_FUNCTION NetShareEnum(IN LMSTR servername, IN DWORD level, OUT LPBYTE *bufptr, IN DWORD prefmaxlen, OUT LPDWORD entriesread, OUT LPDWORD totalentries, IN OUT LPDWORD resume_handle);
 NET_API_STATUS NET_API_FUNCTION NetStatisticsGet(IN LPWSTR server, IN LPWSTR service, IN DWORD  level, IN DWORD  options, OUT LPBYTE *bufptr);
 NET_API_STATUS NET_API_FUNCTION NetRemoteTOD(IN LPCWSTR UncServerName, OUT PTIME_OF_DAY_INFO *pToD);
-NET_API_STATUS NET_API_FUNCTION NetServerGetInfo(IN LPWSTR servername, IN DWORD  level, OUT LPBYTE *bufptr);
+NET_API_STATUS NET_API_FUNCTION NetServerGetInfo(IN LPWSTR servername, IN DWORD level, OUT LPBYTE *bufptr);
+NET_API_STATUS NET_API_FUNCTION NetShareAdd(IN LMSTR servername, IN DWORD level, IN LPBYTE buf, OUT LPDWORD parm_err);

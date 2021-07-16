@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -9,6 +9,7 @@
 typedef PVOID	SAMPR_HANDLE;
 
 typedef enum _USER_INFORMATION_CLASS {
+	UserSetPasswordInformation = 15,
 	UserInternal1Information = 18,
 	UserAllInformation = 21,
 } USER_INFORMATION_CLASS, *PUSER_INFORMATION_CLASS;

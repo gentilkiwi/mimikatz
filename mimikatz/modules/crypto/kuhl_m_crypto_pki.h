@@ -1,5 +1,5 @@
 /*	Benjamin DELPY `gentilkiwi`
-	http://blog.gentilkiwi.com
+	https://blog.gentilkiwi.com
 	benjamin@gentilkiwi.com
 	Licence : https://creativecommons.org/licenses/by/4.0/
 */
@@ -49,6 +49,7 @@ typedef struct _KIWI_SIGNER {
 	CERT_NAME_BLOB Subject;
 } KIWI_SIGNER, *PKIWI_SIGNER;
 
+PWSTR kuhl_m_crypto_pki_getCertificateName(PCERT_NAME_BLOB blob);
 
 NTSTATUS kuhl_m_crypto_c_sc_auth(int argc, wchar_t * argv[]);
 BOOL kuhl_m_crypto_c_sc_auth_quickEncode(__in LPCSTR lpszStructType, __in const void *pvStructInfo, PDATA_BLOB data);
