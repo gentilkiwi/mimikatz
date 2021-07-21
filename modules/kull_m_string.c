@@ -358,6 +358,22 @@ BOOL kull_m_string_copyA(LPSTR *dst, LPCSTR src)
 	return status;
 }
 
+PWSTR kull_m_string_unicode_to_string(PCUNICODE_STRING src)
+{
+	PWSTR ret = NULL;
+
+	if(src->Length && src->Buffer)
+	{
+		ret = (PWSTR) LocalAlloc(LPTR, src->Length + sizeof(wchar_t));
+		if(ret)
+		{
+			RtlCopyMemory(ret, src->Buffer, src->Length);
+		}
+	}
+
+	return ret;
+}
+
 BOOL kull_m_string_quickxml_simplefind(LPCWSTR xml, LPCWSTR node, LPWSTR *dst)
 {
 	BOOL status = FALSE;

