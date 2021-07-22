@@ -373,6 +373,74 @@ typedef struct _SYSTEM_ISOLATED_USER_MODE_INFORMATION {
 	//ULONGLONG Spare1;
 } SYSTEM_ISOLATED_USER_MODE_INFORMATION, *PSYSTEM_ISOLATED_USER_MODE_INFORMATION;
 
+#define OBJ_INHERIT             0x00000002L
+#define OBJ_PERMANENT           0x00000010L
+#define OBJ_EXCLUSIVE           0x00000020L
+#define OBJ_CASE_INSENSITIVE    0x00000040L
+#define OBJ_OPENIF              0x00000080L
+#define OBJ_OPENLINK            0x00000100L
+#define OBJ_KERNEL_HANDLE       0x00000200L
+#define OBJ_FORCE_ACCESS_CHECK  0x00000400L
+#define OBJ_VALID_ATTRIBUTES    0x000007F2L
+
+typedef struct _OBJECT_ATTRIBUTES64 {
+	ULONG Length;
+	ULONG64 RootDirectory;
+	ULONG64 ObjectName;
+	ULONG Attributes;
+	ULONG64 SecurityDescriptor;
+	ULONG64 SecurityQualityOfService;
+} OBJECT_ATTRIBUTES64;
+typedef OBJECT_ATTRIBUTES64 *POBJECT_ATTRIBUTES64;
+typedef CONST OBJECT_ATTRIBUTES64 *PCOBJECT_ATTRIBUTES64;
+
+typedef struct _OBJECT_ATTRIBUTES32 {
+	ULONG Length;
+	ULONG RootDirectory;
+	ULONG ObjectName;
+	ULONG Attributes;
+	ULONG SecurityDescriptor;
+	ULONG SecurityQualityOfService;
+} OBJECT_ATTRIBUTES32;
+typedef OBJECT_ATTRIBUTES32 *POBJECT_ATTRIBUTES32;
+typedef CONST OBJECT_ATTRIBUTES32 *PCOBJECT_ATTRIBUTES32;
+
+typedef struct _OBJECT_ATTRIBUTES {
+	ULONG Length;
+	HANDLE RootDirectory;
+	PUNICODE_STRING ObjectName;
+	ULONG Attributes;
+	PVOID SecurityDescriptor;        // Points to type SECURITY_DESCRIPTOR
+	PVOID SecurityQualityOfService;  // Points to type SECURITY_QUALITY_OF_SERVICE
+} OBJECT_ATTRIBUTES;
+typedef OBJECT_ATTRIBUTES *POBJECT_ATTRIBUTES;
+typedef CONST OBJECT_ATTRIBUTES *PCOBJECT_ATTRIBUTES;
+
+#define InitializeObjectAttributes( p, n, a, r, s ) { \
+    (p)->Length = sizeof( OBJECT_ATTRIBUTES );          \
+    (p)->RootDirectory = r;                             \
+    (p)->Attributes = a;                                \
+    (p)->ObjectName = n;                                \
+    (p)->SecurityDescriptor = s;                        \
+    (p)->SecurityQualityOfService = NULL;               \
+    }
+
+#define RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a) \
+    { sizeof(OBJECT_ATTRIBUTES), NULL, RTL_CONST_CAST(PUNICODE_STRING)(n), a, NULL, NULL }
+
+#define RTL_INIT_OBJECT_ATTRIBUTES(n, a) RTL_CONSTANT_OBJECT_ATTRIBUTES(n, a)
+
+#define DIRECTORY_QUERY					0x0001
+#define DIRECTORY_TRAVERSE				0x0002
+#define DIRECTORY_CREATE_OBJECT			0x0004
+#define DIRECTORY_CREATE_SUBDIRECTORY	0x0008
+#define DIRECTORY_ALL_ACCESS			STANDARD_RIGHTS_REQUIRED | 0xF
+
+typedef struct _OBJECT_DIRECTORY_INFORMATION {
+	UNICODE_STRING Name;
+	UNICODE_STRING TypeName;
+} OBJECT_DIRECTORY_INFORMATION, *POBJECT_DIRECTORY_INFORMATION;
+
 extern NTSTATUS WINAPI NtQuerySystemInformation(IN SYSTEM_INFORMATION_CLASS SystemInformationClass, OUT PVOID SystemInformation, IN ULONG SystemInformationLength, OUT OPTIONAL PULONG ReturnLength);
 extern NTSTATUS WINAPI NtQuerySystemInformationEx(SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID InputBuffer,  ULONG InputBufferLength,  PVOID SystemInformation,  ULONG SystemInformationLength, ULONG *ReturnLength);
 extern NTSTATUS WINAPI NtSetSystemInformation(IN SYSTEM_INFORMATION_CLASS SystemInformationClass, IN PVOID SystemInformation, IN ULONG SystemInformationLength);
@@ -380,6 +448,8 @@ extern NTSTATUS WINAPI NtQueryInformationProcess(IN HANDLE ProcessHandle, IN PRO
 extern NTSTATUS WINAPI NtSuspendProcess(IN HANDLE ProcessHandle);
 extern NTSTATUS WINAPI NtResumeProcess(IN HANDLE ProcessHandle);
 extern NTSTATUS WINAPI NtTerminateProcess(IN OPTIONAL HANDLE ProcessHandle, IN NTSTATUS ExitStatus);
+extern NTSTATUS WINAPI NtOpenDirectoryObject(OUT PHANDLE DirectoryHandle, IN ACCESS_MASK DesiredAccess, IN POBJECT_ATTRIBUTES ObjectAttributes);
+extern NTSTATUS WINAPI NtQueryDirectoryObject(IN HANDLE DirectoryHandle, OUT OPTIONAL PVOID Buffer, IN ULONG Length, IN BOOLEAN ReturnSingleEntry, IN BOOLEAN RestartScan, IN OUT PULONG Context, OUT OPTIONAL PULONG ReturnLength);
 
 typedef NTSTATUS (WINAPI * PNTQUERYSYSTEMINFORMATIONEX) (SYSTEM_INFORMATION_CLASS SystemInformationClass, PVOID InputBuffer,  ULONG InputBufferLength,  PVOID SystemInformation,  ULONG SystemInformationLength, ULONG *ReturnLength);
 

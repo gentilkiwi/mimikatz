@@ -5,3 +5,6 @@ EXPORTS
 	DrvDisableDriver
 
 	DrvResetConfigCache
+
+	GenerateCopyFilePaths
+	SpoolerCopyFileEvent

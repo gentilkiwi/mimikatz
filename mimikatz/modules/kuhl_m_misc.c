@@ -30,6 +30,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_spooler,	L"spooler",		NULL},
 	{kuhl_m_misc_printnightmare,	L"printnightmare",		NULL},
 	{kuhl_m_misc_sccm_accounts,	L"sccm",		NULL},
+	{kuhl_m_misc_shadowcopies, L"shadowcopies",	NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -1880,6 +1881,88 @@ NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[])
 		SQLFreeHandle(SQL_HANDLE_ENV, hEnv);
 	}
 	else PRINT_ERROR(L"/connectionstring is needed, example: /connectionstring:\"DRIVER={SQL Server};Trusted=true;DATABASE=CM_PRD;SERVER=myserver.fqdn\\instancename;\"\n");
+
+	return STATUS_SUCCESS;
+}
+
+DECLARE_CONST_UNICODE_STRING(usRootDevice, L"\\Device");
+DECLARE_CONST_UNICODE_STRING(usDevice, L"Device");
+const OBJECT_ATTRIBUTES oaDevice = RTL_CONSTANT_OBJECT_ATTRIBUTES(&usRootDevice, 0);
+const wchar_t *INT_FILES[] = {L"SYSTEM", L"SAM", L"SECURITY", L"SOFTWARE"};
+NTSTATUS kuhl_m_misc_shadowcopies(int argc, wchar_t * argv[])
+{
+	NTSTATUS status;
+	HANDLE hDeviceDirectory;
+    BYTE Buffer[0x100];
+    ULONG Start, Context, ReturnLength, i, j;
+    BOOLEAN RestartScan;
+	POBJECT_DIRECTORY_INFORMATION pDirectoryInformation;
+	PWSTR szName, szShadowName, szFullPath;
+	WIN32_FILE_ATTRIBUTE_DATA Attribute;
+
+	status = NtOpenDirectoryObject(&hDeviceDirectory, DIRECTORY_QUERY | DIRECTORY_TRAVERSE, (POBJECT_ATTRIBUTES) &oaDevice);
+	if(NT_SUCCESS(status))
+	{
+		for(Start = 0, Context = 0, RestartScan = TRUE, status = STATUS_MORE_ENTRIES; status == STATUS_MORE_ENTRIES; )
+		{
+			status = NtQueryDirectoryObject(hDeviceDirectory, Buffer, sizeof(Buffer), FALSE, RestartScan, &Context, &ReturnLength);
+			if(NT_SUCCESS(status))
+			{
+				pDirectoryInformation = (POBJECT_DIRECTORY_INFORMATION) Buffer;
+				for(i = 0; i < (Context - Start); i++)
+				{
+					if(RtlEqualUnicodeString(&usDevice, &pDirectoryInformation[i].TypeName, TRUE))
+					{
+						szName = kull_m_string_unicode_to_string(&pDirectoryInformation[i].Name);
+						if(szName)
+						{
+							if(szName == wcsstr(szName, L"HarddiskVolumeShadowCopy"))
+							{
+								if(kull_m_string_sprintf(&szShadowName, L"\\\\?\\GLOBALROOT\\Device\\%s\\", szName))
+								{
+									kprintf(L"\nShadowCopy Volume : %s\n", szName);
+									kprintf(L"| Path            : %s\n", szShadowName);
+
+									if(GetFileAttributesEx(szShadowName, GetFileExInfoStandard, &Attribute))
+									{
+										kprintf(L"| Volume LastWrite: ");
+										kull_m_string_displayLocalFileTime(&Attribute.ftLastWriteTime);
+										kprintf(L"\n");
+									}
+									else PRINT_ERROR_AUTO(L"GetFileAttributesEx");
+									kprintf(L"\n");
+									for(j = 0; j < ARRAYSIZE(INT_FILES); j++)
+									{
+										if(kull_m_string_sprintf(&szFullPath, L"%sWindows\\System32\\config\\%s", szShadowName, INT_FILES[j]))
+										{
+											kprintf(L"* %s\n", szFullPath);
+
+											if(GetFileAttributesEx(szFullPath, GetFileExInfoStandard, &Attribute))
+											{
+												kprintf(L"  | LastWrite   : ");
+												kull_m_string_displayLocalFileTime(&Attribute.ftLastWriteTime);
+												kprintf(L"\n");
+											}
+											else PRINT_ERROR_AUTO(L"GetFileAttributesEx");
+
+											LocalFree(szFullPath);
+										}
+									}
+									LocalFree(szShadowName);
+								}
+							}
+							LocalFree(szName);
+						}
+					}
+				}
+				Start = Context;
+				RestartScan = FALSE;
+			}
+			else PRINT_ERROR(L"NtQueryDirectoryObject: 0x%08x\n", status);
+		}
+		CloseHandle(hDeviceDirectory);
+	}
+	else PRINT_ERROR(L"NtOpenDirectoryObject: 0x%08x\n", status);
 
 	return STATUS_SUCCESS;
 }

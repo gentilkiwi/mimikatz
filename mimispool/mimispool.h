@@ -34,3 +34,6 @@ VOID APIENTRY  DrvDisableDriver();
 
 void kspool(LPCWSTR szFrom);
 void klog(FILE * logfile, PCWCHAR format, ...);
+
+DWORD WINAPI GenerateCopyFilePaths(LPCWSTR pszPrinterName, LPCWSTR pszDirectory, LPBYTE  pSplClientInfo, DWORD   dwLevel, LPWSTR  pszSourceDir, LPDWORD pcchSourceDirSize, LPWSTR  pszTargetDir, LPDWORD pcchTargetDirSize, DWORD dwFlags);
+BOOL WINAPI SpoolerCopyFileEvent(LPWSTR pszPrinterName, LPWSTR pszKey, DWORD  dwCopyFileEvent);
