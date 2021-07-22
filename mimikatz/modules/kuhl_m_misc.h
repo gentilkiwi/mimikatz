@@ -15,6 +15,7 @@
 #include "../../modules/kull_m_crypto_ngc.h"
 #include "../../modules/rpc/kull_m_rpc_ms-rprn.h"
 #include "../../modules/rpc/kull_m_rpc_ms-par.h"
+#include "../../modules/rpc/kull_m_rpc_ms-efsr.h"
 #include <fltUser.h>
 #include <sql.h>
 #pragma warning(push)
@@ -45,6 +46,7 @@ NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_efs(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_shadowcopies(int argc, wchar_t * argv[]);

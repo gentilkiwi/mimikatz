@@ -213,3 +213,4 @@ NET_API_STATUS NET_API_FUNCTION NetStatisticsGet(IN LPWSTR server, IN LPWSTR ser
 NET_API_STATUS NET_API_FUNCTION NetRemoteTOD(IN LPCWSTR UncServerName, OUT PTIME_OF_DAY_INFO *pToD);
 NET_API_STATUS NET_API_FUNCTION NetServerGetInfo(IN LPWSTR servername, IN DWORD level, OUT LPBYTE *bufptr);
 NET_API_STATUS NET_API_FUNCTION NetShareAdd(IN LMSTR servername, IN DWORD level, IN LPBYTE buf, OUT LPDWORD parm_err);
+NET_API_STATUS NET_API_FUNCTION NetConnectionEnum(IN LMSTR servername, LMSTR qualifier, DWORD level, LPBYTE *bufptr, DWORD prefmaxlen, LPDWORD entriesread, LPDWORD totalentries, LPDWORD resume_handle);
