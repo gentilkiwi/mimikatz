@@ -51,10 +51,11 @@ NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_shadowcopies(int argc, wchar_t * argv[]);
 
-BOOL kuhl_m_misc_printnightmare_normalize_library(LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary);
+BOOL kuhl_m_misc_printnightmare_normalize_library(BOOL bIsPar, LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary);
 BOOL kuhl_m_misc_printnightmare_FillStructure(PDRIVER_INFO_2 pInfo2, BOOL bIsX64, BOOL bIsDynamic, LPCWSTR szForce, BOOL bIsPar, handle_t hRemoteBinding);
 void kuhl_m_misc_printnightmare_ListPrintersAndMaybeDelete(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete);
-void kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, DWORD dwFlags);
+BOOL kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, DWORD dwFlags);
+BOOL kuhl_m_misc_printnightmare_DeletePrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, LPCWSTR pName);
 BOOL kuhl_m_misc_printnightmare_EnumPrinters(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);

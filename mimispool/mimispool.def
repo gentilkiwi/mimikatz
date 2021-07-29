@@ -1,10 +1,11 @@
 LIBRARY
 EXPORTS
+	; PrintNightMare 2.x - via config file and/or "real driver"
+	DrvResetConfigCache
 	DrvQueryDriverInfo
 	DrvEnableDriver
 	DrvDisableDriver
 
-	DrvResetConfigCache
-
+	; PrintNightMare 4.x - via CopyFiles
 	GenerateCopyFilePaths
 	SpoolerCopyFileEvent
