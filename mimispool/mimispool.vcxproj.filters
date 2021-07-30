@@ -11,5 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="mimispool.def" />
+    <None Include="README.md" />
   </ItemGroup>
 </Project>
