@@ -228,6 +228,14 @@ typedef struct _WTS_KIWI {
 } WTS_KIWI, *PWTS_KIWI;
 #pragma pack(pop)
 
+typedef struct _WTS_WEB_KIWI {
+	DWORD dwVersion;
+	UNICODE_STRING Domain;
+	UNICODE_STRING Username;
+	UNICODE_STRING Password;
+	//BYTE Data[ANYSIZE_ARRAY];
+} WTS_WEB_KIWI, *PWTS_WEB_KIWI;
+
 typedef struct _TS_PROPERTY_KIWI {
 	PCWSTR szProperty;
 	DWORD dwType;
