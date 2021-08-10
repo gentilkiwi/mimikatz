@@ -315,10 +315,10 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 									if(decStatus)
 									{
 										dwOffset = (lstrlen(pWebKiwiData->Password.Buffer) + 1) * sizeof(wchar_t);
-										kprintf(L"   Password/Pin: %s\n   |_ supp data: ", pWebKiwiData->Password.Buffer);
-										kull_m_string_wprintf_hex((PBYTE) pWebKiwiData->Password.Buffer + dwOffset, pWebKiwiData->Password.Length - dwOffset, 1);
-										kprintf(L"\n");
+										kprintf(L"   Password/Pin: %s\n ", pWebKiwiData->Password.Buffer);
 									}
+									else kuhl_m_sekurlsa_trymarshal(&pWebKiwiData->Password);
+
 									LocalFree(pWebKiwiData->Password.Buffer);
 								}
 							}

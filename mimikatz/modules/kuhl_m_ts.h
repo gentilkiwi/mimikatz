@@ -10,6 +10,7 @@
 #include "../../modules/kull_m_process.h"
 #include "../../modules/kull_m_memory.h"
 #include "../../modules/kull_m_crypto_remote.h"
+#include "sekurlsa/kuhl_m_sekurlsa.h"
 
 const KUHL_M kuhl_m_ts;
 
