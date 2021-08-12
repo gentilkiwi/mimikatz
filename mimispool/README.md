@@ -96,3 +96,35 @@ Remove-PrinterDriver -Name $driver
 # mimispool still in spool\drivers
 
 ```
+
+## Protect
+_to adapt to your environment_
+
+### Registry
+
+#### `.reg` file
+```
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint]
+"PackagePointAndPrintOnly"=dword:00000001
+"PackagePointAndPrintServerList"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint\ListofServers]
+"1"="/your really legit servers or invalid entry !/"
+```
+
+#### commands
+```
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint" /f /v PackagePointAndPrintServerList /t REG_DWORD /d 1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint\ListofServers" /f /v 1 /t REG_SZ /d "/your really legit servers or invalid entry !/"
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint" /f /v PackagePointAndPrintOnly /t REG_DWORD /d 1
+```
+
+### GPO / Local
+
+In `Computer Configuration`, `Administrative Templates`, `Printers`, enable:
+- `Only use Package Point and Print`
+- `Package Point and Print - Approved servers`
+
+![image](https://user-images.githubusercontent.com/2307945/129240741-b2a0ba14-6858-4c3f-ad07-07fa55efca29.png)
