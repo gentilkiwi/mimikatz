@@ -188,6 +188,12 @@ typedef enum {
 #define szOID_ANSI_lmPwdHistory				"1.2.840.113556.1.4.160"
 #define szOID_ANSI_supplementalCredentials	"1.2.840.113556.1.4.125"
 
+// bitlocker
+#define szOID_ANSI_msFVERecoveryPassword		"1.2.840.113556.1.4.1964"
+#define szOID_ANSI_msFVERecoveryGuid			"1.2.840.113556.1.4.1965"
+#define szOID_ANSI_msFVEVolumeGuid			"1.2.840.113556.1.4.1998"
+#define szOID_ANSI_msFVEKeyPackage			"1.2.840.113556.1.4.1999"
+
 #define szOID_ANSI_trustPartner				"1.2.840.113556.1.4.133"
 #define szOID_ANSI_trustAuthIncoming		"1.2.840.113556.1.4.129"
 #define szOID_ANSI_trustAuthOutgoing		"1.2.840.113556.1.4.135"
