@@ -300,7 +300,7 @@ LPCWSTR kuhl_m_lsadump_samAccountType_toString(DWORD accountType)
 
 void kuhl_m_lsadump_dcsync_descrBitlocker(SCHEMA_PREFIX_TABLE* prefixTable, ATTRBLOCK* attributes, BOOL someExport)
 {
-	UNICODE_STRING recoveryGuid;
+	UNICODE_STRING recoveryGuid, uString;
 	wchar_t* shortname = NULL;
 	DWORD szData = 0;
 	PVOID data = 0;
@@ -311,7 +311,6 @@ void kuhl_m_lsadump_dcsync_descrBitlocker(SCHEMA_PREFIX_TABLE* prefixTable, ATTR
 
 	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVEVolumeGuid, &data, NULL))
 	{
-		UNICODE_STRING uString;
 		if(NT_SUCCESS(RtlStringFromGUID(data, &uString)))
 		{
 			kprintf(L"Volume GUID          : %wZ\n", &uString);
