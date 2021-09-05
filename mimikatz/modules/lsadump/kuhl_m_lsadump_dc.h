@@ -12,6 +12,7 @@
 #include "../modules/rpc/kull_m_rpc_drsr.h"
 #include "../kuhl_m.h"
 #include "../kuhl_m_lsadump.h" // to move
+#include "../modules/kull_m_string.h"
 
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_dcshadow(int argc, wchar_t * argv[]);
@@ -46,6 +47,7 @@ void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties);
 void kuhl_m_lsadump_dcsync_descrTrust(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
 void kuhl_m_lsadump_dcsync_descrTrustAuthentication(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, PCUNICODE_STRING domain, PCUNICODE_STRING partner, BOOL isIn);
 void kuhl_m_lsadump_dcsync_descrSecret(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, BOOL someExport);
+void kuhl_m_lsadump_dcsync_descrBitlocker(SCHEMA_PREFIX_TABLE* prefixTable, ATTRBLOCK* attributes, BOOL someExport);
 void kuhl_m_lsadump_dcsync_descrObject_csv(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, BOOL withDeleted, BOOL decodeUAC);
 
 typedef BOOL (*DCSHADOW_SYNTAX_ENCODER) (ATTRVAL* pVal, PWSTR szValue);

