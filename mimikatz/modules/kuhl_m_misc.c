@@ -1551,11 +1551,11 @@ NTSTATUS kuhl_m_misc_efs(int argc, wchar_t * argv[])
 										else if(ret == 0)
 										{
 											PRINT_ERROR(L"EfsRpcOpenFileRaw is a success, really? (not normal)\n");
-											EfsRpcCloseRaw(&hEfsHandle);
+											EfsRpcCloseRaw(&hImportCtx);
 										}
 										else
 										{
-											PRINT_ERROR(L"EfsRpcOpenFileRaw: ", ret);
+											PRINT_ERROR(L"EfsRpcOpenFileRaw: %u\n", ret);
 										}
 									}
 									RpcExcept(RPC_EXCEPTION)

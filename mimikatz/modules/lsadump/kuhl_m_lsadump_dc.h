@@ -13,6 +13,7 @@
 #include "../kuhl_m.h"
 #include "../kuhl_m_lsadump.h" // to move
 #include "../modules/kull_m_string.h"
+#include "../modules/kull_m_ldap.h"
 
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_lsadump_dcshadow(int argc, wchar_t * argv[]);
@@ -40,9 +41,10 @@ typedef struct _USER_PROPERTIES {
 
 const wchar_t * KUHL_M_LSADUMP_UF_FLAG[32];
 
+BOOL kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(PLDAP ld, PWCHAR dn, PWCHAR req, ATTRTYP *pIntId);
 BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory);
-void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport);
-void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes);
+void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport, ATTRTYP *pSuppATT_IntId, DWORD cSuppATT_IntId);
+void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, ATTRTYP *pSuppATT_IntId, DWORD cSuppATT_IntId);
 void kuhl_m_lsadump_dcsync_descrUserProperties(PUSER_PROPERTIES properties);
 void kuhl_m_lsadump_dcsync_descrTrust(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain);
 void kuhl_m_lsadump_dcsync_descrTrustAuthentication(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, PCUNICODE_STRING domain, PCUNICODE_STRING partner, BOOL isIn);
