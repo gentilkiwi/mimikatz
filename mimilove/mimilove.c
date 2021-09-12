@@ -5,6 +5,8 @@
 */
 #include "mimilove.h"
 
+#pragma warning(disable:4996)//'GetVersionExW': 被声明为已否决
+
 int wmain(int argc, wchar_t *argv[])
 {
 	DWORD pid;
@@ -22,7 +24,7 @@ int wmain(int argc, wchar_t *argv[])
 
 	RtlZeroMemory(&osInfo, sizeof(OSVERSIONINFO));
 	osInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if(GetVersionEx(&osInfo))
+	if (GetVersionEx(&osInfo)) 
 	{
 		if((osInfo.dwMajorVersion == 5) && (osInfo.dwMinorVersion == 0))
 		{

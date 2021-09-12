@@ -5,6 +5,8 @@
 */
 #include "kuhl_m_ts.h"
 
+#pragma warning(disable:4311)//“类型强制转换”: 从“PVOID”到“XXX”的指针截断
+
 const KUHL_M_C kuhl_m_c_ts[] = {
 	{kuhl_m_ts_multirdp,	L"multirdp",	L"[experimental] patch Terminal Server service to allow multiples users"},
 	{kuhl_m_ts_sessions,	L"sessions",	NULL},
