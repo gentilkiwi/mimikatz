@@ -100,6 +100,8 @@ Remove-PrinterDriver -Name $driver
 ## Protect
 _to adapt to your environment_
 
+**Please, do not set `RestrictDriverInstallationToAdministrators` to `0` without these settings**
+
 ### Registry
 
 #### `.reg` file
@@ -121,6 +123,34 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPri
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint" /f /v PackagePointAndPrintOnly /t REG_DWORD /d 1
 ```
 
+### Registry with real printer servers and allowing non-administrators to install package P&P drivers & printers
+
+#### `.reg` file
+```
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint]
+"PackagePointAndPrintOnly"=dword:00000001
+"PackagePointAndPrintServerList"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint\ListofServers]
+"srv1.fqdn"="srv1.fqdn"
+"srv2.fqdn"="srv2.fqdn"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint]
+"RestrictDriverInstallationToAdministrators"=dword:00000000
+```
+
+#### commands
+```
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint" /f /v PackagePointAndPrintServerList /t REG_DWORD /d 1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint\ListofServers" /f /v "srv1.fqdn" /t REG_SZ /d "srv1.fqdn"
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint\ListofServers" /f /v "srv2.fqdn" /t REG_SZ /d "srv2.fqdn"
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PackagePointAndPrint" /f /v PackagePointAndPrintOnly /t REG_DWORD /d 1
+
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Printers\PointAndPrint" /f /v RestrictDriverInstallationToAdministrators /t REG_DWORD /d 0
+```
+
 ### GPO / Local
 
 In `Computer Configuration`, `Administrative Templates`, `Printers`, enable:
@@ -128,3 +158,9 @@ In `Computer Configuration`, `Administrative Templates`, `Printers`, enable:
 - `Package Point and Print - Approved servers`
 
 ![image](https://user-images.githubusercontent.com/2307945/129240741-b2a0ba14-6858-4c3f-ad07-07fa55efca29.png)
+
+### GPO with real printer servers and allowing non-administrators to install package P&P drivers & printers
+
+Same configuration as previously - _with real printer server names this time_ - but do not forget to add registry key `RestrictDriverInstallationToAdministrators` to `0`
+
+![image](https://user-images.githubusercontent.com/2307945/133833820-a66b3ffd-a3aa-43a2-a1bf-14581a2a7492.png)
