@@ -5,13 +5,13 @@
 */
 #include "kuhl_m_kerberos_pac.h"
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PPACTYPE * pacType, DWORD * pacLength)
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, PPACTYPE * pacType, DWORD * pacLength, wchar_t pacAttributeType)
 {
 	BOOL status = FALSE;
 	PVOID pLogonInfo = NULL, pClaims = NULL;
 	PPAC_CLIENT_INFO pClientInfo = NULL;
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
-	DWORD n = 4, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 3 * sizeof(PAC_INFO_BUFFER);
+	DWORD n = 6, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 5 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
@@ -23,17 +23,49 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 			szLogonInfoAligned = SIZE_ALIGN(szLogonInfo, 8);
 		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(authtime ? authtime : &validationInfo->LogonTime, clientname ? clientname : validationInfo->EffectiveName.Buffer, &pClientInfo, &szClientInfo))
 			szClientInfoAligned = SIZE_ALIGN(szClientInfo, 8);
-		if(pClaimsSet)
-			if(kuhl_m_kerberos_claims_encode_ClaimsSet(pClaimsSet, &pClaims, &szClaims))
+		if (pClaimsSet)
+			if (kuhl_m_kerberos_claims_encode_ClaimsSet(pClaimsSet, &pClaims, &szClaims))
 			{
 				szClaimsAligned = SIZE_ALIGN(szClaims, 8);
 				n++;
 				offsetData += sizeof(PAC_INFO_BUFFER);
 			}
 
+
+		// Setting up PAC_REQUESTOR
+		PAC_REQUESTOR requestor;
+		requestor.sid = sid;
+		auto szPacRequestorsid = sizeof(PAC_REQUESTOR);
+		DWORD szPacRequestorSidAligned = SIZE_ALIGN(szPacRequestorsid, 8);
+
+		// Setting up PAC_ATTRIBUTE_IFNO
+		PAC_ATTRIBUTES_INFO pacAttributeInfo;
+		
+		// This takes the value of 1 or 2 from pacAttributeType Arguement and inputs it as correct format. I am sure this is terrible but I couldnt get it to work another way.
+		UINT32 pacAttributeTypeParser;
+		
+		if (pacAttributeType = "1") {
+			pacAttributeTypeParser = PAC_ATTRIBUTE_FLAG_PAC_WAS_REQUESTED;
+		}
+		else if (pacAttributeType = "2") {
+			pacAttributeTypeParser = PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY;
+		}else{ 
+			pacAttributeTypeParser = NULL;
+		}
+
+		if (pacAttributeTypeParser) { 
+			kprintf(L"PAC Attribute Info: %zu\n", pacAttributeTypeParser);
+			pacAttributeInfo.Flags[0] = pacAttributeTypeParser; 
+		}
+				
+
+		auto szPacAttributeInfo = sizeof(PAC_ATTRIBUTES_INFO);
+		DWORD szPacAttributeInfoAligned = SIZE_ALIGN(szPacAttributeInfo, 8);
+
+
 		if(pLogonInfo && pClientInfo)
 		{
-			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szClaimsAligned + 2 * szSignatureAligned;
+			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szPacAttributeInfoAligned + szPacRequestorSidAligned + 2 * szSignatureAligned;
 			if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
 			{
 				(*pacType)->cBuffers = n;
@@ -49,12 +81,22 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 				(*pacType)->Buffers[1].Offset = (*pacType)->Buffers[0].Offset + szLogonInfoAligned;
 				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[1].Offset, pClientInfo, (*pacType)->Buffers[1].cbBufferSize);
 
-				if(szClaimsAligned)
+				(*pacType)->Buffers[2].cbBufferSize = szPacAttributeInfo;
+				(*pacType)->Buffers[2].ulType = PACINFO_TYPE_ATTRIBUTES_INFO;
+				(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset, &pacAttributeInfo, (*pacType)->Buffers[2].cbBufferSize);
+
+				(*pacType)->Buffers[3].cbBufferSize = szPacRequestorsid;
+				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_PAC_REQUESTOR;
+				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szPacAttributeInfoAligned;
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[3].Offset, &requestor, (*pacType)->Buffers[3].cbBufferSize);
+
+				if (szClaimsAligned)
 				{
-					(*pacType)->Buffers[2].cbBufferSize = szClaims;
-					(*pacType)->Buffers[2].ulType = PACINFO_TYPE_CLIENT_CLAIMS;
-					(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
-					RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[2].Offset, pClaims, (*pacType)->Buffers[2].cbBufferSize);
+					(*pacType)->Buffers[4].cbBufferSize = szClaims;
+					(*pacType)->Buffers[4].ulType = PACINFO_TYPE_CLIENT_CLAIMS;
+					(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szClientInfoAligned;
+					RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, pClaims, (*pacType)->Buffers[4].cbBufferSize);
 				}
 
 				(*pacType)->Buffers[n - 2].cbBufferSize = szSignature;
