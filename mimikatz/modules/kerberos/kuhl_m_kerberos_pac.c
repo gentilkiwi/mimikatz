@@ -35,41 +35,15 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		// Convert sid and id into user sid for PAC REQUESTOR using string conversersion and converting back to sids
 		LPCWSTR stringSid;
 		ConvertSidToStringSid(sid, &stringSid);
-		LPCWSTR userStringSidFull[45];
-		swprintf(userStringSidFull, 45, L"%s-%d", stringSid, userId );
+		LPCWSTR userStringSidFull[100];
+		memset(userStringSidFull, 0, 100 * 2);
+		swprintf(userStringSidFull, 100, L"%s-%d", stringSid, userId );
+		wprintf(userStringSidFull);
 		PSID userSid;
 		ConvertStringSidToSid(userStringSidFull, &userSid);
-		
-
-		
-		//// Test using LookupAccountName
-		//PSID LANSid;
-		//SID_NAME_USE snu = SidTypeInvalid;
-		//BOOL bRVal;
-		//DWORD dwSidSize = SECURITY_MAX_SID_SIZE;
-		//WCHAR szDomainName[256];
-		//DWORD dwDomainSize;
-		//bRVal = LookupAccountName(
-		//	NULL, //use this system
-		//	validationInfo->EffectiveName.Buffer, //the user to look up
-		//	&LANSid, //the returned SID
-		//	&dwSidSize, //the size of the SID returned
-		//	&szDomainName, //the returned domain name
-		//	&dwDomainSize, //the size of the domain name
-		//	&snu //the type of sid
-		//);
-		char packet_bytes[] = {
-  0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05,
-  0x15, 0x00, 0x00, 0x00, 0xa7, 0xb0, 0x4d, 0x7c,
-  0x89, 0x62, 0xc7, 0x06, 0x41, 0x6a, 0xd1, 0x53,
-  0x71, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-		};
-
-		// Setting up PAC_REQUESTOR
-		PAC_REQUESTOR requestor;
-		requestor.sid = packet_bytes;
-		auto szPacRequestorsid = sizeof(packet_bytes);
+		auto szPacRequestorsid = GetLengthSid(userSid);
 		DWORD szPacRequestorSidAligned = SIZE_ALIGN(szPacRequestorsid, 8);
+
 
 		// Setting up PAC_ATTRIBUTE_IFNO
 		PAC_ATTRIBUTES_INFO pacAttributeInfo;
@@ -106,8 +80,6 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		swprintf(upn, 36, L"%s@%s", validationInfo->EffectiveName.Buffer, domainname);
 		
 
-		
-
 		// Setting UPN DNS INFO
 		UPN_DNS_INFO upnDnsInfo;
 		upnDnsInfo.UpnLength = lstrlenW(upn) * 2;
@@ -115,8 +87,6 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		upnDnsInfo.DnsDomainNameLength = validationInfo->LogonDomainName.Length * 2;
 		upnDnsInfo.DnsDomainNameOffset = upnDnsInfo.UpnLength + upnDnsInfo.UpnOffset;
 		upnDnsInfo.Flags = 0x00000000;
-		//upnDnsInfo.Upn = upn;
-		//upnDnsInfo.Domain = domainnameConverted;
 
 			
 
@@ -160,7 +130,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 				(*pacType)->Buffers[4].cbBufferSize = szPacRequestorsid;
 				(*pacType)->Buffers[4].ulType = PACINFO_TYPE_PAC_REQUESTOR;
 				(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szPacAttributeInfoAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, &packet_bytes, (*pacType)->Buffers[4].cbBufferSize);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, userSid, (*pacType)->Buffers[4].cbBufferSize);
 
 				if (szClaimsAligned)
 				{
