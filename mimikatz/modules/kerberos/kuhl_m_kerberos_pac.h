@@ -11,6 +11,7 @@
 #include "../modules/rpc/kull_m_rpc_ms-pac.h"
 
 #define DEFAULT_GROUP_ATTRIBUTES	(SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED)
+#define KERBEROS_TOOLS
 
 #pragma pack(push, 4) 
 typedef struct _PAC_SIGNATURE_DATA {
@@ -21,7 +22,7 @@ typedef struct _PAC_SIGNATURE_DATA {
 } PAC_SIGNATURE_DATA, *PPAC_SIGNATURE_DATA;
 #pragma pack(pop)
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, DWORD userId, PPACTYPE * pacType, DWORD * pacLength);
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, DWORD userId, LPCWSTR domainname, PPACTYPE * pacType, DWORD * pacLength);
 BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PFILETIME authtime, LPCWSTR clientname, PPAC_CLIENT_INFO * pacClientInfo, DWORD * pacClientInfoLength);
 NTSTATUS kuhl_m_pac_signature(PPACTYPE pacType, DWORD pacLenght, LONG SignatureType, LPCVOID key, DWORD keySize);
 PKERB_VALIDATION_INFO kuhl_m_pac_infoToValidationInfo(PFILETIME authtime, LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, PISID sid, ULONG rid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids);

