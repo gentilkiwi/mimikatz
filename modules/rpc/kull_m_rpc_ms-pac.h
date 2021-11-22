@@ -33,20 +33,16 @@ typedef struct _PAC_REQUESTOR {
 	PISID sid;
 } PAC_REQUESTOR, *PPAC_REQUESTOR;
 
-
-
-
 typedef struct _PAC_ATTRIBUTES_INFO {
 	unsigned int FlagsLength : 1;
 	unsigned int Flags[ANYSIZE_ARRAY];
 } PAC_ATTRIBUTES_INFO, *PPAC_ATTRIBUTES_INFO;
 
-
 typedef struct _PAC_CLIENT_INFO {
 	FILETIME ClientId;
 	USHORT NameLength;
 	WCHAR Name[ANYSIZE_ARRAY];
-} PAC_CLIENT_INFO, * PPAC_CLIENT_INFO;
+} PAC_CLIENT_INFO, *PPAC_CLIENT_INFO;
 
 typedef struct _PAC_CREDENTIAL_INFO {
 	ULONG Version;

@@ -13,7 +13,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 	PAC_SIGNATURE_DATA signature = {SignatureType, {0}};
 	DWORD n = 7, szLogonInfo = 0, szLogonInfoAligned = 0, szClientInfo = 0, szClientInfoAligned, szClaims = 0, szClaimsAligned = 0, szSignature = FIELD_OFFSET(PAC_SIGNATURE_DATA, Signature), szSignatureAligned, offsetData = sizeof(PACTYPE) + 6 * sizeof(PAC_INFO_BUFFER);
 	PKERB_CHECKSUM pCheckSum;
-	INT pacAttributeType = 2; // Default to a value that doesnt show up on the new logs in CVE-2021-42287
+	INT pacAttributeType = 2;
 
 	if(NT_SUCCESS(CDLocateCheckSum(SignatureType, &pCheckSum)))
 	{
@@ -24,8 +24,8 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 			szLogonInfoAligned = SIZE_ALIGN(szLogonInfo, 8);
 		if(kuhl_m_pac_validationInfo_to_CNAME_TINFO(authtime ? authtime : &validationInfo->LogonTime, clientname ? clientname : validationInfo->EffectiveName.Buffer, &pClientInfo, &szClientInfo))
 			szClientInfoAligned = SIZE_ALIGN(szClientInfo, 8);
-		if (pClaimsSet)
-			if (kuhl_m_kerberos_claims_encode_ClaimsSet(pClaimsSet, &pClaims, &szClaims))
+		if(pClaimsSet)
+			if(kuhl_m_kerberos_claims_encode_ClaimsSet(pClaimsSet, &pClaims, &szClaims))
 			{
 				szClaimsAligned = SIZE_ALIGN(szClaims, 8);
 				n++;
@@ -74,10 +74,10 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 
 
 		// Making UPN
-		wchar_t domainnameConverted[24];
-		swprintf(domainnameConverted, 24, L"%s", domainname);
-		wchar_t upn[36];
-		swprintf(upn, 36, L"%s@%s", validationInfo->EffectiveName.Buffer, domainname);
+		wchar_t domainnameConverted[100];
+		swprintf(domainnameConverted, 100, L"%s", domainname);
+		wchar_t upn[100];
+		swprintf(upn, 100, L"%s@%s", validationInfo->EffectiveName.Buffer, domainname);
 		
 
 		// Setting UPN DNS INFO
@@ -99,7 +99,7 @@ BOOL kuhl_m_pac_validationInfo_to_PAC(PKERB_VALIDATION_INFO validationInfo, PFIL
 
 		if(pLogonInfo && pClientInfo)
 		{
-			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szUpnDnsInfoAligned + upnDnsInfo.UpnLength + szDomainname +  szPacAttributeInfoAligned + szPacRequestorSidAligned + 2 * szSignatureAligned;
+			*pacLength = offsetData + szLogonInfoAligned + szClientInfoAligned + szUpnDnsInfoAligned + upnDnsInfo.UpnLength + szDomainname +  szPacAttributeInfoAligned + szPacRequestorSidAligned + szClaimsAligned + 2 * szSignatureAligned;
 			if(*pacType = (PPACTYPE) LocalAlloc(LPTR, *pacLength))
 			{
 				(*pacType)->cBuffers = n;
@@ -458,18 +458,12 @@ NTSTATUS kuhl_m_kerberos_pac_info(int argc, wchar_t * argv[])
 					kull_m_string_wprintf_hex(pCredentialInfo->SerializedData, j, 1 | (16 << 16));
 					kprintf(L"\n");
 					break;
-				case PACINFO_TYPE_ATTRIBUTES_INFO:
-					kprintf("PAC ATTRIBUTES INFO");
-					break;
-				case PACINFO_TYPE_PAC_REQUESTOR:
-					kprintf("PAC REQUESTOR");
-					break;
 				default:
 					kull_m_string_wprintf_hex(&pacType->Buffers[i], sizeof(PAC_INFO_BUFFER), 1);
 					kprintf(L"\n");
 					kprintf(L"[%02u] %08x @ offset %016llx (%u)\n", i, pacType->Buffers[i].ulType, pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize);
 					kull_m_string_wprintf_hex((PBYTE) pacType + pacType->Buffers[i].Offset, pacType->Buffers[i].cbBufferSize, 1);
-					kprintf(L"-");
+					kprintf(L"\n");
 					
 				}
 				kprintf(L"\n");
