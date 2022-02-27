@@ -133,7 +133,7 @@ PCWCHAR WPRINTF_TYPES[] =
 	L"%02X",		// WPRINTF_HEX_SHORT_CAP
 };
 
-void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD cbData, DWORD flags)
+void kull_m_string_wprintf_hex(LPCVOID lpData, DWORD_PTR cbData, DWORD flags)
 {
 	DWORD i, sep = flags >> 16;
 	PCWCHAR pType = WPRINTF_TYPES[flags & 0x0000000f];
