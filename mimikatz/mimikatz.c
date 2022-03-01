@@ -255,6 +255,8 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 }
 
 #if defined(_POWERKATZ)
+//Fix parsing arguments from Meterpreter
+//See: https://github.com/rapid7/mimikatz/pull/7
 LPWSTR * CommandLineToArguments(LPCWSTR lpCmdLine, int* pNumArgs)
 {
 	int argc = 0;
