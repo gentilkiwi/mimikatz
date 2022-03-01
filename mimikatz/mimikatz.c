@@ -255,12 +255,64 @@ NTSTATUS mimikatz_doLocal(wchar_t * input)
 }
 
 #if defined(_POWERKATZ)
+//Fix parsing arguments from Meterpreter
+//See: https://github.com/rapid7/mimikatz/pull/7
+LPWSTR * CommandLineToArguments(LPCWSTR lpCmdLine, int* pNumArgs)
+{
+	int argc = 0;
+	wchar_t ** argv;
+
+	int retargc = 0;
+	wchar_t ** retargv = 0;
+
+	if(argv = CommandLineToArgvW(lpCmdLine, &argc)) {
+		retargv = LocalAlloc(LPTR, argc * sizeof(wchar_t*));
+		wchar_t * addcommand = 0;
+		for (int arg = 0; arg < argc; arg++)
+		{
+			//Is the command actually an argument for the previous command?, e.g /in:something
+			if (addcommand && (wcsncmp(argv[arg], L"/", 1) == 0))
+			{
+				size_t newarglen = wcslen(addcommand) + wcslen(argv[arg]) + 10;
+				wchar_t * newarg = LocalAlloc(LPTR, newarglen * sizeof(wchar_t));
+				if (wcsstr(argv[arg], L" ")) {
+					swprintf_s(newarg, newarglen, L"%ls \"%ls\"", addcommand, argv[arg]);
+				} else {
+					swprintf_s(newarg, newarglen, L"%ls %ls", addcommand, argv[arg]);
+				}
+				LocalFree(addcommand);
+				addcommand = newarg;
+			} else {
+				if (addcommand) 
+				{
+					retargv[retargc++] = addcommand;
+					addcommand = 0;
+				}
+
+				size_t newarglen = wcslen(argv[arg]) + 1;
+				addcommand = LocalAlloc(LPTR, newarglen * sizeof(wchar_t));
+				wcscpy_s(addcommand, newarglen, argv[arg]);
+			}
+		}
+
+		if (addcommand) 
+		{
+			retargv[retargc++] = addcommand;
+		}
+
+		LocalFree(argv);
+	}
+
+	*pNumArgs = retargc;
+	return retargv;
+}
+
 wchar_t * powershell_reflective_mimikatz(LPCWSTR input)
 {
 	int argc = 0;
 	wchar_t ** argv;
 	
-	if(argv = CommandLineToArgvW(input, &argc))
+	if(argv = CommandLineToArguments(input, &argc))
 	{
 		if (outputBuffer == NULL)
 		{
