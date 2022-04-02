@@ -133,7 +133,6 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 									getChReq.V8.pPartialAttrSet->rgPartialAttr[getChReq.V8.pPartialAttrSet->cAttrs++] = SuppATT_IntId[1];
 								}
 
-
 								RpcTryExcept
 								{
 									do
@@ -2276,7 +2275,6 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO info)
 				kprintf(L"    uidOriginatingDsa:");
 				kull_m_string_displayGUID(&attr->MetaData.uidOriginatingDsa);
 				kprintf(L"\n");
-				
 			}
 			kprintf(L"\n");
 		}
