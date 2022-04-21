@@ -550,7 +550,9 @@ BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, A
 			{
 				oidPrefix.length -= (lastValue < 0x80) ? 1 : 2;
 				if(status = kull_m_rpc_drsr_MakeAttid_addPrefixToTable(prefixTable, &oidPrefix, &ndx, toAdd))
+				{
 					*att |= ndx << 16;
+				}
 				else PRINT_ERROR(L"kull_m_rpc_drsr_MakeAttid_addPrefixToTable\n");
 				kull_m_asn1_freeEnc(oidPrefix.value);
 			}
@@ -559,23 +561,32 @@ BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, A
 	return status;
 }
 
-ATTRVALBLOCK * kull_m_rpc_drsr_findAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid)
+ATTRVALBLOCK * kull_m_rpc_drsr_findAttrNoOID(ATTRBLOCK *attributes, ATTRTYP type)
 {
 	ATTRVALBLOCK *ptr = NULL;
 	DWORD i;
 	ATTR *attribut;
+
+	for(i = 0; i < attributes->attrCount; i++)
+	{
+		attribut = &attributes->pAttr[i];
+		if(attribut->attrTyp == type)
+		{
+			ptr = &attribut->AttrVal;
+			break;
+		}
+	}
+
+	return ptr;
+}
+
+ATTRVALBLOCK * kull_m_rpc_drsr_findAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid)
+{
+	ATTRVALBLOCK *ptr = NULL;
 	ATTRTYP type;
 	if(kull_m_rpc_drsr_MakeAttid(prefixTable, szOid, &type, FALSE))
 	{
-		for(i = 0; i < attributes->attrCount; i++)
-		{
-			attribut = &attributes->pAttr[i];
-			if(attribut->attrTyp == type)
-			{
-				ptr = &attribut->AttrVal;
-				break;
-			}
-		}
+		ptr = kull_m_rpc_drsr_findAttrNoOID(attributes, type);
 	}
 	else PRINT_ERROR(L"Unable to get an ATTRTYP for %S\n", szOid);
 	return ptr;
@@ -604,6 +615,31 @@ PVOID kull_m_rpc_drsr_findMonoAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *
 	}
 	return ptr;
 }
+
+PVOID kull_m_rpc_drsr_findMonoAttrNoOID(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size)
+{
+	PVOID ptr = NULL;
+	ATTRVALBLOCK *valblock;
+
+	if(data)
+		*(PVOID *)data = NULL;
+	if(size)
+		*size = 0;
+	
+	if(valblock = kull_m_rpc_drsr_findAttrNoOID(attributes, type))
+	{
+		if(valblock->valCount == 1)
+		{
+			ptr = valblock->pAVal[0].pVal;
+			if(data)
+				*(PVOID *)data = ptr;
+			if(size)
+				*size = valblock->pAVal[0].valLen;
+		}
+	}
+	return ptr;
+}
+
 
 void kull_m_rpc_drsr_findPrintMonoAttr(LPCWSTR prefix, SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, BOOL newLine)
 {

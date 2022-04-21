@@ -645,7 +645,7 @@ NTSTATUS kuhl_m_net_trust(int argc, wchar_t * argv[])
 	else PRINT_ERROR(L"DsEnumerateDomainTrusts: %u\n", ret);
 
 	kprintf(L"\n\nLDAP mode: ");
-	if(kull_m_ldap_getLdapAndRootDN(server, L"defaultNamingContext", &ld, &dn))
+	if(kull_m_ldap_getLdapAndRootDN(server, L"defaultNamingContext", &ld, &dn, NULL))
 	{
 		if(kull_m_string_sprintf(&sysDN, L"CN=System,%s", dn))
 		{
@@ -761,7 +761,7 @@ L")";
 	BOOL isCheckDNS = kull_m_string_args_byName(argc, argv, L"dns", NULL, NULL);
 	kull_m_string_args_byName(argc, argv, L"server", &server, NULL);
 
-	if(kull_m_ldap_getLdapAndRootDN(server, NULL, &ld, &dn))
+	if(kull_m_ldap_getLdapAndRootDN(server, NULL, &ld, &dn, NULL))
 	{
 		dwRet = ldap_search_s(ld, dn, LDAP_SCOPE_SUBTREE, filter, myAttrs, FALSE, &pMessage);
 		if(dwRet == LDAP_SUCCESS)

@@ -10,6 +10,7 @@
 #include "../../modules/kull_m_process.h"
 #include "../../modules/kull_m_memory.h"
 #include "../../modules/kull_m_crypto_remote.h"
+#include "sekurlsa/kuhl_m_sekurlsa.h"
 
 const KUHL_M kuhl_m_ts;
 
@@ -227,6 +228,14 @@ typedef struct _WTS_KIWI {
 	WCHAR Password[WTS_PASSWORD_LENGTH + 1];
 } WTS_KIWI, *PWTS_KIWI;
 #pragma pack(pop)
+
+typedef struct _WTS_WEB_KIWI {
+	DWORD dwVersion;
+	UNICODE_STRING Domain;
+	UNICODE_STRING Username;
+	UNICODE_STRING Password;
+	//BYTE Data[ANYSIZE_ARRAY];
+} WTS_WEB_KIWI, *PWTS_WEB_KIWI;
 
 typedef struct _TS_PROPERTY_KIWI {
 	PCWSTR szProperty;

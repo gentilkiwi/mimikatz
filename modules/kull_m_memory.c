@@ -230,6 +230,7 @@ BOOL kull_m_memory_alloc(IN PKULL_M_MEMORY_ADDRESS Address, IN SIZE_T Lenght, IN
 			kull_m_kernel_ioctl_handle(Address->hMemory->pHandleDriver->hDriver, IOCTL_MIMIDRV_VM_ALLOC, NULL, (DWORD) Lenght, &ptrAddress, &lenPtr, FALSE);
 			break;
 		default:
+			SetLastError(ERROR_NOT_SUPPORTED);
 			break;
 	}
 	return (Address->address) != NULL;

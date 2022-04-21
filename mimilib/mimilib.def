@@ -24,3 +24,6 @@ EXPORTS
 
 	NPLogonNotify			= knp_NPLogonNotify
 	NPGetCaps				= knp_NPGetCaps
+
+	DllGetClassObject       = kcredentialprovider_DllGetClassObject PRIVATE
+	DllCanUnloadNow         = kcredentialprovider_DllCanUnloadNow PRIVATE

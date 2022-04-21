@@ -101,7 +101,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;cabinet.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;odbc32.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wbemuuid.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;cabinet.lib;crypt32.lib;cryptdll.lib;delayimp.lib;dnsapi.lib;fltlib.lib;mpr.lib;msxml2.lib;ncrypt.lib;netapi32.lib;ntdsapi.lib;odbc32.lib;ole32.lib;oleaut32.lib;rpcrt4.lib;shlwapi.lib;samlib.lib;secur32.lib;shell32.lib;user32.lib;userenv.lib;version.lib;hid.lib;setupapi.lib;winscard.lib;winsta.lib;wbemuuid.lib;wldap32.lib;wtsapi32.lib;advapi32.hash.lib;msasn1.min.lib;ntdll.min.lib;netapi32.min.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AssemblyDebug>false</AssemblyDebug>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
@@ -151,12 +151,14 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-credentialkeys.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-efsr_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-nrpc_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
     <ClCompile Include="..\modules\kull_m_token.c" />
     <ClCompile Include="..\modules\kull_m_xml.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-par_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-rprn.c" />
     <ClCompile Include="..\modules\sqlite3.c">
       <PreprocessorDefinitions>SQLITE_UNTESTABLE;SQLITE_DISABLE_INTRINSIC;SQLITE_OMIT_LOCALTIME;SQLITE_DQS=0;SQLITE_THREADSAFE=0;SQLITE_DEFAULT_MEMSTATUS=0;SQLITE_DEFAULT_WAL_SYNCHRONOUS=1;SQLITE_LIKE_DOESNT_MATCH_BLOBS;SQLITE_MAX_EXPR_DEPTH=0;SQLITE_OMIT_DECLTYPE;SQLITE_OMIT_DEPRECATED;SQLITE_OMIT_PROGRESS_CALLBACK;SQLITE_OMIT_SHARED_CACHE;SQLITE_USE_ALLOCA;SQLITE_OMIT_OR_OPTIMIZATION;SQLITE_OMIT_LIKE_OPTIMIZATION;SQLITE_OMIT_BETWEEN_OPTIMIZATION;SQLITE_OMIT_TRUNCATE_OPTIMIZATION;SQLITE_OMIT_TCL_VARIABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -171,6 +173,7 @@
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi.c" />
     <ClCompile Include="modules\dpapi\kuhl_m_dpapi_oe.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.c" />
+    <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_citrix.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_creds.c" />
     <ClCompile Include="modules\dpapi\packages\kuhl_m_dpapi_keys.c" />
@@ -268,6 +271,7 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-dcom_IObjectExporter.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-drsr.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-efsr.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-nrpc.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
@@ -275,6 +279,7 @@
     <ClInclude Include="..\modules\kull_m_string.h" />
     <ClInclude Include="..\modules\kull_m_token.h" />
     <ClInclude Include="..\modules\kull_m_xml.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-par.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-rprn.h" />
     <ClInclude Include="..\modules\sqlite3.h" />
     <ClInclude Include="mimikatz.h" />
@@ -285,6 +290,7 @@
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi.h" />
     <ClInclude Include="modules\dpapi\kuhl_m_dpapi_oe.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_chrome.h" />
+    <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_citrix.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_cloudap.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_creds.h" />
     <ClInclude Include="modules\dpapi\packages\kuhl_m_dpapi_keys.h" />
@@ -344,8 +350,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <ResourceCompile Include="mimikatz.rc" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(ConfigurationType)' == 'Application'">
     <None Include="mimikatz.ico" />
   </ItemGroup>
 </Project>

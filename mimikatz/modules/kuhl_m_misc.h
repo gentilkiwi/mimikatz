@@ -14,6 +14,8 @@
 #include "../../modules/kull_m_crypto_system.h"
 #include "../../modules/kull_m_crypto_ngc.h"
 #include "../../modules/rpc/kull_m_rpc_ms-rprn.h"
+#include "../../modules/rpc/kull_m_rpc_ms-par.h"
+#include "../../modules/rpc/kull_m_rpc_ms-efsr.h"
 #include "fltUser.h"
 #include <sql.h>
 #pragma warning(push)
@@ -44,7 +46,17 @@ NTSTATUS kuhl_m_misc_xor(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_aadcookie_NgcSignWithSymmetricPopKey(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_spooler(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_efs(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_printnightmare(int argc, wchar_t * argv[]);
 NTSTATUS kuhl_m_misc_sccm_accounts(int argc, wchar_t * argv[]);
+NTSTATUS kuhl_m_misc_shadowcopies(int argc, wchar_t * argv[]);
+
+BOOL kuhl_m_misc_printnightmare_normalize_library(BOOL bIsPar, LPCWSTR szLibrary, LPWSTR *pszNormalizedLibrary, LPWSTR *pszShortLibrary);
+BOOL kuhl_m_misc_printnightmare_FillStructure(PDRIVER_INFO_2 pInfo2, BOOL bIsX64, BOOL bIsDynamic, LPCWSTR szForce, BOOL bIsPar, handle_t hRemoteBinding);
+void kuhl_m_misc_printnightmare_ListPrintersAndMaybeDelete(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, BOOL bIsDelete);
+BOOL kuhl_m_misc_printnightmare_AddPrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, PDRIVER_INFO_2 pInfo2, DWORD dwFlags);
+BOOL kuhl_m_misc_printnightmare_DeletePrinterDriver(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, LPCWSTR pName);
+BOOL kuhl_m_misc_printnightmare_EnumPrinters(BOOL bIsPar, handle_t hRemoteBinding, LPCWSTR szEnvironment, _PDRIVER_INFO_2 *ppDriverInfo, DWORD *pcReturned);
 
 BOOL CALLBACK kuhl_m_misc_detours_callback_process(PSYSTEM_PROCESS_INFORMATION pSystemProcessInformation, PVOID pvArg);
 BOOL CALLBACK kuhl_m_misc_detours_callback_module(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);

