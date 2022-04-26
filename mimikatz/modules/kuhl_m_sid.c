@@ -317,7 +317,7 @@ BOOL kuhl_m_sid_quickSearch(int argc, wchar_t * argv[], BOOL needUnique, PCWCHAR
 	PWCHAR myAttrs[] = {L"name", L"sAMAccountName", L"objectSid", L"sIDHistory", L"objectGUID", NULL}, dn, filter;
 	if(filter = kuhl_m_sid_filterFromArgs(argc, argv))
 	{
-		if(kull_m_ldap_getLdapAndRootDN(system, NULL, ld, &dn))
+		if(kull_m_ldap_getLdapAndRootDN(system, NULL, ld, &dn, NULL))
 		{
 			*pMessage = NULL;
 			dwErr = ldap_search_s(*ld, dn, LDAP_SCOPE_SUBTREE, filter, myAttrs, FALSE, pMessage);

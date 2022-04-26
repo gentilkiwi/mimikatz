@@ -20,6 +20,7 @@ NTSTATUS kuhl_m_dpapi_rdg(int argc, wchar_t * argv[])
 				if((IXMLDOMDocument_selectSingleNode(pXMLDom, (BSTR) L"//RDCMan/file", &pNode) == S_OK) && pNode)
 				{
 					kprintf(L"<ROOT>\n");
+					kuhl_m_dpapi_rdg_CredentialsProfile(1, pNode, argc, argv);
 					kuhl_m_dpapi_rdg_Groups(1, pNode, argc, argv);
 				}
 			}
@@ -28,6 +29,35 @@ NTSTATUS kuhl_m_dpapi_rdg(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"Missing /in:filename.rdg\n");
 	return STATUS_SUCCESS;
+}
+
+void kuhl_m_dpapi_rdg_CredentialsProfile(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[])
+{
+	IXMLDOMNode *pCredentialsProfiles, *pCredentialsProfile;
+	IXMLDOMNodeList *pCredentialsProfileList;
+	DOMNodeType type;
+	long lengthCredentialsProfile, i;
+
+	if((IXMLDOMDocument_selectSingleNode(pNode, (BSTR) L"credentialsProfiles", &pCredentialsProfiles) == S_OK) && pCredentialsProfiles)
+	{
+		if((IXMLDOMNode_selectNodes(pCredentialsProfiles, L"credentialsProfile", &pCredentialsProfileList) == S_OK) && pCredentialsProfileList)
+		{
+			if(IXMLDOMNodeList_get_length(pCredentialsProfileList, &lengthCredentialsProfile) == S_OK)
+			{
+				for(i = 0; i < lengthCredentialsProfile; i++)
+				{
+					if((IXMLDOMNodeList_get_item(pCredentialsProfileList, i, &pCredentialsProfile) == S_OK) && pCredentialsProfile)
+					{
+						if((IXMLDOMNode_get_nodeType(pCredentialsProfile, &type) == S_OK) && (type == NODE_ELEMENT))
+						{
+							kuhl_m_dpapi_rdg_Credentials(level + 1, pCredentialsProfile, argc, argv);
+						}
+						IXMLDOMNode_Release(pCredentialsProfile);
+					}
+				}
+			}
+		}
+	}
 }
 
 void kuhl_m_dpapi_rdg_Groups(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[])
@@ -105,40 +135,52 @@ void kuhl_m_dpapi_rdg_Servers(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t
 void kuhl_m_dpapi_rdg_LogonCredentials(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[])
 {
 	IXMLDOMNode *pLogonCredentialsNode;
-	wchar_t *userName, *domain, *password;
+
+	if((IXMLDOMNode_selectSingleNode(pNode, L"logonCredentials", &pLogonCredentialsNode) == S_OK) && pLogonCredentialsNode)
+	{
+		kuhl_m_dpapi_rdg_Credentials(level, pLogonCredentialsNode, argc, argv);
+	}
+}
+
+void kuhl_m_dpapi_rdg_Credentials(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[])
+{
+	wchar_t *userName, *domain, *password, *profile;
 	LPBYTE data;
 	LPVOID pDataOut;
 	DWORD szData, dwDataOutLen;
 
-	if((IXMLDOMNode_selectSingleNode(pNode, L"logonCredentials", &pLogonCredentialsNode) == S_OK) && pLogonCredentialsNode)
+	if(profile = kull_m_xml_getTextValue(pNode, L"profileName"))
 	{
-		if(password = kull_m_xml_getTextValue(pLogonCredentialsNode, L"password"))
+		kprintf(L"%*s" L"| profile: %s\n", level << 1, L"", profile);
+		LocalFree(profile);
+	}
+
+	if(password = kull_m_xml_getTextValue(pNode, L"password"))
+	{
+		userName = kull_m_xml_getTextValue(pNode, L"userName");
+		domain = kull_m_xml_getTextValue(pNode, L"domain");
+		kprintf(L"%*s" L"* %s \\ %s : %s\n", level << 1, L"", domain ? domain : L"<NULL>", userName ? userName : L"<NULL>", password);
+		if(kull_m_string_quick_base64_to_Binary(password, &data, &szData))
 		{
-			userName = kull_m_xml_getTextValue(pLogonCredentialsNode, L"userName");
-			domain = kull_m_xml_getTextValue(pLogonCredentialsNode, L"domain");
-			kprintf(L"%*s" L"* %s \\ %s : %s\n", level << 1, L"", domain ? domain : L"<NULL>", userName ? userName : L"<NULL>", password);
-			if(kull_m_string_quick_base64_to_Binary(password, &data, &szData))
+			if(szData >= (sizeof(DWORD) + sizeof(GUID)))
 			{
-				if(szData >= (sizeof(DWORD) + sizeof(GUID)))
+				if(RtlEqualGuid((PBYTE) data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
 				{
-					if(RtlEqualGuid((PBYTE) data + sizeof(DWORD), &KULL_M_DPAPI_GUID_PROVIDER))
+					if(kuhl_m_dpapi_unprotect_raw_or_blob(data, szData, NULL, argc, argv, NULL, 0, &pDataOut, &dwDataOutLen, NULL))
 					{
-						if(kuhl_m_dpapi_unprotect_raw_or_blob(data, szData, NULL, argc, argv, NULL, 0, &pDataOut, &dwDataOutLen, NULL))
-						{
-							kprintf(L"%*s" L">> cleartext password: %.*s\n", level << 1, L"", dwDataOutLen / sizeof(wchar_t), pDataOut);
-							LocalFree(pDataOut);
-						}
+						kprintf(L"%*s" L">> cleartext password: %.*s\n", level << 1, L"", dwDataOutLen / sizeof(wchar_t), pDataOut);
+						LocalFree(pDataOut);
 					}
-					else PRINT_ERROR(L"Maybe certificate encryption (todo)\n");
 				}
-				else PRINT_ERROR(L"szData: %u\n", szData);
-				LocalFree(data);
+				else PRINT_ERROR(L"Maybe certificate encryption (todo)\n");
 			}
-			if(domain)
-				LocalFree(domain);
-			if(userName)
-				LocalFree(userName);
-			LocalFree(password);
+			else PRINT_ERROR(L"szData: %u\n", szData);
+			LocalFree(data);
 		}
+		if(domain)
+			LocalFree(domain);
+		if(userName)
+			LocalFree(userName);
+		LocalFree(password);
 	}
 }

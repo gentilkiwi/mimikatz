@@ -15,9 +15,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{E049487C-C5BD-471E-99AE-C756E70B6520}</ProjectGuid>
+    <ProjectGuid>{0BD5DE6B-8DA5-4CF1-AE53-A265010F52AA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>mimilib</RootNamespace>
+    <RootNamespace>mimispool</RootNamespace>
     <SccProjectName>Svn</SccProjectName>
     <SccAuxPath>Svn</SccAuxPath>
     <SccLocalPath>Svn</SccLocalPath>
@@ -79,54 +79,27 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AssemblyDebug>false</AssemblyDebug>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;delayimp.lib;ntdll.min.lib;rpcrt4.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;userenv.lib;winsta.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <LinkErrorReporting>NoErrorReport</LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
-      <ModuleDefinitionFile>mimilib.def</ModuleDefinitionFile>
-      <DelayLoadDLLs>bcrypt.dll</DelayLoadDLLs>
+      <ModuleDefinitionFile>mimispool.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ItemGroup>
-    <None Include="mimilib.def" />
+    <ClCompile Include="mimispool.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="mimilib.rc" />
+    <ClInclude Include="mimispool.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="kappfree.c" />
-    <ClCompile Include="kdhcp.c" />
-    <ClCompile Include="kdns.c" />
-    <ClCompile Include="kfilt.c" />
-    <ClCompile Include="knp.c" />
-    <ClCompile Include="kssp.c" />
-    <ClCompile Include="ksub.c" />
-    <ClCompile Include="kcredentialprovider.c" />
-    <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.c" />
-    <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_packages.c" />
-    <ClCompile Include="sekurlsadbg\kuhl_m_sekurlsa_utils.c" />
-    <ClCompile Include="sekurlsadbg\kull_m_rpc.c" />
-    <ClCompile Include="sekurlsadbg\kull_m_rpc_ms-credentialkeys.c" />
-    <ClCompile Include="sekurlsadbg\kwindbg.c" />
-    <ClCompile Include="utils.c" />
+    <ResourceCompile Include="mimispool.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="kdhcp.h" />
-    <ClInclude Include="kdns.h" />
-    <ClInclude Include="kfilt.h" />
-    <ClInclude Include="knp.h" />
-    <ClInclude Include="kssp.h" />
-    <ClInclude Include="ksub.h" />
-    <ClInclude Include="kcredentialprovider.h" />
-    <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_nt6.h" />
-    <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_packages.h" />
-    <ClInclude Include="sekurlsadbg\kuhl_m_sekurlsa_utils.h" />
-    <ClInclude Include="sekurlsadbg\kull_m_rpc.h" />
-    <ClInclude Include="sekurlsadbg\kull_m_rpc_ms-credentialkeys.h" />
-    <ClInclude Include="sekurlsadbg\kwindbg.h" />
-    <ClInclude Include="utils.h" />
+    <None Include="mimispool.def" />
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

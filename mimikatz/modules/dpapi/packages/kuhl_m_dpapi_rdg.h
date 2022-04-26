@@ -10,6 +10,8 @@
 
 NTSTATUS kuhl_m_dpapi_rdg(int argc, wchar_t * argv[]);
 
+void kuhl_m_dpapi_rdg_CredentialsProfile(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[]);
 void kuhl_m_dpapi_rdg_Groups(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[]);
 void kuhl_m_dpapi_rdg_Servers(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[]);
 void kuhl_m_dpapi_rdg_LogonCredentials(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[]);
+void kuhl_m_dpapi_rdg_Credentials(DWORD level, IXMLDOMNode *pNode, int argc, wchar_t * argv[]);

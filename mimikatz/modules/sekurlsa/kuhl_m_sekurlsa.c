@@ -1419,7 +1419,7 @@ VOID kuhl_m_sekurlsa_trymarshal(PCUNICODE_STRING MarshaledCredential)
 						kprintf(L"[UsernameForPacked] ?");
 						break;
 					default:
-						kprintf(L"[?] ?");
+						kprintf(L"[?] ? %u ?", type);
 					}
 					CredFree(Credential);
 				}

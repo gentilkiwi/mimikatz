@@ -20,6 +20,7 @@
 #include "packages/kuhl_m_dpapi_lunahsm.h"
 #include "packages/kuhl_m_dpapi_cloudap.h"
 #include "packages/kuhl_m_dpapi_sccm.h"
+#include "packages/kuhl_m_dpapi_citrix.h"
 
 const KUHL_M kuhl_m_dpapi;
 

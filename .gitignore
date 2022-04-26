@@ -7,3 +7,5 @@ Release
 *.suo
 *.log
 *.aps
+mimikatz/mimikatz.vcxproj.user
+.vs/*

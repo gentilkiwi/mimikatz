@@ -188,6 +188,16 @@ typedef enum {
 #define szOID_ANSI_lmPwdHistory				"1.2.840.113556.1.4.160"
 #define szOID_ANSI_supplementalCredentials	"1.2.840.113556.1.4.125"
 
+// bitlocker
+#define szOID_ANSI_msFVERecoveryPassword	"1.2.840.113556.1.4.1964"
+#define szOID_ANSI_msFVERecoveryGuid		"1.2.840.113556.1.4.1965"
+#define szOID_ANSI_msFVEVolumeGuid			"1.2.840.113556.1.4.1998"
+#define szOID_ANSI_msFVEKeyPackage			"1.2.840.113556.1.4.1999"
+
+// LAPS
+#define szOID_ANSI_msMcsAdmPwd				"1.2.840.113556.1.8000.2554.50051.45980.28112.18903.35903.6685103.1224907.2.1"
+#define szOID_ANSI_msMcsAdmPwdExpirationTime	"1.2.840.113556.1.8000.2554.50051.45980.28112.18903.35903.6685103.1224907.2.2"
+
 #define szOID_ANSI_trustPartner				"1.2.840.113556.1.4.133"
 #define szOID_ANSI_trustAuthIncoming		"1.2.840.113556.1.4.129"
 #define szOID_ANSI_trustAuthOutgoing		"1.2.840.113556.1.4.135"
@@ -257,8 +267,10 @@ void kull_m_rpc_drsr_free_SCHEMA_PREFIX_TABLE_data(SCHEMA_PREFIX_TABLE *prefixTa
 LPSTR kull_m_rpc_drsr_OidFromAttid(SCHEMA_PREFIX_TABLE *prefixTable, ATTRTYP type);
 BOOL kull_m_rpc_drsr_MakeAttid(SCHEMA_PREFIX_TABLE *prefixTable, LPCSTR szOid, ATTRTYP *att, BOOL toAdd);
 
+ATTRVALBLOCK * kull_m_rpc_drsr_findAttrNoOID(ATTRBLOCK *attributes, ATTRTYP type);
 ATTRVALBLOCK * kull_m_rpc_drsr_findAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid);
 PVOID kull_m_rpc_drsr_findMonoAttr(SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, PVOID data, DWORD *size);
+PVOID kull_m_rpc_drsr_findMonoAttrNoOID(ATTRBLOCK *attributes, ATTRTYP type, PVOID data, DWORD *size);
 void kull_m_rpc_drsr_findPrintMonoAttr(LPCWSTR prefix, SCHEMA_PREFIX_TABLE *prefixTable, ATTRBLOCK *attributes, LPCSTR szOid, BOOL newLine);
 
 LPWSTR kull_m_rpc_drsr_MakeSpnWithGUID(LPCGUID ServClass, LPCWSTR ServName, LPCGUID InstName);
