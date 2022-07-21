@@ -188,7 +188,7 @@ NTSTATUS kuhl_m_ngc_logondata(int argc, wchar_t * argv[])
 				{
 					if(kull_m_process_getVeryBasicModuleInformationsForName(aRemote.hMemory, L"NgcCtnrSvc.dll", &iModule))
 					{
-						aRemote.address = (PBYTE) iModule.DllBase.address + /*0xB4F90;//*/0xbef10; // ContainerManager -- InternalUninitializeService@@YAXXZ proc near
+						aRemote.address = (PBYTE) iModule.DllBase.address + /*0xB4F90;//*0xbef10*/0xA7E60; // ContainerManager -- InternalUninitializeService@@YAXXZ proc near
 						if(kull_m_memory_copy(&aLocalBuffer, &aRemote, sizeof(containerManager)))
 						{
 							aRemote.address = containerManager.unk7;
