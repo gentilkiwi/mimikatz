@@ -164,6 +164,7 @@ typedef struct _KULL_M_CRYPTO_DUAL_STRING_STRING {
 #define CERT_keyid_file_element	35
 
 DWORD kull_m_crypto_system_store_to_dword(PCWSTR name);
+PCWSTR kull_m_crypto_system_store_to_name(DWORD dwStore);
 DWORD kull_m_crypto_provider_type_to_dword(PCWSTR name);
 PCWSTR kull_m_crypto_provider_type_to_name(const DWORD dwProvType);
 PCWCHAR kull_m_crypto_provider_to_realname(PCWSTR name);
