@@ -218,7 +218,7 @@ BOOL kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(PLDAP ld, PWCHAR dn, PWCHAR
 		{
 			if(pEntry = ldap_first_entry(ld, pMessage))
 			{
-				tmpLdapDn = ldap_get_dn(ld, pEntry)
+				tmpLdapDn = ldap_get_dn(ld, pEntry);
 				kprintf(L"[ldap] %s : ", tmpLdapDn);
 				ldap_memfree(tmpLdapDn);
 				pId = ldap_get_values_len(ld, pEntry, myAttrs[0]);
