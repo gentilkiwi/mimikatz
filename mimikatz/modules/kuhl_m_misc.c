@@ -30,8 +30,10 @@ const KUHL_M_C kuhl_m_c_misc[] = {
 	{kuhl_m_misc_spooler,	L"spooler",		NULL},
 	{kuhl_m_misc_efs,		L"efs",			NULL},
 	{kuhl_m_misc_printnightmare,	L"printnightmare",		NULL},
-	{kuhl_m_misc_sccm_accounts,	L"sccm",		NULL},
-	{kuhl_m_misc_shadowcopies, L"shadowcopies",	NULL},
+	{kuhl_m_misc_sccm_accounts,	L"sccm",	NULL},
+	{kuhl_m_misc_shadowcopies,	L"shadowcopies",	NULL},
+	{kuhl_m_misc_djoin_proxy,	L"djoin",	NULL},
+	{kuhl_m_misc_citrix_proxy,	L"citrix",	NULL},
 };
 const KUHL_M kuhl_m_misc = {
 	L"misc",	L"Miscellaneous module",	NULL,
@@ -2183,5 +2185,17 @@ NTSTATUS kuhl_m_misc_shadowcopies(int argc, wchar_t * argv[])
 	}
 	else PRINT_ERROR(L"NtOpenDirectoryObject: 0x%08x\n", status);
 
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_misc_djoin_proxy(int argc, wchar_t * argv[])
+{
+	kuhl_m_misc_djoin(argc, argv);
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS kuhl_m_misc_citrix_proxy(int argc, wchar_t * argv[])
+{
+	kuhl_m_misc_citrix_logonpasswords(argc, argv);
 	return STATUS_SUCCESS;
 }

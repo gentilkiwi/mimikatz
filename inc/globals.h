@@ -156,6 +156,7 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_BUILD_10_1909	18363
 #define KULL_M_WIN_BUILD_10_2004	19041
 #define KULL_M_WIN_BUILD_10_20H2	19042
+#define KULL_M_WIN_BUILD_10_21H2	19044
 #define KULL_M_WIN_BUILD_2022		20348
 
 #define KULL_M_WIN_MIN_BUILD_XP		2500
@@ -166,3 +167,18 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_MIN_BUILD_BLUE	9400
 #define KULL_M_WIN_MIN_BUILD_10		9800
 #define KULL_M_WIN_MIN_BUILD_11		22000
+
+/* mimikatz 3 transition */
+#define GET_CLI_ARG(name, var) (kull_m_string_args_byName(argc, argv, name, var, NULL))
+#define GET_CLI_ARG_DEF(name, var, def) (kull_m_string_args_byName(argc, argv, name, var, def))
+#define GET_CLI_ARG_PRESENT(name) (kull_m_string_args_byName(argc, argv, name, NULL, NULL))
+
+#define kprintf_level(subject, ...)	kprintf(L"%*s" subject, level << 1, L"", __VA_ARGS__)
+
+#define kprinthex(lpData, cbData) kull_m_string_wprintf_hex(lpData, (DWORD) cbData, 0); kprintf(L"\n")
+#define kprinthex16(lpData, cbData) kull_m_string_wprintf_hex(lpData, (DWORD) cbData, 1 | (16 << 16)); kprintf(L"\n")
+
+#define kull_m_cli_guid(pGuid, bNewLine) kull_m_string_displayGUID(pGuid); if(bNewLine) kprintf(L"\n")
+#define kull_m_cli_sid(pSid, bNewLine) kull_m_string_displaySID(pSid); if(bNewLine) kprintf(L"\n")
+
+#define kull_m_crypto_Base64StringToBinary kull_m_string_quick_base64_to_Binary
