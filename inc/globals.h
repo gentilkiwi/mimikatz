@@ -173,7 +173,7 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define GET_CLI_ARG_DEF(name, var, def) (kull_m_string_args_byName(argc, argv, name, var, def))
 #define GET_CLI_ARG_PRESENT(name) (kull_m_string_args_byName(argc, argv, name, NULL, NULL))
 
-#define kprintf_level(subject, ...)	kprintf(L"%*s" subject, level << 1, L"", __VA_ARGS__)
+#define kprintf_level(subject, ...) (kprintf(L"%*s" subject, level << 1, L"", ##__VA_ARGS__))
 
 #define kprinthex(lpData, cbData) kull_m_string_wprintf_hex(lpData, (DWORD) cbData, 0); kprintf(L"\n")
 #define kprinthex16(lpData, cbData) kull_m_string_wprintf_hex(lpData, (DWORD) cbData, 1 | (16 << 16)); kprintf(L"\n")
