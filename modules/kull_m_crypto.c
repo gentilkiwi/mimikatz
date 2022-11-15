@@ -5,6 +5,8 @@
 */
 #include "kull_m_crypto.h"
 
+const PCWSTR KULL_M_CRYPTO_UNK = L"?";
+
 BOOL kull_m_crypto_hash(ALG_ID algid, LPCVOID data, DWORD dataLen, LPVOID hash, DWORD hashWanted)
 {
 	BOOL status = FALSE;
@@ -989,6 +991,23 @@ DWORD kull_m_crypto_system_store_to_dword(PCWSTR name)
 			if((_wcsicmp(name, kull_m_crypto_system_stores[i].name) == 0) || (_wcsicmp(name, kull_m_crypto_system_stores[i].name + 18) == 0))
 				return kull_m_crypto_system_stores[i].id;
 	return 0;
+}
+
+PCWSTR kull_m_crypto_system_store_to_name(DWORD dwStore)
+{
+	DWORD i;
+	PCWSTR ret = KULL_M_CRYPTO_UNK;
+
+	for (i = 0; i < ARRAYSIZE(kull_m_crypto_system_stores); i++)
+	{
+		if (kull_m_crypto_system_stores[i].id == dwStore)
+		{
+			ret = kull_m_crypto_system_stores[i].name + 18;
+			break;
+		}
+	}
+
+	return ret;
 }
 
 DWORD kull_m_crypto_provider_type_to_dword(PCWSTR name)

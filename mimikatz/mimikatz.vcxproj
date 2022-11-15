@@ -153,6 +153,7 @@
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-drsr_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-efsr_c.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-nrpc_c.c" />
+    <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-odj.c" />
     <ClCompile Include="..\modules\rpc\kull_m_rpc_ms-pac.c" />
     <ClCompile Include="..\modules\kull_m_service.c" />
     <ClCompile Include="..\modules\kull_m_string.c" />
@@ -213,6 +214,8 @@
     <ClCompile Include="modules\kuhl_m_vault.c" />
     <ClCompile Include="modules\kuhl_m_minesweeper.c" />
     <ClCompile Include="modules\lsadump\kuhl_m_lsadump_dc.c" />
+    <ClCompile Include="modules\misc\kuhl_m_misc_citrix.c" />
+    <ClCompile Include="modules\misc\kuhl_m_misc_djoin.c" />
     <ClCompile Include="modules\ngc\kuhl_m_ngc.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.c" />
     <ClCompile Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.c" />
@@ -273,6 +276,7 @@
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-bkrp.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-efsr.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-nrpc.h" />
+    <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-odj.h" />
     <ClInclude Include="..\modules\rpc\kull_m_rpc_ms-pac.h" />
     <ClInclude Include="..\modules\kull_m_samlib.h" />
     <ClInclude Include="..\modules\kull_m_service.h" />
@@ -331,6 +335,8 @@
     <ClInclude Include="modules\kuhl_m_vault.h" />
     <ClInclude Include="modules\kuhl_m_minesweeper.h" />
     <ClInclude Include="modules\lsadump\kuhl_m_lsadump_dc.h" />
+    <ClInclude Include="modules\misc\kuhl_m_misc_citrix.h" />
+    <ClInclude Include="modules\misc\kuhl_m_misc_djoin.h" />
     <ClInclude Include="modules\ngc\kuhl_m_ngc.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt5.h" />
     <ClInclude Include="modules\sekurlsa\crypto\kuhl_m_sekurlsa_nt6.h" />
