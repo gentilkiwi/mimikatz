@@ -14,7 +14,7 @@ extern const UCHAR ms2Defsr__MIDL_ProcFormatString[271];
 #endif
 extern const UCHAR ms2Defsr__MIDL_TypeFormatString[55];
 
-const RPC_CLIENT_INTERFACE efsrpc___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xc681d488, 0xd850, 0x11d0, {0x8c, 0x52, 0x00, 0xc0, 0x4f, 0xd9, 0x0f, 0x7e}}, {1, 0}}, NDR_TSI_20, 0, 0, NULL, 0, 0, 0x00000001};
+const RPC_CLIENT_INTERFACE efsrpc___RpcClientInterface = { sizeof(RPC_CLIENT_INTERFACE), {{0xdf1941c5, 0xfe89, 0x4e79, {0xbf, 0x10, 0x46, 0x36, 0x57, 0xac, 0xf4, 0x4d}}, {1, 0}}, NDR_TSI_20, 0, 0, NULL, 0, 0, 0x00000001 };
 RPC_IF_HANDLE efsrpc_v1_0_c_ifspec = (RPC_IF_HANDLE)&efsrpc___RpcClientInterface;
 RPC_BINDING_HANDLE efsrpc__MIDL_AutoBindHandle;
 const MIDL_STUB_DESC efsrpc_StubDesc = {(void *) &efsrpc___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &efsrpc__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Defsr__MIDL_TypeFormatString, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
