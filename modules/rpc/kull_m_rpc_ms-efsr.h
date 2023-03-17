@@ -25,3 +25,5 @@ long EfsRpcEncryptFileSrv(handle_t binding_h, wchar_t* FileName);
 long EfsRpcDecryptFileSrv(handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag);
 
 RPC_IF_HANDLE efsrpc_v1_0_c_ifspec;
+
+extern void switch_to_lsarpc_endpoint();
