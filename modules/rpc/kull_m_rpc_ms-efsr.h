@@ -23,14 +23,14 @@ long EfsRpcWriteFileRaw(PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInP
 void EfsRpcCloseRaw(PEXIMPORT_CONTEXT_HANDLE* hContext);
 long EfsRpcEncryptFileSrv(handle_t binding_h, wchar_t* FileName);
 long EfsRpcDecryptFileSrv(handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag);
-long StubEfsRpcOpenFileRaw(PMIDL_STUB_DESC stub, handle_t binding_h, PEXIMPORT_CONTEXT_HANDLE* hContext, wchar_t* FileName, long Flags);
-long StubEfsRpcReadFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsOutPipe);
-long StubEfsRpcWriteFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInPipe);
-void StubEfsRpcCloseRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE* hContext);
-long StubEfsRpcEncryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName);
-long StubEfsRpcDecryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag);
+extern long StubEfsRpcOpenFileRaw(PMIDL_STUB_DESC stub, handle_t binding_h, PEXIMPORT_CONTEXT_HANDLE* hContext, wchar_t* FileName, long Flags);
+extern long StubEfsRpcReadFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsOutPipe);
+extern long StubEfsRpcWriteFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInPipe);
+extern void StubEfsRpcCloseRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE* hContext);
+extern long StubEfsRpcEncryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName);
+extern long StubEfsRpcDecryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag);
 
-PMIDL_STUB_DESC GetLsaRpcStub();
-PMIDL_STUB_DESC GetEfsRpcStub();
+extern PMIDL_STUB_DESC GetLsaRpcStub();
+extern PMIDL_STUB_DESC GetEfsRpcStub();
 
 RPC_IF_HANDLE efsrpc_v1_0_c_ifspec;
