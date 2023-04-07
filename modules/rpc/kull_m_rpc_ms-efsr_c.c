@@ -14,35 +14,72 @@ extern const UCHAR ms2Defsr__MIDL_ProcFormatString[271];
 #endif
 extern const UCHAR ms2Defsr__MIDL_TypeFormatString[55];
 
-const RPC_CLIENT_INTERFACE efsrpc___RpcClientInterface = {sizeof(RPC_CLIENT_INTERFACE), {{0xc681d488, 0xd850, 0x11d0, {0x8c, 0x52, 0x00, 0xc0, 0x4f, 0xd9, 0x0f, 0x7e}}, {1, 0}}, NDR_TSI_20, 0, 0, NULL, 0, 0, 0x00000001};
-RPC_IF_HANDLE efsrpc_v1_0_c_ifspec = (RPC_IF_HANDLE)&efsrpc___RpcClientInterface;
+const RPC_CLIENT_INTERFACE efsrpc___RpcClientInterface_LSARPC = { sizeof(RPC_CLIENT_INTERFACE), {{0xc681d488, 0xd850, 0x11d0, {0x8c, 0x52, 0x00, 0xc0, 0x4f, 0xd9, 0x0f, 0x7e}}, {1, 0}}, NDR_TSI_20, 0, 0, NULL, 0, 0, 0x00000001 };
+RPC_IF_HANDLE lsarpc_v1_0_c_ifspec = (RPC_IF_HANDLE)&efsrpc___RpcClientInterface_LSARPC;
+RPC_BINDING_HANDLE lsarpc__MIDL_AutoBindHandle;
+MIDL_STUB_DESC lsarpc_StubDesc = { (void*)&efsrpc___RpcClientInterface_LSARPC, MIDL_user_allocate, MIDL_user_free, &lsarpc__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Defsr__MIDL_TypeFormatString, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0 };
+
+const RPC_CLIENT_INTERFACE efsrpc___RpcClientInterface_EFSRPC = { sizeof(RPC_CLIENT_INTERFACE), {{0xdf1941c5, 0xfe89, 0x4e79, {0xbf, 0x10, 0x46, 0x36, 0x57, 0xac, 0xf4, 0x4d}}, {1, 0}}, NDR_TSI_20, 0, 0, NULL, 0, 0, 0x00000001 };
+RPC_IF_HANDLE efsrpc_v1_0_c_ifspec = (RPC_IF_HANDLE)&efsrpc___RpcClientInterface_EFSRPC;
 RPC_BINDING_HANDLE efsrpc__MIDL_AutoBindHandle;
-const MIDL_STUB_DESC efsrpc_StubDesc = {(void *) &efsrpc___RpcClientInterface, MIDL_user_allocate, MIDL_user_free, &efsrpc__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Defsr__MIDL_TypeFormatString, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0};
+MIDL_STUB_DESC efsrpc_StubDesc = { (void*)&efsrpc___RpcClientInterface_EFSRPC, MIDL_user_allocate, MIDL_user_free, &efsrpc__MIDL_AutoBindHandle, 0, 0, 0, 0, ms2Defsr__MIDL_TypeFormatString, 1, 0x60000, 0, 0x8000253, 0, 0, 0, 0x1, 0, 0, 0 };
+
+PMIDL_STUB_DESC GetLsaRpcStub() {
+	return &lsarpc_StubDesc;
+}
+
+PMIDL_STUB_DESC GetEfsRpcStub() {
+	return &efsrpc_StubDesc;
+}
 
 #if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 long EfsRpcOpenFileRaw(handle_t binding_h, PEXIMPORT_CONTEXT_HANDLE* hContext, wchar_t* FileName, long Flags)
 {
     return (long) NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 0, binding_h, hContext, FileName, Flags).Simple;
 }
+long StubEfsRpcOpenFileRaw(PMIDL_STUB_DESC stub, handle_t binding_h, PEXIMPORT_CONTEXT_HANDLE* hContext, wchar_t* FileName, long Flags)
+{
+    return (long) NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 0, binding_h, hContext, FileName, Flags).Simple;
+}
 long EfsRpcReadFileRaw(PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsOutPipe)
 {
     return (long) NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 54, hContext, EfsOutPipe).Simple;
+}
+long StubEfsRpcReadFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsOutPipe)
+{
+    return (long) NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 54, hContext, EfsOutPipe).Simple;
 }
 long EfsRpcWriteFileRaw(PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInPipe)
 {
     return (long) NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 104, hContext, EfsInPipe).Simple;
 }
+long StubEfsRpcWriteFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInPipe)
+{
+    return (long) NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 104, hContext, EfsInPipe).Simple;
+}
 void EfsRpcCloseRaw(PEXIMPORT_CONTEXT_HANDLE* hContext)
 {
     NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 154, hContext);
+}
+void StubEfsRpcCloseRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE* hContext)
+{
+    NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 154, hContext);
 }
 long EfsRpcEncryptFileSrv(handle_t binding_h, wchar_t* FileName)
 {
     return (long) NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 192, binding_h, FileName).Simple;
 }
+long StubEfsRpcEncryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName)
+{
+    return (long) NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 192, binding_h, FileName).Simple;
+}
 long EfsRpcDecryptFileSrv(handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag)
 {
 	return (long) NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 234, binding_h, FileName, OpenFlag).Simple;
+}
+long StubEfsRpcDecryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag)
+{
+	return (long) NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 234, binding_h, FileName, OpenFlag).Simple;
 }
 
 const UCHAR ms2Defsr__MIDL_ProcFormatString[] = {
@@ -64,25 +101,49 @@ long EfsRpcOpenFileRaw(handle_t binding_h, PEXIMPORT_CONTEXT_HANDLE* hContext, w
 {
     return (long) NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 0, &binding_h).Simple;
 }
+long StubEfsRpcOpenFileRaw(PMIDL_STUB_DESC stub, handle_t binding_h, PEXIMPORT_CONTEXT_HANDLE* hContext, wchar_t* FileName, long Flags)
+{
+    return (long) NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 0, &binding_h).Simple;
+}
 long EfsRpcReadFileRaw(PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsOutPipe)
 {
 	return (long)NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 52, &hContext).Simple;
+}
+long StubEfsRpcReadFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsOutPipe)
+{
+	return (long)NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 52, &hContext).Simple;
 }
 long EfsRpcWriteFileRaw(PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInPipe)
 {
 	return (long)NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 100, &hContext).Simple;
 }
+long StubEfsRpcWriteFileRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE hContext, EFS_EXIM_PIPE* EfsInPipe)
+{
+	return (long)NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 100, &hContext).Simple;
+}
 void EfsRpcCloseRaw(PEXIMPORT_CONTEXT_HANDLE *hContext)
 {
 	NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 148, &hContext);
+}
+void StubEfsRpcCloseRaw(PMIDL_STUB_DESC stub, PEXIMPORT_CONTEXT_HANDLE *hContext)
+{
+	NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 148, &hContext);
 }
 long EfsRpcEncryptFileSrv(handle_t binding_h, wchar_t* FileName)
 {
 	return (long)NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 184, &binding_h).Simple;
 }
+long StubEfsRpcEncryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName)
+{
+	return (long)NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 184, &binding_h).Simple;
+}
 long EfsRpcDecryptFileSrv(handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag)
 {
 	return (long)NdrClientCall2(&efsrpc_StubDesc, ms2Defsr__MIDL_ProcFormatString + 224, &binding_h).Simple;
+}
+long StubEfsRpcDecryptFileSrv(PMIDL_STUB_DESC stub, handle_t binding_h, wchar_t* FileName, unsigned long OpenFlag)
+{
+	return (long)NdrClientCall2(stub, ms2Defsr__MIDL_ProcFormatString + 224, &binding_h).Simple;
 }
 #pragma warning(pop)
 #pragma optimize("", on)
