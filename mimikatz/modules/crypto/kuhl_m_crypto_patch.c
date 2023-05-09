@@ -114,6 +114,8 @@ BYTE PTRN_W10_1607_SPCryptExportKey[]		= {0xf6, 0x46, 0x24, 0x02, 0x0f, 0x84};
 BYTE PTRN_W10_1703_SPCryptExportKey[]		= {0xf6, 0x46, 0x24, 0x0a, 0x0f, 0x84};
 BYTE PTRN_W10_1809_SPCryptExportKey[]		= {0xf6, 0x45, 0x24, 0x02, 0x0f, 0x84};
 BYTE PTRN_W10_20H2_SPCryptExportKey[]		= {0xf6, 0x45, 0x24, 0x02, 0x75, 0x46};
+BYTE PTRN_W11_22H2_SPCryptExportKey[]		= {0xf6, 0x46, 0x24, 0x02, 0x75, 0x2d};
+
 BYTE PATC_WI60_SPCryptExportKey_EXPORT[]	= {0x90, 0xe9};
 KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SPCryptExportKey),	PTRN_WI60_SPCryptExportKey},	{sizeof(PATC_WI60_SPCryptExportKey_EXPORT), PATC_WI60_SPCryptExportKey_EXPORT}, {4}}, //last parameter is offset from start of search pattern where patch will be applied
@@ -129,6 +131,7 @@ KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_10_20H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620 or .2193
 	{KULL_M_WIN_BUILD_10_21H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620 or .2193
 	{KULL_M_WIN_BUILD_10_22H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620 or .2193
+	{KULL_M_WIN_BUILD_11_22H2,	{sizeof(PTRN_W11_22H2_SPCryptExportKey),PTRN_W11_22H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.22621.1635 and maybe others
 
 };
 #elif defined _M_IX86
