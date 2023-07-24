@@ -5,6 +5,11 @@ platform:
 - x64
 - Win32
 shallow_clone: true
+before_build:
+- cmd: >-
+    cd \
+    
+    dir /a /s ntsecapi.h
 build:
   parallel: true
   verbosity: normal
