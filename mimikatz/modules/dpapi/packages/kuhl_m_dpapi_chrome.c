@@ -252,9 +252,9 @@ BOOL kuhl_m_dpapi_chrome_alg_key_from_file(LPCWSTR szState, BOOL forced, int arg
 	{
 		if(uData = kull_m_string_qad_ansi_c_to_unicode((const char *) data, dwData))
 		{
-			if(begin = wcsstr(uData, L"\"os_crypt\":{\"encrypted_key\":\""))
+			if(begin = wcsstr(uData, L"\"encrypted_key\":\""))
 			{
-				begin += 29;
+				begin += 17;
 				if(end = wcsstr(begin, L"\"}"))
 				{
 					end = L'\0';
@@ -263,7 +263,7 @@ BOOL kuhl_m_dpapi_chrome_alg_key_from_file(LPCWSTR szState, BOOL forced, int arg
 				}
 				else PRINT_ERROR(L"Unable to find the end of the encrypted_key\n");
 			}
-			else if(forced) PRINT_ERROR(L"encrypted_key not fond in state file.\n");
+			else if(forced) PRINT_ERROR(L"encrypted_key not found in state file.\n");
 			LocalFree(uData);
 		}
 		LocalFree(data);
