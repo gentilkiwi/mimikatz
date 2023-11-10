@@ -17,7 +17,7 @@ DWORD WINAPI kull_m_crypto_remote_thread_CryptProtectMemory_Generic(PREMOTE_LIB_
 DWORD kull_m_crypto_remote_thread_CryptProtectMemory_Generic_end(){return 'kipr';}
 #pragma optimize("", on)
 
-BOOL WINAPI kull_m_crypto_remote_CryptProtectMemory_Generic(__in PKULL_M_MEMORY_HANDLE hProcess, __in BOOL bIsProtect, __inout LPVOID pDataIn, __in DWORD cbDataIn, __in DWORD dwFlags)
+BOOL WINAPI kull_m_crypto_remote_CryptProtectMemory_Generic(__in PKULL_M_MEMORY_HANDLE hProcess, __in BOOL bIsProtect, __inout LPVOID pDataIn, __in DWORD_PTR cbDataIn, __in DWORD dwFlags)
 {
 	BOOL status = FALSE;
 	PREMOTE_LIB_INPUT_DATA iData;

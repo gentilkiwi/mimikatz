@@ -18,7 +18,7 @@ const KUHL_M kuhl_m_ngc = {
 	ARRAYSIZE(kuhl_m_c_ngc), kuhl_m_c_ngc, NULL, NULL
 };
 
-typedef BOOL (WINAPI * PCRYPTUNPROTECTMEMORY) (__inout LPVOID pDataIn, __in DWORD cbDataIn, __in DWORD dwFlags);
+typedef BOOL (WINAPI * PCRYPTUNPROTECTMEMORY) (__inout LPVOID pDataIn, __in DWORD_PTR cbDataIn, __in DWORD dwFlags);
 #pragma optimize("", off)
 DWORD WINAPI kiwidecode_thread(PREMOTE_LIB_DATA lpParameter)
 {
