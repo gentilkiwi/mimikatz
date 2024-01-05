@@ -123,7 +123,7 @@ Follow instructions:
 
 Its status is: ![AppVeyor CI status](https://ci.appveyor.com/api/projects/status/github/gentilkiwi/mimikatz?svg=true&retina=true)
 
-## Licence
+## License
 CC BY 4.0 licence - https://creativecommons.org/licenses/by/4.0/
 
 `mimikatz` needs coffee to be developed:
