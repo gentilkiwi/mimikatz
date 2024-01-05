@@ -10,4 +10,4 @@ SOURCES=mimidrv.c \
 	kkll_m_notify.c \
 	kkll_m_filters.c
 
-TARGETLIBS= $(TARGETLIBS) $(IFSKIT_LIB_PATH)\fltmgr.lib $(BASEDIR)\lib\wlh\*\aux_klib.lib $(DDK_LIB_PATH)\ntstrsafe.lib
+TARGETLIBS= $(TARGETLIBS) $(IFSKIT_LIB_PATH)\fltmgr.lib $(DDK_LIB_PATH)\Aux_klib.lib $(DDK_LIB_PATH)\ntstrsafe.lib
