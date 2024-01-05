@@ -146,6 +146,7 @@ BOOL kuhl_m_pac_validationInfo_to_CNAME_TINFO(PFILETIME authtime, LPCWSTR client
 PKERB_VALIDATION_INFO kuhl_m_pac_infoToValidationInfo(PFILETIME authtime, LPCWSTR username, LPCWSTR domainname, LPCWSTR LogonDomainName, PISID sid, ULONG rid, PGROUP_MEMBERSHIP groups, DWORD cbGroups, PKERB_SID_AND_ATTRIBUTES sids, DWORD cbSids)
 {
 	PKERB_VALIDATION_INFO validationInfo = NULL;
+	PCWSTR blankString = L"";
 	if(validationInfo = (PKERB_VALIDATION_INFO) LocalAlloc(LPTR, sizeof(KERB_VALIDATION_INFO)))
 	{
 		validationInfo->LogonTime = *authtime;
@@ -172,6 +173,13 @@ PKERB_VALIDATION_INFO kuhl_m_pac_infoToValidationInfo(PFILETIME authtime, LPCWST
 			validationInfo->UserFlags |= 0x20;
 		//if(validationInfo->ResourceGroupDomainSid && validationInfo->ResourceGroupIds && validationInfo->ResourceGroupCount)
 		//	validationInfo->UserFlags |= 0x200;
+
+		RtlInitUnicodeString(&validationInfo->FullName, blankString);
+		RtlInitUnicodeString(&validationInfo->LogonScript, blankString);
+		RtlInitUnicodeString(&validationInfo->LogonServer, blankString);
+		RtlInitUnicodeString(&validationInfo->ProfilePath, blankString);
+		RtlInitUnicodeString(&validationInfo->HomeDirectory, blankString);
+		RtlInitUnicodeString(&validationInfo->HomeDirectoryDrive, blankString);
 	}
 	return validationInfo;
 }
