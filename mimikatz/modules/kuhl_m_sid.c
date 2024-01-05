@@ -212,6 +212,7 @@ KULL_M_PATCH_GENERIC LoopBackCheckReferences[] = {
 	{KULL_M_WIN_BUILD_7,		{sizeof(PTRN_WN61_LoopBackCheck),	PTRN_WN61_LoopBackCheck},	{sizeof(PTRN_JMP_NEAR), PTRN_JMP_NEAR}, {28}},
 	{KULL_M_WIN_BUILD_BLUE,		{sizeof(PTRN_WN81_LoopBackCheck),	PTRN_WN81_LoopBackCheck},	{sizeof(PTRN_JMP), PTRN_JMP}, {17}},
 	{KULL_M_WIN_BUILD_10_1607,	{sizeof(PTRN_WN10_1607_LoopBackCheck),	PTRN_WN10_1607_LoopBackCheck},	{sizeof(PTRN_JMP), PTRN_JMP}, {14}},
+	{KULL_M_WIN_BUILD_10_1809,	{sizeof(PTRN_WN10_1607_LoopBackCheck),	PTRN_WN10_1607_LoopBackCheck},	{sizeof(PTRN_JMP_NEAR), PTRN_JMP_NEAR}, {14}},
 };
 // ModSetAttsHelperPreProcess:SysModReservedAtt
 BYTE PTRN_WN52_SysModReservedAtt[] = {0x0f, 0xb7, 0x8c, 0x24, 0xc8, 0x00, 0x00, 0x00};
