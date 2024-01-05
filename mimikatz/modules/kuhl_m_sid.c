@@ -256,10 +256,13 @@ void kuhl_m_sid_displayMessage(PLDAP ld, PLDAPMessage pMessage)
 	PBERVAL *pBerVal;
 	DWORD i;
 	SID_NAME_USE nameUse;
+	PWSTR tmpLdapDn;
 
 	for(pEntry = ldap_first_entry(ld, pMessage); pEntry; pEntry = ldap_next_entry(ld, pEntry))
 	{
-		kprintf(L"\n%s\n", ldap_get_dn(ld, pEntry));
+		tmpLdapDn = ldap_get_dn(ld, pEntry);
+		kprintf(L"\n%s\n", tmpLdapDn);
+		ldap_memfree(tmpLdapDn);
 		for(pAttribute = ldap_first_attribute(ld, pEntry, &pBer); pAttribute; pAttribute = ldap_next_attribute(ld, pEntry, pBer))
 		{
 			kprintf(L"  %s: ", pAttribute);

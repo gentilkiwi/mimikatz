@@ -209,6 +209,7 @@ BOOL kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(PLDAP ld, PWCHAR dn, PWCHAR
 	PLDAPMessage pMessage = NULL, pEntry;
 	PBERVAL *pId;
 	PSTR tmpString;
+	PWSTR tmpLdapDn;
 
 	ret = ldap_search_s(ld, dn, LDAP_SCOPE_ONELEVEL, req, myAttrs, FALSE, &pMessage);
 	if(ret == LDAP_SUCCESS)
@@ -217,7 +218,9 @@ BOOL kuhl_m_lsadump_dcsync_SearchAndParseLDAPToIntId(PLDAP ld, PWCHAR dn, PWCHAR
 		{
 			if(pEntry = ldap_first_entry(ld, pMessage))
 			{
-				kprintf(L"[ldap] %s : ", ldap_get_dn(ld, pEntry));
+				tmpLdapDn = ldap_get_dn(ld, pEntry);
+				kprintf(L"[ldap] %s : ", tmpLdapDn);
+				ldap_memfree(tmpLdapDn);
 				pId = ldap_get_values_len(ld, pEntry, myAttrs[0]);
 				if(pId && pId[0])
 				{
@@ -1245,6 +1248,7 @@ BOOL kuhl_m_lsadump_dcshadow_build_convert_account_to_dn(PLDAP ld, PWSTR szDomai
 					status = TRUE;
 			}
 			ldap_msgfree(pMessage);
+			ldap_memfreeW(szDN);
 		}
 		LocalFree(szFilter);
 	}
@@ -1578,6 +1582,7 @@ NTSTATUS kuhl_m_lsadump_dcshadow_lingering_propagate(PDCSHADOW_DOMAIN_INFO info,
 		{
 			szNTDSADn = ldap_get_dn(info->ld, pEntry);
 			szServerDN = wcsstr(szNTDSADn, L",CN=") + 1;
+			ldap_memfree(szNTDSADn);
 			dwErr = ldap_search_s(info->ld, szServerDN, LDAP_SCOPE_BASE, NULL, szAttributes, FALSE, &pServerMessage);
 			if(dwErr == LDAP_SUCCESS)
 			{
@@ -3216,7 +3221,7 @@ ULONG SRV_IDL_DRSVerifyNames(DRS_HANDLE hDrs, DWORD dwInVersion, DRS_MSG_VERIFYR
 	pmsgOut->V1.cNames = pmsgIn->V1.cNames;
 	pmsgOut->V1.rpEntInf = (ENTINF*)MIDL_user_allocate(sizeof(ENTINF) * pmsgIn->V1.cNames);
 	ZeroMemory(pmsgOut->V1.rpEntInf, sizeof(ENTINF) * pmsgIn->V1.cNames);
-    return ERROR_SUCCESS;
+	return ERROR_SUCCESS;
 }
 
 // this function is here to acknowledge that we add a DC in our own replication list
