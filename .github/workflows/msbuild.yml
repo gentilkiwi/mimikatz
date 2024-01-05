@@ -1,0 +1,27 @@
+name: MSBuild
+
+on: [push]
+
+env:
+  SOLUTION_FILE_PATH: .
+  BUILD_CONFIGURATION: Release
+jobs:
+  build_vs2019:
+    strategy:
+      matrix:
+        platform: [Win32, x64]
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{matrix.platform}} ${{env.SOLUTION_FILE_PATH}}
+    - name: Zip compiled files
+      run: 7z  a -t"zip" -p"mimikatz" ${{matrix.platform}} ${{matrix.platform}}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{matrix.platform}}
+        path: ${{matrix.platform}}.zip
