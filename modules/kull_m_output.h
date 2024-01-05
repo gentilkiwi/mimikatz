@@ -7,7 +7,9 @@
 #include "globals.h"
 #include <io.h>
 #include <fcntl.h>
+#include <wincrypt.h>
 
+BOOL isBase64Output;
 FILE * logfile;
 #if !defined(MIMIKATZ_W2000_SUPPORT)
 wchar_t * outputBuffer;
