@@ -53,12 +53,20 @@ int wmain(int argc, wchar_t * argv[])
 	while ((status != STATUS_PROCESS_IS_TERMINATING) && (status != STATUS_THREAD_IS_TERMINATING))
 	{
 		kprintf(L"\n" MIMIKATZ L" # "); fflush(stdin);
-		if(fgetws(input, ARRAYSIZE(input), stdin) && (len = wcslen(input)) && (input[0] != L'\n'))
+		if (fgetws(input, ARRAYSIZE(input), stdin))
 		{
-			if(input[len - 1] == L'\n')
-				input[len - 1] = L'\0';
-			kprintf_inputline(L"%s\n", input);
-			status = mimikatz_dispatchCommand(input);
+			if ((len = wcslen(input)) && (input[0] != L'\n'))
+			{
+				if (input[len - 1] == L'\n')
+					input[len - 1] = L'\0';
+				kprintf_inputline(L"%s\n", input);
+				status = mimikatz_dispatchCommand(input);
+			}
+		}
+		else
+		{
+			// Unable to read from stdin, so break
+			break;
 		}
 	}
 #endif
