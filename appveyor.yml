@@ -5,6 +5,8 @@ platform:
 - x64
 - Win32
 shallow_clone: true
+before_build:
+- ps: (Get-Content "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\ntsecapi.h") | %{$_ -replace "^RtlDecryptMemory\($", "__stdcall RtlDecryptMemory("} | Set-Content "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\Include\ntsecapi.h"
 build:
   parallel: true
   verbosity: normal
