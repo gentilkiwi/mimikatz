@@ -158,6 +158,7 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_BUILD_10_20H2	19042
 #define KULL_M_WIN_BUILD_10_21H2	19044
 #define KULL_M_WIN_BUILD_2022		20348
+#define KULL_M_WIN_BUILD_11_22H2	22621
 
 #define KULL_M_WIN_MIN_BUILD_XP		2500
 #define KULL_M_WIN_MIN_BUILD_2K3	3000
@@ -169,6 +170,8 @@ DWORD MIMIKATZ_NT_MAJOR_VERSION, MIMIKATZ_NT_MINOR_VERSION, MIMIKATZ_NT_BUILD_NU
 #define KULL_M_WIN_MIN_BUILD_11		22000
 
 /* mimikatz 3 transition */
+#define PRINT_ERROR_NUMBER(func, error)	PRINT_ERROR(func L": 0x%08x\n", error)
+
 #define GET_CLI_ARG(name, var) (kull_m_string_args_byName(argc, argv, name, var, NULL))
 #define GET_CLI_ARG_DEF(name, var, def) (kull_m_string_args_byName(argc, argv, name, var, def))
 #define GET_CLI_ARG_PRESENT(name) (kull_m_string_args_byName(argc, argv, name, NULL, NULL))

