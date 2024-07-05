@@ -2,7 +2,7 @@
 
 **`mimikatz`** is a tool I've made to learn `C` and make somes experiments with Windows security.
 
-It's now well known to extract plaintexts passwords, hash, PIN code and kerberos tickets from memory. **`mimikatz`** can also perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
+It's now well known to extract plaintexts passwords, hash, PIN codes and kerberos tickets from memory. **`mimikatz`** can also perform pass-the-hash, pass-the-ticket or build _Golden tickets_.
 
 ```
   .#####.   mimikatz 2.0 alpha (x86) release "Kiwi en C" (Apr  6 2014 22:02:03)
