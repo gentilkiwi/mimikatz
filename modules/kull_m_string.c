@@ -567,7 +567,7 @@ BOOL kull_m_string_sprintf(PWSTR *outBuffer, PCWSTR format, ...)
 			varBuf = vswprintf_s(*outBuffer, varBuf, format, args);
 			if(varBuf > 0)
 				status = TRUE;
-			else *outBuffer = (PWSTR) LocalFree(outBuffer);
+			else *outBuffer = (PWSTR) LocalFree(*outBuffer);
 		}
 	}
 	return status;
@@ -588,7 +588,7 @@ BOOL kull_m_string_sprintfA(PSTR *outBuffer, PCSTR format, ...)
 			varBuf = vsprintf_s(*outBuffer, varBuf, format, args);
 			if(varBuf > 0)
 				status = TRUE;
-			else *outBuffer = (PSTR) LocalFree(outBuffer);
+			else *outBuffer = (PSTR) LocalFree(*outBuffer);
 		}
 	}
 	return status;
