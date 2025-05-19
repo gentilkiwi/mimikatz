@@ -77,6 +77,8 @@ typedef struct _KERB_INFOS {
 
 	LONG	offsetPasswordErase;
 	SIZE_T	passwordEraseSize;
+	LONG offsetSize;
+	LONG offsetChecksump;
 } KERB_INFOS, *PKERB_INFOS;
 
 typedef struct _KERB_SMARTCARD_CSP_INFO_5 {
@@ -561,11 +563,24 @@ typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_10_1607 {
 	KIWI_KERBEROS_BUFFER	Ticket;
 } KIWI_KERBEROS_INTERNAL_TICKET_10_1607, *PKIWI_KERBEROS_INTERNAL_TICKET_10_1607;
 
+
 typedef struct _KERB_HASHPASSWORD_GENERIC {
 	DWORD Type;
 	SIZE_T Size;
 	PBYTE Checksump;
 } KERB_HASHPASSWORD_GENERIC, *PKERB_HASHPASSWORD_GENERIC;
+
+
+#pragma pack(push, 1)
+typedef struct _KERB_HASHPASSWORD_GENERIC_2004
+{
+	DWORD Type;
+	SIZE_T Size;
+	PBYTE Checksump;
+} KERB_HASHPASSWORD_GENERIC_2004 , *PKERB_HASHPASSWORD_GENERIC_2004 ;
+#pragma pack(pop)
+
+
 
 typedef struct _KERB_HASHPASSWORD_5 {
 	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962
@@ -584,6 +599,15 @@ typedef struct _KERB_HASHPASSWORD_6_1607 {
 	PVOID unk0;
 	KERB_HASHPASSWORD_GENERIC generic;
 } KERB_HASHPASSWORD_6_1607, *PKERB_HASHPASSWORD_6_1607;
+
+
+typedef struct _KERB_HASHPASSWORD_6_2004 {
+	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962
+	PVOID stringToKey; // AES Iterations (dword ?)
+	PVOID unk0;
+	DWORD unk1;
+	KERB_HASHPASSWORD_GENERIC_2004 generic;
+} KERB_HASHPASSWORD_6_2004, *PKERB_HASHPASSWORD_6_2004;
 
 typedef struct _KIWI_KERBEROS_KEYS_LIST_5 {
 	DWORD unk0;		// dword_1233EC8 dd 4
