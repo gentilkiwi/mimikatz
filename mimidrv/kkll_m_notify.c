@@ -108,7 +108,7 @@ KKLL_M_MEMORY_GENERIC ObjectReferences[] = {
 	{KiwiOsIndex_10_1803,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},				L"ObCreateObjectType",					L"IoCreateDriver",					{ 25, 0x010, 0x070, 0x0c8}},
 	{KiwiOsIndex_10_1809,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},				L"ObCreateObjectType",					L"IoCreateDriver",					{ 25, 0x010, 0x070, 0x0c8}},
 	{KiwiOsIndex_10_1903,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},				L"ObCreateObjectType",					L"IoCreateDriver",					{ 25, 0x010, 0x070, 0x0c8}},
-	{KiwiOsIndex_10_1909,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},				L"ObCreateObjectType",					L"IoCreateDriver",					{ 25, 0x010, 0x070, 0x0c8}},
+	{KiwiOsIndex_10_1909,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},				L"ObCreateObjectType",					L"PoCreateThermalRequest",					{ 25, 0x010, 0x070, 0x0c8}},
 	{KiwiOsIndex_10_2004,	{sizeof(PTRN_W10_Object), PTRN_W10_Object},				L"ObCreateObjectType",					L"IoCreateDriver",					{ 25, 0x010, 0x070, 0x0c8}},
 };
 UCHAR PTRN_W23_Reg[] =	{0x49, 0x8d, 0x0c, 0xdc, 0x45, 0x33, 0xc0, 0x48, 0x8b, 0xd7, 0xe8};
