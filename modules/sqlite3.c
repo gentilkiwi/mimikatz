@@ -130709,7 +130709,7 @@ static int selectExpander(Walker *pWalker, Select *p){
             pNew = sqlite3ExprListAppend(pParse, pNew, pExpr);
             sqlite3TokenInit(&sColname, zColname);
             sqlite3ExprListSetName(pParse, pNew, &sColname, 0);
-            if( pNew && (p->selFlags & SF_NestedFrom)!=0 ){
+            if( pNew && (p->selFlags & SF_NestedFrom)!=0 && !IN_RENAME_OBJECT ){
               struct ExprList_item *pX = &pNew->a[pNew->nExpr-1];
               if( pSub ){
                 pX->zSpan = sqlite3DbStrDup(db, pSub->pEList->a[j].zSpan);
