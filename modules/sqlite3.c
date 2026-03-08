@@ -17946,6 +17946,7 @@ struct Select {
 #define SF_IncludeHidden  0x20000  /* Include hidden columns in output */
 #define SF_ComplexResult  0x40000  /* Result contains subquery or function */
 #define SF_WhereBegin     0x80000  /* Really a WhereBegin() call.  Debug Only */
+#define SF_View          0x0200000 /* SELECT statement is a view */
 
 /*
 ** The results of a SELECT can be distributed in several ways, as defined
@@ -103915,6 +103916,7 @@ static int renameUnmapExprCb(Walker *pWalker, Expr *pExpr){
 static int renameUnmapSelectCb(Walker *pWalker, Select *p){
   Parse *pParse = pWalker->pParse;
   int i;
+  if( p->selFlags & SF_View ) return WRC_Prune;
   if( ALWAYS(p->pEList) ){
     ExprList *pList = p->pEList;
     for(i=0; i<pList->nExpr; i++){
@@ -104019,6 +104021,7 @@ static void renameWalkWith(Walker *pWalker, Select *pSelect){
 ** descend into sub-select statements.
 */
 static int renameColumnSelectCb(Walker *pWalker, Select *p){
+  if( p->selFlags & SF_View ) return WRC_Prune;
   renameWalkWith(pWalker, p);
   return WRC_Continue;
 }
@@ -104484,8 +104487,9 @@ static void renameColumnFunc(
   if( sParse.pNewTable ){
     Select *pSelect = sParse.pNewTable->pSelect;
     if( pSelect ){
+      pSelect->selFlags &= ~SF_View;
       sParse.rc = SQLITE_OK;
-      sqlite3SelectPrep(&sParse, sParse.pNewTable->pSelect, 0);
+      sqlite3SelectPrep(&sParse, pSelect, 0);
       rc = (db->mallocFailed ? SQLITE_NOMEM : sParse.rc);
       if( rc==SQLITE_OK ){
         sqlite3WalkSelect(&sWalker, pSelect);
@@ -104597,6 +104601,7 @@ static int renameTableSelectCb(Walker *pWalker, Select *pSelect){
   int i;
   RenameCtx *p = pWalker->u.pRename;
   SrcList *pSrc = pSelect->pSrc;
+  if( pSelect->selFlags & SF_View ) return WRC_Prune;
   if( pSrc==0 ){
     assert( pWalker->pParse->db->mallocFailed );
     return WRC_Abort;
@@ -104676,10 +104681,13 @@ static void renameTableFunc(
 
         if( pTab->pSelect ){
           if( isLegacy==0 ){
+            Select *pSelect = pTab->pSelect;
             NameContext sNC;
             memset(&sNC, 0, sizeof(sNC));
             sNC.pParse = &sParse;
 
+            assert( pSelect->selFlags & SF_View );
+            pSelect->selFlags &= ~SF_View;
             sqlite3SelectPrep(&sParse, pTab->pSelect, &sNC);
             if( sParse.nErr ) rc = sParse.rc;
             sqlite3WalkSelect(&sWalker, pTab->pSelect);
@@ -109989,6 +109997,7 @@ SQLITE_PRIVATE void sqlite3CreateView(
   ** allocated rather than point to the input string - which means that
   ** they will persist after the current sqlite3_exec() call returns.
   */
+  pSelect->selFlags |= SF_View;
   if( IN_RENAME_OBJECT ){
     p->pSelect = pSelect;
     pSelect = 0;
