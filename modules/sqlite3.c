@@ -128398,6 +128398,7 @@ static int multiSelect(
         /* Generate code to take the intersection of the two temporary
         ** tables.
         */
+        if( rc ) break;
         assert( p->pEList );
         iBreak = sqlite3VdbeMakeLabel(pParse);
         iCont = sqlite3VdbeMakeLabel(pParse);
