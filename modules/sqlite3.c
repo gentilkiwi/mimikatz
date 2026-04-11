@@ -128398,6 +128398,7 @@ static int multiSelect(
         /* Generate code to take the intersection of the two temporary
         ** tables.
         */
+        if( rc ) break;
         assert( p->pEList );
         iBreak = sqlite3VdbeMakeLabel(pParse);
         iCont = sqlite3VdbeMakeLabel(pParse);
@@ -147583,9 +147584,11 @@ static ExprList *exprListAppendList(
     int nInit = pList ? pList->nExpr : 0;
     for(i=0; i<pAppend->nExpr; i++){
       Expr *pDup = sqlite3ExprDup(pParse->db, pAppend->a[i].pExpr, 0);
+      assert( pDup==0 || !ExprHasProperty(pDup, EP_MemToken) );
       if( bIntToNull && pDup && pDup->op==TK_INTEGER ){
         pDup->op = TK_NULL;
         pDup->flags &= ~(EP_IntValue|EP_IsTrue|EP_IsFalse);
+        pDup->u.zToken = 0;
       }
       pList = sqlite3ExprListAppend(pParse, pList, pDup);
       if( pList ) pList->a[nInit+i].sortFlags = pAppend->a[i].sortFlags;
