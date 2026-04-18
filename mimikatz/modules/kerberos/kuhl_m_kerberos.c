@@ -259,9 +259,9 @@ NTSTATUS kuhl_m_kerberos_list(int argc, wchar_t * argv[])
 			}
 			LsaFreeReturnBuffer(pKerbCacheResponse);
 		}
-		else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbQueryTicketCacheEx2Message / Package : %08x\n", packageStatus);
+		else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbQueryTicketCacheExMessage / Package : %08x\n", packageStatus);
 	}
-	else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbQueryTicketCacheEx2Message : %08x\n", status);
+	else PRINT_ERROR(L"LsaCallAuthenticationPackage KerbQueryTicketCacheExMessage : %08x\n", status);
 
 	return STATUS_SUCCESS;
 }
