@@ -37,8 +37,8 @@ typedef struct _KULL_M_DPAPI_BLOB {
 	DWORD	dwSaltLen;
 	PBYTE	pbSalt;
 	
-	DWORD	dwHmacKeyLen;
-	PBYTE	pbHmackKey;
+	DWORD	dwAuxInfoLen;
+	PBYTE	pbAuxInfoData;
 	
 	ALG_ID	algHash;
 	DWORD	dwAlgHashLen;

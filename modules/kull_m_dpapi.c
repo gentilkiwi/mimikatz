@@ -17,10 +17,10 @@ PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(LPCVOID data/*, DWORD size*/)
 		RtlCopyMemory(&blob->algCrypt, (PBYTE) blob->szDescription + blob->dwDescriptionLen, /*blob->dwDescriptionLen + */FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbSalt) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, algCrypt));
 
 		blob->pbSalt = (PBYTE) blob->szDescription + blob->dwDescriptionLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbSalt) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, algCrypt);
-		blob->dwHmacKeyLen = *(PDWORD) ((PBYTE) blob->pbSalt + blob->dwSaltLen);
-		blob->pbHmackKey = (PBYTE) blob->pbSalt + blob->dwSaltLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbHmackKey) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwHmacKeyLen);
-		RtlCopyMemory(&blob->algHash, (PBYTE) blob->pbHmackKey + blob->dwHmacKeyLen, /*blob->dwHmacKeyLen + */FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbHmack2Key) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, algHash));
-		blob->pbHmack2Key = (PBYTE) blob->pbHmackKey + blob->dwHmacKeyLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbHmack2Key) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, algHash);
+		blob->dwAuxInfoLen = *(PDWORD) ((PBYTE) blob->pbSalt + blob->dwSaltLen);
+		blob->pbAuxInfoData = (PBYTE) blob->pbSalt + blob->dwSaltLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbAuxInfoData) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwAuxInfoLen);
+		RtlCopyMemory(&blob->algHash, (PBYTE) blob->pbAuxInfoData + blob->dwAuxInfoLen, /*blob->dwAuxInfoLen + */FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbHmack2Key) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, algHash));
+		blob->pbHmack2Key = (PBYTE) blob->pbAuxInfoData + blob->dwAuxInfoLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbHmack2Key) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, algHash);
 		blob->dwDataLen = *(PDWORD) ((PBYTE) blob->pbHmack2Key + blob->dwHmac2KeyLen);
 		blob->pbData = (PBYTE) blob->pbHmack2Key + blob->dwHmac2KeyLen + FIELD_OFFSET(KULL_M_DPAPI_BLOB, pbData) - FIELD_OFFSET(KULL_M_DPAPI_BLOB, dwDataLen);
 		blob->dwSignLen = *(PDWORD) ((PBYTE) blob->pbData + blob->dwDataLen);
@@ -28,7 +28,7 @@ PKULL_M_DPAPI_BLOB kull_m_dpapi_blob_create(LPCVOID data/*, DWORD size*/)
 		
 		kull_m_string_ptr_replace(&blob->szDescription, blob->dwDescriptionLen);
 		kull_m_string_ptr_replace(&blob->pbSalt, blob->dwSaltLen);
-		kull_m_string_ptr_replace(&blob->pbHmackKey, blob->dwHmacKeyLen);
+		kull_m_string_ptr_replace(&blob->pbAuxInfoData, blob->dwAuxInfoLen);
 		kull_m_string_ptr_replace(&blob->pbHmack2Key, blob->dwHmac2KeyLen);
 		kull_m_string_ptr_replace(&blob->pbData, blob->dwDataLen);
 		kull_m_string_ptr_replace(&blob->pbSign, blob->dwSignLen);
@@ -44,8 +44,8 @@ void kull_m_dpapi_blob_delete(PKULL_M_DPAPI_BLOB blob)
 			LocalFree(blob->szDescription);
 		if(blob->pbSalt)
 			LocalFree(blob->pbSalt);
-		if(blob->pbHmackKey)
-			LocalFree(blob->pbHmackKey);
+		if(blob->pbAuxInfoData)
+			LocalFree(blob->pbAuxInfoData);
 		if(blob->pbHmack2Key)
 			LocalFree(blob->pbHmack2Key);
 		if(blob->pbData) 
@@ -74,8 +74,8 @@ void kull_m_dpapi_blob_descr(DWORD level, PKULL_M_DPAPI_BLOB blob)
 		kprintf(L"%*s" L"  dwAlgCryptLen      : %08x - %u\n", level << 1, L"", blob->dwAlgCryptLen, blob->dwAlgCryptLen);
 		kprintf(L"%*s" L"  dwSaltLen          : %08x - %u\n", level << 1, L"", blob->dwSaltLen, blob->dwSaltLen);
 		kprintf(L"%*s" L"  pbSalt             : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbSalt, blob->dwSaltLen, 0); kprintf(L"\n");
-		kprintf(L"%*s" L"  dwHmacKeyLen       : %08x - %u\n", level << 1, L"", blob->dwHmacKeyLen, blob->dwHmacKeyLen);
-		kprintf(L"%*s" L"  pbHmackKey         : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbHmackKey, blob->dwHmacKeyLen, 0); kprintf(L"\n");
+		kprintf(L"%*s" L"  dwAuxInfoLen       : %08x - %u\n", level << 1, L"", blob->dwAuxInfoLen, blob->dwAuxInfoLen);
+		kprintf(L"%*s" L"  pbAuxInfoData         : ", level << 1, L""); kull_m_string_wprintf_hex(blob->pbAuxInfoData, blob->dwAuxInfoLen, 0); kprintf(L"\n");
 		kprintf(L"%*s" L"  algHash            : %08x - %u (%s)\n", level << 1, L"", blob->algHash, blob->algHash, kull_m_crypto_algid_to_name(blob->algHash));
 		kprintf(L"%*s" L"  dwAlgHashLen       : %08x - %u\n", level << 1, L"", blob->dwAlgHashLen, blob->dwAlgHashLen);
 		kprintf(L"%*s" L"  dwHmac2KeyLen      : %08x - %u\n", level << 1, L"", blob->dwHmac2KeyLen, blob->dwHmac2KeyLen);
