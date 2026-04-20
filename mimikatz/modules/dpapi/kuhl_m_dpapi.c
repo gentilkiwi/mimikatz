@@ -238,8 +238,7 @@ NTSTATUS kuhl_m_dpapi_masterkey(int argc, wchar_t * argv[])
 							if((cbSystem - cbSystemOffset) == 2 * SHA_DIGEST_LENGTH)
 							{
 								kprintf(L"\n[masterkey] with DPAPI_SYSTEM (machine, then user): "); kull_m_string_wprintf_hex(pSystem + cbSystemOffset, 2 * SHA_DIGEST_LENGTH, 0); kprintf(L"\n");
-								if(kull_m_dpapi_unprotect_masterkey_with_userHash(masterkeys->MasterKey, pSystem + cbSystemOffset, SHA_DIGEST_LENGTH, convertedSid, isProtected, &output, &cbOutput))
-
+								if(kull_m_dpapi_unprotect_masterkey_with_shaDerivedkey(masterkeys->MasterKey, pSystem + cbSystemOffset, SHA_DIGEST_LENGTH, &output, &cbOutput))
 								{
 									kprintf(L"** MACHINE **\n");
 									kuhl_m_dpapi_display_MasterkeyInfosAndFree(statusGuid ? &guid : NULL, output, cbOutput, NULL);
