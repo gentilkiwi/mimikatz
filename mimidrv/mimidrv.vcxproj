@@ -19,7 +19,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup>
     <OutDir>$(SolutionDir)$(Platform)\</OutDir>
     <IntDir>$(Platform)\</IntDir>
