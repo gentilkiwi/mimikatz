@@ -286,36 +286,39 @@ void kull_m_process_adjustTimeDateStampAndFileVersion(PKULL_M_PROCESS_VERY_BASIC
 							}
 						}
 
-						// If it's more than 3 layers deep, something is wrong
-						for (int i = 0; i < 3; i++) {
-							if (CurrentEntry->DataIsDirectory) {
-								// I am always just taking the first entry in the directory
-								CurrentEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)((PIMAGE_RESOURCE_DIRECTORY)((LPBYTE)rsrcDirectory + (CurrentEntry->OffsetToDirectory & 0x7FFFFFFF)) + 1);
-							}
-							else {
+						if (CurrentEntry->Id == 0x10) {
 
-								versionDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)((LPBYTE)rsrcDirectory + CurrentEntry->OffsetToData);
-								break;
-							}
-						}
+							// If it's more than 3 layers deep, something is wrong
+							for (int i = 0; i < 3; i++) {
+								if (CurrentEntry->DataIsDirectory) {
+									// I am always just taking the first entry in the directory
+									CurrentEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)((PIMAGE_RESOURCE_DIRECTORY)((LPBYTE)rsrcDirectory + (CurrentEntry->OffsetToDirectory & 0x7FFFFFFF)) + 1);
+								}
+								else {
 
-						if (versionDataEntry) {
-
-							/*
-							* OffsetToData in this case is not the offset from the start of the resource - directory, but an RVA from the
-							* base address. Therefore, we need to do a bit of calculation to get the offset from the start of the resource section
-							*/
-							PVS_VERSIONINFO versionInfo = (PVS_VERSIONINFO)((LPBYTE)rsrcDirectory + ((LPBYTE)information->DllBase.address + versionDataEntry->OffsetToData - (LPBYTE)aProcess.address));
-
-							if (versionInfo->Value.dwSignature == 0xFEEF04BD) {
-
-								information->FileVersion.major = HIWORD(versionInfo->Value.dwFileVersionMS);
-								information->FileVersion.minor = LOWORD(versionInfo->Value.dwFileVersionMS);
-								information->FileVersion.build = HIWORD(versionInfo->Value.dwFileVersionLS);
-								information->FileVersion.revision = LOWORD(versionInfo->Value.dwFileVersionLS);
-
+									versionDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)((LPBYTE)rsrcDirectory + CurrentEntry->OffsetToData);
+									break;
+								}
 							}
 
+							if (versionDataEntry) {
+
+								/*
+								* OffsetToData in this case is not the offset from the start of the resource - directory, but an RVA from the
+								* base address. Therefore, we need to do a bit of calculation to get the offset from the start of the resource section
+								*/
+								PVS_VERSIONINFO versionInfo = (PVS_VERSIONINFO)((LPBYTE)rsrcDirectory + ((LPBYTE)information->DllBase.address + versionDataEntry->OffsetToData - (LPBYTE)aProcess.address));
+
+								if (versionInfo->Value.dwSignature == 0xFEEF04BD) {
+
+									information->FileVersion.major = HIWORD(versionInfo->Value.dwFileVersionMS);
+									information->FileVersion.minor = LOWORD(versionInfo->Value.dwFileVersionMS);
+									information->FileVersion.build = HIWORD(versionInfo->Value.dwFileVersionLS);
+									information->FileVersion.revision = LOWORD(versionInfo->Value.dwFileVersionLS);
+
+								}
+
+							}
 						}
 
 					}
