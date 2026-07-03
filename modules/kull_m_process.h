@@ -465,12 +465,33 @@ extern PPEB WINAPI RtlGetCurrentPeb();
 extern NTSTATUS WINAPI RtlAdjustPrivilege(IN ULONG Privilege, IN BOOL Enable, IN BOOL CurrentThread, OUT PULONG pPreviousState);
 extern NTSTATUS	WINAPI RtlCreateUserThread(IN HANDLE Process, IN OPTIONAL PSECURITY_DESCRIPTOR ThreadSecurityDescriptor, IN CHAR Flags, IN OPTIONAL ULONG ZeroBits, IN OPTIONAL SIZE_T MaximumStackSize, IN OPTIONAL SIZE_T CommittedStackSize, IN OPTIONAL PTHREAD_START_ROUTINE StartAddress, IN OPTIONAL PVOID Parameter, OUT OPTIONAL PHANDLE Thread, OUT OPTIONAL PCLIENT_ID ClientId);
 
+// Taken from https://learn.microsoft.com/en-us/windows/win32/menurc/vs-versioninfo
+// Not an *actual* C-struct because it has variable-lenght members, but for our purpose this is enough
+typedef struct _VS_VERSIONINFO {
+	WORD             wLength;
+	WORD             wValueLength;
+	WORD             wType;
+	WCHAR            szKey[16];
+	WORD             Padding1;
+	VS_FIXEDFILEINFO Value;
+	WORD             Padding2;
+	WORD             Children;
+} VS_VERSIONINFO, * PVS_VERSIONINFO;
+
+typedef struct _KULL_M_PROCESS_FILE_VERSION_INFO {
+	WORD major;
+	WORD minor;
+	WORD build;
+	WORD revision;
+} KULL_M_PROCESS_FILE_VERSION_INFO, * PKULL_M_PROCESS_FILE_VERSION_INFO;
+
 typedef struct _KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION {
 	KULL_M_MEMORY_ADDRESS DllBase;
 	ULONG SizeOfImage;
 	ULONG TimeDateStamp;
 	PCUNICODE_STRING NameDontUseOutsideCallback;
-} KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION, *PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION;
+	KULL_M_PROCESS_FILE_VERSION_INFO FileVersion;
+} KULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION, * PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION;
 
 typedef struct _KULL_M_PROCESS_PID_FOR_NAME {
 	PCUNICODE_STRING	name;
@@ -492,7 +513,7 @@ BOOL kull_m_process_getProcessIdForName(LPCWSTR name, PDWORD processId);
 
 typedef BOOL (CALLBACK * PKULL_M_MODULE_ENUM_CALLBACK) (PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE memory, PKULL_M_MODULE_ENUM_CALLBACK callBack, PVOID pvArg);
-void kull_m_process_adjustTimeDateStamp(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information);
+void kull_m_process_adjustTimeDateStampAndFileVersion(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information);
 BOOL CALLBACK kull_m_process_callback_moduleForName(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 BOOL CALLBACK kull_m_process_callback_moduleFirst(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg);
 BOOL kull_m_process_getVeryBasicModuleInformationsForName(PKULL_M_MEMORY_HANDLE memory, PCWSTR name, PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION informations);

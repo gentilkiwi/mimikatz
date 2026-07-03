@@ -94,7 +94,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 					moduleInformation.DllBase.address = pLdrEntry->DllBase;
 					moduleInformation.SizeOfImage = pLdrEntry->SizeOfImage;
 					moduleInformation.NameDontUseOutsideCallback = &pLdrEntry->BaseDllName;
-					kull_m_process_adjustTimeDateStamp(&moduleInformation);
+					kull_m_process_adjustTimeDateStampAndFileVersion(&moduleInformation);
 					continueCallback = callBack(&moduleInformation, pvArg);
 				}
 				status = STATUS_SUCCESS;
@@ -115,7 +115,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 				moduleName.Length = pLdrEntry32->BaseDllName.Length;
 				moduleName.MaximumLength = pLdrEntry32->BaseDllName.MaximumLength;
 				moduleName.Buffer = (PWSTR) ULongToPtr(pLdrEntry32->BaseDllName.Buffer);
-				kull_m_process_adjustTimeDateStamp(&moduleInformation);
+				kull_m_process_adjustTimeDateStampAndFileVersion(&moduleInformation);
 				continueCallback = callBack(&moduleInformation, pvArg);
 			}
 			status = STATUS_SUCCESS;
@@ -148,7 +148,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 							aBuffer.address = moduleName.Buffer; aProcess.address = LdrEntry.BaseDllName.Buffer;
 							if(kull_m_memory_copy(&aBuffer, &aProcess, moduleName.MaximumLength))
 							{
-								kull_m_process_adjustTimeDateStamp(&moduleInformation);
+								kull_m_process_adjustTimeDateStampAndFileVersion(&moduleInformation);
 								continueCallback = callBack(&moduleInformation, pvArg);
 							}
 							LocalFree(moduleName.Buffer);
@@ -185,7 +185,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 							aBuffer.address = moduleName.Buffer; aProcess.address = ULongToPtr(LdrEntry32.BaseDllName.Buffer);
 							if(kull_m_memory_copy(&aBuffer, &aProcess, moduleName.MaximumLength))
 							{
-								kull_m_process_adjustTimeDateStamp(&moduleInformation);
+								kull_m_process_adjustTimeDateStampAndFileVersion(&moduleInformation);
 								continueCallback = callBack(&moduleInformation, pvArg);
 							}
 							LocalFree(moduleName.Buffer);
@@ -209,7 +209,7 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 				if(pMinidumpString = (PMINIDUMP_STRING) kull_m_minidump_RVAtoPTR(memory->pHandleProcessDmp->hMinidump, pMinidumpModuleList->Modules[i].ModuleNameRva))
 				{
 					RtlInitUnicodeString(&moduleName, wcsrchr(pMinidumpString->Buffer, L'\\') + 1);
-					kull_m_process_adjustTimeDateStamp(&moduleInformation);
+					kull_m_process_adjustTimeDateStampAndFileVersion(&moduleInformation);
 					continueCallback = callBack(&moduleInformation, pvArg);
 				}
 			}
@@ -245,15 +245,94 @@ NTSTATUS kull_m_process_getVeryBasicModuleInformations(PKULL_M_MEMORY_HANDLE mem
 	return status;
 }
 
-void kull_m_process_adjustTimeDateStamp(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information)
+void kull_m_process_adjustTimeDateStampAndFileVersion(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION information)
 {
 	PIMAGE_NT_HEADERS ntHeaders;
-	if(kull_m_process_ntheaders(&information->DllBase, &ntHeaders))
+
+	information->TimeDateStamp = 0;
+	information->FileVersion = (KULL_M_PROCESS_FILE_VERSION_INFO){ 0 };
+
+	if (kull_m_process_ntheaders(&information->DllBase, &ntHeaders))
 	{
 		information->TimeDateStamp = ntHeaders->FileHeader.TimeDateStamp;
+
+		DWORD rsrcRVA = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+		DWORD rsrcSize = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size;
+
+		if (rsrcSize > 0) {
+
+			KULL_M_MEMORY_ADDRESS rsrcBuffer = { LocalAlloc(LPTR, rsrcSize), &KULL_M_MEMORY_GLOBAL_OWN_HANDLE };
+			KULL_M_MEMORY_ADDRESS aProcess = { (LPVOID)((LPBYTE)information->DllBase.address + rsrcRVA), information->DllBase.hMemory };
+
+			if (rsrcBuffer.address) {
+
+				if (kull_m_memory_copy(&rsrcBuffer, &aProcess, rsrcSize)) {
+
+					PIMAGE_RESOURCE_DIRECTORY rsrcDirectory = (PIMAGE_RESOURCE_DIRECTORY)rsrcBuffer.address;
+
+					if (rsrcDirectory->NumberOfIdEntries > 0) {
+
+						// +1 beause the entries start directly behind the resource directory
+						PIMAGE_RESOURCE_DIRECTORY_ENTRY CurrentEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(rsrcDirectory + 1);
+						PIMAGE_RESOURCE_DATA_ENTRY versionDataEntry = NULL;
+
+						// Skip named entries
+						CurrentEntry = &CurrentEntry[rsrcDirectory->NumberOfNamedEntries];
+
+						for (int i = 0; i < rsrcDirectory->NumberOfIdEntries; i++, CurrentEntry++) {
+							if (CurrentEntry->Id == 0x10) {
+								// Found RT_VERSION resource
+								break;
+							}
+						}
+
+						if (CurrentEntry->Id == 0x10) {
+
+							// If it's more than 3 layers deep, something is wrong
+							for (int i = 0; i < 3; i++) {
+								if (CurrentEntry->DataIsDirectory) {
+									// I am always just taking the first entry in the directory
+									CurrentEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)((PIMAGE_RESOURCE_DIRECTORY)((LPBYTE)rsrcDirectory + (CurrentEntry->OffsetToDirectory & 0x7FFFFFFF)) + 1);
+								}
+								else {
+
+									versionDataEntry = (PIMAGE_RESOURCE_DATA_ENTRY)((LPBYTE)rsrcDirectory + CurrentEntry->OffsetToData);
+									break;
+								}
+							}
+
+							if (versionDataEntry) {
+
+								/*
+								* OffsetToData in this case is not the offset from the start of the resource - directory, but an RVA from the
+								* base address. Therefore, we need to do a bit of calculation to get the offset from the start of the resource section
+								*/
+								PVS_VERSIONINFO versionInfo = (PVS_VERSIONINFO)((LPBYTE)rsrcDirectory + ((LPBYTE)information->DllBase.address + versionDataEntry->OffsetToData - (LPBYTE)aProcess.address));
+
+								if (versionInfo->Value.dwSignature == 0xFEEF04BD) {
+
+									information->FileVersion.major = HIWORD(versionInfo->Value.dwFileVersionMS);
+									information->FileVersion.minor = LOWORD(versionInfo->Value.dwFileVersionMS);
+									information->FileVersion.build = HIWORD(versionInfo->Value.dwFileVersionLS);
+									information->FileVersion.revision = LOWORD(versionInfo->Value.dwFileVersionLS);
+
+								}
+
+							}
+						}
+
+					}
+
+				}
+
+				LocalFree(rsrcBuffer.address);
+			}
+
+		}
+
 		LocalFree(ntHeaders);
 	}
-	else information->TimeDateStamp = 0;
+
 }
 
 BOOL CALLBACK kull_m_process_callback_moduleForName(PKULL_M_PROCESS_VERY_BASIC_MODULE_INFORMATION pModuleInformation, PVOID pvArg)
