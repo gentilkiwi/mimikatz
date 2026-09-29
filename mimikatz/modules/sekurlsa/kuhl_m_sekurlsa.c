@@ -1241,7 +1241,22 @@ VOID kuhl_m_sekurlsa_genericCredsOutput(PKIWI_GENERIC_PRIMARY_CREDENTIAL mesCred
 		}
 		else if(flags & KUHL_SEKURLSA_CREDS_DISPLAY_KEY_LIST)
 		{
-			pHashPassword = (PKERB_HASHPASSWORD_GENERIC) mesCreds;
+			KERB_HASHPASSWORD_GENERIC localHashPassword;
+			pHashPassword = &localHashPassword;
+
+			// 2. Safely map the fields based on OS version
+			if (pData->cLsass->osContext.BuildNumber < KULL_M_WIN_BUILD_2022) {
+				PKERB_HASHPASSWORD_GENERIC pSource = (PKERB_HASHPASSWORD_GENERIC)mesCreds;
+				localHashPassword.Type = pSource->Type;
+				localHashPassword.Size = pSource->Size;
+				localHashPassword.Checksump = pSource->Checksump;
+			}
+			else {
+				PKERB_HASHPASSWORD_GENERIC_24H2 pSource = (PKERB_HASHPASSWORD_GENERIC_24H2)mesCreds;
+				localHashPassword.Type = pSource->Type;
+				localHashPassword.Size = pSource->Size;
+				localHashPassword.Checksump = pSource->Checksump;
+			}
 			kprintf(L"\t   %s ", kuhl_m_kerberos_ticket_etype(pHashPassword->Type));
 			if(buffer.Length = buffer.MaximumLength = (USHORT) pHashPassword->Size)
 			{

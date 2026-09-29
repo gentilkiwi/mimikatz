@@ -353,6 +353,51 @@ typedef struct _KIWI_KERBEROS_LOGON_SESSION_10_1607 {
 	PVOID		SmartcardInfos;
 } KIWI_KERBEROS_LOGON_SESSION_10_1607, *PKIWI_KERBEROS_LOGON_SESSION_10_1607;
 
+typedef struct _KIWI_KERBEROS_LOGON_SESSION_10_24H2 {
+	ULONG		UsageCount;
+	LIST_ENTRY	unk0;
+	PVOID		unk1;
+	ULONG		unk1b;
+	PVOID		unk2;
+	PVOID		unk4;
+	PVOID		unk5;
+	LUID		LocallyUniqueIdentifier; //0x40
+	PVOID		unk8;
+	ULONG		unk8b;
+	FILETIME	unk9;
+	PVOID		unk11;
+	PVOID		unk12;
+	PVOID		unk13;
+#if defined(_M_IX86)
+	ULONG		unkAlign;
+#endif
+	KIWI_KERBEROS_10_PRIMARY_CREDENTIAL_1607	credentials;//0x78
+	ULONG		unk14;//0xA8
+	ULONG		unk15;
+	ULONG		unk16;
+	ULONG		unk17;
+	PVOID		unk18;
+	PVOID		unk19;
+	PVOID		unk20;
+	PVOID		unk21;
+	PVOID		unk22;
+	PVOID		unk23;
+	PVOID		unk24;
+	PVOID		unk25;//0x100
+	PVOID		pKeyList;
+	PVOID		unk26;
+	PVOID		unk27;
+	PVOID		unk28;
+	PVOID		unk29;
+	LIST_ENTRY	Tickets_1;//0x130 
+	FILETIME	unk30;
+	LIST_ENTRY	Tickets_2;
+	FILETIME	unk31;
+	LIST_ENTRY	Tickets_3;
+	FILETIME	unk32;
+	PVOID		SmartcardInfos;
+} KIWI_KERBEROS_LOGON_SESSION_10_24H2, * PKIWI_KERBEROS_LOGON_SESSION_10_24H2;
+
 typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_51 {
 	LIST_ENTRY	This;
 	PVOID		unk0;
@@ -566,6 +611,64 @@ typedef struct _KERB_HASHPASSWORD_GENERIC {
 	SIZE_T Size;
 	PBYTE Checksump;
 } KERB_HASHPASSWORD_GENERIC, *PKERB_HASHPASSWORD_GENERIC;
+
+typedef struct _KERB_HASHPASSWORD_GENERIC_24H2 {
+	DWORD unk0;        // +0x00  observed 2 â€” flags? revision? (verify on entries 1â€“2)
+	DWORD Type;        // +0x04  etype: 0x12=aes256, expect 0x11/0x17 below
+	SIZE_T Size;       // +0x08
+	PBYTE Checksump;   // +0x10
+} KERB_HASHPASSWORD_GENERIC_24H2, * PKERB_HASHPASSWORD_GENERIC_24H2;
+
+typedef struct _KERB_HASHPASSWORD_10_24H2 {
+	LSA_UNICODE_STRING salt;                 // +0x00
+	PVOID stringToKey;                       // +0x10
+	PVOID unk0;                              // +0x18
+	KERB_HASHPASSWORD_GENERIC_24H2 generic;  // +0x20
+	PVOID unk1;                              // +0x38
+} KERB_HASHPASSWORD_10_24H2, * PKERB_HASHPASSWORD_10_24H2;
+
+typedef struct _KIWI_KERBEROS_INTERNAL_TICKET_10_24H2 {
+	LIST_ENTRY	This;
+	PVOID		unk0;
+	PVOID		unk1;
+	PKERB_EXTERNAL_NAME	ServiceName;
+	PKERB_EXTERNAL_NAME	TargetName;
+	LSA_UNICODE_STRING	DomainName;
+	LSA_UNICODE_STRING	TargetDomainName;
+	LSA_UNICODE_STRING	Description;
+	LSA_UNICODE_STRING	AltTargetDomainName;
+	LSA_UNICODE_STRING	KDCServer;	//?
+	LSA_UNICODE_STRING	unk10586_d;	//?
+	PKERB_EXTERNAL_NAME	ClientName;
+	PVOID		name0;
+	ULONG		TicketFlags;
+	ULONG		unk2;
+	PVOID		unk26100_0;
+	ULONG		unk3;
+	ULONG		KeyType;
+	KIWI_KERBEROS_BUFFER	Key;
+	PVOID		unk26100_1;
+	PVOID		unk11;
+	ULONG		unk12;
+	ULONG		unk4; // ULONG		KeyType2;
+	ULONG		unk5; // KIWI_KERBEROS_BUFFER	Key2-Size;
+	ULONG		unk13; //displacement (filling)
+	PVOID		unk26100_2; //pointer to key2 data
+	PVOID		unk14;
+	FILETIME	StartTime;
+	FILETIME	EndTime;
+	FILETIME	RenewUntil;
+	ULONG		unk7;
+	ULONG		unk8;
+	PCWSTR		domain;
+	ULONG		unk9;
+	ULONG       unk15;
+	PVOID		strangeNames;
+	ULONG		unk10;
+	ULONG		TicketEncType;
+	ULONG		TicketKvno;
+	KIWI_KERBEROS_BUFFER	Ticket;
+} KIWI_KERBEROS_INTERNAL_TICKET_10_24H2, * PKIWI_KERBEROS_INTERNAL_TICKET_10_24H2;
 
 typedef struct _KERB_HASHPASSWORD_5 {
 	LSA_UNICODE_STRING salt;	// http://tools.ietf.org/html/rfc3962
