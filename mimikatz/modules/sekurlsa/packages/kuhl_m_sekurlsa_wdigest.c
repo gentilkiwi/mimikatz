@@ -12,10 +12,12 @@ KULL_M_PATCH_GENERIC WDigestReferences[] = {
 #elif defined(_M_X64)
 BYTE PTRN_WIN5_PasswdSet[]	= {0x48, 0x3b, 0xda, 0x74};
 BYTE PTRN_WIN6_PasswdSet[]	= {0x48, 0x3b, 0xd9, 0x74};
+BYTE PTRN_WIN11_PasswdSet[]	= {0x48, 0x3b, 0xd8, 0x74};
 KULL_M_PATCH_GENERIC WDigestReferences[] = {
 	{KULL_M_WIN_BUILD_XP,		{sizeof(PTRN_WIN5_PasswdSet),	PTRN_WIN5_PasswdSet},	{0, NULL}, {-4, 36}},
 	{KULL_M_WIN_BUILD_2K3,		{sizeof(PTRN_WIN5_PasswdSet),	PTRN_WIN5_PasswdSet},	{0, NULL}, {-4, 48}},
 	{KULL_M_WIN_BUILD_VISTA,	{sizeof(PTRN_WIN6_PasswdSet),	PTRN_WIN6_PasswdSet},	{0, NULL}, {-4, 48}},
+	{KULL_M_WIN_BUILD_11_22H2,	{sizeof(PTRN_WIN11_PasswdSet),	PTRN_WIN11_PasswdSet},	{0, NULL}, {-4, 48}},
 };
 #elif defined(_M_IX86)
 BYTE PTRN_WIN5_PasswdSet[]	= {0x74, 0x18, 0x8b, 0x4d, 0x08, 0x8b, 0x11};
