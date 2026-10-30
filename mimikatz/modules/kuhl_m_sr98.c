@@ -467,7 +467,7 @@ USHORT kuhl_m_sr98_crc16_ccitt_1021(const UCHAR *data, ULONG len)
 const UCHAR kuhl_m_sr98_nedap_translateTable[10] = {8, 2, 1, 12, 4, 5, 10, 13, 0, 9};
 void kuhl_m_sr98_nedap_blocks(ULONG blocks[5], BOOLEAN isLong, UCHAR SubType, USHORT CustomerCode, ULONG CardNumber)
 {
-	UCHAR r1, r2, r3, r4, r5, idxC2, idxC3, idxC4, idxC5, i, tmp;
+	UCHAR r1, r2, r3, r4, r5, idxC1, idxC2, idxC3, idxC4, idxC5, i, tmp;
 	USHORT checksum;
 	ULONGLONG uBuffer, t;
 
@@ -476,12 +476,13 @@ void kuhl_m_sr98_nedap_blocks(ULONG blocks[5], BOOLEAN isLong, UCHAR SubType, US
 	r3 = (UCHAR) ((CardNumber % 1000) / 100);
 	r4 = (UCHAR) ((CardNumber % 100) / 10);
 	r5 = (UCHAR) (CardNumber % 10);
-	idxC2 = (r1 + 1 + r2) % 10;
+	idxC1 = (r1 + (CustomerCode & 7) + 7) % 10;
+	idxC2 = (idxC1 + 1 + r2) % 10;
 	idxC3 = (idxC2 + 1 + r3) % 10;
 	idxC4 = (idxC3 + 1 + r4) % 10;
 	idxC5 = (idxC4 + 1 + r5) % 10;
 
-	uBuffer = ((ULONGLONG) (0xc0 | (SubType & 0x0f)) << 32) | ((ULONGLONG) (CustomerCode & 0x0fff) << 20) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[r1] << 16) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC2] << 12) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC3] << 8) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC4] << 4) | kuhl_m_sr98_nedap_translateTable[idxC5];
+	uBuffer = ((ULONGLONG) (0xc0 | (SubType & 0x0f)) << 32) | ((ULONGLONG) (CustomerCode & 0x0fff) << 20) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC1] << 16) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC2] << 12) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC3] << 8) | ((ULONGLONG) kuhl_m_sr98_nedap_translateTable[idxC4] << 4) | kuhl_m_sr98_nedap_translateTable[idxC5];
 	t = _byteswap_uint64(uBuffer) >> 24;
 	checksum = kuhl_m_sr98_crc16_ccitt_1021((const UCHAR *) &t, 5);
 	uBuffer <<= 16;
